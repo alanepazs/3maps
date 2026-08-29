@@ -41,7 +41,10 @@ Runbook corto. Cosas que muerden si no las sabés. Leer antes de tocar.
 11. **SSR / hidratación**: `FlowCanvas` arranca con la **semilla** (determinística) y carga
     `localStorage` en un `useEffect` de montaje. NO leer `localStorage` durante el render
     (rompe la hidratación). El `.md` de ejemplo usa ids `nodo-ejemplo-*` y fechas fijas.
+12. **No hay test runner.** Para probar lógica pura: `npx --yes tsx _scratch.mts` (tsx resuelve
+    imports `.ts` sin extensión; `node --strip-types` no). Borrar el scratch antes de commitear.
+    Node local es v24.
 
 ## Checklist antes de cerrar sesión
 
-12. `npx tsc --noEmit` + `npm run lint` en verde · `git push` · actualizar `docs/estado.md`.
+13. `npx tsc --noEmit` + `npm run lint` en verde · `git push` · actualizar `docs/estado.md`.
