@@ -5,11 +5,11 @@ import { useState, type KeyboardEvent } from "react";
 export type BranchKind = "main" | "branch";
 
 type Props = {
-  // Label del nodo activo (desde el que se va a preguntar / ramificar).
+  // Pregunta del intercambio activo (desde el que se continúa / ramifica).
   activeNodeLabel: string | null;
-  // Crea un nodo de pregunta colgando del nodo activo + un nodo placeholder
-  // de respuesta de la IA. Todavía sin llamada real a la IA.
-  // "main" = continúa el hilo hacia abajo, "branch" = abre una rama al costado.
+  // Crea un globo nuevo (intercambio) colgando del nodo activo. Todavía sin
+  // llamada real a la IA. "main" = continúa el hilo hacia abajo, "branch" =
+  // abre una rama al costado.
   onSubmit: (text: string, kind: BranchKind) => void;
 };
 
@@ -35,10 +35,10 @@ export default function Composer({ activeNodeLabel, onSubmit }: Props) {
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex justify-center p-4">
       <div className="pointer-events-auto w-full max-w-2xl rounded-lg border border-white/15 bg-neutral-900/95 p-3 shadow-xl backdrop-blur">
-        <p className="mb-2 text-xs text-white/50">
+        <p className="mb-2 truncate text-xs text-white/50">
           {activeNodeLabel
-            ? `Escribiendo desde: ${activeNodeLabel}`
-            : "Seleccioná un nodo del canvas para escribir desde ahí"}
+            ? `Desde: ${activeNodeLabel}`
+            : "Seleccioná un globo del canvas para escribir desde ahí"}
         </p>
         <textarea
           value={text}

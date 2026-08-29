@@ -8,13 +8,14 @@ import {
 
 import { NodeActionsContext } from "./nodeActions";
 
-// Nodo de mensaje del árbol. Todavía sin diseño real: solo lo mínimo
-// para dejar clara la mecánica de handles y el estado "activo".
+// Un globo = un intercambio completo: la pregunta (encabezado) + la respuesta
+// de la IA (cuerpo). Todavía sin diseño real ni IA: si no hay respuesta se
+// muestra "Respuesta pendiente".
 //
-//   - target  (arriba)          : de dónde viene este mensaje
-//                                 (el nodo raíz no lo tiene: no tiene padre)
-//   - source  "main"  (abajo)    : continuar el hilo principal hacia abajo
-//   - source  "branch" (costado) : ramificar una sub-pregunta sin desviar el tronco
+// Handles:
+//   - target (arriba)              : de dónde viene (el nodo raíz no lo tiene)
+//   - source "main" (abajo)        : continuar el hilo principal, siempre vertical
+//   - source "branch-right/-left"  : ramificar por un costado (se elige al arrastrar)
 export default function MessageNode({
   id,
   data,
@@ -22,14 +23,15 @@ export default function MessageNode({
   isConnectable,
 }: NodeProps) {
   const isRoot = Boolean(data.isRoot);
-  const pending = Boolean(data.pending);
+  const pregunta = String(data.pregunta ?? "");
+  const respuesta = data.respuesta ? String(data.respuesta) : null;
   const { deleteNode } = useContext(NodeActionsContext);
 
   return (
     <div
-      className={`min-w-[160px] max-w-[260px] rounded-md border bg-neutral-900 px-4 py-2 text-center text-sm transition-colors ${
-        pending ? "italic text-white/40" : "text-white"
-      } ${selected ? "border-sky-400 ring-2 ring-sky-400/40" : "border-white/20"}`}
+      className={`w-[260px] overflow-hidden rounded-md border bg-neutral-900 text-sm ${
+        selected ? "border-sky-400 ring-2 ring-sky-400/40" : "border-white/20"
+      }`}
     >
       {/* El nodo raíz no se puede eliminar: borrarlo dejaría todo huérfano. */}
       {!isRoot && (
@@ -47,7 +49,20 @@ export default function MessageNode({
       {!isRoot && (
         <Handle type="target" position={Position.Top} isConnectable={isConnectable} />
       )}
-      {String(data.label ?? "")}
+
+      {pregunta && (
+        <div className="border-b border-white/10 px-3 py-1.5 text-left font-medium text-white">
+          {pregunta}
+        </div>
+      )}
+      <div
+        className={`px-3 py-2 text-left ${
+          respuesta ? "text-white/90" : "italic text-white/40"
+        }`}
+      >
+        {respuesta ?? "Respuesta pendiente (IA no conectada)"}
+      </div>
+
       <Handle
         type="source"
         id="main"
@@ -56,8 +71,14 @@ export default function MessageNode({
       />
       <Handle
         type="source"
-        id="branch"
+        id="branch-right"
         position={Position.Right}
+        isConnectable={isConnectable}
+      />
+      <Handle
+        type="source"
+        id="branch-left"
+        position={Position.Left}
         isConnectable={isConnectable}
       />
     </div>

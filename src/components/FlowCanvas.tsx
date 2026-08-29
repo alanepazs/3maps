@@ -3,12 +3,14 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import {
   ReactFlow,
+  ReactFlowProvider,
   Background,
   Controls,
   MiniMap,
   addEdge,
   useNodesState,
   useEdgesState,
+  useReactFlow,
   type Connection,
   type Edge,
   type Node,
@@ -26,57 +28,62 @@ import { NodeActionsContext } from "./nodeActions";
 // un objeto nodeTypes nuevo en cada render, remonta todos los nodos.
 const nodeTypes: NodeTypes = { message: MessageNode };
 
-// Nodos de prueba. Todavía sin lógica de IA ni de guardado en .md:
-// esto es solo el esqueleto visual del canvas (fase 1, paso 1).
+// Nodos de prueba. Todavía sin lógica de IA ni de guardado en .md.
 //
-// La idea que se quiere dejar clara: el hilo principal baja en vertical
-// (tronco) y las ramas salen por el costado, para que ramificar no se lea
-// como interrumpir la conversación principal.
+// Un globo = un intercambio (pregunta + respuesta). El hilo principal baja
+// en vertical (tronco); las ramas salen por un costado y se pueden pasar de
+// derecha a izquierda arrastrándolas.
 const initialNodes: Node[] = [
   {
     id: "1",
     type: "message",
     position: { x: 250, y: 0 },
-    data: { label: "Raíz — pregunta inicial", isRoot: true },
+    data: {
+      pregunta: "¿Por dónde arranco a estudiar el tema?",
+      respuesta: "Arrancá por los fundamentos y después subí de nivel.",
+      isRoot: true,
+    },
   },
   {
     id: "2",
     type: "message",
-    position: { x: 250, y: 140 },
-    data: { label: "Respuesta de la IA" },
+    position: { x: 250, y: 220 },
+    data: {
+      pregunta: "¿Y cómo divido eso en semanas?",
+      respuesta: "Semana 1 fundamentos, semana 2 práctica, semana 3 un proyecto.",
+    },
+    selected: true,
   },
   {
     id: "3",
     type: "message",
-    position: { x: 250, y: 300 },
-    data: { label: "Siguiente pregunta (hilo principal)" },
-    selected: true,
-  },
-  {
-    id: "4",
-    type: "message",
-    position: { x: 620, y: 190 },
-    data: { label: "Rama — sub-pregunta desde la respuesta" },
+    position: { x: 640, y: 60 },
+    data: {
+      pregunta: "Pará — ¿qué contás como 'fundamentos' exactamente?",
+      respuesta: "Los conceptos base sin los que lo demás no se entiende.",
+    },
   },
 ];
 
 const initialEdges: Edge[] = [
   { id: "e1-2", source: "1", sourceHandle: "main", target: "2" },
-  { id: "e2-3", source: "2", sourceHandle: "main", target: "3" },
-  { id: "e2-4", source: "2", sourceHandle: "branch", target: "4" },
+  { id: "e1-3", source: "1", sourceHandle: "branch-right", target: "3" },
 ];
 
-export default function FlowCanvas() {
+const BRANCH_HANDLES = ["branch-left", "branch-right"] as const;
+
+function Flow() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-  const [activeNodeId, setActiveNodeId] = useState<string | null>("3");
+  const [activeNodeId, setActiveNodeId] = useState<string | null>("2");
+  const { getNode } = useReactFlow();
 
-  // Contador de ids para los nodos nuevos (los de prueba van del 1 al 4).
-  const nextId = useRef(5);
+  // Contador de ids para los nodos nuevos (los de prueba van del 1 al 3).
+  const nextId = useRef(4);
 
   const activeNode = nodes.find((n) => n.id === activeNodeId) ?? null;
   const activeNodeLabel = activeNode
-    ? String(activeNode.data.label ?? "")
+    ? String(activeNode.data.pregunta ?? "")
     : null;
 
   const onConnect = useCallback(
@@ -91,76 +98,79 @@ export default function FlowCanvas() {
     [],
   );
 
-  // Crea el nodo de pregunta (rol "user") colgando del nodo activo + un nodo
-  // placeholder de respuesta (rol "ia") colgando de la pregunta. Todavía sin
-  // llamada real a la IA: el nodo "ia" queda como "respuesta pendiente".
-  // "main" cuelga hacia abajo (sigue el hilo); "branch" cuelga al costado.
+  // Crea UN globo (intercambio) colgando del nodo activo. Sin IA: la respuesta
+  // queda pendiente. "main" cuelga hacia abajo (sigue el hilo); "branch" nace
+  // por la derecha (después se puede arrastrar a la izquierda).
   const handleSubmit = useCallback(
     (text: string, kind: BranchKind) => {
       const parent = nodes.find((n) => n.id === activeNodeId);
       if (!parent) return;
 
-      const userId = String(nextId.current++);
-      const iaId = String(nextId.current++);
-      const siblings = edges.filter(
-        (e) => e.source === parent.id && e.sourceHandle === kind,
-      ).length;
+      const id = String(nextId.current++);
+      const sourceHandle = kind === "main" ? "main" : "branch-right";
+      const siblings = edges.filter((e) => {
+        if (e.source !== parent.id) return false;
+        return kind === "main"
+          ? e.sourceHandle === "main"
+          : e.sourceHandle === "branch-left" || e.sourceHandle === "branch-right";
+      }).length;
 
-      const userPos =
+      const position =
         kind === "main"
-          ? { x: parent.position.x + siblings * 40, y: parent.position.y + 160 }
+          ? { x: parent.position.x + siblings * 40, y: parent.position.y + 240 }
           : {
-              x: parent.position.x + 380,
-              y: parent.position.y + 40 + siblings * 220,
+              x: parent.position.x + 400,
+              y: parent.position.y + siblings * 220,
             };
-      const iaPos = { x: userPos.x, y: userPos.y + 140 };
 
-      const userNode: Node = {
-        id: userId,
+      const newNode: Node = {
+        id,
         type: "message",
-        position: userPos,
-        data: { label: text, rol: "user" },
-      };
-      const iaNode: Node = {
-        id: iaId,
-        type: "message",
-        position: iaPos,
-        data: {
-          label: "Respuesta pendiente (IA no conectada)",
-          rol: "ia",
-          pending: true,
-        },
+        position,
+        data: { pregunta: text, respuesta: null, pending: true },
         selected: true,
       };
 
       setNodes((nds) => [
         ...nds.map((n) => ({ ...n, selected: false })),
-        userNode,
-        iaNode,
+        newNode,
       ]);
       setEdges((eds) => [
         ...eds,
-        { id: `e${parent.id}-${userId}`, source: parent.id, sourceHandle: kind, target: userId },
-        { id: `e${userId}-${iaId}`, source: userId, sourceHandle: "main", target: iaId },
+        { id: `e${parent.id}-${id}`, source: parent.id, sourceHandle, target: id },
       ]);
-      // El nodo activo pasa a ser la respuesta de la IA: desde ahí se sigue
-      // la conversación (o se ramifica).
-      setActiveNodeId(iaId);
+      setActiveNodeId(id);
     },
     [activeNodeId, nodes, edges, setNodes, setEdges],
   );
 
-  // Elimina un nodo y todos sus descendientes. Deja como activo al padre del
-  // nodo borrado (marcándolo como seleccionado, así también se resalta).
+  // Al soltar un globo arrastrado: si es una rama, reconectar la flecha al
+  // costado (izquierda/derecha) del padre según dónde quedó el globo.
+  const onNodeDragStop = useCallback(
+    (_evt: unknown, node: Node) => {
+      setEdges((eds) =>
+        eds.map((e) => {
+          if (e.target !== node.id) return e;
+          if (!BRANCH_HANDLES.includes(e.sourceHandle as never)) return e;
+          const parent = getNode(e.source);
+          if (!parent) return e;
+          const side =
+            node.position.x < parent.position.x ? "branch-left" : "branch-right";
+          return e.sourceHandle === side ? e : { ...e, sourceHandle: side };
+        }),
+      );
+    },
+    [getNode, setEdges],
+  );
+
+  // Elimina un nodo y todos sus descendientes. Deja como activo al padre.
   const deleteNode = useCallback(
     (id: string) => {
-      const allEdges = edges;
-
       const toRemove = new Set<string>([id]);
       let changed = true;
       while (changed) {
         changed = false;
-        for (const e of allEdges) {
+        for (const e of edges) {
           if (toRemove.has(e.source) && !toRemove.has(e.target)) {
             toRemove.add(e.target);
             changed = true;
@@ -177,7 +187,7 @@ export default function FlowCanvas() {
         return;
       }
 
-      const parentId = allEdges.find((e) => e.target === id)?.source ?? null;
+      const parentId = edges.find((e) => e.target === id)?.source ?? null;
 
       setNodes((nds) =>
         nds
@@ -204,6 +214,7 @@ export default function FlowCanvas() {
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          onNodeDragStop={onNodeDragStop}
           onSelectionChange={onSelectionChange}
           colorMode="dark"
           fitView
@@ -215,5 +226,13 @@ export default function FlowCanvas() {
         <Composer activeNodeLabel={activeNodeLabel} onSubmit={handleSubmit} />
       </div>
     </NodeActionsContext.Provider>
+  );
+}
+
+export default function FlowCanvas() {
+  return (
+    <ReactFlowProvider>
+      <Flow />
+    </ReactFlowProvider>
   );
 }

@@ -1,73 +1,95 @@
 # Chat en Árbol IA — Documento de proyecto
 
 > Nombre de trabajo: **chat-arbol-ia**. Cambialo cuando definas un nombre final.
-> Estado: brainstorming / diseño de arquitectura, sin código todavía.
+> Estado: fase 1 (MVP) en desarrollo — esqueleto visual del canvas armado, sin IA ni guardado todavía.
 > Última actualización: 29-08-2026.
 
 ## 1. Resumen del proyecto
 
-Una web app donde el usuario conversa con una IA (Claude, GPT, Gemini, DeepSeek u otra, según la clave que cargue) integrada vía API — sin usar la interfaz de chat del proveedor. En vez de mostrar la conversación como una lista vertical con scroll, la muestra como un **mapa interactivo de nodos** (canvas libre, tipo n8n / Obsidian Canvas): cada mensaje es un "globo" (bubble), las flechas conectan pregunta → respuesta, y el usuario puede **ramificar** desde cualquier respuesta vieja para hacer una sub-pregunta sin desviar el hilo principal ni perder el lugar donde estaba.
+Una web app donde el usuario conversa con una IA (Claude, GPT, Gemini, DeepSeek u otra, según la clave que cargue) integrada vía API — sin usar la interfaz de chat del proveedor. En vez de mostrar la conversación como una lista vertical con scroll, la muestra como un **mapa interactivo de nodos** (canvas libre, tipo n8n / Obsidian Canvas): cada **intercambio** (una pregunta + su respuesta) es un "globo" (bubble), las flechas conectan un intercambio con el siguiente, y el usuario puede **ramificar** desde cualquier globo viejo para hacer una sub-pregunta sin desviar el hilo principal ni perder el lugar donde estaba.
 
 **Doble propósito:** herramienta personal (por ejemplo, para armar planes de estudio) y pieza de portfolio para freelance (Upwork/Workana), con la ambición de que eventualmente la use más gente.
 
 ## 2. Concepto central (UX)
 
 - La conversación no es una lista, es un **árbol**.
-- Cada respuesta de la IA es un nodo/globo que se puede mover libremente por el canvas (posición manual, no un layout fijo — fluidez tipo Obsidian).
-- Desde cualquier globo (no solo el último) se puede abrir una pregunta nueva → nace una rama nueva, sin tocar la rama principal.
-- El "tronco" es la conversación principal; cada desvío es una rama.
-- Pendiente de definir (ver sección 9): al abrir/hacer doble click en un globo, ¿se ve solo el texto completo de ESE mensaje, o se abre una vista de transcripción con toda la rama en orden, tipo chat normal?
+- **Un globo = un intercambio completo**: la pregunta del usuario (arriba, como encabezado) y la respuesta de la IA (abajo, como cuerpo) viven en el mismo nodo. Se busca la menor cantidad de globos posible para que el árbol no crezca visualmente de más.
+- Cada globo se mueve libremente por el canvas (posición manual, no un layout fijo — fluidez tipo Obsidian).
+- Desde cualquier globo (no solo el último) se puede abrir una pregunta nueva → nace una rama nueva, sin tocar la rama principal. **Lo que importa es ramificar respuestas**: la pregunta que origina la rama es solo el disparador, no un nodo aparte.
+- El "tronco" es la conversación principal y siempre baja en **vertical** (arriba → abajo). Cada desvío es una **rama** que sale por un **costado** del globo.
+- **Lado de la rama**: al crearse, la rama nace por la derecha. El usuario puede arrastrar el globo ramificado al lado izquierdo del tronco; al soltarlo, la flecha se reconecta sola al costado (izquierda o derecha) que corresponda según dónde quedó.
+- Pendiente de definir (ver sección 14): al abrir/hacer doble click en un globo, ¿se ve solo ese intercambio, o se abre una vista de transcripción con toda la rama en orden, tipo chat normal?
 
 ## 3. Modelo de datos
 
-Cada **nodo** (mensaje) se guarda como un archivo `.md` individual, con metadata en YAML al principio (frontmatter) y el contenido del mensaje abajo:
+Cada **nodo** (un intercambio pregunta + respuesta) se guarda como un archivo `.md` individual, con metadata en YAML al principio (frontmatter) y el contenido en dos secciones abajo:
 
 ```markdown
 ---
 id: nodo-8f3a
 padre_id: nodo-2c11
-rol: ia          # "user" o "ia"
+rama: main        # "main" (sigue el tronco) | "branch-right" | "branch-left"
 x: 420
 y: 180
 proveedor: claude
 fecha: 2026-08-29T14:30:00
 ---
 
-Contenido del mensaje en markdown normal acá abajo.
+## Pregunta
+
+¿Cómo divido el temario en semanas?
+
+## Respuesta
+
+<respuesta de la IA en markdown>
 ```
 
 - Un **árbol completo** = una carpeta con todos sus nodos `.md` adentro.
 - La relación padre-hijo (el `padre_id`) ya define las flechas — no hace falta una tabla/archivo aparte de "edges".
+- `rama` indica de qué lado del padre sale la flecha: `main` para el tronco (sale por abajo del padre) y `branch-left` / `branch-right` para las ramas (salen por un costado). El usuario lo cambia arrastrando el globo.
 - Las posiciones `x, y` se guardan porque el usuario los mueve a mano; solo se genera una posición automática sugerida cuando el nodo se crea por primera vez.
+- El nodo **raíz** no tiene `padre_id`. Puede tener `## Pregunta` vacía si el árbol arranca de una consigna del sistema, o contener el primer intercambio real.
 
 ## 4. Algoritmo base (pseudocódigo)
 
 ```
-FUNCION crear_nodo(padre_id, rol, texto, x, y):
-    nodo = { id: nuevo_id(), padre_id, rol, texto, x, y, fecha: ahora() }
+FUNCION crear_nodo(padre_id, rama, pregunta, respuesta, x, y):
+    nodo = { id: nuevo_id(), padre_id, rama, pregunta, respuesta, x, y, fecha: ahora() }
     guardar_como_md(nodo)
     RETORNAR nodo
 
 FUNCION armar_contexto(nodo_actual):
+    # Camino de intercambios desde la raíz hasta el nodo actual.
     camino = []
     nodo = nodo_actual
-    MIENTRAS nodo tiene padre_id:
+    MIENTRAS nodo != NULO:
         camino.insertar_al_principio(nodo)
-        nodo = buscar_nodo(nodo.padre_id)
-    camino.insertar_al_principio(nodo_raiz)
-    RETORNAR camino   # SOLO este camino, nunca el árbol entero
+        nodo = SI nodo.padre_id ENTONCES buscar_nodo(nodo.padre_id) SINO NULO
+    # Aplanar cada intercambio a mensajes user/assistant para la API:
+    mensajes = []
+    PARA CADA intercambio EN camino:
+        SI intercambio.pregunta NO vacía:
+            mensajes.agregar({ rol: "user", texto: intercambio.pregunta })
+        SI intercambio.respuesta NO vacía:
+            mensajes.agregar({ rol: "assistant", texto: intercambio.respuesta })
+    RETORNAR mensajes   # SOLO este camino, nunca el árbol entero
 
-FUNCION enviar_pregunta(nodo_desde, texto_pregunta):
+FUNCION enviar_pregunta(nodo_desde, texto_pregunta, rama):
+    # rama: "main" para continuar el hilo, "branch-right"/"branch-left" para desviar.
     contexto = armar_contexto(nodo_desde)
     contexto_recortado = aplicar_ventana_y_resumen(contexto)  # ver sección 5
-    nodo_pregunta = crear_nodo(padre_id: nodo_desde.id, rol: "user", texto: texto_pregunta, ...)
-    respuesta = llamar_ia(proveedor_activo, contexto_recortado + nodo_pregunta)
-    nodo_respuesta = crear_nodo(padre_id: nodo_pregunta.id, rol: "ia", texto: respuesta, ...)
-    RETORNAR nodo_respuesta
+    nodo_nuevo = crear_nodo(padre_id: nodo_desde.id, rama, pregunta: texto_pregunta,
+                            respuesta: NULO, ...)   # se ve como "respuesta pendiente"
+    respuesta = llamar_ia(proveedor_activo, contexto_recortado + [{rol:"user", texto:texto_pregunta}])
+    nodo_nuevo.respuesta = respuesta
+    guardar_como_md(nodo_nuevo)
+    RETORNAR nodo_nuevo
 
 FUNCION ramificar(nodo_viejo, texto_pregunta):
-    # Igual que enviar_pregunta, pero partiendo de un nodo que no es el último de la rama activa
-    RETORNAR enviar_pregunta(nodo_desde: nodo_viejo, texto_pregunta)
+    # Igual que enviar_pregunta pero partiendo de un nodo que no es el último
+    # de la rama activa, y con rama = "branch-right" (el usuario después lo puede
+    # arrastrar al lado izquierdo y pasa a "branch-left").
+    RETORNAR enviar_pregunta(nodo_desde: nodo_viejo, texto_pregunta, rama: "branch-right")
 ```
 
 Este es el esqueleto. Los "problemas a resolver" de las secciones siguientes son detalles que cuelgan de `aplicar_ventana_y_resumen` y de la interfaz.
@@ -99,8 +121,8 @@ Arrancar con **un solo proveedor** (a elegir: DeepSeek o Claude Haiku por costo,
 Separado del ahorro de tokens (sección 5) — esto es rendimiento del navegador, no costo de IA:
 
 - Cada nodo tiene un estado `expandido: true/false`.
-- Colapsado = se ve solo un resumen corto / título.
-- Expandido = se ve el markdown completo renderizado.
+- Colapsado = se ve solo la pregunta (encabezado) como título del globo.
+- Expandido = se ve la pregunta + la respuesta completa en markdown renderizado.
 - Con muchos nodos en pantalla, solo se renderiza el detalle completo de los nodos visibles/expandidos — el resto queda liviano.
 
 ## 9. Autenticación
@@ -152,8 +174,12 @@ Queda como función avanzada opcional, no como parte del núcleo.
 
 ## 14. Preguntas abiertas / pendientes
 
-- ¿Abrir un globo muestra solo su texto completo, o la transcripción entera de esa rama? (sección 2)
+- ¿Abrir un globo muestra solo ese intercambio, o la transcripción entera de esa rama? (sección 2)
 - ¿Qué tan agresivo debe ser el resumen de contexto viejo antes de perder calidad de respuesta? (sección 5)
-- ¿Un solo `.md` por nodo, o agrupar por rama? (a probar en la práctica una vez armado el prototipo)
 - ¿Formato final de compartir: siempre `.zip` de carpeta, o también un `.md` único concatenado como opción rápida?
 - Nombre definitivo del proyecto (hoy: "chat-arbol-ia", nombre de trabajo).
+
+### Resueltas
+
+- **Un globo = un intercambio (pregunta + respuesta), no un mensaje suelto.** 1 archivo `.md` por intercambio. Se decidió para que el árbol no crezca visualmente de más. (29-08-2026)
+- **El tronco es siempre vertical; las ramas salen por un costado y se pueden pasar de derecha a izquierda arrastrando.** (29-08-2026)
