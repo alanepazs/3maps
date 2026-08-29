@@ -79,8 +79,13 @@ Historia de dolor real con una key **free tier** recién sacada de AI Studio:
 **Decisiones tomadas:**
 1. **Default = `gemini-2.5-flash`** — GA, en free tier, probado con key real → 200 + texto. Nada
    de alias `-latest` (apuntan a paid) ni `-preview` como default.
-2. **`thinkingConfig: { thinkingBudget: 0 }`** en toda llamada a Gemini (`generationConfig`).
-   Para un chat en árbol queremos respuesta directa, no razonamiento interno que quema tokens.
+2. **`thinkingConfig: { thinkingBudget: 0 }` + `maxOutputTokens: 8192`** en toda llamada a Gemini.
+   Los flash 2.5/3.x "piensan" y el thinking **cuenta contra `maxOutputTokens`**; si `thinkingBudget:0`
+   no se respeta (pasa en algunas keys/proyectos nuevos), con 4096 la respuesta salía vacía. El
+   parser descarta las `parts` con `thought: true` y, si no hay texto, el error dice el
+   `finishReason` real (dejamos de adivinar). Una key nueva puede estar en otra superficie de API
+   ("Interactions API") donde el endpoint legacy devuelve vacío — ahí no queda otra que otro modelo
+   o proveedor.
 3. **`listarModelos(config)`** (`ia.ts`) + botón **"↻ ver modelos que tu key puede usar"** en
    `SettingsPanel`: GET `…/v1beta/models` con la key del usuario → chips clickeables con lo que
    **esa key** puede usar (única fuente de verdad, varía por key). Claude usa `client.models.list()`.

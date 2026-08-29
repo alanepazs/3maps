@@ -119,7 +119,7 @@ export async function resumir(
           texto,
       },
     ],
-    { maxTokens: 512 },
+    { maxTokens: 2048 },
   );
 }
 
@@ -178,7 +178,7 @@ async function llamarClaude(
 
 type GeminiChunk = {
   candidates?: Array<{
-    content?: { parts?: Array<{ text?: string }> };
+    content?: { parts?: Array<{ text?: string; thought?: boolean }> };
     finishReason?: string;
   }>;
   promptFeedback?: { blockReason?: string };
@@ -200,10 +200,10 @@ async function llamarGemini(
       parts: [{ text: m.texto }],
     })),
     generationConfig: {
-      maxOutputTokens: opts.maxTokens ?? 4096,
-      // Los flash de Gemini 2.5/3.x "piensan" por defecto y se comen todo el
-      // presupuesto de tokens en thoughts → devolvían respuesta vacía ("Gemini
-      // no devolvió texto"). Para un chat así queremos respuesta directa.
+      // Headroom generoso: los flash de Gemini 2.5/3.x "piensan" y el thinking
+      // cuenta contra maxOutputTokens; si queda corto, la respuesta sale vacía.
+      maxOutputTokens: opts.maxTokens ?? 8192,
+      // Además pedimos thinking mínimo — para un chat queremos respuesta directa.
       thinkingConfig: { thinkingBudget: 0 },
     },
   };
@@ -237,6 +237,7 @@ async function llamarGemini(
   let acumulado = "";
   let finish: string | null = null;
   let bloqueo: string | null = null;
+  let huboThoughts = false;
   const reader = res.body.getReader();
   const dec = new TextDecoder();
   let buf = "";
@@ -262,12 +263,15 @@ async function llamarGemini(
           continue;
         }
         const cand = chunk.candidates?.[0];
-        const delta = (cand?.content?.parts ?? [])
-          .map((p) => p.text ?? "")
-          .join("");
-        if (delta) {
-          acumulado += delta;
-          opts.onTexto?.(delta, acumulado);
+        for (const p of cand?.content?.parts ?? []) {
+          if (p.thought) {
+            huboThoughts = true;
+            continue; // los "pensamientos" no son la respuesta
+          }
+          if (p.text) {
+            acumulado += p.text;
+            opts.onTexto?.(p.text, acumulado);
+          }
         }
         if (cand?.finishReason) finish = cand.finishReason;
         if (chunk.promptFeedback?.blockReason) {
@@ -284,10 +288,14 @@ async function llamarGemini(
     throw new ErrorIA("Gemini bloqueó la respuesta por seguridad.");
   }
   if (!acumulado) {
+    if (finish === "MAX_TOKENS" || huboThoughts) {
+      throw new ErrorIA(
+        `"${modelo}" gastó los tokens razonando sin responder ` +
+          `(finishReason: ${finish ?? "—"}). Probá gemini-2.5-flash.`,
+      );
+    }
     throw new ErrorIA(
-      finish === "MAX_TOKENS"
-        ? "Gemini cortó por límite de tokens sin texto útil."
-        : "Gemini no devolvió texto.",
+      `Gemini no devolvió texto (finishReason: ${finish ?? "ninguno"}, modelo: ${modelo}).`,
     );
   }
   return acumulado;
