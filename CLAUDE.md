@@ -1,6 +1,8 @@
-# chat-arbol-ia
+# 3maps
 
-Este proyecto está en etapa de **planificación**, todavía no hay código escrito. Antes de generar cualquier archivo o estructura, leé `docs/spec-proyecto.md` completo — ahí está el diseño detallado (modelo de datos, pseudocódigo del algoritmo, todas las decisiones de arquitectura). Este archivo es solo un resumen rápido para orientarte al arrancar cada sesión.
+**Nombre**: `3maps` — "3" = three = *tree* (árbol), y suena a "maps". Mapas de árbol.
+
+Para el diseño detallado (modelo de datos, pseudocódigo del algoritmo, todas las decisiones de arquitectura) ver `docs/spec-proyecto.md` completo. Este archivo es solo un resumen rápido para orientarte al arrancar cada sesión.
 
 ## Qué es
 
@@ -38,10 +40,20 @@ Doble propósito: herramienta personal (ej. armar planes de estudio) y pieza de 
 
 ## Estado actual
 
-Sin código todavía. Próximo paso típico: scaffoldear el proyecto Next.js y armar el canvas base con React Flow mostrando nodos de prueba.
+**Fase 1 en desarrollo — esqueleto visual del canvas.** Ya scaffoldeado (Next.js + React Flow) y con:
+
+- Canvas full-screen: un globo = un intercambio (pregunta + respuesta), tronco vertical, ramas por el costado (arrastrables izq/der).
+- Barra inferior para escribir (Enter envía). Los botones crean globos con placeholder de respuesta; **sin llamada real a la IA todavía**.
+- Botón para eliminar un globo y su subárbol.
+- Envión/inercia al soltar globos y al panear (tuerquita de ajustes arriba a la izquierda regula la intensidad).
+- Modos del lienzo: sin teclas = manito (pan); barra espaciadora = puntero (recuadro de selección).
+
+Repo: https://github.com/alanepazs/3maps
+
+**Todavía falta**: llamada a la API con la clave del usuario, guardado en `.md`, ventana de contexto + resumen, embeddings locales.
 
 ## Preguntas todavía abiertas (ver spec, sección 14)
 
-- ¿Abrir un globo muestra solo su mensaje, o la transcripción completa de esa rama?
+- ¿Abrir un globo muestra solo ese intercambio, o la transcripción completa de esa rama?
 - Nivel de agresividad del resumen de contexto viejo.
 - Formato final de compartir: ¿siempre carpeta comprimida, o también opción de un `.md` único?

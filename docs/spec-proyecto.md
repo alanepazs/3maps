@@ -1,6 +1,6 @@
-# Chat en Árbol IA — Documento de proyecto
+# 3maps — Documento de proyecto
 
-> Nombre de trabajo: **chat-arbol-ia**. Cambialo cuando definas un nombre final.
+> Nombre: **3maps** ("3" = three = *tree* / árbol; suena a "maps").
 > Estado: fase 1 (MVP) en desarrollo — esqueleto visual del canvas armado, sin IA ni guardado todavía.
 > Última actualización: 29-08-2026.
 
@@ -182,9 +182,9 @@ Queda como función avanzada opcional, no como parte del núcleo.
 - ¿Abrir un globo muestra solo ese intercambio, o la transcripción entera de esa rama? (sección 2)
 - ¿Qué tan agresivo debe ser el resumen de contexto viejo antes de perder calidad de respuesta? (sección 5)
 - ¿Formato final de compartir: siempre `.zip` de carpeta, o también un `.md` único concatenado como opción rápida?
-- Nombre definitivo del proyecto (hoy: "chat-arbol-ia", nombre de trabajo).
 
 ### Resueltas
 
+- **Nombre del proyecto: `3maps`.** "3" = three = *tree* (árbol); además suena a "maps". (29-08-2026)
 - **Un globo = un intercambio (pregunta + respuesta), no un mensaje suelto.** 1 archivo `.md` por intercambio. Se decidió para que el árbol no crezca visualmente de más. (29-08-2026)
 - **El tronco es siempre vertical; las ramas salen por un costado y se pueden pasar de derecha a izquierda arrastrando.** (29-08-2026)

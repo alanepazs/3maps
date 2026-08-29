@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "chat-arbol-ia",
+  title: "3maps",
   description: "Conversá con una IA viendo el hilo como un árbol de nodos en un canvas libre.",
 };
 

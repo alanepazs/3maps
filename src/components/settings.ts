@@ -11,4 +11,4 @@ export const DEFAULT_SETTINGS: Settings = {
   inertia: 1,
 };
 
-export const SETTINGS_STORAGE_KEY = "chat-arbol-ia:settings";
+export const SETTINGS_STORAGE_KEY = "3maps:settings";
