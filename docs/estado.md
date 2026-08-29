@@ -96,9 +96,13 @@ Carpeta local: `D:\IA\3maps`.
 
 ### Deploy
 - [x] **GitHub Pages**: `output: "export"` + `basePath` condicional en `next.config.ts` +
-      `.github/workflows/deploy.yml`. Build verificado (`out/` sirve entero bajo `/3maps/`).
-      **Pendiente one-time (lo hace el usuario): repo → Settings → Pages → Source = "GitHub
-      Actions".** Después, cada push a `main` deploya solo.
+      `.github/workflows/deploy.yml`. En CI **`npm ci` y `next build` pasan** (confirmado por API
+      de Actions); el `out/` servido bajo `/3maps/` carga la app entera sin 404.
+      **BLOQUEADO en `actions/configure-pages`**: el repo tiene `has_pages: false` y el
+      `enablement: true` no alcanzó (el GITHUB_TOKEN no tiene permiso para crear el sitio).
+      **Lo tiene que hacer el usuario (necesita su login):** repo → Settings → Pages → Source =
+      "GitHub Actions" (y si hace falta, Settings → Actions → General → Workflow permissions →
+      "Read and write"). Después: re-run del workflow fallado, o cualquier push a `main`.
 
 ## Issues conocidos / gotchas
 
