@@ -81,9 +81,11 @@ Historia de dolor real con una key **free tier** recién sacada de AI Studio:
    de alias `-latest` (apuntan a paid) ni `-preview` como default.
 2. **`thinkingConfig: { thinkingBudget: 0 }`** en toda llamada a Gemini (`generationConfig`).
    Para un chat en árbol queremos respuesta directa, no razonamiento interno que quema tokens.
-3. **`listarModelos(config)`** (`ia.ts`) + link **"ver modelos disponibles"** en `SettingsPanel`:
-   GET `…/v1beta/models` con la key del usuario → chips clickeables con lo que **esa key** puede
-   usar. Es la única fuente de verdad (varía por key). Claude usa `client.models.list()`.
+3. **`listarModelos(config)`** (`ia.ts`) + botón **"↻ ver modelos que tu key puede usar"** en
+   `SettingsPanel`: GET `…/v1beta/models` con la key del usuario → chips clickeables con lo que
+   **esa key** puede usar (única fuente de verdad, varía por key). Claude usa `client.models.list()`.
+   **Se dispara solo al Guardar una key de Gemini** (`commit()`) — el usuario ve las opciones sin
+   tener que buscar el botón. Si el modelo guardado no está en la lista → aviso ámbar.
 4. **`MODELOS_MUERTOS`** en `configIA.ts` migra al default, al cargar: los retirados
    (`gemini-2.0-flash`, `gemini-1.5-flash`, `gemini-pro`, `gemini-2.5-flash-lite`) **y** los alias
    paid (`gemini-flash-latest`, `gemini-pro-latest`). Una config vieja se auto-repara sin tocar ⚙️.

@@ -63,23 +63,6 @@ export default function SettingsPanel({
     keyDraft.trim() !== keyGuardada.trim() ||
     modeloDraft.trim() !== modeloGuardado.trim();
 
-  const commit = () => {
-    if (!dirty) return;
-    onChangeConfigIA({
-      proveedor,
-      apiKey: keyDraft.trim(),
-      modelo: modeloDraft.trim() || MODELO_POR_DEFECTO[proveedor],
-    });
-    setAplicado(true);
-    window.setTimeout(() => setAplicado(false), 2000);
-  };
-
-  const cambiarProveedor = (p: Proveedor) => {
-    // Aplica al toque: la key de un proveedor no sirve para otro → se limpia y
-    // el modelo vuelve a su default. Los borradores se re-sincronizan solos.
-    onChangeConfigIA({ proveedor: p, apiKey: "", modelo: MODELO_POR_DEFECTO[p] });
-  };
-
   const keyEfectiva = keyDraft.trim() || keyGuardada.trim();
 
   const verModelos = async () => {
@@ -106,9 +89,32 @@ export default function SettingsPanel({
     }
   };
 
-  const opcionesModelo = Array.from(
-    new Set([...(modelos ?? []), ...MODELOS_SUGERIDOS[proveedor]]),
-  );
+  const commit = () => {
+    if (!dirty) return;
+    onChangeConfigIA({
+      proveedor,
+      apiKey: keyDraft.trim(),
+      modelo: modeloDraft.trim() || MODELO_POR_DEFECTO[proveedor],
+    });
+    setAplicado(true);
+    window.setTimeout(() => setAplicado(false), 2000);
+    // Al guardar una key de Gemini, traer de una la lista de modelos que esa key
+    // puede usar (varía por key) → el usuario ve las opciones sin buscar el botón.
+    if (proveedor === "gemini" && keyDraft.trim()) void verModelos();
+  };
+
+  const cambiarProveedor = (p: Proveedor) => {
+    // Aplica al toque: la key de un proveedor no sirve para otro → se limpia y
+    // el modelo vuelve a su default. Los borradores se re-sincronizan solos.
+    onChangeConfigIA({ proveedor: p, apiKey: "", modelo: MODELO_POR_DEFECTO[p] });
+  };
+
+  // El modelo guardado no está entre los que la key puede usar → avisar.
+  const modeloFueraDeLista =
+    modelos !== null &&
+    modelos.length > 0 &&
+    modeloDraft.trim() !== "" &&
+    !modelos.includes(modeloDraft.trim());
 
   return (
     <div className="absolute left-4 top-4 z-10">
@@ -188,17 +194,7 @@ export default function SettingsPanel({
           </label>
 
           <label className="mt-2 block text-sm">
-            <span className="flex items-center justify-between">
-              <span className="text-white/70">Modelo</span>
-              <button
-                type="button"
-                onClick={verModelos}
-                disabled={!keyEfectiva || cargandoModelos}
-                className="text-[11px] text-sky-400 enabled:hover:text-sky-300 disabled:text-white/25"
-              >
-                {cargandoModelos ? "buscando…" : "ver modelos disponibles"}
-              </button>
-            </span>
+            <span className="text-white/70">Modelo</span>
             <input
               type="text"
               value={modeloDraft}
@@ -213,32 +209,58 @@ export default function SettingsPanel({
               className="mt-1 w-full rounded border border-white/15 bg-neutral-950 px-2 py-1.5 text-sm focus:border-sky-400 focus:outline-none"
             />
             <datalist id="modelos-ia">
-              {opcionesModelo.map((m) => (
+              {Array.from(
+                new Set([...(modelos ?? []), ...MODELOS_SUGERIDOS[proveedor]]),
+              ).map((m) => (
                 <option key={m} value={m} />
               ))}
             </datalist>
           </label>
 
+          {proveedor === "gemini" && (
+            <button
+              type="button"
+              onClick={verModelos}
+              disabled={!keyEfectiva || cargandoModelos}
+              className="mt-1.5 rounded border border-white/15 px-2 py-1 text-[11px] text-white/70 enabled:hover:bg-white/10 disabled:opacity-40"
+            >
+              {cargandoModelos
+                ? "buscando modelos…"
+                : "↻ ver modelos que tu key puede usar"}
+            </button>
+          )}
+
           {errorModelos && (
             <p className="mt-1.5 text-[11px] text-red-400">{errorModelos}</p>
           )}
 
+          {modeloFueraDeLista && (
+            <p className="mt-1.5 text-[11px] text-amber-400">
+              Tu key no incluye “{modeloDraft.trim()}”. Elegí uno de abajo.
+            </p>
+          )}
+
           {modelos && modelos.length > 0 && (
-            <div className="mt-1.5 flex flex-wrap gap-1">
-              {modelos.map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => setModeloDraft(m)}
-                  className={`rounded px-1.5 py-0.5 text-[11px] ${
-                    m === modeloDraft.trim()
-                      ? "bg-sky-500 text-white"
-                      : "bg-white/10 text-white/70 hover:bg-white/20"
-                  }`}
-                >
-                  {m}
-                </button>
-              ))}
+            <div className="mt-1.5">
+              <p className="mb-1 text-[11px] text-white/40">
+                Modelos de tu key (click para elegir):
+              </p>
+              <div className="flex flex-wrap gap-1">
+                {modelos.map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setModeloDraft(m)}
+                    className={`rounded px-1.5 py-0.5 text-[11px] ${
+                      m === modeloDraft.trim()
+                        ? "bg-sky-500 text-white"
+                        : "bg-white/10 text-white/70 hover:bg-white/20"
+                    }`}
+                  >
+                    {m}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
