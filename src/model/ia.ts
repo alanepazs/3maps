@@ -238,6 +238,43 @@ async function llamarGemini(
   let finish: string | null = null;
   let bloqueo: string | null = null;
   let huboThoughts = false;
+  let eventos = 0;
+  let jsonInvalido = 0;
+
+  // Procesa un bloque SSE (`data: {...}` — puede haber varias líneas `data:`).
+  const procesarBloque = (bloque: string) => {
+    const trozos = bloque
+      .split("\n")
+      .filter((l) => l.startsWith("data:"))
+      .map((l) => l.slice(5).trim());
+    if (trozos.length === 0) return;
+    const payload = trozos.join("");
+    if (!payload || payload === "[DONE]") return;
+    eventos++;
+    let chunk: GeminiChunk;
+    try {
+      chunk = JSON.parse(payload) as GeminiChunk;
+    } catch {
+      jsonInvalido++;
+      return;
+    }
+    const cand = chunk.candidates?.[0];
+    for (const p of cand?.content?.parts ?? []) {
+      if (p.thought) {
+        huboThoughts = true;
+        continue; // los "pensamientos" no son la respuesta
+      }
+      if (p.text) {
+        acumulado += p.text;
+        opts.onTexto?.(p.text, acumulado);
+      }
+    }
+    if (cand?.finishReason) finish = cand.finishReason;
+    if (chunk.promptFeedback?.blockReason) {
+      bloqueo = chunk.promptFeedback.blockReason;
+    }
+  };
+
   const reader = res.body.getReader();
   const dec = new TextDecoder();
   let buf = "";
@@ -248,37 +285,10 @@ async function llamarGemini(
       if (done) break;
       buf += dec.decode(value, { stream: true });
       const bloques = buf.split("\n\n");
-      buf = bloques.pop() ?? "";
-      for (const bloque of bloques) {
-        const linea = bloque
-          .split("\n")
-          .find((l) => l.startsWith("data:"));
-        if (!linea) continue;
-        const payload = linea.slice(5).trim();
-        if (!payload || payload === "[DONE]") continue;
-        let chunk: GeminiChunk;
-        try {
-          chunk = JSON.parse(payload) as GeminiChunk;
-        } catch {
-          continue;
-        }
-        const cand = chunk.candidates?.[0];
-        for (const p of cand?.content?.parts ?? []) {
-          if (p.thought) {
-            huboThoughts = true;
-            continue; // los "pensamientos" no son la respuesta
-          }
-          if (p.text) {
-            acumulado += p.text;
-            opts.onTexto?.(p.text, acumulado);
-          }
-        }
-        if (cand?.finishReason) finish = cand.finishReason;
-        if (chunk.promptFeedback?.blockReason) {
-          bloqueo = chunk.promptFeedback.blockReason;
-        }
-      }
+      buf = bloques.pop() ?? ""; // el último puede estar incompleto
+      for (const bloque of bloques) procesarBloque(bloque);
     }
+    if (buf.trim()) procesarBloque(buf); // último bloque sin "\n\n" final
   } catch (e) {
     if (esAbort(e)) throw e;
     throw new ErrorIA(mensajeLegible(e), e);
@@ -294,8 +304,21 @@ async function llamarGemini(
           `(finishReason: ${finish ?? "—"}). Probá gemini-2.5-flash.`,
       );
     }
+    if (eventos === 0) {
+      throw new ErrorIA(
+        `Gemini (${modelo}) cerró el stream sin mandar nada. ` +
+          `Puede ser que tu key esté en otra API — probá gemini-2.5-flash o Claude.`,
+      );
+    }
+    if (jsonInvalido > 0) {
+      throw new ErrorIA(
+        `Gemini (${modelo}) mandó ${eventos} evento(s) con formato inesperado. ` +
+          `Probá otro modelo.`,
+      );
+    }
     throw new ErrorIA(
-      `Gemini no devolvió texto (finishReason: ${finish ?? "ninguno"}, modelo: ${modelo}).`,
+      `Gemini (${modelo}) mandó ${eventos} evento(s) pero ningún texto ` +
+        `(finishReason: ${finish ?? "ninguno"}). Probá gemini-2.5-flash u otro modelo.`,
     );
   }
   return acumulado;
