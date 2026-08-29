@@ -53,15 +53,16 @@ Carpeta local: `D:\IA\3maps`.
 - **Proveedores**: Claude (Anthropic, `@anthropic-ai/sdk` dinámico) y **Gemini (Google, `fetch`
   directo + SSE, tiene free tier)**. Se eligen en ⚙️; al cambiar se resetea el modelo y se limpia
   la key. **La API key vive solo en el navegador** y va directo al proveedor (CORS de ambos ok).
-  Default de Gemini = `gemini-2.5-flash` (GA, estable; `gemini-2.0-flash` fue retirado → 404,
-  `gemini-flash-latest` da 503 "high demand" seguido — ver decisiones §7b). `configIA.ts` migra
-  modelos muertos al cargar. **Probado end-to-end con key real** (`gemini-2.5-flash` → 200).
+  Default de Gemini = `gemini-flash-latest`. Los modelos disponibles **varían por key** → botón
+  **"ver modelos disponibles"** en ⚙️ (`listarModelos`, GET `/v1beta/models` con la key propia,
+  muestra chips clickeables). `configIA.ts` migra modelos retirados al cargar. Ver decisiones §7b.
 - **Respuesta en markdown** (`src/components/Markdown.tsx`): títulos, listas, código (inline y
   bloque con scroll propio), links (pestaña nueva), citas, tablas GFM. Sin HTML crudo → seguro.
 - **Errores**: recuadro rojo + "↻ Reintentar" (descarta la parcial vieja). El error se persiste
   en el frontmatter del `.md` y sobrevive al reload.
 - **Config en ⚙️**: proveedor (aplica al toque), API key + modelo (borradores → botón "Guardar" o
-  Enter; "✓ Guardado" / "Cambios sin guardar" / "Borrar key"), ventana de contexto (2–20).
+  Enter; "✓ Guardado" / "Cambios sin guardar" / "✓ Aplicado" 2s / "Borrar key"),
+  "ver modelos disponibles" (chips con los modelos de tu key), ventana de contexto (2–20).
 
 ### Datos / persistencia (verificado a nivel de datos)
 - El `arbol` de `Intercambio`s es la fuente de la verdad; los nodos/edges de React Flow se
@@ -82,9 +83,8 @@ Carpeta local: `D:\IA\3maps`.
       markdown en el globo). Falta lo mismo con **Claude** (key `sk-ant-…` real).
 - [x] **2º proveedor: Gemini** (`llamarGemini` en `src/model/ia.ts`, `fetch` + SSE). Probado con
       key real: `gemini-flash-latest` → 200 + streaming. Free tier.
-- [ ] **UX del botón "Guardar" key** (`SettingsPanel.tsx`): tras guardar queda en "✓ Guardado"
-      deshabilitado (gris, se lee como apagado). Mostrar un estado claro tipo "Aplicado" /
-      feedback momentáneo en vez de un botón muerto.
+- [x] **UX del botón "Guardar" key**: al guardar muestra "✓ Aplicado" 2s + hint "Config aplicada.
+      Ya podés mandar una pregunta." antes de volver a "✓ Guardado".
 - [ ] **System prompt configurable** (hoy no hay). Sumar a `Settings` + pasarlo a `llamarIA`.
 - [ ] Definir qué pasa al abrir/doble-click en un globo (spec §14: ¿solo ese intercambio o
       transcripción de la rama?).

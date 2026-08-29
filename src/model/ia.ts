@@ -19,18 +19,23 @@ export const MODELOS_SUGERIDOS: Record<Proveedor, string[]> = {
   claude: ["claude-haiku-4-5", "claude-sonnet-5", "claude-opus-5"],
   deepseek: ["deepseek-chat"],
   gpt: ["gpt-4o-mini"],
-  // gemini-2.5-flash: GA, estable y disponible (probado con key real → 200). El
-  // alias gemini-flash-latest apunta a un flash preview que suele estar saturado
-  // (503 "high demand"); queda como opción, no como default. gemini-2.0-flash fue
-  // retirado (404) — ver decisiones §7b.
-  gemini: ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-flash-latest"],
+  // El acceso a modelos varía por key (una key nueva de AI Studio puede no tener
+  // gemini-2.5-flash y sí gemini-flash-latest). Por eso el default es el alias y
+  // hay un botón "ver modelos disponibles" en ⚙️ (listarModelos). gemini-2.0-flash
+  // fue retirado (404) — ver decisiones §7b.
+  gemini: [
+    "gemini-flash-latest",
+    "gemini-2.5-flash",
+    "gemini-2.5-pro",
+    "gemini-3-flash-preview",
+  ],
 };
 
 export const MODELO_POR_DEFECTO: Record<Proveedor, string> = {
   claude: "claude-haiku-4-5",
   deepseek: "deepseek-chat",
   gpt: "gpt-4o-mini",
-  gemini: "gemini-2.5-flash",
+  gemini: "gemini-flash-latest",
 };
 
 export const NOMBRE_PROVEEDOR: Record<Proveedor, string> = {
@@ -219,25 +224,7 @@ async function llamarGemini(
   }
 
   if (!res.ok || !res.body) {
-    let msg = `Error ${res.status} de Gemini.`;
-    try {
-      const j = (await res.json()) as { error?: { message?: string } };
-      const m = j?.error?.message;
-      if (res.status === 400 && /api[_ ]?key/i.test(m ?? "")) {
-        msg = "API key de Gemini inválida.";
-      } else if (res.status === 403) {
-        msg = "La API key de Gemini no tiene acceso (o falta habilitar la API).";
-      } else if (res.status === 404) {
-        msg = `No existe el modelo "${modelo}" en Gemini.`;
-      } else if (res.status === 429) {
-        msg = "Límite de la API de Gemini alcanzado. Probá más tarde.";
-      } else if (m) {
-        msg = m;
-      }
-    } catch {
-      // sin body legible
-    }
-    throw new ErrorIA(msg);
+    throw new ErrorIA(await mensajeErrorGemini(res, modelo));
   }
 
   let acumulado = "";
@@ -297,6 +284,105 @@ async function llamarGemini(
     );
   }
   return acumulado;
+}
+
+// Traduce una respuesta de error de Gemini (cualquier endpoint) a texto legible.
+async function mensajeErrorGemini(res: Response, modelo?: string): Promise<string> {
+  let m: string | undefined;
+  try {
+    const j = (await res.json()) as { error?: { message?: string } };
+    m = j?.error?.message;
+  } catch {
+    // sin body legible
+  }
+  if (res.status === 400 && /api[_ ]?key/i.test(m ?? "")) {
+    return "API key de Gemini inválida.";
+  }
+  if (res.status === 403) {
+    return "La API key de Gemini no tiene acceso (o falta habilitar la API).";
+  }
+  if (res.status === 404) {
+    return modelo
+      ? `Tu key no tiene acceso al modelo "${modelo}". Mirá "ver modelos disponibles".`
+      : "Recurso de Gemini no encontrado.";
+  }
+  if (res.status === 429) {
+    return "Límite de la API de Gemini alcanzado. Probá más tarde.";
+  }
+  if (res.status === 503) {
+    return (
+      m ??
+      "El modelo de Gemini está saturado (503). Probá de nuevo o cambiá de modelo."
+    );
+  }
+  return m ?? `Error ${res.status} de Gemini.`;
+}
+
+// ── Listar modelos disponibles para la key del usuario ────────────────────
+// Cada key tiene acceso a un set distinto de modelos; esto evita adivinar
+// nombres. Lo usa el botón "ver modelos disponibles" de SettingsPanel.
+export async function listarModelos(config: ConfigIA): Promise<string[]> {
+  if (!config.apiKey.trim()) {
+    throw new ErrorIA("Falta la API key. Cargala en ⚙️.");
+  }
+  switch (config.proveedor) {
+    case "claude":
+      return listarModelosClaude(config);
+    case "gemini":
+      return listarModelosGemini(config);
+    default:
+      throw new ErrorIA(
+        `Listar modelos no está implementado para "${config.proveedor}".`,
+      );
+  }
+}
+
+async function listarModelosGemini(config: ConfigIA): Promise<string[]> {
+  let res: Response;
+  try {
+    res = await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000",
+      { headers: { "x-goog-api-key": config.apiKey } },
+    );
+  } catch (e) {
+    throw new ErrorIA(
+      "No se pudo conectar con la API de Gemini (red, CORS o CSP).",
+      e,
+    );
+  }
+  if (!res.ok) {
+    throw new ErrorIA(await mensajeErrorGemini(res));
+  }
+  const j = (await res.json()) as {
+    models?: Array<{ name?: string; supportedGenerationMethods?: string[] }>;
+  };
+  return (j.models ?? [])
+    .filter((m) =>
+      (m.supportedGenerationMethods ?? []).includes("generateContent"),
+    )
+    .map((m) => (m.name ?? "").replace(/^models\//, ""))
+    .filter(
+      (name) =>
+        name.startsWith("gemini-") &&
+        !/(image|tts|embedding|robotics|computer-use|transcribe|omni)/.test(name),
+    )
+    .sort();
+}
+
+async function listarModelosClaude(config: ConfigIA): Promise<string[]> {
+  const { default: Anthropic } = await import("@anthropic-ai/sdk");
+  const client = new Anthropic({
+    apiKey: config.apiKey,
+    dangerouslyAllowBrowser: true,
+  });
+  const ids: string[] = [];
+  try {
+    for await (const m of client.models.list()) ids.push(m.id);
+  } catch (e) {
+    if (e instanceof ErrorIA) throw e;
+    throw new ErrorIA(mensajeLegible(e), e);
+  }
+  return ids;
 }
 
 function esAbort(e: unknown): boolean {

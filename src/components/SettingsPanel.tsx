@@ -4,11 +4,13 @@ import { useState } from "react";
 
 import type { Settings } from "./settings";
 import {
+  ErrorIA,
   MODELOS_SUGERIDOS,
   MODELO_POR_DEFECTO,
   NOMBRE_PROVEEDOR,
   PISTA_API_KEY,
   PROVEEDORES_DISPONIBLES,
+  listarModelos,
   type ConfigIA,
 } from "@/model/ia";
 import type { Proveedor } from "@/model/intercambio";
@@ -39,6 +41,12 @@ export default function SettingsPanel({
   // el botón "Guardar" (o Enter). El proveedor sí aplica al toque.
   const [keyDraft, setKeyDraft] = useState(keyGuardada);
   const [modeloDraft, setModeloDraft] = useState(modeloGuardado);
+  const [aplicado, setAplicado] = useState(false);
+
+  // Modelos disponibles para esta key (se traen a pedido — el set varía por key).
+  const [modelos, setModelos] = useState<string[] | null>(null);
+  const [cargandoModelos, setCargandoModelos] = useState(false);
+  const [errorModelos, setErrorModelos] = useState<string | null>(null);
 
   // Re-sincronizar los borradores cuando la config cambia desde afuera (cambio
   // de proveedor, "Borrar"). Patrón "ajustar estado en render", no en effect.
@@ -47,6 +55,8 @@ export default function SettingsPanel({
     setSnap({ k: keyGuardada, m: modeloGuardado });
     setKeyDraft(keyGuardada);
     setModeloDraft(modeloGuardado);
+    setModelos(null);
+    setErrorModelos(null);
   }
 
   const dirty =
@@ -60,6 +70,8 @@ export default function SettingsPanel({
       apiKey: keyDraft.trim(),
       modelo: modeloDraft.trim() || MODELO_POR_DEFECTO[proveedor],
     });
+    setAplicado(true);
+    window.setTimeout(() => setAplicado(false), 2000);
   };
 
   const cambiarProveedor = (p: Proveedor) => {
@@ -67,6 +79,36 @@ export default function SettingsPanel({
     // el modelo vuelve a su default. Los borradores se re-sincronizan solos.
     onChangeConfigIA({ proveedor: p, apiKey: "", modelo: MODELO_POR_DEFECTO[p] });
   };
+
+  const keyEfectiva = keyDraft.trim() || keyGuardada.trim();
+
+  const verModelos = async () => {
+    if (!keyEfectiva || cargandoModelos) return;
+    setCargandoModelos(true);
+    setErrorModelos(null);
+    try {
+      const lista = await listarModelos({
+        proveedor,
+        apiKey: keyEfectiva,
+        modelo: modeloDraft.trim(),
+      });
+      setModelos(lista);
+      if (lista.length === 0) {
+        setErrorModelos("La key no devolvió modelos usables.");
+      }
+    } catch (e) {
+      setModelos(null);
+      setErrorModelos(
+        e instanceof ErrorIA ? e.message : "No se pudieron traer los modelos.",
+      );
+    } finally {
+      setCargandoModelos(false);
+    }
+  };
+
+  const opcionesModelo = Array.from(
+    new Set([...(modelos ?? []), ...MODELOS_SUGERIDOS[proveedor]]),
+  );
 
   return (
     <div className="absolute left-4 top-4 z-10">
@@ -146,7 +188,17 @@ export default function SettingsPanel({
           </label>
 
           <label className="mt-2 block text-sm">
-            <span className="text-white/70">Modelo</span>
+            <span className="flex items-center justify-between">
+              <span className="text-white/70">Modelo</span>
+              <button
+                type="button"
+                onClick={verModelos}
+                disabled={!keyEfectiva || cargandoModelos}
+                className="text-[11px] text-sky-400 enabled:hover:text-sky-300 disabled:text-white/25"
+              >
+                {cargandoModelos ? "buscando…" : "ver modelos disponibles"}
+              </button>
+            </span>
             <input
               type="text"
               value={modeloDraft}
@@ -161,11 +213,34 @@ export default function SettingsPanel({
               className="mt-1 w-full rounded border border-white/15 bg-neutral-950 px-2 py-1.5 text-sm focus:border-sky-400 focus:outline-none"
             />
             <datalist id="modelos-ia">
-              {MODELOS_SUGERIDOS[proveedor].map((m) => (
+              {opcionesModelo.map((m) => (
                 <option key={m} value={m} />
               ))}
             </datalist>
           </label>
+
+          {errorModelos && (
+            <p className="mt-1.5 text-[11px] text-red-400">{errorModelos}</p>
+          )}
+
+          {modelos && modelos.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {modelos.map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setModeloDraft(m)}
+                  className={`rounded px-1.5 py-0.5 text-[11px] ${
+                    m === modeloDraft.trim()
+                      ? "bg-sky-500 text-white"
+                      : "bg-white/10 text-white/70 hover:bg-white/20"
+                  }`}
+                >
+                  {m}
+                </button>
+              ))}
+            </div>
+          )}
 
           <div className="mt-2 flex items-center gap-3">
             <button
@@ -174,7 +249,7 @@ export default function SettingsPanel({
               disabled={!dirty}
               className="rounded bg-sky-500 px-3 py-1.5 text-xs font-medium text-white enabled:hover:bg-sky-400 disabled:opacity-40"
             >
-              {dirty ? "Guardar" : hayKey ? "✓ Guardado" : "Guardar"}
+              {dirty ? "Guardar" : aplicado ? "✓ Aplicado" : hayKey ? "✓ Guardado" : "Guardar"}
             </button>
             {hayKey && (
               <button
@@ -189,9 +264,11 @@ export default function SettingsPanel({
           <span className="mt-1.5 block text-[11px] text-white/40">
             {dirty
               ? "Cambios sin guardar."
-              : hayKey
-                ? "Guardada en este navegador. Se manda directo al proveedor."
-                : "La key se guarda solo en este navegador; nunca a un servidor de 3maps."}
+              : aplicado
+                ? "Config aplicada. Ya podés mandar una pregunta."
+                : hayKey
+                  ? "Guardada en este navegador. Se manda directo al proveedor."
+                  : "La key se guarda solo en este navegador; nunca a un servidor de 3maps."}
           </span>
 
           <label className="mt-2 block text-sm">

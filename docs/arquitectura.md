@@ -40,7 +40,9 @@ src/
     ia.ts                llamarIA(config, mensajes, opts) → string. Punto único; switch(proveedor).
                          Adaptadores: Claude (@anthropic-ai/sdk dinámico) y Gemini (fetch + SSE).
                          Ambos con streaming vía opts.onTexto. resumir() para el resumen de
-                         contexto. ErrorIA con mensajes ya legibles.
+                         contexto. listarModelos(config) → string[] (modelos de esa key; Gemini
+                         GET /v1beta/models, Claude client.models.list()). ErrorIA con mensajes
+                         ya legibles; mensajeErrorGemini() traduce errores de cualquier endpoint.
     configIA.ts          cargar/guardarConfigIA en localStorage ("3maps:ia"). No persiste sin API
                          key. Aparte de "3maps:settings" porque es sensible.
   components/
@@ -55,7 +57,8 @@ src/
                         config de IA. API key y modelo son BORRADORES (estado local) que se
                         persisten con el botón "Guardar" (o Enter); el proveedor aplica al toque
                         (resetea modelo + limpia key). "✓ Guardado" / "Cambios sin guardar" /
-                        "Borrar key".
+                        "✓ Aplicado" (2s tras guardar) / "Borrar key". Link "ver modelos
+                        disponibles" → listarModelos() → chips clickeables + datalist.
     settings.ts         Settings = {inertia, ventanaContexto}. DEFAULT_SETTINGS, storage key.
     nodeActions.ts       NodeActionsContext: deleteNode + retryNode (hacia FlowCanvas).
     inertia.ts           Física compartida del "envión": constantes + sampleVelocity / launchVelocity / runGlide.
