@@ -22,7 +22,13 @@ type Sample = { t: number; x: number; y: number; vx: number; vy: number };
 
 type SetNodes = (updater: (nds: Node[]) => Node[]) => void;
 
-export function useNodeInertia(setNodes: SetNodes, onSettle: (nodeId: string) => void) {
+// `strength` es el multiplicador configurable del envión (0 = desactivado,
+// 1 = normal). Escala el impulso inicial del glide.
+export function useNodeInertia(
+  setNodes: SetNodes,
+  onSettle: (nodeId: string) => void,
+  strength: number,
+) {
   const sampleRef = useRef<Sample | null>(null);
   const rafRef = useRef<number | null>(null);
 
@@ -70,12 +76,16 @@ export function useNodeInertia(setNodes: SetNodes, onSettle: (nodeId: string) =>
       let vy = sample?.vy ?? 0;
       const speed = Math.hypot(vx, vy);
 
-      if (speed <= FLICK_THRESHOLD) {
+      if (strength <= 0 || speed <= FLICK_THRESHOLD) {
         onSettle(node.id);
         return;
       }
-      if (speed > MAX_SPEED) {
-        const k = MAX_SPEED / speed;
+
+      vx *= strength;
+      vy *= strength;
+      const boosted = Math.hypot(vx, vy);
+      if (boosted > MAX_SPEED) {
+        const k = MAX_SPEED / boosted;
         vx *= k;
         vy *= k;
       }
@@ -113,7 +123,7 @@ export function useNodeInertia(setNodes: SetNodes, onSettle: (nodeId: string) =>
 
       rafRef.current = requestAnimationFrame(step);
     },
-    [setNodes, onSettle],
+    [setNodes, onSettle, strength],
   );
 
   return { onNodeDragStart, onNodeDrag, onNodeDragStop, cancelInertia };

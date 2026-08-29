@@ -22,7 +22,13 @@ import "@xyflow/react/dist/style.css";
 
 import MessageNode from "./MessageNode";
 import Composer, { type BranchKind } from "./Composer";
+import SettingsPanel from "./SettingsPanel";
 import { NodeActionsContext } from "./nodeActions";
+import {
+  DEFAULT_SETTINGS,
+  SETTINGS_STORAGE_KEY,
+  type Settings,
+} from "./settings";
 import { useNodeInertia } from "./useNodeInertia";
 
 // Definido a nivel de módulo (no dentro del componente): si React Flow recibe
@@ -78,6 +84,33 @@ function Flow() {
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [activeNodeId, setActiveNodeId] = useState<string | null>("2");
   const { getNode } = useReactFlow();
+
+  // Ajustes configurables (tuerquita). En el server no hay localStorage, así
+  // que se usan los defaults; en el cliente se leen los guardados. No hay
+  // mismatch de hidratación porque el panel arranca cerrado y nada del render
+  // inicial depende de estos valores.
+  const [settings, setSettings] = useState<Settings>(() => {
+    if (typeof window === "undefined") return DEFAULT_SETTINGS;
+    try {
+      const raw = window.localStorage.getItem(SETTINGS_STORAGE_KEY);
+      return raw
+        ? { ...DEFAULT_SETTINGS, ...(JSON.parse(raw) as Partial<Settings>) }
+        : DEFAULT_SETTINGS;
+    } catch {
+      return DEFAULT_SETTINGS;
+    }
+  });
+  const updateSettings = useCallback((patch: Partial<Settings>) => {
+    setSettings((s) => {
+      const next = { ...s, ...patch };
+      try {
+        localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(next));
+      } catch {
+        // ignorar: no se pudo persistir
+      }
+      return next;
+    });
+  }, []);
 
   // Contador de ids para los nodos nuevos (los de prueba van del 1 al 3).
   const nextId = useRef(4);
@@ -168,7 +201,7 @@ function Flow() {
 
   // Envión / inercia al soltar, tipo Obsidian Canvas.
   const { onNodeDragStart, onNodeDrag, onNodeDragStop, cancelInertia } =
-    useNodeInertia(setNodes, finalizeBranchSide);
+    useNodeInertia(setNodes, finalizeBranchSide, settings.inertia);
 
   // Elimina un nodo y todos sus descendientes. Deja como activo al padre.
   const deleteNode = useCallback(
@@ -234,6 +267,7 @@ function Flow() {
           <Controls />
           <MiniMap position="top-right" pannable zoomable />
         </ReactFlow>
+        <SettingsPanel settings={settings} onChange={updateSettings} />
         <Composer activeNodeLabel={activeNodeLabel} onSubmit={handleSubmit} />
       </div>
     </NodeActionsContext.Provider>
