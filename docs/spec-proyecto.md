@@ -18,6 +18,10 @@ Una web app donde el usuario conversa con una IA (Claude, GPT, Gemini, DeepSeek 
 - Desde cualquier globo (no solo el último) se puede abrir una pregunta nueva → nace una rama nueva, sin tocar la rama principal. **Lo que importa es ramificar respuestas**: la pregunta que origina la rama es solo el disparador, no un nodo aparte.
 - El "tronco" es la conversación principal y siempre baja en **vertical** (arriba → abajo). Cada desvío es una **rama** que sale por un **costado** del globo.
 - **Lado de la rama**: al crearse, la rama nace por la derecha. El usuario puede arrastrar el globo ramificado al lado izquierdo del tronco; al soltarlo, la flecha se reconecta sola al costado (izquierda o derecha) que corresponda según dónde quedó.
+- **Envión al soltar**: al soltar un globo (o un grupo) con velocidad, sigue de largo un poco y frena solo, tipo Obsidian Canvas. La intensidad se regula desde la tuerquita de ajustes (arriba a la izquierda).
+- **Modos de interacción del lienzo**:
+  - Por defecto (sin teclas): puntero. Arrastrar sobre el fondo hace un **recuadro de selección** para agarrar varios globos; después se arrastra la selección para moverlos en grupo. Sin necesidad de modificadores, igual que mover uno solo.
+  - Con la **barra espaciadora** apretada: manito. Arrastrar hace **pan** del lienzo.
 - Pendiente de definir (ver sección 14): al abrir/hacer doble click en un globo, ¿se ve solo ese intercambio, o se abre una vista de transcripción con toda la rama en orden, tipo chat normal?
 
 ## 3. Modelo de datos

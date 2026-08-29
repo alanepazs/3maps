@@ -6,6 +6,9 @@ import type { Node } from "@xyflow/react";
 // Envión / inercia al soltar un globo, tipo nodos de Obsidian Canvas: si lo
 // soltás con un "flick" (velocidad), sigue de largo un poco y frena solo.
 // Si lo dejás con cuidado (sin velocidad), no pasa nada.
+//
+// Aplica tanto a arrastrar un globo suelto como a arrastrar una selección
+// (varios globos a la vez).
 
 // px/ms — velocidad mínima al soltar para que haya envión
 const FLICK_THRESHOLD = 0.35;
@@ -17,8 +20,18 @@ const DECAY_PER_SEC = 0.004;
 const STOP_SPEED = 0.03;
 // ms — tope de dt por frame (pestaña en 2º plano / preview dormido)
 const MAX_FRAME_MS = 40;
+// mínimo de muestras de movimiento para considerar que hubo un "flick" real
+// (un click o un drag instantáneo no acumulan suficientes)
+const MIN_SAMPLES = 3;
 
-type Sample = { t: number; x: number; y: number; vx: number; vy: number };
+type Sample = {
+  t: number;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  count: number;
+};
 
 type SetNodes = (updater: (nds: Node[]) => Node[]) => void;
 
@@ -41,16 +54,20 @@ export function useNodeInertia(
 
   useEffect(() => cancelInertia, [cancelInertia]);
 
-  const onNodeDragStart = useCallback(() => {
-    cancelInertia();
-    sampleRef.current = null;
-  }, [cancelInertia]);
-
-  const onNodeDrag = useCallback((_evt: unknown, node: Node) => {
+  // Registra la posición de un globo representativo para estimar la velocidad
+  // (todos los de una selección se mueven con el mismo delta).
+  const track = useCallback((node: Node) => {
     const now = performance.now();
     const prev = sampleRef.current;
     if (!prev) {
-      sampleRef.current = { t: now, x: node.position.x, y: node.position.y, vx: 0, vy: 0 };
+      sampleRef.current = {
+        t: now,
+        x: node.position.x,
+        y: node.position.y,
+        vx: 0,
+        vy: 0,
+        count: 0,
+      };
       return;
     }
     const dt = now - prev.t;
@@ -64,11 +81,18 @@ export function useNodeInertia(
       y: node.position.y,
       vx: prev.vx * 0.4 + rawVx * 0.6,
       vy: prev.vy * 0.4 + rawVy * 0.6,
+      count: prev.count + 1,
     };
   }, []);
 
-  const onNodeDragStop = useCallback(
-    (_evt: unknown, node: Node) => {
+  const beginDrag = useCallback(() => {
+    cancelInertia();
+    sampleRef.current = null;
+  }, [cancelInertia]);
+
+  // Lanza el glide para el conjunto de ids con la velocidad medida.
+  const glide = useCallback(
+    (ids: string[]) => {
       const sample = sampleRef.current;
       sampleRef.current = null;
 
@@ -76,8 +100,14 @@ export function useNodeInertia(
       let vy = sample?.vy ?? 0;
       const speed = Math.hypot(vx, vy);
 
-      if (strength <= 0 || speed <= FLICK_THRESHOLD) {
-        onSettle(node.id);
+      if (
+        strength <= 0 ||
+        !sample ||
+        sample.count < MIN_SAMPLES ||
+        speed <= FLICK_THRESHOLD ||
+        !Number.isFinite(speed)
+      ) {
+        ids.forEach(onSettle);
         return;
       }
 
@@ -90,7 +120,7 @@ export function useNodeInertia(
         vy *= k;
       }
 
-      const id = node.id;
+      const moving = new Set(ids);
       let lastT = performance.now();
 
       const step = () => {
@@ -104,13 +134,13 @@ export function useNodeInertia(
 
         if (Math.hypot(vx, vy) < STOP_SPEED) {
           rafRef.current = null;
-          onSettle(id);
+          ids.forEach(onSettle);
           return;
         }
 
         setNodes((nds) =>
           nds.map((n) =>
-            n.id === id
+            moving.has(n.id)
               ? {
                   ...n,
                   position: { x: n.position.x + vx * dt, y: n.position.y + vy * dt },
@@ -126,5 +156,32 @@ export function useNodeInertia(
     [setNodes, onSettle, strength],
   );
 
-  return { onNodeDragStart, onNodeDrag, onNodeDragStop, cancelInertia };
+  const onNodeDragStart = beginDrag;
+  const onNodeDrag = useCallback((_evt: unknown, node: Node) => track(node), [track]);
+  const onNodeDragStop = useCallback(
+    (_evt: unknown, node: Node) => glide([node.id]),
+    [glide],
+  );
+
+  const onSelectionDragStart = beginDrag;
+  const onSelectionDrag = useCallback(
+    (_evt: unknown, nodes: Node[]) => {
+      if (nodes[0]) track(nodes[0]);
+    },
+    [track],
+  );
+  const onSelectionDragStop = useCallback(
+    (_evt: unknown, nodes: Node[]) => glide(nodes.map((n) => n.id)),
+    [glide],
+  );
+
+  return {
+    onNodeDragStart,
+    onNodeDrag,
+    onNodeDragStop,
+    onSelectionDragStart,
+    onSelectionDrag,
+    onSelectionDragStop,
+    cancelInertia,
+  };
 }

@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ReactFlow,
   ReactFlowProvider,
   Background,
   Controls,
   MiniMap,
+  SelectionMode,
   addEdge,
   useNodesState,
   useEdgesState,
@@ -200,8 +201,46 @@ function Flow() {
   );
 
   // Envión / inercia al soltar, tipo Obsidian Canvas.
-  const { onNodeDragStart, onNodeDrag, onNodeDragStop, cancelInertia } =
-    useNodeInertia(setNodes, finalizeBranchSide, settings.inertia);
+  const {
+    onNodeDragStart,
+    onNodeDrag,
+    onNodeDragStop,
+    onSelectionDragStart,
+    onSelectionDrag,
+    onSelectionDragStop,
+    cancelInertia,
+  } = useNodeInertia(setNodes, finalizeBranchSide, settings.inertia);
+
+  // Modo de interacción:
+  //   - por defecto: puntero → arrastrar sobre el lienzo hace un recuadro de
+  //     selección (varios globos), y arrastrar un globo/selección los mueve.
+  //   - con la barra espaciadora apretada: manito → arrastrar hace pan.
+  const [spaceHeld, setSpaceHeld] = useState(false);
+  useEffect(() => {
+    const isEditable = (t: EventTarget | null) =>
+      t instanceof HTMLElement &&
+      (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable);
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.code === "Space" && !e.repeat && !isEditable(e.target)) {
+        e.preventDefault(); // que no scrollee la página
+        setSpaceHeld(true);
+      }
+    };
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.code === "Space") setSpaceHeld(false);
+    };
+    const onBlur = () => setSpaceHeld(false);
+
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+    window.addEventListener("blur", onBlur);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+      window.removeEventListener("blur", onBlur);
+    };
+  }, []);
 
   // Elimina un nodo y todos sus descendientes. Deja como activo al padre.
   const deleteNode = useCallback(
@@ -258,8 +297,18 @@ function Flow() {
           onNodeDragStart={onNodeDragStart}
           onNodeDrag={onNodeDrag}
           onNodeDragStop={onNodeDragStop}
+          onSelectionDragStart={onSelectionDragStart}
+          onSelectionDrag={onSelectionDrag}
+          onSelectionDragStop={onSelectionDragStop}
           onNodeClick={() => cancelInertia()}
           onSelectionChange={onSelectionChange}
+          panOnDrag={spaceHeld}
+          nodesDraggable={!spaceHeld}
+          selectionOnDrag={!spaceHeld}
+          selectionMode={SelectionMode.Partial}
+          selectionKeyCode={null}
+          panActivationKeyCode={null}
+          nodeDragThreshold={3}
           colorMode="dark"
           fitView
         >
