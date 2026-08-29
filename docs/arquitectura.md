@@ -1,14 +1,16 @@
 # Arquitectura del código
 
 > Mapa de `src/` para no tener que leer todo. Actualizar cuando cambie la estructura.
-> Última actualización: 29-08-2026 (modelo de datos: árbol de intercambios + `.md`).
+> Última actualización: 29-08-2026 (llamada real a la IA + deploy a GitHub Pages).
 
 ## Stack real (lo que está instalado)
 
 - **Next.js 16.3.3** (App Router, Turbopack) + **React 19.2** + **TypeScript 5**
 - **Tailwind CSS 4** (`@tailwindcss/postcss`, sin `tailwind.config` — config por CSS)
 - **React Flow** `@xyflow/react` ^12.11.5 (con `@xyflow/system` 0.0.81 pinneado)
-- Sin backend, sin librerías de IA, sin `transformers.js` todavía (fase 1).
+- **`@anthropic-ai/sdk`** — se importa **dinámicamente** dentro de `model/ia.ts` (solo se baja
+  cuando el usuario dispara una llamada; no pesa en la carga inicial).
+- Sin backend, sin `transformers.js` todavía (fase 1). Deploy: **GitHub Pages** (`output: "export"`).
 
 ## Árbol de archivos
 
@@ -33,17 +35,29 @@ src/
                          SOLO el camino raíz→nodo, aplanado a user/assistant, con ventana (últimos
                          N completos + resumen del tramo viejo). Secuencia válida para la API
                          (arranca en user, sin roles repetidos). tramoAResumir = los intercambios
-                         fuera de la ventana. Todavía sin usar (lo llama #3, la llamada a la IA).
+                         fuera de la ventana.
+    ia.ts                llamarIA(config, mensajes, opts) → string. Punto único; adentro elige el
+                         proveedor (hoy solo "claude", vía @anthropic-ai/sdk dinámico + streaming).
+                         resumir(config, intercambios) para el resumen de contexto. ErrorIA con
+                         mensajes ya legibles. ConfigIA = {proveedor, apiKey, modelo}.
+    configIA.ts          cargar/guardarConfigIA en localStorage ("3maps:ia"). No persiste sin API
+                         key. Aparte de "3maps:settings" porque es sensible.
   components/
-    FlowCanvas.tsx      ★ El componente central (~370 líneas). Ver detalle abajo.
-    MessageNode.tsx     Nodo custom de React Flow. Un globo = un intercambio.
+    FlowCanvas.tsx      ★ El componente central (~500 líneas). Ver detalle abajo.
+    MessageNode.tsx     Nodo custom. Estados del cuerpo: pending ("escribiendo…" + texto + ▍),
+                        error (recuadro rojo + "↻ Reintentar"), respuesta, o vacío.
     Composer.tsx        Barra inferior fija para escribir.
-    SettingsPanel.tsx   Tuerquita ⚙️ arriba a la izquierda + panel de ajustes.
-    settings.ts         Tipo Settings, DEFAULT_SETTINGS, SETTINGS_STORAGE_KEY ("3maps:settings").
-    nodeActions.ts       Context (NodeActionsContext) para que los nodos llamen deleteNode hacia arriba.
+    SettingsPanel.tsx   Tuerquita ⚙️: ajustes del lienzo (envión, ventana de contexto) +
+                        config de IA (proveedor, API key, modelo). Campos sin estado local:
+                        se leen de la prop `configIA` y persisten en cada cambio.
+    settings.ts         Settings = {inertia, ventanaContexto}. DEFAULT_SETTINGS, storage key.
+    nodeActions.ts       NodeActionsContext: deleteNode + retryNode (hacia FlowCanvas).
     inertia.ts           Física compartida del "envión": constantes + sampleVelocity / launchVelocity / runGlide.
     useNodeInertia.ts    Hook: envión al soltar un globo o una selección.
     usePanInertia.ts     Hook: envión al soltar el pan del lienzo.
+
+.github/workflows/deploy.yml   Build estático (NEXT_PUBLIC_PAGES=1 → basePath /3maps) + deploy a
+                               GitHub Pages en cada push a main.
 ```
 
 ## FlowCanvas.tsx — el corazón
@@ -79,14 +93,26 @@ Estado / hooks clave:
 - `spaceHeld` (useState) — listener propio de keydown/keyup en `window`. Invierte el modo del lienzo.
 
 Handlers (todos operan sobre `arbol` vía `setArbol`):
-- `handleSubmit(text, kind)` — `agregar` un `crearIntercambio(...)` colgando del activo. `kind`
-  "main" → rama "main", abajo; "branch" → rama "branch-right", a la derecha. El globo nuevo pasa
-  a ser el activo (`seleccionarLuegoRef`).
+- `handleSubmit(text, kind)` — arma el árbol nuevo con `agregar(crearIntercambio({..., pending:true}))`
+  colgando del activo, lo setea, y llama `responder(id, arbolNuevo)`. `kind` "main" → rama "main",
+  abajo; "branch" → rama "branch-right", a la derecha.
+- `responder(nodeId, arbolBase)` — **la llamada a la IA**. Si no hay API key → `conError`. Si no:
+  `conRespuesta({pending:true})` + limpia error; arma el contexto con `armarContexto` (tratando a
+  `nodeId` como pendiente, así un reintento descarta la respuesta parcial vieja); si el camino
+  supera la ventana, genera/cachea el `resumenViejo` con `resumir`; `llamarIA` con `onTexto`
+  throttleado a 80ms → `conRespuesta({respuesta: acc, pending:true})` (streaming); al terminar
+  `conRespuesta({pending:false, proveedor})`; en error `conError`. `enVueloRef` (Map<id,
+  AbortController>) para cancelar. `arbolRef` espeja `arbol` para leerlo en callbacks async.
+- `retryNode(id)` — `responder(id, arbolRef.current)`. Via NodeActionsContext.
 - `asentar(id)` — escribe la posición final al árbol (`conPosicion`) y, si es rama, fija el lado
   (`conRama`) según dónde quedó respecto del padre. Es el `onSettle` de `useNodeInertia`.
 - `deleteNode(id)` (via NodeActionsContext) — `descendientes` para el conteo, `window.confirm` si
-  borra >1, `quitarSubarbol`, deja activo al padre.
+  borra >1, aborta las llamadas en vuelo de lo que se borra, `quitarSubarbol`, deja activo al padre.
 - `onConnect` — conectar handles a mano = `reparentar` el target (con guarda anti-ciclo).
+
+Config de IA: `configIA` (useState, lazy init desde `cargarConfigIA()`), `updateConfigIA` persiste.
+Puede tener `apiKey: ""` en memoria (para editar el modelo antes de la key); `configIA.ts` no lo
+persiste sin key. `resumenCacheRef` (Map) cachea resúmenes del tramo viejo por sesión.
 - Envión: `useNodeInertia(setNodes, asentar, settings.inertia)` devuelve
   `onNodeDragStart/Drag/Stop` + `onSelectionDrag*` + `cancelInertia`.
   `usePanInertia(setViewport, getViewport, settings.inertia)` devuelve `onMoveStart/Move/MoveEnd`.
@@ -95,10 +121,37 @@ Props de `<ReactFlow>` que importan:
 - `panOnDrag={!spaceHeld}` / `selectionOnDrag={spaceHeld}` — sin teclas = manito (pan);
   espacio = puntero (recuadro de selección). `selectionMode={SelectionMode.Partial}`.
 - `selectionKeyCode={null}` y `panActivationKeyCode={null}` — se maneja todo con `spaceHeld`.
+- `deleteKeyCode={null}` — borrar es solo por el botón 🗑 (pasa por `deleteNode`).
 - `nodeDragThreshold={3}` — para que rozar un globo no dispare un arrastre.
-- `colorMode="dark"`, `fitView`.
+- `colorMode="dark"`, `fitView` (+ un `fitView()` extra tras cargar el árbol guardado).
 - `devIndicators.position = "bottom-right"` (next.config) para no tapar la tuerquita.
 - `agentRules: false` (next.config) para que `next dev` no escriba en CLAUDE.md.
+
+## IA (model/ia.ts)
+
+- `ConfigIA = { proveedor, apiKey, modelo }`. `PROVEEDORES_DISPONIBLES = ["claude"]` (los demás
+  del tipo `Proveedor` están declarados pero sin adaptador). Modelo por defecto:
+  `claude-haiku-4-5` (barato; cada usuario paga su propia key).
+- `llamarIA(config, mensajes, opts)` → `switch(config.proveedor)`. Sumar proveedor = un `case`
+  nuevo, sin tocar nada del árbol (spec §6).
+- Adaptador Claude: `await import("@anthropic-ai/sdk")` (dinámico), `new Anthropic({ apiKey,
+  dangerouslyAllowBrowser: true })`, `client.messages.stream(...)` con `signal`. `stream.on("text")`
+  acumula y llama `opts.onTexto(delta, acc)`. `mensajeLegible` mapea status → texto (401 → "API
+  key inválida", "Failed to fetch" → "no se pudo conectar / CORS").
+- La API key va **directo del navegador a `api.anthropic.com`** (CORS habilitado por el header
+  `anthropic-dangerous-direct-browser-access` que pone el SDK). Nunca a un servidor de 3maps.
+- `resumir(config, intercambios)` — resumen corto del tramo viejo, mismo proveedor/modelo.
+
+## Deploy (next.config.ts + .github/workflows/deploy.yml)
+
+- `output: "export"` → `next build` genera `out/` (estático puro; todo el canvas y la llamada a la
+  IA corren client-side).
+- `basePath: "/3maps"` **solo** cuando `NEXT_PUBLIC_PAGES === "1"` (lo setea el workflow). En
+  `next dev` local la app queda en la raíz.
+- El workflow: `npm ci` → `npm run build` (con el env) → `touch out/.nojekyll` →
+  `upload-pages-artifact` → `deploy-pages`. Corre en cada push a `main`.
+- URL: `https://alanepazs.github.io/3maps/`. Requiere una vez: repo → Settings → Pages → Source =
+  "GitHub Actions".
 
 Semilla (`arbolInicial()` en `model/intercambio.ts`): 3 intercambios de ejemplo con ids fijos
 `nodo-ejemplo-*` (Raíz + hilo + una rama a la derecha).

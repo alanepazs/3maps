@@ -9,8 +9,13 @@ import {
 import { NodeActionsContext } from "./nodeActions";
 
 // Un globo = un intercambio completo: la pregunta (encabezado) + la respuesta
-// de la IA (cuerpo). Todavía sin diseño real ni IA: si no hay respuesta se
-// muestra "Respuesta pendiente".
+// de la IA (cuerpo).
+//
+// Estados del cuerpo:
+//   - pending   → "escribiendo…" + lo que va llegando (streaming)
+//   - error     → recuadro rojo + botón "↻ Reintentar"
+//   - respuesta → el texto
+//   - nada      → "Respuesta pendiente"
 //
 // Handles:
 //   - target (arriba)              : de dónde viene (el nodo raíz no lo tiene)
@@ -25,7 +30,9 @@ export default function MessageNode({
   const isRoot = Boolean(data.isRoot);
   const pregunta = String(data.pregunta ?? "");
   const respuesta = data.respuesta ? String(data.respuesta) : null;
-  const { deleteNode } = useContext(NodeActionsContext);
+  const pending = Boolean(data.pending);
+  const error = data.error ? String(data.error) : null;
+  const { deleteNode, retryNode } = useContext(NodeActionsContext);
 
   return (
     <div
@@ -55,13 +62,35 @@ export default function MessageNode({
           {pregunta}
         </div>
       )}
-      <div
-        className={`px-3 py-2 text-left ${
-          respuesta ? "text-white/90" : "italic text-white/40"
-        }`}
-      >
-        {respuesta ?? "Respuesta pendiente (IA no conectada)"}
-      </div>
+
+      {error ? (
+        <div className="px-3 py-2 text-left">
+          <p className="whitespace-pre-wrap text-xs text-red-300">⚠ {error}</p>
+          {respuesta && (
+            <p className="mt-1.5 whitespace-pre-wrap text-white/70">{respuesta}</p>
+          )}
+          <button
+            type="button"
+            onClick={() => retryNode(id)}
+            className="mt-2 rounded border border-white/20 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
+          >
+            ↻ Reintentar
+          </button>
+        </div>
+      ) : (
+        <div
+          className={`whitespace-pre-wrap px-3 py-2 text-left ${
+            respuesta || pending ? "text-white/90" : "italic text-white/40"
+          }`}
+        >
+          {respuesta ?? (pending ? "" : "Respuesta pendiente")}
+          {pending && (
+            <span className="italic text-white/40">
+              {respuesta ? " ▍" : "escribiendo…"}
+            </span>
+          )}
+        </div>
+      )}
 
       <Handle
         type="source"

@@ -36,8 +36,10 @@ import {
   arbolAVista,
   arbolInicial,
   buscar,
+  conError,
   conPosicion,
   conRama,
+  conRespuesta,
   crearIntercambio,
   descendientes,
   hijos,
@@ -48,6 +50,9 @@ import {
   type Rama,
 } from "@/model/intercambio";
 import { cargarArbol, guardarArbol } from "@/model/persistencia";
+import { armarContexto, tramoAResumir } from "@/model/contexto";
+import { llamarIA, resumir, type ConfigIA } from "@/model/ia";
+import { cargarConfigIA, guardarConfigIA } from "@/model/configIA";
 
 // Definido a nivel de módulo (no dentro del componente): si React Flow recibe
 // un objeto nodeTypes nuevo en cada render, remonta todos los nodos.
@@ -110,7 +115,6 @@ function Flow() {
   useEffect(() => {
     const guardado = cargarArbol();
     const ultimo = guardado.intercambios.at(-1)?.id ?? null;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- hidratación local-first, corre una vez
     setArbol(guardado);
     setActiveNodeId((cur) =>
       guardado.intercambios.some((i) => i.id === cur) ? cur : ultimo,
@@ -153,6 +157,27 @@ function Flow() {
     });
   }, []);
 
+  // Configuración de la IA (proveedor + API key + modelo). Solo en este
+  // navegador. Lazy init igual que `settings` (el panel arranca cerrado → nada
+  // del render inicial depende de esto → sin mismatch de hidratación).
+  const [configIA, setConfigIA] = useState<ConfigIA | null>(() =>
+    typeof window === "undefined" ? null : cargarConfigIA(),
+  );
+  const updateConfigIA = useCallback((c: ConfigIA | null) => {
+    setConfigIA(c);
+    guardarConfigIA(c);
+  }, []);
+
+  // Llamadas a la IA en curso, por id de nodo (para poder cancelarlas).
+  const enVueloRef = useRef<Map<string, AbortController>>(new Map());
+  // Resúmenes del tramo viejo del contexto, cacheados por los ids del tramo.
+  const resumenCacheRef = useRef<Map<string, string>>(new Map());
+  // Espejo del árbol actual para leerlo dentro de callbacks async.
+  const arbolRef = useRef(arbol);
+  useEffect(() => {
+    arbolRef.current = arbol;
+  }, [arbol]);
+
   // Persistir el árbol en cada cambio (recién después de cargar lo guardado).
   useEffect(() => {
     if (listo) guardarArbol(arbol);
@@ -173,6 +198,7 @@ function Flow() {
           i.pregunta,
           i.respuesta,
           i.pending,
+          i.error,
         ]),
       ),
     [arbol],
@@ -249,40 +275,130 @@ function Flow() {
     [],
   );
 
-  // Crea UN globo (intercambio) colgando del nodo activo. Sin IA: la respuesta
-  // queda pendiente. "main" cuelga hacia abajo (sigue el hilo); "branch" nace
-  // por la derecha (después se puede arrastrar a la izquierda).
-  const handleSubmit = useCallback(
-    (text: string, kind: BranchKind) => {
-      if (!activeNodeId) return;
-      const id = nuevoId();
-      seleccionarLuegoRef.current = id;
-      setArbol((a) => {
-        const parent = buscar(a, activeNodeId);
-        if (!parent) return a;
-        const rama: Rama = kind === "main" ? "main" : "branch-right";
-        const hermanos = hijos(a, parent.id).filter((h) =>
-          kind === "main" ? h.rama === "main" : h.rama !== "main",
-        ).length;
-        const pos =
-          kind === "main"
-            ? { x: parent.x + hermanos * 40, y: parent.y + 240 }
-            : { x: parent.x + 400, y: parent.y + hermanos * 220 };
-        return agregar(
-          a,
-          crearIntercambio({
-            id,
-            padreId: parent.id,
-            rama,
-            pregunta: text,
-            x: pos.x,
-            y: pos.y,
+  // Pide la respuesta a la IA para `nodeId` y la va escribiendo en el árbol
+  // (streaming). `arbolBase` tiene que contener ya el nodo con su pregunta.
+  const responder = useCallback(
+    async (nodeId: string, arbolBase: Arbol) => {
+      // Cancelar cualquier llamada previa para este mismo nodo.
+      enVueloRef.current.get(nodeId)?.abort();
+
+      if (!configIA || !configIA.apiKey.trim()) {
+        setArbol((a) =>
+          conError(a, nodeId, "Cargá tu API key en ⚙️ para que la IA responda."),
+        );
+        return;
+      }
+
+      const ctrl = new AbortController();
+      enVueloRef.current.set(nodeId, ctrl);
+      setArbol((a) =>
+        conRespuesta(conError(a, nodeId, null), nodeId, {
+          respuesta: null,
+          pending: true,
+        }),
+      );
+
+      try {
+        const ventana = settings.ventanaContexto;
+        // El contexto se arma tratando a `nodeId` como pendiente: si es un
+        // reintento, se descarta la respuesta parcial que hubiera quedado.
+        const base = conRespuesta(arbolBase, nodeId, {
+          respuesta: null,
+          pending: true,
+        });
+
+        // Resumen del tramo viejo (spec §5). Si falla, se manda completo.
+        const viejos = tramoAResumir(base, nodeId, { ventana });
+        let resumen: string | null = null;
+        if (viejos.length > 0) {
+          const clave = viejos.map((i) => i.id).join("|");
+          resumen = resumenCacheRef.current.get(clave) ?? null;
+          if (!resumen) {
+            try {
+              resumen = await resumir(configIA, viejos);
+              resumenCacheRef.current.set(clave, resumen);
+            } catch {
+              resumen = null;
+            }
+          }
+        }
+
+        const mensajes = armarContexto(base, nodeId, { ventana }, resumen);
+
+        let ultimoRender = 0;
+        const texto = await llamarIA(configIA, mensajes, {
+          signal: ctrl.signal,
+          onTexto: (_delta, acumulado) => {
+            const ahora = Date.now();
+            if (ahora - ultimoRender < 80) return;
+            ultimoRender = ahora;
+            setArbol((a) =>
+              conRespuesta(a, nodeId, { respuesta: acumulado, pending: true }),
+            );
+          },
+        });
+
+        setArbol((a) =>
+          conRespuesta(a, nodeId, {
+            respuesta: texto,
+            pending: false,
+            proveedor: configIA.proveedor,
           }),
         );
-      });
-      setActiveNodeId(id);
+      } catch (e) {
+        if (e instanceof Error && e.name === "AbortError") return; // cancelado
+        setArbol((a) =>
+          conError(a, nodeId, e instanceof Error ? e.message : String(e)),
+        );
+      } finally {
+        if (enVueloRef.current.get(nodeId) === ctrl) {
+          enVueloRef.current.delete(nodeId);
+        }
+      }
     },
-    [activeNodeId],
+    [configIA, settings.ventanaContexto],
+  );
+
+  // Crea UN globo (intercambio) colgando del nodo activo y le pide la respuesta
+  // a la IA. "main" cuelga hacia abajo (sigue el hilo); "branch" nace por la
+  // derecha (después se puede arrastrar a la izquierda).
+  const handleSubmit = useCallback(
+    (text: string, kind: BranchKind) => {
+      const parent = buscar(arbol, activeNodeId ?? "");
+      if (!parent) return;
+      const id = nuevoId();
+      const rama: Rama = kind === "main" ? "main" : "branch-right";
+      const hermanos = hijos(arbol, parent.id).filter((h) =>
+        kind === "main" ? h.rama === "main" : h.rama !== "main",
+      ).length;
+      const pos =
+        kind === "main"
+          ? { x: parent.x + hermanos * 40, y: parent.y + 240 }
+          : { x: parent.x + 400, y: parent.y + hermanos * 220 };
+      const nuevo = crearIntercambio({
+        id,
+        padreId: parent.id,
+        rama,
+        pregunta: text,
+        x: pos.x,
+        y: pos.y,
+        pending: true,
+      });
+      const arbolNuevo = agregar(arbol, nuevo);
+
+      seleccionarLuegoRef.current = id;
+      setArbol(arbolNuevo);
+      setActiveNodeId(id);
+      void responder(id, arbolNuevo);
+    },
+    [arbol, activeNodeId, responder],
+  );
+
+  const retryNode = useCallback(
+    (id: string) => {
+      void responder(id, arbolRef.current);
+    },
+    [responder],
   );
 
   // Al soltar / frenar el envión: escribir la posición final al árbol y, si es
@@ -365,14 +481,19 @@ function Flow() {
     (id: string) => {
       cancelInertia();
       cancelPanInertia();
-      const nDesc = descendientes(arbol, id).length;
+      const desc = descendientes(arbol, id);
       if (
-        nDesc > 0 &&
+        desc.length > 0 &&
         !window.confirm(
-          `Se van a eliminar ${nDesc + 1} globos: este y todo lo que cuelga de él. ¿Seguir?`,
+          `Se van a eliminar ${desc.length + 1} globos: este y todo lo que cuelga de él. ¿Seguir?`,
         )
       ) {
         return;
+      }
+      // Cortar cualquier llamada a la IA en curso de lo que se borra.
+      for (const q of [id, ...desc.map((d) => d.id)]) {
+        enVueloRef.current.get(q)?.abort();
+        enVueloRef.current.delete(q);
       }
       const padreId = buscar(arbol, id)?.padreId ?? null;
       seleccionarLuegoRef.current = padreId;
@@ -382,7 +503,10 @@ function Flow() {
     [arbol, cancelInertia, cancelPanInertia],
   );
 
-  const nodeActions = useMemo(() => ({ deleteNode }), [deleteNode]);
+  const nodeActions = useMemo(
+    () => ({ deleteNode, retryNode }),
+    [deleteNode, retryNode],
+  );
 
   return (
     <NodeActionsContext.Provider value={nodeActions}>
@@ -422,7 +546,12 @@ function Flow() {
           <Controls />
           <MiniMap position="top-right" pannable zoomable />
         </ReactFlow>
-        <SettingsPanel settings={settings} onChange={updateSettings} />
+        <SettingsPanel
+          settings={settings}
+          onChange={updateSettings}
+          configIA={configIA}
+          onChangeConfigIA={updateConfigIA}
+        />
         <Composer activeNodeLabel={activeNodeLabel} onSubmit={handleSubmit} />
       </div>
     </NodeActionsContext.Provider>

@@ -36,6 +36,8 @@ export type Intercambio = {
   respuesta: string | null;
   // La respuesta está en curso (llamada a la IA disparada, sin volver todavía).
   pending: boolean;
+  // Último error al intentar responder este intercambio (para poder reintentar).
+  error: string | null;
 };
 
 export type Arbol = {
@@ -67,6 +69,7 @@ export function crearIntercambio(campos: {
   y: number;
   fecha?: string;
   pending?: boolean;
+  error?: string | null;
 }): Intercambio {
   return {
     id: campos.id ?? nuevoId(),
@@ -79,6 +82,7 @@ export function crearIntercambio(campos: {
     pregunta: campos.pregunta,
     respuesta: campos.respuesta ?? null,
     pending: campos.pending ?? false,
+    error: campos.error ?? null,
   };
 }
 
@@ -182,7 +186,13 @@ export function conRespuesta(
     respuesta: campos.respuesta,
     proveedor: campos.proveedor ?? i.proveedor,
     pending: campos.pending ?? false,
+    // Una respuesta (aunque sea parcial en streaming) limpia el error previo.
+    error: campos.pending ? i.error : null,
   }));
+}
+
+export function conError(a: Arbol, id: string, error: string | null): Arbol {
+  return mapear(a, id, (i) => ({ ...i, error, pending: false }));
 }
 
 // Reengancha `id` bajo otro padre (guarda contra ciclos). Lo usa el conectar
@@ -210,6 +220,7 @@ export function arbolAVista(a: Arbol): { nodes: Node[]; edges: Edge[] } {
       pregunta: ic.pregunta,
       respuesta: ic.respuesta,
       pending: ic.pending,
+      error: ic.error,
       isRoot: ic.padreId === null,
     },
   }));
@@ -236,10 +247,15 @@ export function toMarkdown(ic: Intercambio): string {
     `y: ${ic.y}`,
     `proveedor: ${ic.proveedor ?? ""}`,
     `fecha: ${ic.fecha}`,
+    // El error va en el frontmatter (JSON en una línea) y no como sección del
+    // cuerpo: la respuesta es markdown y puede tener sus propios `## títulos`.
+    `error: ${ic.error !== null ? JSON.stringify(ic.error) : ""}`,
   ].join("\n");
-  return `---\n${front}\n---\n\n## Pregunta\n\n${ic.pregunta}\n\n## Respuesta\n\n${
-    ic.respuesta ?? ""
-  }\n`;
+  return (
+    `---\n${front}\n---\n\n` +
+    `## Pregunta\n\n${ic.pregunta}\n\n` +
+    `## Respuesta\n\n${ic.respuesta ?? ""}\n`
+  );
 }
 
 export function parseMarkdown(texto: string): Intercambio | null {
@@ -254,12 +270,23 @@ export function parseMarkdown(texto: string): Intercambio | null {
   }
   if (!meta.id) return null;
 
+  // Pregunta: entre `## Pregunta` y `## Respuesta` (la pregunta es texto plano
+  // corto, no tiene `## Respuesta` adentro). Respuesta: de `## Respuesta` al
+  // final (puede ser markdown con títulos propios).
   const cuerpo = m[2];
-  const preg = cuerpo.match(
-    /##\s*Pregunta\s*\n+([\s\S]*?)(?:\n+##\s*Respuesta\s*\n|$)/,
-  );
-  const resp = cuerpo.match(/##\s*Respuesta\s*\n+([\s\S]*)$/);
+  const preg = cuerpo.match(/(?:^|\n)##[ \t]*Pregunta[ \t]*\n([\s\S]*?)\n##[ \t]*Respuesta[ \t]*\n/);
+  const resp = cuerpo.match(/(?:^|\n)##[ \t]*Respuesta[ \t]*\n([\s\S]*)$/);
   const respuestaTxt = (resp?.[1] ?? "").trim();
+
+  let error: string | null = null;
+  if (meta.error) {
+    try {
+      const v = JSON.parse(meta.error);
+      error = typeof v === "string" ? v : String(v);
+    } catch {
+      error = meta.error;
+    }
+  }
 
   return {
     id: meta.id,
@@ -275,7 +302,9 @@ export function parseMarkdown(texto: string): Intercambio | null {
     fecha: meta.fecha || new Date().toISOString(),
     pregunta: (preg?.[1] ?? "").trim(),
     respuesta: respuestaTxt === "" ? null : respuestaTxt,
+    // `pending` nunca se persiste: una llamada a medias al recargar = no pendiente.
     pending: false,
+    error,
   };
 }
 

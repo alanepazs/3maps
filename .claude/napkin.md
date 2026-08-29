@@ -27,13 +27,16 @@ Runbook corto. Cosas que muerden si no las sabés. Leer antes de tocar.
 5. Carpeta local `D:\IA\3maps`. Repo `github.com/alanepazs/3maps`. Rama `main`.
 6. **Antes de codear leé**: `CLAUDE.md`, `docs/estado.md`, `docs/arquitectura.md`,
    `docs/spec-proyecto.md`. No hace falta leer todo `src/`.
-7. `next.config.ts` tiene `agentRules: false` (que Next no escriba en CLAUDE.md) y
-   `devIndicators.position: "bottom-right"` (que el indicador no tape la tuerquita).
+7. `next.config.ts`: `agentRules: false` (que Next no escriba en CLAUDE.md), `devIndicators`
+   abajo-derecha, `output: "export"`, y `basePath: /3maps` **solo si `NEXT_PUBLIC_PAGES=1`**
+   (el workflow de Pages lo setea; `next dev` local queda en la raíz). Deploy = push a `main`.
 8. **Un globo = un intercambio** (pregunta + respuesta), no un mensaje suelto. No volver al
    modelo de nodo-por-mensaje.
-9. Reglas de contexto/costos de tokens en `CLAUDE.md` — ya implementadas en
-   `src/model/contexto.ts` (`armarContexto`). Al meter la IA, usar eso, no rearmar el contexto
-   a mano ni mandar el árbol entero.
+9. Reglas de contexto/costos de tokens en `CLAUDE.md` — implementadas en
+   `src/model/contexto.ts` (`armarContexto`). No rearmar el contexto a mano ni mandar el árbol
+   entero. La llamada a la IA es `src/model/ia.ts` (`llamarIA`), wired en `FlowCanvas.responder`.
+   **La API key va directo del navegador a `api.anthropic.com`** (SDK con `dangerouslyAllowBrowser`);
+   nunca a un server propio. Sumar proveedor = un `case` en `llamarIA`.
 10. **El `arbol` de `src/model/intercambio.ts` es la fuente de la verdad.** Los nodos/edges de
     React Flow se DERIVAN (`arbolAVista`) — nunca guardar estado propio en `data` de un nodo ni
     tratar a React Flow como el store. Toda mutación pasa por `setArbol` con funciones puras del

@@ -1,15 +1,17 @@
 # Estado del proyecto
 
 > Snapshot para retomar rápido. Actualizar al final de cada sesión.
-> Última actualización: 29-08-2026 (modelo de datos: árbol de intercambios + `.md` + persistencia).
+> Última actualización: 29-08-2026 (llamada real a la IA con streaming + deploy a GitHub Pages).
 
 ## Dónde estamos
 
-**Fase 1 — canvas + modelo de datos.** Todo client-side, sin IA todavía. El árbol de
-intercambios es la fuente de la verdad y se persiste solo en `localStorage` como `.md`.
+**Fase 1 — MVP funcional.** Canvas + modelo de datos + **llamada real a la IA** (Claude, con la
+API key del usuario, streaming) + deploy estático a GitHub Pages. Todo client-side. El árbol de
+intercambios es la fuente de la verdad y se persiste en `localStorage` como `.md`.
 
-Repo: https://github.com/alanepazs/3maps · rama `main` · working tree limpio.
+Repo: https://github.com/alanepazs/3maps · rama `main`.
 Carpeta local: `D:\IA\3maps`.
+**URL de Pages (cuando el workflow corra): `https://alanepazs.github.io/3maps/`.**
 
 ## Qué anda (verificado en el navegador)
 
@@ -19,9 +21,20 @@ Carpeta local: `D:\IA\3maps`.
 - **Tronco vertical, ramas al costado.** Las ramas nacen a la derecha; arrastrando el globo
   ramificado a la izquierda del padre, la flecha se reconecta sola a ese lado.
 - **Barra inferior**: Enter envía, Shift+Enter salto de línea. "↓ Continuar hilo" y "⑂ Ramificar"
-  crean UN globo colgando del activo (sin llamada a IA).
+  crean UN globo colgando del activo **y le piden la respuesta a la IA**.
+- **Llamada real a la IA** (`src/model/ia.ts`): al enviar, el globo queda `pending` y la respuesta
+  **se escribe en vivo (streaming)** con un cursor ▍. Contexto = solo el camino raíz→globo
+  (`armarContexto`), con ventana + resumen del tramo viejo. Proveedor: Claude (Anthropic), vía
+  `@anthropic-ai/sdk` dinámico. **La API key vive solo en el navegador** y se manda directo a
+  `api.anthropic.com` (CORS ok). Verificado end-to-end con un stub de SSE (streaming + contexto
+  correctos) y con una key trucha (llega el 401 real → "API key inválida"). Falta que el usuario
+  pruebe con su key real.
+- **Errores de la IA**: recuadro rojo en el globo + botón "↻ Reintentar" (descarta la respuesta
+  parcial vieja). El error se persiste en el frontmatter del `.md` y sobrevive al reload.
+- **Config de IA en ⚙️**: proveedor (select), API key (password), modelo (con sugeridos), y
+  "Ventana de contexto" (2–20 intercambios). Persiste en `localStorage["3maps:ia"]`.
 - **Eliminar**: botón 🗑 en el globo seleccionado (no en el raíz). Borra el subárbol completo,
-  con confirmación si hay descendientes.
+  con confirmación si hay descendientes. Corta las llamadas a la IA en vuelo de lo que se borra.
 - **Nodo activo**: click en un globo → se resalta y la barra apunta a él.
 - **Envión al soltar un globo** (o un grupo): flick → sigue de largo y frena. Verificado por el
   usuario en Chrome, "quedó bien".
@@ -29,8 +42,12 @@ Carpeta local: `D:\IA\3maps`.
   (`usePanInertia`). Arreglado 29-08; verificado con A/B instrumentado (ver pendientes).
 - **Modos del lienzo**: sin teclas → manito (pan) · barra espaciadora → puntero (recuadro de
   selección múltiple; después se arrastra la selección para moverla en grupo).
-- **Tuerquita ⚙️** (arriba izq.): panel de ajustes. Único control hoy: slider "Envión al soltar"
-  (0 = off … 2×). Se persiste en `localStorage` (`"3maps:settings"`).
+- **Tuerquita ⚙️** (arriba izq.): panel de ajustes (lienzo + IA). Se persiste en
+  `localStorage` (`"3maps:settings"` y `"3maps:ia"`).
+- **Deploy a GitHub Pages**: `output: "export"` + `basePath: /3maps` (solo en el build de Pages) +
+  workflow `.github/workflows/deploy.yml`. Verificado: `npm run build` genera `out/`, servido bajo
+  `/3maps/` la app carga entera (seed, panel, y el chunk dinámico del SDK) sin 404. **Falta
+  habilitar Pages en el repo (Settings → Pages → Source: GitHub Actions) — one-time.**
 - **Modelo de datos** (`src/model/`): el `arbol` de `Intercambio`s es la fuente de la verdad;
   los nodos/edges de React Flow se derivan de él (`arbolAVista`). Verificado a nivel de datos en
   el navegador integrado: crear (continuar/ramificar) con `padreId`/`rama`/posición correctos,
@@ -63,22 +80,25 @@ Carpeta local: `D:\IA\3maps`.
 - [x] **Armar el contexto** (`src/model/contexto.ts`): `armarContexto(arbol, nodoId, opts,
       resumenViejo)` → `Mensaje[]`. Solo el camino raíz→nodo, aplanado a user/assistant, con
       ventana (últimos N completos + resumen del tramo viejo), secuencia válida para la API,
-      prefijo estable para el prompt caching. `tramoAResumir` para el resumidor futuro.
-      Verificado con 22 asserts. **Sin wirear todavía** — lo llama #3. Falta: generar el
-      `resumenViejo` de verdad (necesita una IA barata → parte de #3).
-- [ ] **Llamada real a la IA**: `llamar_ia(mensajes)` con la clave del usuario (guardada solo en
-      el navegador). Arrancar con un proveedor (DeepSeek o Claude Haiku por costo). El globo
-      `pending` se completa con la respuesta. **Todo listo para engancharlo:** `crearIntercambio`
-      deja `respuesta: null, pending: true`, `conRespuesta` la completa, `armarContexto` arma los
-      mensajes. Falta: cliente HTTP por proveedor + UI para la API key + el resumidor.
+      prefijo estable para el prompt caching. `tramoAResumir` para el resumidor. 22 asserts.
+- [x] **Llamada real a la IA** (`src/model/ia.ts` + `configIA.ts`, wired en `FlowCanvas.responder`):
+      `llamarIA(config, mensajes, opts)` con streaming, un proveedor (Claude vía `@anthropic-ai/sdk`
+      dinámico), API key solo en el navegador. `resumir()` genera el `resumenViejo` (cacheado por
+      sesión). UI en ⚙️. Errores legibles + reintento. Verificado con stub SSE + key trucha.
+      **Falta: probar con la key real del usuario. Falta: 2º proveedor (DeepSeek), y system prompt
+      configurable.**
 - [ ] Export/import: `.zip` de la carpeta de `.md` + carpetas reales con File System Access API,
       UI de guardar/abrir (§7). Hoy solo hay persistencia local automática.
+- [ ] Markdown renderizado en la respuesta (hoy es texto plano con `whitespace-pre-wrap`). El
+      `.md` ya guarda/parsea respuestas con `## títulos` correctamente (error va en frontmatter).
 - [ ] Embeddings locales con `transformers.js` para relevancia de contexto.
 - [ ] Estado `expandido`/colapsado por globo para rendimiento con muchos nodos (§8).
 
 ### Deploy
-- [ ] GitHub Pages: falta `output: "export"` + `basePath` en `next.config.ts`. React Flow anda
-      con export estático (todo client-side). No configurado todavía.
+- [x] **GitHub Pages**: `output: "export"` + `basePath` condicional en `next.config.ts` +
+      `.github/workflows/deploy.yml`. Build verificado (`out/` sirve entero bajo `/3maps/`).
+      **Pendiente one-time (lo hace el usuario): repo → Settings → Pages → Source = "GitHub
+      Actions".** Después, cada push a `main` deploya solo.
 
 ## Issues conocidos / gotchas
 
@@ -106,13 +126,16 @@ Carpeta local: `D:\IA\3maps`.
 
 ```bash
 cd D:\IA\3maps
-npm run dev            # http://localhost:3000
+npm run dev            # http://localhost:3000  (sin basePath)
 npx tsc --noEmit -p tsconfig.json    # typecheck
 npm run lint
+npm run build          # genera out/ (estático). Con NEXT_PUBLIC_PAGES=1 → basePath /3maps
 ```
 
 - **Verificar en el navegador**: usar el navegador integrado (`mcp__Claude_Browser__*`), NO la
   extensión de Chrome. El integrado además ya está logueado en el GitHub del usuario (`alanepazs`).
-- **Publicar cambios**: `git push` desde `D:\IA\3maps` (la credencial ya está en Windows
-  Credential Manager, no pide nada). `gh` CLI NO está autenticado y `gh auth login` cuelga —
-  no usarlo. Para crear repos u operar en GitHub: navegador integrado.
+- **Probar lógica pura (sin runner)**: `npx --yes tsx _scratch.mts` y borrar el scratch.
+- **Publicar código**: `git push` desde `D:\IA\3maps` (credencial en Windows Credential Manager).
+  `gh` CLI NO está autenticado — no usarlo. Para operar en GitHub: navegador integrado.
+- **Deploy a Pages**: automático en cada push a `main` (workflow). One-time: habilitar
+  Settings → Pages → Source = "GitHub Actions" en el repo (navegador integrado).

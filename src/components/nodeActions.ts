@@ -8,8 +8,11 @@ import { createContext } from "react";
 export type NodeActions = {
   // Elimina el nodo y todo lo que cuelga de él (sus descendientes).
   deleteNode: (id: string) => void;
+  // Vuelve a pedirle la respuesta a la IA para este intercambio.
+  retryNode: (id: string) => void;
 };
 
 export const NodeActionsContext = createContext<NodeActions>({
   deleteNode: () => {},
+  retryNode: () => {},
 });
