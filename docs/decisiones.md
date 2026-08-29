@@ -66,6 +66,16 @@ Complementa a:
   que se parsea el SSE a mano (`data: {json}` → `candidates[0].content.parts[].text`).
 - **Revertir** (meter el SDK de Google, o cargar el de Anthropic estático): más peso, sin ganancia.
 
+### 7b. Default de Gemini = `gemini-flash-latest` (alias), y `configIA.ts` migra modelos muertos
+- **El bug**: `gemini-2.0-flash` estaba hardcodeado como default; Google lo retiró y la API
+  devuelve 404 → el globo mostraba *"No existe el modelo …"*. Un modelo pinneado se pudre.
+- **Fix**: default y primera sugerencia = `gemini-flash-latest` (alias que sigue al flash
+  vigente). `MODELOS_MUERTOS` en `configIA.ts` reemplaza `gemini-2.0-flash` / `gemini-1.5-flash`
+  / `gemini-pro` por el default **al cargar**, así una config vieja se auto-repara sin tocar ⚙️.
+- **Trade-off**: `-latest` puede cambiar de modelo (hoy resuelve a un flash con "thinking"); a
+  cambio no vuelve a romper por retiro de versión. Para costo predecible, elegir `gemini-2.5-flash`
+  a mano en ⚙️.
+
 ### 8. La API key es un **borrador** en `SettingsPanel`; se persiste con el botón "Guardar" (o Enter)
 - **Por qué**: no persistir keys a medio tipear, y dejar explícito cuándo la key "entra en
   vigencia". El usuario lo pidió así (antes era save-on-keystroke y daba stale-closure en tests).

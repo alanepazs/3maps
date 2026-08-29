@@ -7,6 +7,10 @@ import { PROVEEDORES, type Proveedor } from "./intercambio";
 // navegador del usuario. Clave aparte de "3maps:settings" porque es sensible.
 const CONFIG_IA_STORAGE_KEY = "3maps:ia";
 
+// Modelos que Google retiró y que quedaron guardados en configs viejas → daban
+// 404 "no existe el modelo". Se migran al default al cargar.
+const MODELOS_MUERTOS = new Set(["gemini-2.0-flash", "gemini-1.5-flash", "gemini-pro"]);
+
 export function cargarConfigIA(): ConfigIA | null {
   try {
     const raw =
@@ -18,11 +22,11 @@ export function cargarConfigIA(): ConfigIA | null {
     if (!o.apiKey || !o.proveedor) return null;
     if (!(PROVEEDORES as string[]).includes(o.proveedor)) return null;
     const proveedor = o.proveedor as Proveedor;
-    return {
-      proveedor,
-      apiKey: o.apiKey,
-      modelo: o.modelo || MODELO_POR_DEFECTO[proveedor],
-    };
+    const modelo =
+      o.modelo && !MODELOS_MUERTOS.has(o.modelo)
+        ? o.modelo
+        : MODELO_POR_DEFECTO[proveedor];
+    return { proveedor, apiKey: o.apiKey, modelo };
   } catch {
     return null;
   }
