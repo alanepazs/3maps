@@ -7,8 +7,9 @@ Runbook corto. Cosas que muerden si no las sabés. Leer antes de tocar.
 1. **Verificar en browser** → navegador integrado (`mcp__Claude_Browser__*`), NO la extensión
    de Chrome (`mcp__claude-in-chrome__*` pide plan pago). El login a GitHub en el integrado
    **es intermitente** — a veces está logueado como `alanepazs`, a veces no. Para leer estado
-   de CI sin login: API pública (`api.github.com/repos/alanepazs/3maps/actions/runs/<id>/jobs`).
-   Cambiar Settings del repo (Pages, permisos) requiere que el usuario lo haga.
+   de CI sin login: API pública. Anotaciones de error de un run:
+   `api.github.com/repos/alanepazs/3maps/check-runs/<check_id>/annotations` (el `check_id` sale
+   de `.../commits/<sha>/check-runs`). Cambiar Settings del repo requiere que lo haga el usuario.
 2. **El preview pane congela `requestAnimationFrame`/`ResizeObserver` y throttlea `setTimeout`
    a ~1s cuando está quieto** (aunque `document.hidden` sea `false`). Los nodos de React Flow
    quedan `visibility:hidden` (no se miden) → sin medición no se dibujan los edges → el canvas
@@ -23,6 +24,8 @@ Runbook corto. Cosas que muerden si no las sabés. Leer antes de tocar.
    no un bug de fresh-load — reiniciá el server para confirmar.
 4. **Publicar**: `git push` desde `D:\IA\3maps` funciona directo (credencial en Windows
    Credential Manager). **`gh` NO está autenticado y `gh auth login` cuelga** — no lo uses.
+   Deploy a Pages = push a `main` (workflow). **El CDN de Pages cachea `index.html` ~10 min**:
+   para verificar un deploy nuevo enseguida, navegá con `?v=<algo>` (cache-buster).
 
 ## Proyecto
 
@@ -46,10 +49,17 @@ Runbook corto. Cosas que muerden si no las sabés. Leer antes de tocar.
 11. **SSR / hidratación**: `FlowCanvas` arranca con la **semilla** (determinística) y carga
     `localStorage` en un `useEffect` de montaje. NO leer `localStorage` durante el render
     (rompe la hidratación). El `.md` de ejemplo usa ids `nodo-ejemplo-*` y fechas fijas.
-12. **No hay test runner.** Para probar lógica pura: `npx --yes tsx _scratch.mts` (tsx resuelve
+12. **Formato `.md`** (`toMarkdown`/`parseMarkdown`): el `error` va en el **frontmatter** como
+    JSON en una línea, NO como sección del cuerpo — así la respuesta (markdown de la IA) puede
+    tener sus propios `## títulos` sin romper el parseo. La respuesta es todo lo que hay después
+    de `## Respuesta` hasta el final.
+13. **No hay test runner.** Para probar lógica pura: `npx --yes tsx _scratch.mts` (tsx resuelve
     imports `.ts` sin extensión; `node --strip-types` no). Borrar el scratch antes de commitear.
     Node local es v24.
+14. **Probar la IA sin key**: stubear `window.fetch` para `api.anthropic.com/v1/messages` y
+    devolver un `ReadableStream` con eventos SSE (`message_start` / `content_block_delta`
+    text_delta / `message_stop`). Así se verifica streaming + contexto + render sin gastar tokens.
 
 ## Checklist antes de cerrar sesión
 
-13. `npx tsc --noEmit` + `npm run lint` en verde · `git push` · actualizar `docs/estado.md`.
+15. `npx tsc --noEmit` + `npm run lint` en verde · `git push` · actualizar `docs/estado.md`.
