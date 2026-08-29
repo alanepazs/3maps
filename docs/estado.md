@@ -53,9 +53,10 @@ Carpeta local: `D:\IA\3maps`.
 - **Proveedores**: Claude (Anthropic, `@anthropic-ai/sdk` dinámico) y **Gemini (Google, `fetch`
   directo + SSE, tiene free tier)**. Se eligen en ⚙️; al cambiar se resetea el modelo y se limpia
   la key. **La API key vive solo en el navegador** y va directo al proveedor (CORS de ambos ok).
-  Default de Gemini = `gemini-flash-latest`. Los modelos disponibles **varían por key** → botón
-  **"ver modelos disponibles"** en ⚙️ (`listarModelos`, GET `/v1beta/models` con la key propia,
-  muestra chips clickeables). `configIA.ts` migra modelos retirados al cargar. Ver decisiones §7b.
+  Default de Gemini = `gemini-2.5-flash` (GA, free tier), con **thinking apagado**
+  (`thinkingBudget: 0` — si no, devolvía respuesta vacía). Los modelos **varían por key** → botón
+  **"ver modelos disponibles"** en ⚙️ (`listarModelos`, GET `/v1beta/models` con la key propia →
+  chips). `configIA.ts` migra modelos retirados y alias paid al cargar. Ver decisiones §7b.
 - **Respuesta en markdown** (`src/components/Markdown.tsx`): títulos, listas, código (inline y
   bloque con scroll propio), links (pestaña nueva), citas, tablas GFM. Sin HTML crudo → seguro.
 - **Errores**: recuadro rojo + "↻ Reintentar" (descarta la parcial vieja). El error se persiste

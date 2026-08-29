@@ -7,9 +7,19 @@ import { PROVEEDORES, type Proveedor } from "./intercambio";
 // navegador del usuario. Clave aparte de "3maps:settings" porque es sensible.
 const CONFIG_IA_STORAGE_KEY = "3maps:ia";
 
-// Modelos que Google retiró y que quedaron guardados en configs viejas → daban
-// 404 "no existe el modelo". Se migran al default al cargar.
-const MODELOS_MUERTOS = new Set(["gemini-2.0-flash", "gemini-1.5-flash", "gemini-pro"]);
+// Modelos guardados en configs viejas que no sirven para el caso de uso de 3maps
+// (key propia, free tier — spec §9) y se migran al default al cargar:
+//  - retirados por Google → 404 "no existe el modelo"
+//  - alias "-latest" que hoy resuelven a un flash paid-tier → 503 "high demand"
+// Si tenés key con billing y querés el alias, lo re-escribís a mano en ⚙️.
+const MODELOS_MUERTOS = new Set([
+  "gemini-2.0-flash",
+  "gemini-1.5-flash",
+  "gemini-pro",
+  "gemini-2.5-flash-lite", // "no longer available to new users"
+  "gemini-flash-latest",
+  "gemini-pro-latest",
+]);
 
 export function cargarConfigIA(): ConfigIA | null {
   try {

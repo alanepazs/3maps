@@ -66,21 +66,33 @@ Complementa a:
   que se parsea el SSE a mano (`data: {json}` → `candidates[0].content.parts[].text`).
 - **Revertir** (meter el SDK de Google, o cargar el de Anthropic estático): más peso, sin ganancia.
 
-### 7b. Modelos de Gemini: default `gemini-flash-latest` + botón "ver modelos disponibles"
-- **El problema**: qué modelos podés usar **depende de la key**. Con una key nueva de AI Studio:
-  `gemini-2.0-flash` → 404 (retirado para todos), `gemini-2.5-flash` → 404 (esa key no lo tiene),
-  `gemini-flash-latest` → 503 (lo alcanza, pero a veces saturado). Adivinar el nombre es un loop.
-- **Fix real**: `listarModelos(config)` en `ia.ts` (GET `…/v1beta/models` con la key del usuario,
-  filtra a `gemini-*` con `generateContent`, sin image/tts/embedding). En `SettingsPanel` el link
-  "ver modelos disponibles" lo llama y muestra los modelos como chips clickeables + los mete en
-  el datalist. Claude usa `client.models.list()` del SDK.
-- **Default** = `gemini-flash-latest` (alias): tiene más chance de resolver recién sacada la key
-  que un GA puntual. Si da 503, se reintenta o se elige otro con el botón.
-- **`MODELOS_MUERTOS`** en `configIA.ts` reemplaza `gemini-2.0-flash` / `gemini-1.5-flash` /
-  `gemini-pro` por el default **al cargar** (config vieja se auto-repara sin tocar ⚙️).
-  `gemini-flash-latest` **no** está en esa lista (no está muerto, solo saturado a veces).
-- **`mensajeErrorGemini(res, modelo?)`**: helper único que traduce errores de cualquier endpoint
-  de Gemini (lo usan `llamarGemini` y `listarModelosGemini`). 404 con modelo → sugiere el botón.
+### 7b. Modelos de Gemini: default `gemini-2.5-flash`, sin "thinking", + botón "ver modelos"
+Historia de dolor real con una key **free tier** recién sacada de AI Studio:
+- `gemini-2.0-flash` → 404: Google lo **retiró** (para todos). Un modelo pinneado se pudre.
+- `gemini-flash-latest` → 503 "high demand": el alias resuelve a un flash **paid-tier**
+  (`gemini-3.7-flash`); una key gratis no lo puede usar.
+- `gemini-2.5-flash-lite` → 404 "no longer available to new users".
+- `gemini-flash-latest` cuando **sí** respondía (200) → **respuesta vacía** ("Gemini no devolvió
+  texto"): los flash 2.5/3.x **"piensan" por defecto** y se comían todo el `maxOutputTokens` en
+  thoughts.
+
+**Decisiones tomadas:**
+1. **Default = `gemini-2.5-flash`** — GA, en free tier, probado con key real → 200 + texto. Nada
+   de alias `-latest` (apuntan a paid) ni `-preview` como default.
+2. **`thinkingConfig: { thinkingBudget: 0 }`** en toda llamada a Gemini (`generationConfig`).
+   Para un chat en árbol queremos respuesta directa, no razonamiento interno que quema tokens.
+3. **`listarModelos(config)`** (`ia.ts`) + link **"ver modelos disponibles"** en `SettingsPanel`:
+   GET `…/v1beta/models` con la key del usuario → chips clickeables con lo que **esa key** puede
+   usar. Es la única fuente de verdad (varía por key). Claude usa `client.models.list()`.
+4. **`MODELOS_MUERTOS`** en `configIA.ts` migra al default, al cargar: los retirados
+   (`gemini-2.0-flash`, `gemini-1.5-flash`, `gemini-pro`, `gemini-2.5-flash-lite`) **y** los alias
+   paid (`gemini-flash-latest`, `gemini-pro-latest`). Una config vieja se auto-repara sin tocar ⚙️.
+5. **`mensajeErrorGemini(res, modelo?)`**: helper único de errores para todos los endpoints de
+   Gemini (`llamarGemini` + `listarModelosGemini`). 404 con modelo → sugiere el botón; 503 → texto
+   de Google.
+
+**Lección**: para el default de un servicio con free tier, modelo **GA con versión explícita**
+y **thinking apagado**. Los alias `-latest` siguen a lo más nuevo, que suele ser paid o preview.
 
 ### 8. La API key es un **borrador** en `SettingsPanel`; se persiste con el botón "Guardar" (o Enter)
 - **Por qué**: no persistir keys a medio tipear, y dejar explícito cuándo la key "entra en

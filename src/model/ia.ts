@@ -19,15 +19,16 @@ export const MODELOS_SUGERIDOS: Record<Proveedor, string[]> = {
   claude: ["claude-haiku-4-5", "claude-sonnet-5", "claude-opus-5"],
   deepseek: ["deepseek-chat"],
   gpt: ["gpt-4o-mini"],
-  // El acceso a modelos varía por key (una key nueva de AI Studio puede no tener
-  // gemini-2.5-flash y sí gemini-flash-latest). Por eso el default es el alias y
-  // hay un botón "ver modelos disponibles" en ⚙️ (listarModelos). gemini-2.0-flash
-  // fue retirado (404) — ver decisiones §7b.
+  // Probados con key real (free tier): gemini-2.5-flash y gemini-3.x-flash andan;
+  // gemini-flash-latest resuelve a un flash paid-tier (503) y gemini-2.5-flash-lite
+  // ya no está para keys nuevas. El botón "ver modelos disponibles" en ⚙️ lista lo
+  // que la key concreta puede usar (listarModelos). gemini-2.0-flash fue retirado.
+  // Ver decisiones §7b.
   gemini: [
-    "gemini-flash-latest",
     "gemini-2.5-flash",
-    "gemini-2.5-pro",
+    "gemini-3.5-flash",
     "gemini-3-flash-preview",
+    "gemini-flash-latest",
   ],
 };
 
@@ -35,7 +36,7 @@ export const MODELO_POR_DEFECTO: Record<Proveedor, string> = {
   claude: "claude-haiku-4-5",
   deepseek: "deepseek-chat",
   gpt: "gpt-4o-mini",
-  gemini: "gemini-flash-latest",
+  gemini: "gemini-2.5-flash",
 };
 
 export const NOMBRE_PROVEEDOR: Record<Proveedor, string> = {
@@ -198,7 +199,13 @@ async function llamarGemini(
       role: m.rol === "assistant" ? "model" : "user",
       parts: [{ text: m.texto }],
     })),
-    generationConfig: { maxOutputTokens: opts.maxTokens ?? 4096 },
+    generationConfig: {
+      maxOutputTokens: opts.maxTokens ?? 4096,
+      // Los flash de Gemini 2.5/3.x "piensan" por defecto y se comen todo el
+      // presupuesto de tokens en thoughts → devolvían respuesta vacía ("Gemini
+      // no devolvió texto"). Para un chat así queremos respuesta directa.
+      thinkingConfig: { thinkingBudget: 0 },
+    },
   };
   if (opts.sistema) {
     body.systemInstruction = { parts: [{ text: opts.sistema }] };
