@@ -99,8 +99,15 @@ Historia de dolor real con una key **free tier** recién sacada de AI Studio:
    Gemini (`llamarGemini` + `listarModelosGemini`). 404 con modelo → sugiere el botón; 503 → texto
    de Google.
 
-**Lección**: para el default de un servicio con free tier, modelo **GA con versión explícita**
-y **thinking apagado**. Los alias `-latest` siguen a lo más nuevo, que suele ser paid o preview.
+**Resultado (29-08-2026)**: con `gemini-3.6-flash` la IA anda end-to-end con una key free real
+(respuesta + streaming + markdown). Google 503ea ese modelo de a ratos → el parser devuelve el
+texto parcial y con Reintentar sale.
+
+**Lección**: la API de Gemini se renovó entera (keys `AQ.…`, solo modelos 3.x para keys nuevas,
+`thinkingLevel` en vez de `thinkingBudget`, 503s intermitentes). Para el default de un servicio
+con free tier: **probar con una key nueva de verdad** — los blogs y hasta `ListModels` mienten
+(lista modelos que la key ve pero no puede llamar). El botón "ver modelos disponibles" + el
+`mensajeErrorGemini` transparente fueron lo que destrabó el diagnóstico.
 
 ### 8. La API key es un **borrador** en `SettingsPanel`; se persiste con el botón "Guardar" (o Enter)
 - **Por qué**: no persistir keys a medio tipear, y dejar explícito cuándo la key "entra en

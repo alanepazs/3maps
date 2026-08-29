@@ -45,7 +45,7 @@ Carpeta local: `D:\IA\3maps`.
 - **Tuerquita ⚙️**: panel de ajustes (lienzo + IA). Persiste en `localStorage`
   (`"3maps:settings"` y `"3maps:ia"`).
 
-### IA (Gemini probado end-to-end con key real; Claude aún con stub SSE + key trucha)
+### IA (✅ Gemini andando end-to-end con key real free tier; Claude aún con stub SSE + key trucha)
 - **Llamada real** (`src/model/ia.ts`, wired en `FlowCanvas.responder`): al enviar, el globo queda
   `pending` y la respuesta **se escribe en vivo (streaming)** con cursor ▍.
 - **Contexto** = solo el camino raíz→globo (`armarContexto`), aplanado a user/assistant, con
@@ -80,10 +80,11 @@ Carpeta local: `D:\IA\3maps`.
 ## Pendientes (próximos pasos)
 
 ### Cerca / arranque rápido
-- [~] **Prueba real de la IA**: Gemini OK end-to-end con key real (respuesta + streaming +
-      markdown en el globo). Falta lo mismo con **Claude** (key `sk-ant-…` real).
-- [x] **2º proveedor: Gemini** (`llamarGemini` en `src/model/ia.ts`, `fetch` + SSE). Probado con
-      key real: `gemini-flash-latest` → 200 + streaming. Free tier.
+- [x] **Prueba real de la IA — Gemini**: key free tier real (`AQ.…`) + `gemini-3.6-flash` →
+      respuesta + streaming + markdown en el globo, perfecto. (29-08-2026)
+- [ ] **Prueba real de la IA — Claude**: falta hacer lo mismo con una key `sk-ant-…` real.
+- [x] **2º proveedor: Gemini** (`llamarGemini` en `src/model/ia.ts`, `fetch` + SSE). Andando con
+      key real. Free tier = solo modelos 3.x (ver decisiones §7b).
 - [x] **UX del botón "Guardar" key**: al guardar muestra "✓ Aplicado" 2s + hint "Config aplicada.
       Ya podés mandar una pregunta." antes de volver a "✓ Guardado".
 - [ ] **System prompt configurable** (hoy no hay). Sumar a `Settings` + pasarlo a `llamarIA`.
