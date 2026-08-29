@@ -11,7 +11,7 @@ intercambios es la fuente de la verdad y se persiste en `localStorage` como `.md
 
 Repo: https://github.com/alanepazs/3maps · rama `main`.
 Carpeta local: `D:\IA\3maps`.
-**URL de Pages (cuando el workflow corra): `https://alanepazs.github.io/3maps/`.**
+**App en producción: https://alanepazs.github.io/3maps/** (deploy automático en cada push a main).
 
 ## Qué anda (verificado en el navegador)
 
@@ -95,14 +95,12 @@ Carpeta local: `D:\IA\3maps`.
 - [ ] Estado `expandido`/colapsado por globo para rendimiento con muchos nodos (§8).
 
 ### Deploy
-- [x] **GitHub Pages**: `output: "export"` + `basePath` condicional en `next.config.ts` +
-      `.github/workflows/deploy.yml`. En CI **`npm ci` y `next build` pasan** (confirmado por API
-      de Actions); el `out/` servido bajo `/3maps/` carga la app entera sin 404.
-      **BLOQUEADO en `actions/configure-pages`**: el repo tiene `has_pages: false` y el
-      `enablement: true` no alcanzó (el GITHUB_TOKEN no tiene permiso para crear el sitio).
-      **Lo tiene que hacer el usuario (necesita su login):** repo → Settings → Pages → Source =
-      "GitHub Actions" (y si hace falta, Settings → Actions → General → Workflow permissions →
-      "Read and write"). Después: re-run del workflow fallado, o cualquier push a `main`.
+- [x] **GitHub Pages — LIVE**: `output: "export"` + `basePath` condicional (`NEXT_PUBLIC_PAGES=1`)
+      en `next.config.ts` + `.github/workflows/deploy.yml`. Cada push a `main` deploya solo.
+      **App en producción: https://alanepazs.github.io/3maps/** — verificado: carga entera sin
+      404, seed + panel + la llamada a la IA funcionan igual que en local.
+      (One-time que ya hizo el usuario: Settings → Pages → Source = "GitHub Actions". El
+      `enablement:true` del workflow no servía — el GITHUB_TOKEN no puede crear el sitio.)
 
 ## Issues conocidos / gotchas
 
