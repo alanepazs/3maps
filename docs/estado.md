@@ -3,6 +3,16 @@
 > Snapshot para retomar rápido. Actualizar al final de cada sesión.
 > Última actualización: 29-08-2026 (MVP funcional: IA con streaming + markdown + deploy live).
 
+## Mapa de docs
+
+- `CLAUDE.md` — invariantes y convenciones que no se rompen.
+- **este archivo** (`docs/estado.md`) — snapshot: dónde estamos, qué anda, pendientes, gotchas.
+- `docs/arquitectura.md` — mapa de `src/` (qué hace cada archivo).
+- `docs/decisiones.md` — por qué el código es así (decisiones de implementación + qué rompés si
+  las revertís).
+- `docs/spec-proyecto.md` — diseño de producto (modelo de datos, UX, roadmap, pseudocódigo).
+- `.claude/napkin.md` — gotchas del entorno (preview pane, git/gh, CDN de Pages).
+
 ## Dónde estamos
 
 **Fase 1 — MVP funcional y en producción.** Canvas de nodos + modelo de datos + **llamada real a

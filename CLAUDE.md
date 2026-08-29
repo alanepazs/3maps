@@ -8,8 +8,10 @@
 2. `docs/estado.md` — dónde estamos, qué anda, qué falta, issues conocidos, cómo correr/publicar.
 3. `docs/arquitectura.md` — mapa de `src/` para no leer todo el código.
 4. `.claude/napkin.md` — gotchas del entorno (preview pane, git/gh, etc).
-5. `docs/spec-proyecto.md` — diseño detallado (modelo de datos, pseudocódigo, decisiones). Solo
-   si vas a tocar la parte de datos / IA / contexto.
+5. `docs/decisiones.md` — por qué el código es como es (decisiones de implementación que no se
+   revierten sin pensar). Leer antes de tocar `ia.ts`, `FlowCanvas`, persistencia o el `.md`.
+6. `docs/spec-proyecto.md` — diseño detallado (modelo de datos, pseudocódigo, decisiones de
+   producto). Solo si vas a tocar la parte de datos / IA / contexto.
 
 ## Qué es
 

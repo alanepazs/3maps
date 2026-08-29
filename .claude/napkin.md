@@ -31,7 +31,16 @@ Runbook corto. Cosas que muerden si no las sabés. Leer antes de tocar.
 
 5. Carpeta local `D:\IA\3maps`. Repo `github.com/alanepazs/3maps`. Rama `main`.
 6. **Antes de codear leé**: `CLAUDE.md`, `docs/estado.md`, `docs/arquitectura.md`,
-   `docs/spec-proyecto.md`. No hace falta leer todo `src/`.
+   `docs/decisiones.md` (por qué el código es así — no revertir a ciegas), `docs/spec-proyecto.md`.
+   No hace falta leer todo `src/`.
+6b. **Grafo de conocimiento (`graphify-out/`, gitignoreado, local)**: antes de abrir varios
+   archivos de `src/` para entender una dependencia, probá
+   `graphify query "<pregunta>"` desde `D:\IA\3maps` — devuelve el subgrafo con `archivo:línea`
+   de qué llama a qué (ahorra tokens vs. leer los archivos enteros). El intérprete está en
+   `graphify-out\.graphify_python`. Regenerar tras cambios grandes de estructura:
+   `graphify --update` (o `/graphify` full). `graph.html` y `obsidian/` (bóveda + `graph.canvas`)
+   son para mirar a ojo. Ojo: el corpus es chico (~18k palabras) — para un dato puntual a veces
+   conviene leer el archivo directo; el grafo gana cuando la pregunta cruza varios módulos.
 7. `next.config.ts`: `agentRules: false` (que Next no escriba en CLAUDE.md), `devIndicators`
    abajo-derecha, `output: "export"`, y `basePath: /3maps` **solo si `NEXT_PUBLIC_PAGES=1`**
    (el workflow de Pages lo setea; `next dev` local queda en la raíz). Deploy = push a `main`.
