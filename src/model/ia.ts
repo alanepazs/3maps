@@ -19,21 +19,18 @@ export const MODELOS_SUGERIDOS: Record<Proveedor, string[]> = {
   claude: ["claude-haiku-4-5", "claude-sonnet-5", "claude-opus-5"],
   deepseek: ["deepseek-chat"],
   gpt: ["gpt-4o-mini"],
-  // Alias "-latest" primero: sigue al flash vigente y no se pudre cuando Google
-  // retira una versión (le pasó a gemini-2.0-flash → 404 "no existe el modelo").
-  gemini: [
-    "gemini-flash-latest",
-    "gemini-2.5-flash",
-    "gemini-2.5-flash-lite",
-    "gemini-flash-lite-latest",
-  ],
+  // gemini-2.5-flash: GA, estable y disponible (probado con key real → 200). El
+  // alias gemini-flash-latest apunta a un flash preview que suele estar saturado
+  // (503 "high demand"); queda como opción, no como default. gemini-2.0-flash fue
+  // retirado (404) — ver decisiones §7b.
+  gemini: ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-flash-latest"],
 };
 
 export const MODELO_POR_DEFECTO: Record<Proveedor, string> = {
   claude: "claude-haiku-4-5",
   deepseek: "deepseek-chat",
   gpt: "gpt-4o-mini",
-  gemini: "gemini-flash-latest",
+  gemini: "gemini-2.5-flash",
 };
 
 export const NOMBRE_PROVEEDOR: Record<Proveedor, string> = {

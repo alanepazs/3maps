@@ -66,15 +66,19 @@ Complementa a:
   que se parsea el SSE a mano (`data: {json}` → `candidates[0].content.parts[].text`).
 - **Revertir** (meter el SDK de Google, o cargar el de Anthropic estático): más peso, sin ganancia.
 
-### 7b. Default de Gemini = `gemini-flash-latest` (alias), y `configIA.ts` migra modelos muertos
-- **El bug**: `gemini-2.0-flash` estaba hardcodeado como default; Google lo retiró y la API
-  devuelve 404 → el globo mostraba *"No existe el modelo …"*. Un modelo pinneado se pudre.
-- **Fix**: default y primera sugerencia = `gemini-flash-latest` (alias que sigue al flash
-  vigente). `MODELOS_MUERTOS` en `configIA.ts` reemplaza `gemini-2.0-flash` / `gemini-1.5-flash`
-  / `gemini-pro` por el default **al cargar**, así una config vieja se auto-repara sin tocar ⚙️.
-- **Trade-off**: `-latest` puede cambiar de modelo (hoy resuelve a un flash con "thinking"); a
-  cambio no vuelve a romper por retiro de versión. Para costo predecible, elegir `gemini-2.5-flash`
-  a mano en ⚙️.
+### 7b. Default de Gemini = `gemini-2.5-flash`, y `configIA.ts` migra modelos muertos
+- **El bug**: `gemini-2.0-flash` estaba hardcodeado como default; Google lo retiró → 404
+  *"No existe el modelo …"*. Un modelo pinneado se pudre.
+- **Primer intento (revertido)**: usar el alias `gemini-flash-latest`. No se pudre, pero apunta
+  a un flash **preview** que suele estar saturado → **503 "This model is currently experiencing
+  high demand"** (visto con key real).
+- **Fix final**: default = `gemini-2.5-flash` — GA, estable, disponible (probado → 200). El alias
+  queda como sugerencia, no como default. `MODELOS_MUERTOS` en `configIA.ts` reemplaza
+  `gemini-2.0-flash` / `gemini-1.5-flash` / `gemini-pro` por el default **al cargar** (una config
+  vieja se auto-repara sin tocar ⚙️); `gemini-flash-latest` **no** está en esa lista (no está
+  muerto, solo saturado a veces).
+- **Lección**: para el default, elegir modelo **GA con nombre de versión**, no un alias `-latest`
+  ni un `-preview`. Rot de un GA = años; saturación de un preview = hoy.
 
 ### 8. La API key es un **borrador** en `SettingsPanel`; se persiste con el botón "Guardar" (o Enter)
 - **Por qué**: no persistir keys a medio tipear, y dejar explícito cuándo la key "entra en
