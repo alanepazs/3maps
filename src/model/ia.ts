@@ -241,24 +241,27 @@ async function llamarGemini(
   let finish: string | null = null;
   let bloqueo: string | null = null;
   let huboThoughts = false;
-  let eventos = 0;
-  let jsonInvalido = 0;
+  let errorEnStream: string | null = null;
 
-  // Procesa un bloque SSE (`data: {...}` — puede haber varias líneas `data:`).
-  const procesarBloque = (bloque: string) => {
-    const trozos = bloque
-      .split("\n")
-      .filter((l) => l.startsWith("data:"))
-      .map((l) => l.slice(5).trim());
-    if (trozos.length === 0) return;
-    const payload = trozos.join("");
+  type GeminiPayload = GeminiChunk & { error?: { message?: string } };
+
+  // El stream de Gemini es una línea `data: {json}` por evento (JSON de una
+  // línea). Procesamos línea a línea — así da igual si los eventos van separados
+  // por "\n" o "\n\n", y si Google inyecta un {error:...} multilínea al cortar,
+  // sus líneas simplemente no empiezan con "data:".
+  const procesarLinea = (linea: string) => {
+    const l = linea.trim();
+    if (!l.startsWith("data:")) return;
+    const payload = l.slice(5).trim();
     if (!payload || payload === "[DONE]") return;
-    eventos++;
-    let chunk: GeminiChunk;
+    let chunk: GeminiPayload;
     try {
-      chunk = JSON.parse(payload) as GeminiChunk;
+      chunk = JSON.parse(payload) as GeminiPayload;
     } catch {
-      jsonInvalido++;
+      return; // fragmento parcial o no-JSON: lo ignoramos
+    }
+    if (chunk.error?.message) {
+      errorEnStream = chunk.error.message;
       return;
     }
     const cand = chunk.candidates?.[0];
@@ -281,50 +284,58 @@ async function llamarGemini(
   const reader = res.body.getReader();
   const dec = new TextDecoder();
   let buf = "";
+  let crudo = ""; // todo lo que no fue una línea `data:` (para pescar un {error})
 
   try {
     for (;;) {
       const { done, value } = await reader.read();
       if (done) break;
       buf += dec.decode(value, { stream: true });
-      const bloques = buf.split("\n\n");
-      buf = bloques.pop() ?? ""; // el último puede estar incompleto
-      for (const bloque of bloques) procesarBloque(bloque);
+      const lineas = buf.split("\n");
+      buf = lineas.pop() ?? ""; // la última puede estar incompleta
+      for (const linea of lineas) {
+        if (linea.trim().startsWith("data:")) procesarLinea(linea);
+        else crudo += linea + "\n";
+      }
     }
-    if (buf.trim()) procesarBloque(buf); // último bloque sin "\n\n" final
+    if (buf.trim().startsWith("data:")) procesarLinea(buf);
+    else crudo += buf;
   } catch (e) {
     if (esAbort(e)) throw e;
+    // Si ya llegó texto, lo devolvemos igual (stream cortado a mitad).
+    if (acumulado) return acumulado;
     throw new ErrorIA(mensajeLegible(e), e);
+  }
+
+  // Un {error:...} pretty-printed que Google inyecta al cortar el stream.
+  if (!errorEnStream && crudo.includes('"error"')) {
+    try {
+      const j = JSON.parse(crudo.trim()) as { error?: { message?: string } };
+      if (j.error?.message) errorEnStream = j.error.message;
+    } catch {
+      // no era JSON limpio
+    }
   }
 
   if (bloqueo || finish === "SAFETY" || finish === "PROHIBITED_CONTENT") {
     throw new ErrorIA("Gemini bloqueó la respuesta por seguridad.");
   }
-  if (!acumulado) {
-    if (finish === "MAX_TOKENS" || huboThoughts) {
-      throw new ErrorIA(
-        `"${modelo}" gastó los tokens razonando sin responder ` +
-          `(finishReason: ${finish ?? "—"}). Probá gemini-2.5-flash.`,
-      );
-    }
-    if (eventos === 0) {
-      throw new ErrorIA(
-        `Gemini (${modelo}) cerró el stream sin mandar nada. ` +
-          `Puede ser que tu key esté en otra API — probá gemini-2.5-flash o Claude.`,
-      );
-    }
-    if (jsonInvalido > 0) {
-      throw new ErrorIA(
-        `Gemini (${modelo}) mandó ${eventos} evento(s) con formato inesperado. ` +
-          `Probá otro modelo.`,
-      );
-    }
+  // Con texto parcial: lo devolvemos aunque el stream se haya cortado con error.
+  if (acumulado) return acumulado;
+
+  if (errorEnStream) {
+    throw new ErrorIA(`Gemini (${modelo}): ${errorEnStream}`);
+  }
+  if (finish === "MAX_TOKENS" || huboThoughts) {
     throw new ErrorIA(
-      `Gemini (${modelo}) mandó ${eventos} evento(s) pero ningún texto ` +
-        `(finishReason: ${finish ?? "ninguno"}). Probá gemini-2.5-flash u otro modelo.`,
+      `"${modelo}" gastó los tokens razonando sin responder ` +
+        `(finishReason: ${finish ?? "—"}). Probá subir la ventana o cambiar de modelo.`,
     );
   }
-  return acumulado;
+  throw new ErrorIA(
+    `Gemini (${modelo}) no devolvió texto (finishReason: ${finish ?? "ninguno"}). ` +
+      `Probá de nuevo o cambiá de modelo.`,
+  );
 }
 
 // Traduce una respuesta de error de Gemini (cualquier endpoint) a texto legible.
