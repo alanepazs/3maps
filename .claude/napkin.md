@@ -7,9 +7,11 @@ Runbook corto. Cosas que muerden si no las sabés. Leer antes de tocar.
 1. **Verificar en browser** → navegador integrado (`mcp__Claude_Browser__*`), NO la extensión
    de Chrome (`mcp__claude-in-chrome__*` pide plan pago). El integrado ya está logueado en el
    GitHub del usuario (`alanepazs`) — sirve para crear repos, cambiar settings, etc.
-2. **El preview pane congela `requestAnimationFrame` y `ResizeObserver` cuando está quieto.**
-   Nodos nuevos de React Flow → `visibility:hidden` hasta un pan/zoom. Animaciones de envión →
-   no se ven. En Chrome real anda bien. Forzar repaint con un mini-drag para verificar.
+2. **El preview pane congela `requestAnimationFrame`/`ResizeObserver` y throttlea `setTimeout`
+   a ~1s cuando está quieto** (aunque `document.hidden` sea `false`). Nodos nuevos de React Flow
+   → `visibility:hidden` hasta un pan/zoom. Animaciones de envión → no se ven. Gestos sintéticos
+   de drag/flick → miden velocidad ~70× lenta, nunca cruzan `FLICK_THRESHOLD`. **La inercia/pan
+   no se puede verificar en el pane** (ni con shim de `rAF`). En Chrome real anda bien.
 3. **Consola del preview pane = log viejo acumulado.** Ignora errores tipo `useMemo is not
    defined` (son de HMR roto de antes). Para errores reales: hook sobre `console.error` o
    `preview_logs` del `next dev`.

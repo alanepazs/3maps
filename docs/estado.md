@@ -1,7 +1,7 @@
 # Estado del proyecto
 
 > Snapshot para retomar rápido. Actualizar al final de cada sesión.
-> Última actualización: 29-08-2026.
+> Última actualización: 29-08-2026 (fix del envión al panear).
 
 ## Dónde estamos
 
@@ -24,6 +24,8 @@ Carpeta local: `D:\IA\3maps`.
 - **Nodo activo**: click en un globo → se resalta y la barra apunta a él.
 - **Envión al soltar un globo** (o un grupo): flick → sigue de largo y frena. Verificado por el
   usuario en Chrome, "quedó bien".
+- **Envión al panear con la manito**: flick del fondo → el lienzo sigue de largo y frena
+  (`usePanInertia`). Arreglado 29-08; verificado con A/B instrumentado (ver pendientes).
 - **Modos del lienzo**: sin teclas → manito (pan) · barra espaciadora → puntero (recuadro de
   selección múltiple; después se arrastra la selección para moverla en grupo).
 - **Tuerquita ⚙️** (arriba izq.): panel de ajustes. Único control hoy: slider "Envión al soltar"
@@ -32,10 +34,15 @@ Carpeta local: `D:\IA\3maps`.
 ## Pendientes (próximos pasos)
 
 ### Interacción / UX
-- [ ] **Envión a la manito (pan)**: el código existe (`usePanInertia`, wired en FlowCanvas) pero
-      el usuario reporta que "faltó" — o sea no se nota o no anda bien. Revisar: puede ser el
-      `FLICK_THRESHOLD`/`MAX_SPEED` del pan, el guard de zoom demasiado agresivo, o que `onMove`
-      no samplea suficiente. **Confirmado como tarea para la próxima sesión.**
+- [x] **Envión a la manito (pan)**: arreglado en `usePanInertia.ts`. Causa: el glide llamaba
+      `setViewport()` cada frame → React Flow lo traduce a un `d3-zoom.transform()` programático
+      que dispara `start`/`move`/`end` **sincrónicamente** → el `start` reentrante llegaba a
+      `onMoveStart`, que hacía `cancelPanInertia()` incondicional y cortaba el envión en el primer
+      frame. Fix: flag `applyingRef` que marca la reentrada; `onMoveStart`/`onMove` la ignoran.
+      Verificado con A/B instrumentado en el navegador integrado (reloj estable + rAF por
+      `MessageChannel` para saltear el throttling del pane): sin fix 1 frame / 12 px; con fix
+      38 frames / 145 px con la dirección del flick. `tsc`+`lint` en verde. Falta el chequeo de
+      "feel" en Chrome real (opcional).
 - [ ] Definir qué pasa al abrir/doble-click en un globo (ver spec §14: ¿solo ese intercambio o
       transcripción de la rama?).
 
@@ -65,6 +72,11 @@ Carpeta local: `D:\IA\3maps`.
 - **Consola del preview pane**: devuelve un log acumulado/viejo (arrastra errores de sesiones de
   HMR rotas, ej. `useMemo is not defined`). Para chequear errores frescos: hook manual sobre
   `console.error` o mirar los logs del `next dev`.
+- **Timers del preview pane throttleados a ~1s** (además del freeze de `rAF`). `setTimeout(14)`
+  tarda ~1000ms aunque `document.hidden` sea `false`. Efecto: cualquier gesto sintético de
+  drag/flick mide velocidad ~70× más lenta y nunca cruza `FLICK_THRESHOLD` → **la inercia no se
+  puede verificar en el pane**, ni siquiera con shim de `rAF`. Verificar envión/pan siempre en
+  Chrome real.
 - **Next 16 `agentRules`**: desactivado en `next.config.ts` para que `next dev` no escriba el
   bloque `nextjs-agent-rules` en `CLAUDE.md`.
 - **Darkreader**: si está activo en `localhost` rompe la hidratación y los colores. El usuario lo

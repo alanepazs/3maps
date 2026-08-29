@@ -31,6 +31,11 @@ export function usePanInertia(
   const wasZoomRef = useRef(false);
   const stopRef = useRef<(() => void) | null>(null);
   const glidingRef = useRef(false);
+  // Cada frame del glide llama a setViewport(), y React Flow lo traduce a un
+  // d3-zoom.transform() programático que dispara start/move/end de forma
+  // SÍNCRONA. Sin este flag, ese "start" reentrante haría cancelPanInertia() y
+  // el envión se cortaría en el primer frame.
+  const applyingRef = useRef(false);
 
   const cancelPanInertia = useCallback(() => {
     stopRef.current?.();
@@ -41,6 +46,7 @@ export function usePanInertia(
   useEffect(() => cancelPanInertia, [cancelPanInertia]);
 
   const onMoveStart = useCallback(() => {
+    if (applyingRef.current) return; // evento reentrante del propio glide
     cancelPanInertia();
     sampleRef.current = null;
     wasZoomRef.current = false;
@@ -48,7 +54,7 @@ export function usePanInertia(
   }, [cancelPanInertia, getViewport]);
 
   const onMove = useCallback((_evt: unknown, vp: Viewport) => {
-    if (glidingRef.current) return;
+    if (glidingRef.current || applyingRef.current) return;
     if (Math.abs(vp.zoom - zoomRef.current) > ZOOM_EPSILON) {
       wasZoomRef.current = true;
     }
@@ -73,7 +79,9 @@ export function usePanInertia(
       v.vy,
       (dx, dy) => {
         const vp = getViewport();
+        applyingRef.current = true;
         setViewport({ x: vp.x + dx, y: vp.y + dy, zoom: vp.zoom });
+        applyingRef.current = false;
       },
       () => {
         glidingRef.current = false;
