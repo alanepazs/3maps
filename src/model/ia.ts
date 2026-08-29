@@ -13,13 +13,13 @@ export type ConfigIA = {
   modelo: string;
 };
 
-export const PROVEEDORES_DISPONIBLES: Proveedor[] = ["claude"];
+export const PROVEEDORES_DISPONIBLES: Proveedor[] = ["claude", "gemini"];
 
 export const MODELOS_SUGERIDOS: Record<Proveedor, string[]> = {
   claude: ["claude-haiku-4-5", "claude-sonnet-5", "claude-opus-5"],
   deepseek: ["deepseek-chat"],
   gpt: ["gpt-4o-mini"],
-  gemini: ["gemini-2.0-flash"],
+  gemini: ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-2.5-flash-lite"],
 };
 
 export const MODELO_POR_DEFECTO: Record<Proveedor, string> = {
@@ -33,7 +33,15 @@ export const NOMBRE_PROVEEDOR: Record<Proveedor, string> = {
   claude: "Claude (Anthropic)",
   deepseek: "DeepSeek",
   gpt: "OpenAI",
-  gemini: "Gemini",
+  gemini: "Google Gemini",
+};
+
+// Pista de formato de la API key, por proveedor (para el placeholder del input).
+export const PISTA_API_KEY: Record<Proveedor, string> = {
+  claude: "sk-ant-…",
+  deepseek: "sk-…",
+  gpt: "sk-…",
+  gemini: "AIza…",
 };
 
 export type LlamadaOpts = {
@@ -68,6 +76,8 @@ export async function llamarIA(
   switch (config.proveedor) {
     case "claude":
       return llamarClaude(config, mensajes, opts);
+    case "gemini":
+      return llamarGemini(config, mensajes, opts);
     default:
       throw new ErrorIA(
         `El proveedor "${config.proveedor}" todavía no está implementado.`,
@@ -150,6 +160,139 @@ async function llamarClaude(
     if (esAbort(e)) throw e; // cancelación deliberada — la maneja quien llama
     throw new ErrorIA(mensajeLegible(e), e);
   }
+}
+
+// ── Adaptador: Gemini / Google ────────────────────────────────────────────
+// REST directo (sin SDK): la API de Gemini permite llamadas desde el navegador
+// y `:streamGenerateContent?alt=sse` devuelve un SSE simple. Tiene free tier.
+
+type GeminiChunk = {
+  candidates?: Array<{
+    content?: { parts?: Array<{ text?: string }> };
+    finishReason?: string;
+  }>;
+  promptFeedback?: { blockReason?: string };
+};
+
+async function llamarGemini(
+  config: ConfigIA,
+  mensajes: Mensaje[],
+  opts: LlamadaOpts,
+): Promise<string> {
+  const modelo = config.modelo || MODELO_POR_DEFECTO.gemini;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
+    modelo,
+  )}:streamGenerateContent?alt=sse`;
+
+  const body: Record<string, unknown> = {
+    contents: mensajes.map((m) => ({
+      role: m.rol === "assistant" ? "model" : "user",
+      parts: [{ text: m.texto }],
+    })),
+    generationConfig: { maxOutputTokens: opts.maxTokens ?? 4096 },
+  };
+  if (opts.sistema) {
+    body.systemInstruction = { parts: [{ text: opts.sistema }] };
+  }
+
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-goog-api-key": config.apiKey,
+      },
+      body: JSON.stringify(body),
+      signal: opts.signal,
+    });
+  } catch (e) {
+    if (esAbort(e)) throw e;
+    throw new ErrorIA(
+      "No se pudo conectar con la API de Gemini (red, CORS o CSP).",
+      e,
+    );
+  }
+
+  if (!res.ok || !res.body) {
+    let msg = `Error ${res.status} de Gemini.`;
+    try {
+      const j = (await res.json()) as { error?: { message?: string } };
+      const m = j?.error?.message;
+      if (res.status === 400 && /api[_ ]?key/i.test(m ?? "")) {
+        msg = "API key de Gemini inválida.";
+      } else if (res.status === 403) {
+        msg = "La API key de Gemini no tiene acceso (o falta habilitar la API).";
+      } else if (res.status === 404) {
+        msg = `No existe el modelo "${modelo}" en Gemini.`;
+      } else if (res.status === 429) {
+        msg = "Límite de la API de Gemini alcanzado. Probá más tarde.";
+      } else if (m) {
+        msg = m;
+      }
+    } catch {
+      // sin body legible
+    }
+    throw new ErrorIA(msg);
+  }
+
+  let acumulado = "";
+  let finish: string | null = null;
+  let bloqueo: string | null = null;
+  const reader = res.body.getReader();
+  const dec = new TextDecoder();
+  let buf = "";
+
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const bloques = buf.split("\n\n");
+      buf = bloques.pop() ?? "";
+      for (const bloque of bloques) {
+        const linea = bloque
+          .split("\n")
+          .find((l) => l.startsWith("data:"));
+        if (!linea) continue;
+        const payload = linea.slice(5).trim();
+        if (!payload || payload === "[DONE]") continue;
+        let chunk: GeminiChunk;
+        try {
+          chunk = JSON.parse(payload) as GeminiChunk;
+        } catch {
+          continue;
+        }
+        const cand = chunk.candidates?.[0];
+        const delta = (cand?.content?.parts ?? [])
+          .map((p) => p.text ?? "")
+          .join("");
+        if (delta) {
+          acumulado += delta;
+          opts.onTexto?.(delta, acumulado);
+        }
+        if (cand?.finishReason) finish = cand.finishReason;
+        if (chunk.promptFeedback?.blockReason) {
+          bloqueo = chunk.promptFeedback.blockReason;
+        }
+      }
+    }
+  } catch (e) {
+    if (esAbort(e)) throw e;
+    throw new ErrorIA(mensajeLegible(e), e);
+  }
+
+  if (bloqueo || finish === "SAFETY" || finish === "PROHIBITED_CONTENT") {
+    throw new ErrorIA("Gemini bloqueó la respuesta por seguridad.");
+  }
+  if (!acumulado) {
+    throw new ErrorIA(
+      finish === "MAX_TOKENS"
+        ? "Gemini cortó por límite de tokens sin texto útil."
+        : "Gemini no devolvió texto.",
+    );
+  }
+  return acumulado;
 }
 
 function esAbort(e: unknown): boolean {

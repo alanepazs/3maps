@@ -7,6 +7,7 @@ import {
   MODELOS_SUGERIDOS,
   MODELO_POR_DEFECTO,
   NOMBRE_PROVEEDOR,
+  PISTA_API_KEY,
   PROVEEDORES_DISPONIBLES,
   type ConfigIA,
 } from "@/model/ia";
@@ -42,12 +43,17 @@ export default function SettingsPanel({
     modelo?: string;
     proveedor?: Proveedor;
   }) => {
-    // Siempre pasamos el objeto completo; persistir o no lo decide configIA.ts
-    // (no guarda sin API key). Así el modelo se puede editar antes de la key.
+    // Al cambiar de proveedor: resetear el modelo a su default y limpiar la key
+    // (la de un proveedor no sirve para otro). Siempre pasamos el objeto
+    // completo; persistir o no lo decide configIA.ts (no guarda sin API key).
+    const cambioProveedor =
+      parche.proveedor !== undefined && parche.proveedor !== proveedor;
     onChangeConfigIA({
       proveedor: parche.proveedor ?? proveedor,
-      apiKey: parche.apiKey ?? apiKey,
-      modelo: parche.modelo ?? modelo,
+      apiKey: cambioProveedor ? "" : (parche.apiKey ?? apiKey),
+      modelo: cambioProveedor
+        ? MODELO_POR_DEFECTO[parche.proveedor as Proveedor]
+        : (parche.modelo ?? modelo),
     });
   };
 
@@ -115,7 +121,7 @@ export default function SettingsPanel({
               type="password"
               value={apiKey}
               onChange={(e) => guardar({ apiKey: e.target.value })}
-              placeholder="sk-ant-…"
+              placeholder={PISTA_API_KEY[proveedor]}
               autoComplete="off"
               spellCheck={false}
               className="mt-1 w-full rounded border border-white/15 bg-neutral-950 px-2 py-1.5 text-sm placeholder:text-white/30 focus:border-sky-400 focus:outline-none"

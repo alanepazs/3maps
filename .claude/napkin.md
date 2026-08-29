@@ -40,8 +40,9 @@ Runbook corto. Cosas que muerden si no las sabés. Leer antes de tocar.
 9. Reglas de contexto/costos de tokens en `CLAUDE.md` — implementadas en
    `src/model/contexto.ts` (`armarContexto`). No rearmar el contexto a mano ni mandar el árbol
    entero. La llamada a la IA es `src/model/ia.ts` (`llamarIA`), wired en `FlowCanvas.responder`.
-   **La API key va directo del navegador a `api.anthropic.com`** (SDK con `dangerouslyAllowBrowser`);
-   nunca a un server propio. Sumar proveedor = un `case` en `llamarIA`.
+   **La API key va directo del navegador al proveedor**, nunca a un server propio. Proveedores:
+   Claude (`@anthropic-ai/sdk` dinámico) y Gemini (`fetch` + SSE, sin SDK — su CORS anda desde
+   el navegador). Sumar otro = un `case` en `llamarIA` + entradas en los `Record<Proveedor,...>`.
 10. **El `arbol` de `src/model/intercambio.ts` es la fuente de la verdad.** Los nodos/edges de
     React Flow se DERIVAN (`arbolAVista`) — nunca guardar estado propio en `data` de un nodo ni
     tratar a React Flow como el store. Toda mutación pasa por `setArbol` con funciones puras del

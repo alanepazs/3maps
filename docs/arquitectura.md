@@ -37,10 +37,10 @@ src/
                          N completos + resumen del tramo viejo). Secuencia válida para la API
                          (arranca en user, sin roles repetidos). tramoAResumir = los intercambios
                          fuera de la ventana.
-    ia.ts                llamarIA(config, mensajes, opts) → string. Punto único; adentro elige el
-                         proveedor (hoy solo "claude", vía @anthropic-ai/sdk dinámico + streaming).
-                         resumir(config, intercambios) para el resumen de contexto. ErrorIA con
-                         mensajes ya legibles. ConfigIA = {proveedor, apiKey, modelo}.
+    ia.ts                llamarIA(config, mensajes, opts) → string. Punto único; switch(proveedor).
+                         Adaptadores: Claude (@anthropic-ai/sdk dinámico) y Gemini (fetch + SSE).
+                         Ambos con streaming vía opts.onTexto. resumir() para el resumen de
+                         contexto. ErrorIA con mensajes ya legibles.
     configIA.ts          cargar/guardarConfigIA en localStorage ("3maps:ia"). No persiste sin API
                          key. Aparte de "3maps:settings" porque es sensible.
   components/
@@ -133,18 +133,24 @@ Props de `<ReactFlow>` que importan:
 
 ## IA (model/ia.ts)
 
-- `ConfigIA = { proveedor, apiKey, modelo }`. `PROVEEDORES_DISPONIBLES = ["claude"]` (los demás
-  del tipo `Proveedor` están declarados pero sin adaptador). Modelo por defecto:
-  `claude-haiku-4-5` (barato; cada usuario paga su propia key).
+- `ConfigIA = { proveedor, apiKey, modelo }`. `PROVEEDORES_DISPONIBLES = ["claude", "gemini"]`
+  (`deepseek`/`gpt` declarados en el tipo pero sin adaptador). `MODELO_POR_DEFECTO`,
+  `MODELOS_SUGERIDOS`, `NOMBRE_PROVEEDOR`, `PISTA_API_KEY` por proveedor.
 - `llamarIA(config, mensajes, opts)` → `switch(config.proveedor)`. Sumar proveedor = un `case`
-  nuevo, sin tocar nada del árbol (spec §6).
-- Adaptador Claude: `await import("@anthropic-ai/sdk")` (dinámico), `new Anthropic({ apiKey,
-  dangerouslyAllowBrowser: true })`, `client.messages.stream(...)` con `signal`. `stream.on("text")`
-  acumula y llama `opts.onTexto(delta, acc)`. `mensajeLegible` mapea status → texto (401 → "API
-  key inválida", "Failed to fetch" → "no se pudo conectar / CORS").
-- La API key va **directo del navegador a `api.anthropic.com`** (CORS habilitado por el header
-  `anthropic-dangerous-direct-browser-access` que pone el SDK). Nunca a un servidor de 3maps.
-- `resumir(config, intercambios)` — resumen corto del tramo viejo, mismo proveedor/modelo.
+  nuevo, sin tocar nada del árbol (spec §6). `resumir()` usa el mismo proveedor configurado.
+- La API key va **directo del navegador al proveedor**, nunca a un servidor de 3maps.
+- **Adaptador Claude** (`llamarClaude`): `await import("@anthropic-ai/sdk")` (dinámico),
+  `new Anthropic({ apiKey, dangerouslyAllowBrowser: true })`, `client.messages.stream(...)` con
+  `signal`. CORS habilitado por el header `anthropic-dangerous-direct-browser-access` del SDK.
+  Default `claude-haiku-4-5`.
+- **Adaptador Gemini** (`llamarGemini`): **`fetch` directo** (sin SDK), a
+  `generativelanguage.googleapis.com/v1beta/models/{modelo}:streamGenerateContent?alt=sse` con
+  header `x-goog-api-key`. Mensajes → `contents:[{role:"user"|"model", parts:[{text}]}]`. Parser
+  SSE propio (líneas `data: {json}`), acumula `candidates[0].content.parts[].text`. `finishReason`
+  SAFETY / `promptFeedback.blockReason` → error de seguridad. CORS de Gemini **anda desde el
+  navegador** (verificado: key trucha → 400 real, no bloqueo CORS). Tiene free tier. Default
+  `gemini-2.0-flash`.
+- `mensajeLegible` mapea status/errores → texto legible (usado por ambos adaptadores).
 
 ## Deploy (next.config.ts + .github/workflows/deploy.yml)
 
