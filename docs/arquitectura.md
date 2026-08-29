@@ -10,6 +10,7 @@
 - **React Flow** `@xyflow/react` ^12.11.5 (con `@xyflow/system` 0.0.81 pinneado)
 - **`@anthropic-ai/sdk`** — se importa **dinámicamente** dentro de `model/ia.ts` (solo se baja
   cuando el usuario dispara una llamada; no pesa en la carga inicial).
+- **`react-markdown` + `remark-gfm`** — render de las respuestas de la IA (`components/Markdown.tsx`).
 - Sin backend, sin `transformers.js` todavía (fase 1). Deploy: **GitHub Pages** (`output: "export"`).
 
 ## Árbol de archivos
@@ -45,7 +46,10 @@ src/
   components/
     FlowCanvas.tsx      ★ El componente central (~500 líneas). Ver detalle abajo.
     MessageNode.tsx     Nodo custom. Estados del cuerpo: pending ("escribiendo…" + texto + ▍),
-                        error (recuadro rojo + "↻ Reintentar"), respuesta, o vacío.
+                        error (recuadro rojo + "↻ Reintentar"), respuesta (markdown), o vacío.
+    Markdown.tsx        <Markdown>{texto}</Markdown> — react-markdown + remark-gfm con estilos
+                        compactos para el globo (código y tablas con scroll horizontal propio;
+                        links con target=_blank). Sin HTML crudo → seguro.
     Composer.tsx        Barra inferior fija para escribir.
     SettingsPanel.tsx   Tuerquita ⚙️: ajustes del lienzo (envión, ventana de contexto) +
                         config de IA (proveedor, API key, modelo). Campos sin estado local:

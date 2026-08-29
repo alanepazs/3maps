@@ -6,6 +6,7 @@ import {
   type NodeProps,
 } from "@xyflow/react";
 
+import Markdown from "./Markdown";
 import { NodeActionsContext } from "./nodeActions";
 
 // Un globo = un intercambio completo: la pregunta (encabezado) + la respuesta
@@ -67,7 +68,9 @@ export default function MessageNode({
         <div className="px-3 py-2 text-left">
           <p className="whitespace-pre-wrap text-xs text-red-300">⚠ {error}</p>
           {respuesta && (
-            <p className="mt-1.5 whitespace-pre-wrap text-white/70">{respuesta}</p>
+            <div className="mt-1.5 text-white/70">
+              <Markdown>{respuesta}</Markdown>
+            </div>
           )}
           <button
             type="button"
@@ -79,16 +82,18 @@ export default function MessageNode({
         </div>
       ) : (
         <div
-          className={`whitespace-pre-wrap px-3 py-2 text-left ${
+          className={`px-3 py-2 text-left ${
             respuesta || pending ? "text-white/90" : "italic text-white/40"
           }`}
         >
-          {respuesta ?? (pending ? "" : "Respuesta pendiente")}
-          {pending && (
-            <span className="italic text-white/40">
-              {respuesta ? " ▍" : "escribiendo…"}
-            </span>
-          )}
+          {respuesta != null && <Markdown>{respuesta}</Markdown>}
+          {pending &&
+            (respuesta ? (
+              <span className="italic text-white/40"> ▍</span>
+            ) : (
+              <span className="italic text-white/40">escribiendo…</span>
+            ))}
+          {respuesta == null && !pending && "Respuesta pendiente"}
         </div>
       )}
 

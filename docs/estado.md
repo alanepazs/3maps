@@ -89,8 +89,12 @@ Carpeta local: `D:\IA\3maps`.
       configurable.**
 - [ ] Export/import: `.zip` de la carpeta de `.md` + carpetas reales con File System Access API,
       UI de guardar/abrir (§7). Hoy solo hay persistencia local automática.
-- [ ] Markdown renderizado en la respuesta (hoy es texto plano con `whitespace-pre-wrap`). El
-      `.md` ya guarda/parsea respuestas con `## títulos` correctamente (error va en frontmatter).
+- [x] **Markdown renderizado en la respuesta** (`src/components/Markdown.tsx`, `react-markdown` +
+      `remark-gfm`): títulos, listas, código (inline y bloque con scroll horizontal), links (abren
+      en pestaña nueva), citas, tablas GFM. Estilo compacto para el globo de 260px. `react-markdown`
+      no renderiza HTML crudo → seguro ante lo que devuelva el modelo. Funciona con el streaming
+      (markdown parcial se re-renderiza). Verificado el DOM/estructura; falta chequeo visual fino
+      en Chrome.
 - [ ] Embeddings locales con `transformers.js` para relevancia de contexto.
 - [ ] Estado `expandido`/colapsado por globo para rendimiento con muchos nodos (§8).
 
