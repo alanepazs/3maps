@@ -60,13 +60,17 @@ Carpeta local: `D:\IA\3maps`.
       `src/model/persistencia.ts` (localStorage, un `.md` por intercambio). El `arbol` es la
       fuente de la verdad en `FlowCanvas`; los nodos/edges se derivan. Falta: export/import a
       `.zip` y carpetas reales (File System Access API) — ver abajo.
+- [x] **Armar el contexto** (`src/model/contexto.ts`): `armarContexto(arbol, nodoId, opts,
+      resumenViejo)` → `Mensaje[]`. Solo el camino raíz→nodo, aplanado a user/assistant, con
+      ventana (últimos N completos + resumen del tramo viejo), secuencia válida para la API,
+      prefijo estable para el prompt caching. `tramoAResumir` para el resumidor futuro.
+      Verificado con 22 asserts. **Sin wirear todavía** — lo llama #3. Falta: generar el
+      `resumenViejo` de verdad (necesita una IA barata → parte de #3).
 - [ ] **Llamada real a la IA**: `llamar_ia(mensajes)` con la clave del usuario (guardada solo en
       el navegador). Arrancar con un proveedor (DeepSeek o Claude Haiku por costo). El globo
-      `pending` se completa con la respuesta. **(Próximo paso — el modelo ya está listo para esto:
-      `crearIntercambio` deja `respuesta: null, pending: true`; `conRespuesta` la completa.)**
-- [ ] Armar el contexto: solo el camino raíz→activo, aplanado a mensajes user/assistant
-      (ver spec §4). Ventana de contexto + resumen de lo viejo (§5). Prompt caching (§5).
-      **Ya existe `caminoRaizA(arbol, id)` en el modelo.**
+      `pending` se completa con la respuesta. **Todo listo para engancharlo:** `crearIntercambio`
+      deja `respuesta: null, pending: true`, `conRespuesta` la completa, `armarContexto` arma los
+      mensajes. Falta: cliente HTTP por proveedor + UI para la API key + el resumidor.
 - [ ] Export/import: `.zip` de la carpeta de `.md` + carpetas reales con File System Access API,
       UI de guardar/abrir (§7). Hoy solo hay persistencia local automática.
 - [ ] Embeddings locales con `transformers.js` para relevancia de contexto.

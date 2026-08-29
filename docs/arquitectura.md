@@ -29,6 +29,11 @@ src/
                          (semilla de ejemplo).
     persistencia.ts      guardarArbol / cargarArbol en localStorage ("3maps:arbol"), guardando
                          un string .md por intercambio. Cae a arbolInicial() si no hay nada.
+    contexto.ts          armarContexto(arbol, nodoId, opts, resumenViejo) → Mensaje[] para la IA:
+                         SOLO el camino raíz→nodo, aplanado a user/assistant, con ventana (últimos
+                         N completos + resumen del tramo viejo). Secuencia válida para la API
+                         (arranca en user, sin roles repetidos). tramoAResumir = los intercambios
+                         fuera de la ventana. Todavía sin usar (lo llama #3, la llamada a la IA).
   components/
     FlowCanvas.tsx      ★ El componente central (~370 líneas). Ver detalle abajo.
     MessageNode.tsx     Nodo custom de React Flow. Un globo = un intercambio.
@@ -125,8 +130,7 @@ Barra `absolute inset-x-0 bottom-0`. Props: `activeNodeLabel` (la pregunta del a
 - `nuevoId()` → `"nodo-" + 8 hex` (crypto). `crearIntercambio` acepta `id`/`fecha` opcionales
   (la semilla los pasa fijos → determinística para SSR).
 - Todas las funciones son **puras**: las mutaciones devuelven un `Arbol` nuevo.
-- `caminoRaizA(arbol, id)` → intercambios de la raíz al nodo (lo va a usar el armado de contexto
-  para la IA, spec §4). Con guarda anti-ciclo.
+- `caminoRaizA(arbol, id)` → intercambios de la raíz al nodo. Con guarda anti-ciclo.
 - `toMarkdown` / `parseMarkdown` — `---` frontmatter (`key: value`, parser mínimo sin YAML) +
   `## Pregunta` / `## Respuesta`. `padre_id` / `proveedor` vacíos → `null`.
 
@@ -135,6 +139,28 @@ Barra `absolute inset-x-0 bottom-0`. Props: `activeNodeLabel` (la pregunta del a
 `localStorage["3maps:arbol"]` = `{ [id]: "<string .md>" }` (un archivo por intercambio, igual que
 va a ser el export a disco — spec §7). `guardarArbol` serializa todo; `cargarArbol` parsea y cae
 a `arbolInicial()` si no hay nada o falla el parseo. El `.zip` / carpetas reales queda pendiente.
+
+## model/contexto.ts (armado del contexto para la IA)
+
+`Mensaje` = `{ rol: "user" | "assistant", texto }`.
+
+`armarContexto(arbol, nodoId, opts?, resumenViejo?)` → `Mensaje[]`:
+- **Solo el camino raíz→`nodoId`** (`caminoRaizA`), nunca el árbol entero (invariante CLAUDE.md).
+- Cada intercambio se aplana: pregunta no vacía → `user`, respuesta no vacía → `assistant`.
+- **Ventana** (`opts.ventana`, default 6): los últimos N intercambios van completos; el tramo
+  anterior se reemplaza por `resumenViejo` (un `user` con el resumen + un `assistant` "Listo…").
+  Si `resumenViejo` es `null` (fase 1, sin IA que resuma), ese tramo va completo igual.
+- `normalizar`: arranca en `user` (si la raíz tiene pregunta vacía, mete un `user` placeholder) y
+  concatena mensajes seguidos del mismo rol → secuencia siempre válida para la API.
+- Si `nodoId` es un intercambio **pendiente**, su pregunta queda de último `user` → listo para
+  mandar sin agregar nada.
+- **Determinístico** para un `(camino, opts, resumen)` dado, y el prefijo solo crece al final →
+  aprovecha el prompt caching del proveedor (spec §5).
+
+`tramoAResumir(arbol, nodoId, opts?)` → los `Intercambio[]` fuera de la ventana (lo que habría
+que resumir). Lo usará la lógica de resumen de #3.
+
+Verificado con 22 asserts (script scratch, borrado). Todavía **sin usar** — lo llama #3.
 
 ## inertia.ts (física del envión)
 

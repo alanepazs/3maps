@@ -31,7 +31,9 @@ Runbook corto. Cosas que muerden si no las sabés. Leer antes de tocar.
    `devIndicators.position: "bottom-right"` (que el indicador no tape la tuerquita).
 8. **Un globo = un intercambio** (pregunta + respuesta), no un mensaje suelto. No volver al
    modelo de nodo-por-mensaje.
-9. Reglas de contexto/costos de tokens en `CLAUDE.md` — no romperlas cuando se meta la IA.
+9. Reglas de contexto/costos de tokens en `CLAUDE.md` — ya implementadas en
+   `src/model/contexto.ts` (`armarContexto`). Al meter la IA, usar eso, no rearmar el contexto
+   a mano ni mandar el árbol entero.
 10. **El `arbol` de `src/model/intercambio.ts` es la fuente de la verdad.** Los nodos/edges de
     React Flow se DERIVAN (`arbolAVista`) — nunca guardar estado propio en `data` de un nodo ni
     tratar a React Flow como el store. Toda mutación pasa por `setArbol` con funciones puras del
