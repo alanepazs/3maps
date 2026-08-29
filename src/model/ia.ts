@@ -19,16 +19,15 @@ export const MODELOS_SUGERIDOS: Record<Proveedor, string[]> = {
   claude: ["claude-haiku-4-5", "claude-sonnet-5", "claude-opus-5"],
   deepseek: ["deepseek-chat"],
   gpt: ["gpt-4o-mini"],
-  // Probados con key real (free tier): gemini-2.5-flash y gemini-3.x-flash andan;
-  // gemini-flash-latest resuelve a un flash paid-tier (503) y gemini-2.5-flash-lite
-  // ya no está para keys nuevas. El botón "ver modelos disponibles" en ⚙️ lista lo
-  // que la key concreta puede usar (listarModelos). gemini-2.0-flash fue retirado.
+  // Una key free tier NUEVA solo puede usar los 3.x: Google devuelve 404 en los
+  // 2.5-* ("no longer available to new users, use gemini-3.6-flash"). El botón
+  // "ver modelos disponibles" en ⚙️ lista lo que la key concreta puede usar.
   // Ver decisiones §7b.
   gemini: [
-    "gemini-2.5-flash",
+    "gemini-3.6-flash",
     "gemini-3.5-flash",
-    "gemini-3-flash-preview",
-    "gemini-flash-latest",
+    "gemini-3.5-flash-lite",
+    "gemini-2.5-flash",
   ],
 };
 
@@ -36,7 +35,7 @@ export const MODELO_POR_DEFECTO: Record<Proveedor, string> = {
   claude: "claude-haiku-4-5",
   deepseek: "deepseek-chat",
   gpt: "gpt-4o-mini",
-  gemini: "gemini-2.5-flash",
+  gemini: "gemini-3.6-flash",
 };
 
 export const NOMBRE_PROVEEDOR: Record<Proveedor, string> = {
@@ -200,11 +199,15 @@ async function llamarGemini(
       parts: [{ text: m.texto }],
     })),
     generationConfig: {
-      // Headroom generoso: los flash de Gemini 2.5/3.x "piensan" y el thinking
-      // cuenta contra maxOutputTokens; si queda corto, la respuesta sale vacía.
+      // Headroom generoso: los flash de Gemini "piensan" y el thinking cuenta
+      // contra maxOutputTokens; si queda corto, la respuesta sale vacía.
       maxOutputTokens: opts.maxTokens ?? 8192,
-      // Además pedimos thinking mínimo — para un chat queremos respuesta directa.
-      thinkingConfig: { thinkingBudget: 0 },
+      // Thinking al mínimo — para un chat queremos respuesta directa. La forma
+      // del parámetro cambió entre generaciones: 3.x usa `thinkingLevel`,
+      // 2.x/1.x usan `thinkingBudget` (mandar el otro = 400 "invalid argument").
+      thinkingConfig: /gemini-[3-9]/.test(modelo)
+        ? { thinkingLevel: "low" }
+        : { thinkingBudget: 0 },
     },
   };
   if (opts.sistema) {

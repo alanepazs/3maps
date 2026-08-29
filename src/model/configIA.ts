@@ -16,7 +16,11 @@ const MODELOS_MUERTOS = new Set([
   "gemini-2.0-flash",
   "gemini-1.5-flash",
   "gemini-pro",
-  "gemini-2.5-flash-lite", // "no longer available to new users"
+  // "no longer available to new users" → Google redirige a los 3.x
+  "gemini-2.5-flash",
+  "gemini-2.5-flash-lite",
+  "gemini-2.5-pro",
+  // alias que hoy resuelven a un flash paid-tier (503 "high demand")
   "gemini-flash-latest",
   "gemini-pro-latest",
 ]);

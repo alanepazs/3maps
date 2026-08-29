@@ -77,15 +77,16 @@ Historia de dolor real con una key **free tier** recién sacada de AI Studio:
   thoughts.
 
 **Decisiones tomadas:**
-1. **Default = `gemini-2.5-flash`** — GA, en free tier, probado con key real → 200 + texto. Nada
-   de alias `-latest` (apuntan a paid) ni `-preview` como default.
-2. **`thinkingConfig: { thinkingBudget: 0 }` + `maxOutputTokens: 8192`** en toda llamada a Gemini.
-   Los flash 2.5/3.x "piensan" y el thinking **cuenta contra `maxOutputTokens`**; si `thinkingBudget:0`
-   no se respeta (pasa en algunas keys/proyectos nuevos), con 4096 la respuesta salía vacía. El
-   parser descarta las `parts` con `thought: true` y, si no hay texto, el error dice el
-   `finishReason` real (dejamos de adivinar). Una key nueva puede estar en otra superficie de API
-   ("Interactions API") donde el endpoint legacy devuelve vacío — ahí no queda otra que otro modelo
-   o proveedor.
+1. **Default = `gemini-3.6-flash`** — una key free tier NUEVA da **404** en TODOS los `2.5-*`
+   ("no longer available to new users, use gemini-3.6-flash"). Google empuja a la generación 3.x.
+   `MODELOS_MUERTOS` migra los `2.5-*` y los alias `-latest` al default.
+2. **`thinkingConfig` con la forma correcta por generación** + `maxOutputTokens: 8192`:
+   - **3.x** → `{ thinkingLevel: "low" }` (mandar `thinkingBudget` acá = **400 "invalid argument"**).
+   - **2.x/1.x** → `{ thinkingBudget: 0 }`.
+   Los flash "piensan" y el thinking cuenta contra `maxOutputTokens`; con 4096 la respuesta salía
+   vacía. El parser descarta `parts` con `thought: true`; si no hay texto, el error dice cuántos
+   eventos SSE llegaron y el `finishReason` (dejamos de adivinar). El parser también procesa el
+   último bloque aunque no termine en `\n\n` (se perdían respuestas de un solo evento).
 3. **`listarModelos(config)`** (`ia.ts`) + botón **"↻ ver modelos que tu key puede usar"** en
    `SettingsPanel`: GET `…/v1beta/models` con la key del usuario → chips clickeables con lo que
    **esa key** puede usar (única fuente de verdad, varía por key). Claude usa `client.models.list()`.
