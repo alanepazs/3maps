@@ -31,6 +31,7 @@ import {
   type Settings,
 } from "./settings";
 import { useNodeInertia } from "./useNodeInertia";
+import { usePanInertia } from "./usePanInertia";
 
 // Definido a nivel de módulo (no dentro del componente): si React Flow recibe
 // un objeto nodeTypes nuevo en cada render, remonta todos los nodos.
@@ -84,7 +85,7 @@ function Flow() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [activeNodeId, setActiveNodeId] = useState<string | null>("2");
-  const { getNode } = useReactFlow();
+  const { getNode, getViewport, setViewport } = useReactFlow();
 
   // Ajustes configurables (tuerquita). En el server no hay localStorage, así
   // que se usan los defaults; en el cliente se leen los guardados. No hay
@@ -202,7 +203,7 @@ function Flow() {
 
   // Envión / inercia al soltar, tipo Obsidian Canvas.
   const {
-    onNodeDragStart,
+    onNodeDragStart: nodeInertiaDragStart,
     onNodeDrag,
     onNodeDragStop,
     onSelectionDragStart,
@@ -211,10 +212,23 @@ function Flow() {
     cancelInertia,
   } = useNodeInertia(setNodes, finalizeBranchSide, settings.inertia);
 
+  // Envión también al mover el plano del fondo con la manito.
+  const { onMoveStart, onMove, onMoveEnd, cancelPanInertia } = usePanInertia(
+    setViewport,
+    getViewport,
+    settings.inertia,
+  );
+
+  const onNodeDragStart = useCallback(() => {
+    cancelPanInertia();
+    nodeInertiaDragStart();
+  }, [cancelPanInertia, nodeInertiaDragStart]);
+
   // Modo de interacción:
-  //   - por defecto: puntero → arrastrar sobre el lienzo hace un recuadro de
-  //     selección (varios globos), y arrastrar un globo/selección los mueve.
-  //   - con la barra espaciadora apretada: manito → arrastrar hace pan.
+  //   - por defecto: manito → arrastrar el fondo hace pan (con envión).
+  //   - con la barra espaciadora apretada: puntero → arrastrar el fondo hace un
+  //     recuadro de selección (varios globos).
+  //   - en ambos modos, arrastrar un globo lo mueve.
   const [spaceHeld, setSpaceHeld] = useState(false);
   useEffect(() => {
     const isEditable = (t: EventTarget | null) =>
@@ -246,6 +260,7 @@ function Flow() {
   const deleteNode = useCallback(
     (id: string) => {
       cancelInertia();
+      cancelPanInertia();
       const toRemove = new Set<string>([id]);
       let changed = true;
       while (changed) {
@@ -279,7 +294,7 @@ function Flow() {
       );
       setActiveNodeId(parentId);
     },
-    [cancelInertia, edges, setNodes, setEdges],
+    [cancelInertia, cancelPanInertia, edges, setNodes, setEdges],
   );
 
   const nodeActions = useMemo(() => ({ deleteNode }), [deleteNode]);
@@ -300,11 +315,13 @@ function Flow() {
           onSelectionDragStart={onSelectionDragStart}
           onSelectionDrag={onSelectionDrag}
           onSelectionDragStop={onSelectionDragStop}
+          onMoveStart={onMoveStart}
+          onMove={onMove}
+          onMoveEnd={onMoveEnd}
           onNodeClick={() => cancelInertia()}
           onSelectionChange={onSelectionChange}
-          panOnDrag={spaceHeld}
-          nodesDraggable={!spaceHeld}
-          selectionOnDrag={!spaceHeld}
+          panOnDrag={!spaceHeld}
+          selectionOnDrag={spaceHeld}
           selectionMode={SelectionMode.Partial}
           selectionKeyCode={null}
           panActivationKeyCode={null}
