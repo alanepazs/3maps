@@ -5,8 +5,10 @@ Runbook corto. Cosas que muerden si no las sabés. Leer antes de tocar.
 ## Entorno / herramientas
 
 1. **Verificar en browser** → navegador integrado (`mcp__Claude_Browser__*`), NO la extensión
-   de Chrome (`mcp__claude-in-chrome__*` pide plan pago). El integrado ya está logueado en el
-   GitHub del usuario (`alanepazs`) — sirve para crear repos, cambiar settings, etc.
+   de Chrome (`mcp__claude-in-chrome__*` pide plan pago). El login a GitHub en el integrado
+   **es intermitente** — a veces está logueado como `alanepazs`, a veces no. Para leer estado
+   de CI sin login: API pública (`api.github.com/repos/alanepazs/3maps/actions/runs/<id>/jobs`).
+   Cambiar Settings del repo (Pages, permisos) requiere que el usuario lo haga.
 2. **El preview pane congela `requestAnimationFrame`/`ResizeObserver` y throttlea `setTimeout`
    a ~1s cuando está quieto** (aunque `document.hidden` sea `false`). Los nodos de React Flow
    quedan `visibility:hidden` (no se miden) → sin medición no se dibujan los edges → el canvas
