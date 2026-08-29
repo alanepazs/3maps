@@ -23,6 +23,7 @@ import "@xyflow/react/dist/style.css";
 import MessageNode from "./MessageNode";
 import Composer, { type BranchKind } from "./Composer";
 import { NodeActionsContext } from "./nodeActions";
+import { useNodeInertia } from "./useNodeInertia";
 
 // Definido a nivel de módulo (no dentro del componente): si React Flow recibe
 // un objeto nodeTypes nuevo en cada render, remonta todos los nodos.
@@ -144,18 +145,20 @@ function Flow() {
     [activeNodeId, nodes, edges, setNodes, setEdges],
   );
 
-  // Al soltar un globo arrastrado: si es una rama, reconectar la flecha al
-  // costado (izquierda/derecha) del padre según dónde quedó el globo.
-  const onNodeDragStop = useCallback(
-    (_evt: unknown, node: Node) => {
+  // Cuando un globo queda quieto (al soltarlo, o al frenar el envión): si es
+  // una rama, reconectar la flecha al costado (izquierda/derecha) del padre
+  // según dónde quedó.
+  const finalizeBranchSide = useCallback(
+    (nodeId: string) => {
       setEdges((eds) =>
         eds.map((e) => {
-          if (e.target !== node.id) return e;
+          if (e.target !== nodeId) return e;
           if (!BRANCH_HANDLES.includes(e.sourceHandle as never)) return e;
+          const child = getNode(nodeId);
           const parent = getNode(e.source);
-          if (!parent) return e;
+          if (!child || !parent) return e;
           const side =
-            node.position.x < parent.position.x ? "branch-left" : "branch-right";
+            child.position.x < parent.position.x ? "branch-left" : "branch-right";
           return e.sourceHandle === side ? e : { ...e, sourceHandle: side };
         }),
       );
@@ -163,9 +166,14 @@ function Flow() {
     [getNode, setEdges],
   );
 
+  // Envión / inercia al soltar, tipo Obsidian Canvas.
+  const { onNodeDragStart, onNodeDrag, onNodeDragStop, cancelInertia } =
+    useNodeInertia(setNodes, finalizeBranchSide);
+
   // Elimina un nodo y todos sus descendientes. Deja como activo al padre.
   const deleteNode = useCallback(
     (id: string) => {
+      cancelInertia();
       const toRemove = new Set<string>([id]);
       let changed = true;
       while (changed) {
@@ -199,7 +207,7 @@ function Flow() {
       );
       setActiveNodeId(parentId);
     },
-    [edges, setNodes, setEdges],
+    [cancelInertia, edges, setNodes, setEdges],
   );
 
   const nodeActions = useMemo(() => ({ deleteNode }), [deleteNode]);
@@ -214,7 +222,10 @@ function Flow() {
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          onNodeDragStart={onNodeDragStart}
+          onNodeDrag={onNodeDrag}
           onNodeDragStop={onNodeDragStop}
+          onNodeClick={() => cancelInertia()}
           onSelectionChange={onSelectionChange}
           colorMode="dark"
           fitView
