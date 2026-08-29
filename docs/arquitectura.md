@@ -1,7 +1,7 @@
 # Arquitectura del código
 
 > Mapa de `src/` para no tener que leer todo. Actualizar cuando cambie la estructura.
-> Última actualización: 29-08-2026 (fase 1, esqueleto visual).
+> Última actualización: 29-08-2026 (modelo de datos: árbol de intercambios + `.md`).
 
 ## Stack real (lo que está instalado)
 
@@ -20,8 +20,17 @@ src/
     page.tsx        Renderiza <FlowCanvas /> dentro de <main class="h-screen w-screen">.
     globals.css     Tailwind + tokens de color que siguen prefers-color-scheme (dark por defecto
                     en el SO del usuario).
+  model/
+    intercambio.ts       ★ Modelo de datos (fuente de la verdad). Tipos Intercambio/Arbol/Rama/
+                         Proveedor. Funciones puras: consultas (buscar, hijos, descendientes,
+                         caminoRaizA, padre, raices), mutaciones (agregar, quitarSubarbol,
+                         conPosicion, conRama, conRespuesta, reparentar), arbolAVista (deriva
+                         nodes/edges de React Flow), toMarkdown / parseMarkdown, arbolInicial
+                         (semilla de ejemplo).
+    persistencia.ts      guardarArbol / cargarArbol en localStorage ("3maps:arbol"), guardando
+                         un string .md por intercambio. Cae a arbolInicial() si no hay nada.
   components/
-    FlowCanvas.tsx      ★ El componente central (~350 líneas). Ver detalle abajo.
+    FlowCanvas.tsx      ★ El componente central (~370 líneas). Ver detalle abajo.
     MessageNode.tsx     Nodo custom de React Flow. Un globo = un intercambio.
     Composer.tsx        Barra inferior fija para escribir.
     SettingsPanel.tsx   Tuerquita ⚙️ arriba a la izquierda + panel de ajustes.
@@ -29,7 +38,7 @@ src/
     nodeActions.ts       Context (NodeActionsContext) para que los nodos llamen deleteNode hacia arriba.
     inertia.ts           Física compartida del "envión": constantes + sampleVelocity / launchVelocity / runGlide.
     useNodeInertia.ts    Hook: envión al soltar un globo o una selección.
-    usePanInertia.ts     Hook: envión al soltar el pan del lienzo (⚠ ver estado.md — sin verificar bien).
+    usePanInertia.ts     Hook: envión al soltar el pan del lienzo.
 ```
 
 ## FlowCanvas.tsx — el corazón
@@ -37,25 +46,43 @@ src/
 Estructura: `export default FlowCanvas()` = solo `<ReactFlowProvider><Flow/></ReactFlowProvider>`.
 Toda la lógica vive en `Flow()`.
 
+### Flujo de datos (importante)
+
+**El `arbol` (useState<Arbol>) es la fuente de la verdad.** Los `nodes`/`edges` de React Flow
+son una **vista derivada** (`arbolAVista`). Nunca al revés.
+
+- `arbol` arranca en la **semilla** (`arbolInicial()`), determinística → el primer render coincide
+  server/cliente. Un `useEffect` de montaje llama `cargarArbol()` y cambia al árbol persistido
+  (patrón local-first en SSR; el `setState` en effect es a propósito, corre una vez). `listo`
+  (useState) marca que ya se cargó: hasta entonces no se persiste ni se reconcilia la vista.
+- `firma` (useMemo) = JSON del árbol **sin `x`/`y`**. Un `useEffect([firma, listo])` reconstruye
+  `nodes`/`edges` cuando cambia contenido o estructura — NO al mover un globo. Reconcilia
+  **preservando identidad**: los nodos sin cambios mantienen su objeto (y su posición viva), así
+  React Flow no los re-mide (evita el parpadeo / `visibility:hidden`).
+- Las **posiciones** vuelven al árbol al soltar / frenar el envión (`asentar`), no en cada frame.
+- `guardarArbol(arbol)` se llama en cada cambio del árbol (una vez `listo`).
+- `seleccionarLuegoRef` — id a seleccionar tras la próxima reconstrucción (globo nuevo, o el
+  padre tras un borrado). El effect de `firma` lo consume.
+
 Estado / hooks clave:
-- `useNodesState` / `useEdgesState` — nodos y edges (React Flow).
+- `arbol` / `listo` / `seleccionarLuegoRef` — ver arriba.
+- `useNodesState` / `useEdgesState` — la vista de React Flow (derivada del árbol).
 - `activeNodeId` (useState) — el globo "activo" desde el que se escribe. Se sincroniza con la
-  selección vía `onSelectionChange`.
+  selección vía `onSelectionChange`. `activeNode` sale de `buscar(arbol, activeNodeId)`.
 - `settings` (useState con lazy init desde `localStorage`, sin mismatch de hidratación porque el
   panel arranca cerrado). `updateSettings` persiste.
-- `spaceHeld` (useState) — listener propio de keydown/keyup en `window` (guarda contra inputs y
-  contra scroll de la página). Invierte el modo del lienzo.
-- `nextId` (useRef) — contador de ids para globos nuevos.
+- `spaceHeld` (useState) — listener propio de keydown/keyup en `window`. Invierte el modo del lienzo.
 
-Handlers:
-- `handleSubmit(text, kind)` — crea UN globo `{ pregunta, respuesta: null, pending: true }`
-  colgando del activo. `kind` "main" → abajo, `sourceHandle: "main"`; "branch" → derecha,
-  `sourceHandle: "branch-right"`. El globo nuevo pasa a ser el activo.
-- `finalizeBranchSide(nodeId)` — si un edge de rama quedó con el hijo a la izquierda del padre,
-  cambia su `sourceHandle` a `branch-left` (o `branch-right`). Corre al soltar / al frenar el envión.
-- `deleteNode(id)` (via NodeActionsContext) — BFS de descendientes, `window.confirm` si borra >1,
-  filtra nodes+edges, deja activo al padre.
-- Envión: `useNodeInertia(setNodes, finalizeBranchSide, settings.inertia)` devuelve
+Handlers (todos operan sobre `arbol` vía `setArbol`):
+- `handleSubmit(text, kind)` — `agregar` un `crearIntercambio(...)` colgando del activo. `kind`
+  "main" → rama "main", abajo; "branch" → rama "branch-right", a la derecha. El globo nuevo pasa
+  a ser el activo (`seleccionarLuegoRef`).
+- `asentar(id)` — escribe la posición final al árbol (`conPosicion`) y, si es rama, fija el lado
+  (`conRama`) según dónde quedó respecto del padre. Es el `onSettle` de `useNodeInertia`.
+- `deleteNode(id)` (via NodeActionsContext) — `descendientes` para el conteo, `window.confirm` si
+  borra >1, `quitarSubarbol`, deja activo al padre.
+- `onConnect` — conectar handles a mano = `reparentar` el target (con guarda anti-ciclo).
+- Envión: `useNodeInertia(setNodes, asentar, settings.inertia)` devuelve
   `onNodeDragStart/Drag/Stop` + `onSelectionDrag*` + `cancelInertia`.
   `usePanInertia(setViewport, getViewport, settings.inertia)` devuelve `onMoveStart/Move/MoveEnd`.
 
@@ -68,7 +95,8 @@ Props de `<ReactFlow>` que importan:
 - `devIndicators.position = "bottom-right"` (next.config) para no tapar la tuerquita.
 - `agentRules: false` (next.config) para que `next dev` no escriba en CLAUDE.md.
 
-`initialNodes` / `initialEdges`: 3 globos de ejemplo (Raíz + hilo + una rama a la derecha).
+Semilla (`arbolInicial()` en `model/intercambio.ts`): 3 intercambios de ejemplo con ids fijos
+`nodo-ejemplo-*` (Raíz + hilo + una rama a la derecha).
 
 ## MessageNode.tsx
 
@@ -88,6 +116,26 @@ Barra `absolute inset-x-0 bottom-0`. Props: `activeNodeLabel` (la pregunta del a
 - `Enter` → submit("main"). `Shift+Enter` → salto de línea (default del textarea).
 - Botones "⑂ Ramificar" y "↓ Continuar hilo". Deshabilitados si no hay activo o el texto está vacío.
 
+## model/intercambio.ts (modelo de datos)
+
+`Intercambio` = `{ id, padreId, rama, x, y, proveedor, fecha, pregunta, respuesta, pending }`.
+`Arbol` = `{ intercambios: Intercambio[] }`. Coincide con el frontmatter del `.md` (spec §3).
+- `rama`: `"main"` (tronco, por abajo) | `"branch-left"` | `"branch-right"` (costado). Los ids de
+  los handles del `MessageNode` se llaman igual → `arbolAVista` hace `sourceHandle: ic.rama`.
+- `nuevoId()` → `"nodo-" + 8 hex` (crypto). `crearIntercambio` acepta `id`/`fecha` opcionales
+  (la semilla los pasa fijos → determinística para SSR).
+- Todas las funciones son **puras**: las mutaciones devuelven un `Arbol` nuevo.
+- `caminoRaizA(arbol, id)` → intercambios de la raíz al nodo (lo va a usar el armado de contexto
+  para la IA, spec §4). Con guarda anti-ciclo.
+- `toMarkdown` / `parseMarkdown` — `---` frontmatter (`key: value`, parser mínimo sin YAML) +
+  `## Pregunta` / `## Respuesta`. `padre_id` / `proveedor` vacíos → `null`.
+
+## model/persistencia.ts
+
+`localStorage["3maps:arbol"]` = `{ [id]: "<string .md>" }` (un archivo por intercambio, igual que
+va a ser el export a disco — spec §7). `guardarArbol` serializa todo; `cargarArbol` parsea y cae
+a `arbolInicial()` si no hay nada o falla el parseo. El `.zip` / carpetas reales queda pendiente.
+
 ## inertia.ts (física del envión)
 
 - Constantes: `FLICK_THRESHOLD` 0.35 px/ms · `DECAY_PER_SEC` 0.004 · `STOP_SPEED` 0.03 ·
@@ -98,5 +146,7 @@ Barra `absolute inset-x-0 bottom-0`. Props: `activeNodeLabel` (la pregunta del a
 - `runGlide(vx, vy, apply, onDone)` — loop de `requestAnimationFrame` con decaimiento exponencial.
   `apply(dx, dy)` mueve lo que sea. Devuelve una función para cortar.
 
-`useNodeInertia`: `MAX_SPEED` 2. `usePanInertia`: `MAX_SPEED` 4 + guarda contra gestos de zoom
-(si el zoom cambia entre muestras, no lanza envión) y contra el re-loop de `onMove`.
+`useNodeInertia`: `MAX_SPEED` 2, `onSettle` = `asentar` (persiste posición + lado de la rama).
+`usePanInertia`: `MAX_SPEED` 4 + guarda contra gestos de zoom + flag `applyingRef` (el glide
+llama `setViewport`, que React Flow traduce a un `d3-zoom.transform()` que dispara `start`
+reentrante — sin el flag el envión se cortaba en el primer frame).

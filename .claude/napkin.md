@@ -8,13 +8,17 @@ Runbook corto. Cosas que muerden si no las sabés. Leer antes de tocar.
    de Chrome (`mcp__claude-in-chrome__*` pide plan pago). El integrado ya está logueado en el
    GitHub del usuario (`alanepazs`) — sirve para crear repos, cambiar settings, etc.
 2. **El preview pane congela `requestAnimationFrame`/`ResizeObserver` y throttlea `setTimeout`
-   a ~1s cuando está quieto** (aunque `document.hidden` sea `false`). Nodos nuevos de React Flow
-   → `visibility:hidden` hasta un pan/zoom. Animaciones de envión → no se ven. Gestos sintéticos
-   de drag/flick → miden velocidad ~70× lenta, nunca cruzan `FLICK_THRESHOLD`. **La inercia/pan
-   no se puede verificar en el pane** (ni con shim de `rAF`). En Chrome real anda bien.
-3. **Consola del preview pane = log viejo acumulado.** Ignora errores tipo `useMemo is not
-   defined` (son de HMR roto de antes). Para errores reales: hook sobre `console.error` o
-   `preview_logs` del `next dev`.
+   a ~1s cuando está quieto** (aunque `document.hidden` sea `false`). Los nodos de React Flow
+   quedan `visibility:hidden` (no se miden) → sin medición no se dibujan los edges → el canvas
+   se ve "vacío". Gestos sintéticos de drag/flick miden velocidad ~70× lenta, nunca cruzan
+   `FLICK_THRESHOLD`. **En el pane verificá solo lógica/datos** (localStorage, `.textContent`,
+   estado interno, `arbolAVista`). **El render y la inercia se verifican en Chrome real.**
+   Confirmado que NO es regresión: mismo comportamiento en el commit pre-cambio.
+3. **Consola del preview pane = log viejo acumulado** (HMR roto arrastra errores viejos con
+   nros de línea que ya no matchean). Para errores frescos: `preview_logs` del `next dev`
+   reiniciado, o el overlay de error de Next (`nextjs-portal` shadow DOM → `div[role=dialog]`).
+   Un `arbolInicial is not defined` / dep-array que cambia de tamaño suele ser HMR entre edits,
+   no un bug de fresh-load — reiniciá el server para confirmar.
 4. **Publicar**: `git push` desde `D:\IA\3maps` funciona directo (credencial en Windows
    Credential Manager). **`gh` NO está autenticado y `gh auth login` cuelga** — no lo uses.
 
@@ -28,7 +32,14 @@ Runbook corto. Cosas que muerden si no las sabés. Leer antes de tocar.
 8. **Un globo = un intercambio** (pregunta + respuesta), no un mensaje suelto. No volver al
    modelo de nodo-por-mensaje.
 9. Reglas de contexto/costos de tokens en `CLAUDE.md` — no romperlas cuando se meta la IA.
+10. **El `arbol` de `src/model/intercambio.ts` es la fuente de la verdad.** Los nodos/edges de
+    React Flow se DERIVAN (`arbolAVista`) — nunca guardar estado propio en `data` de un nodo ni
+    tratar a React Flow como el store. Toda mutación pasa por `setArbol` con funciones puras del
+    modelo. Posiciones vuelven al árbol en `asentar` (al soltar), no en cada frame.
+11. **SSR / hidratación**: `FlowCanvas` arranca con la **semilla** (determinística) y carga
+    `localStorage` en un `useEffect` de montaje. NO leer `localStorage` durante el render
+    (rompe la hidratación). El `.md` de ejemplo usa ids `nodo-ejemplo-*` y fechas fijas.
 
 ## Checklist antes de cerrar sesión
 
-10. `npx tsc --noEmit` + `npm run lint` en verde · `git push` · actualizar `docs/estado.md`.
+12. `npx tsc --noEmit` + `npm run lint` en verde · `git push` · actualizar `docs/estado.md`.

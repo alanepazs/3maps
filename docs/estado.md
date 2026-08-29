@@ -1,11 +1,12 @@
 # Estado del proyecto
 
 > Snapshot para retomar rápido. Actualizar al final de cada sesión.
-> Última actualización: 29-08-2026 (fix del envión al panear).
+> Última actualización: 29-08-2026 (modelo de datos: árbol de intercambios + `.md` + persistencia).
 
 ## Dónde estamos
 
-**Fase 1 — esqueleto visual del canvas.** Todo client-side, sin IA, sin guardado.
+**Fase 1 — canvas + modelo de datos.** Todo client-side, sin IA todavía. El árbol de
+intercambios es la fuente de la verdad y se persiste solo en `localStorage` como `.md`.
 
 Repo: https://github.com/alanepazs/3maps · rama `main` · working tree limpio.
 Carpeta local: `D:\IA\3maps`.
@@ -30,6 +31,13 @@ Carpeta local: `D:\IA\3maps`.
   selección múltiple; después se arrastra la selección para moverla en grupo).
 - **Tuerquita ⚙️** (arriba izq.): panel de ajustes. Único control hoy: slider "Envión al soltar"
   (0 = off … 2×). Se persiste en `localStorage` (`"3maps:settings"`).
+- **Modelo de datos** (`src/model/`): el `arbol` de `Intercambio`s es la fuente de la verdad;
+  los nodos/edges de React Flow se derivan de él (`arbolAVista`). Verificado a nivel de datos en
+  el navegador integrado: crear (continuar/ramificar) con `padreId`/`rama`/posición correctos,
+  borrar subárbol, mover un globo escribe la posición al árbol (`asentar`).
+- **Persistencia** (`localStorage["3maps:arbol"]`, un `.md` por intercambio): sobrevive al reload,
+  el árbol se reconstruye parseando los `.md`. Sin mismatch de hidratación (primer render = semilla,
+  se carga lo guardado en un effect de montaje).
 
 ## Pendientes (próximos pasos)
 
@@ -46,15 +54,21 @@ Carpeta local: `D:\IA\3maps`.
 - [ ] Definir qué pasa al abrir/doble-click en un globo (ver spec §14: ¿solo ese intercambio o
       transcripción de la rama?).
 
-### Lógica (todavía nada de esto)
+### Lógica
+- [x] **Modelo de datos + guardado en `.md`** (fase 1 de "guardado"): `src/model/intercambio.ts`
+      (tipos + funciones puras + `toMarkdown`/`parseMarkdown` + `arbolAVista`) y
+      `src/model/persistencia.ts` (localStorage, un `.md` por intercambio). El `arbol` es la
+      fuente de la verdad en `FlowCanvas`; los nodos/edges se derivan. Falta: export/import a
+      `.zip` y carpetas reales (File System Access API) — ver abajo.
 - [ ] **Llamada real a la IA**: `llamar_ia(mensajes)` con la clave del usuario (guardada solo en
       el navegador). Arrancar con un proveedor (DeepSeek o Claude Haiku por costo). El globo
-      `pending` se completa con la respuesta.
+      `pending` se completa con la respuesta. **(Próximo paso — el modelo ya está listo para esto:
+      `crearIntercambio` deja `respuesta: null, pending: true`; `conRespuesta` la completa.)**
 - [ ] Armar el contexto: solo el camino raíz→activo, aplanado a mensajes user/assistant
       (ver spec §4). Ventana de contexto + resumen de lo viejo (§5). Prompt caching (§5).
-- [ ] Guardado en `.md`: 1 archivo por intercambio con frontmatter (`id`, `padre_id`, `rama`,
-      `x`, `y`, `proveedor`, `fecha`) + secciones `## Pregunta` / `## Respuesta` (ver spec §3).
-- [ ] Import/export: `.zip` de la carpeta de `.md` (§7).
+      **Ya existe `caminoRaizA(arbol, id)` en el modelo.**
+- [ ] Export/import: `.zip` de la carpeta de `.md` + carpetas reales con File System Access API,
+      UI de guardar/abrir (§7). Hoy solo hay persistencia local automática.
 - [ ] Embeddings locales con `transformers.js` para relevancia de contexto.
 - [ ] Estado `expandido`/colapsado por globo para rendimiento con muchos nodos (§8).
 
@@ -65,10 +79,12 @@ Carpeta local: `D:\IA\3maps`.
 ## Issues conocidos / gotchas
 
 - **Preview pane de Claude (`mcp__Claude_Browser__*`)**: `requestAnimationFrame` y
-  `ResizeObserver` quedan **congelados cuando el pane está quieto**. Efecto: nodos nuevos de
-  React Flow quedan `visibility:hidden` hasta un pan/zoom; las animaciones de envión no se ven.
-  **No es un bug de la app** — en Chrome real anda. Para verificar render dinámico en el pane,
-  hacer un pan/zoom o click para forzar un repaint.
+  `ResizeObserver` quedan **congelados cuando el pane está quieto**. Efecto: los nodos de
+  React Flow quedan `visibility:hidden` (no se los mide) y sin nodos medidos no se dibujan los
+  edges; las animaciones de envión no se ven. **No es un bug de la app** — verificado idéntico
+  en el commit pre-refactor; en Chrome real anda. En sesiones con el freeze fuerte ni el
+  pan/zoom real lo destraba → verificar el **render** en Chrome; en el pane verificar solo la
+  **lógica/datos** (localStorage, `.textContent`, estado interno).
 - **Consola del preview pane**: devuelve un log acumulado/viejo (arrastra errores de sesiones de
   HMR rotas, ej. `useMemo is not defined`). Para chequear errores frescos: hook manual sobre
   `console.error` o mirar los logs del `next dev`.

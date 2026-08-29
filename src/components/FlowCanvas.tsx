@@ -8,7 +8,6 @@ import {
   Controls,
   MiniMap,
   SelectionMode,
-  addEdge,
   useNodesState,
   useEdgesState,
   useReactFlow,
@@ -32,60 +31,100 @@ import {
 } from "./settings";
 import { useNodeInertia } from "./useNodeInertia";
 import { usePanInertia } from "./usePanInertia";
+import {
+  agregar,
+  arbolAVista,
+  arbolInicial,
+  buscar,
+  conPosicion,
+  conRama,
+  crearIntercambio,
+  descendientes,
+  hijos,
+  nuevoId,
+  quitarSubarbol,
+  reparentar,
+  type Arbol,
+  type Rama,
+} from "@/model/intercambio";
+import { cargarArbol, guardarArbol } from "@/model/persistencia";
 
 // Definido a nivel de módulo (no dentro del componente): si React Flow recibe
 // un objeto nodeTypes nuevo en cada render, remonta todos los nodos.
 const nodeTypes: NodeTypes = { message: MessageNode };
 
-// Nodos de prueba. Todavía sin lógica de IA ni de guardado en .md.
-//
-// Un globo = un intercambio (pregunta + respuesta). El hilo principal baja
-// en vertical (tronco); las ramas salen por un costado y se pueden pasar de
-// derecha a izquierda arrastrándolas.
-const initialNodes: Node[] = [
-  {
-    id: "1",
-    type: "message",
-    position: { x: 250, y: 0 },
-    data: {
-      pregunta: "¿Por dónde arranco a estudiar el tema?",
-      respuesta: "Arrancá por los fundamentos y después subí de nivel.",
-      isRoot: true,
-    },
-  },
-  {
-    id: "2",
-    type: "message",
-    position: { x: 250, y: 220 },
-    data: {
-      pregunta: "¿Y cómo divido eso en semanas?",
-      respuesta: "Semana 1 fundamentos, semana 2 práctica, semana 3 un proyecto.",
-    },
-    selected: true,
-  },
-  {
-    id: "3",
-    type: "message",
-    position: { x: 640, y: 60 },
-    data: {
-      pregunta: "Pará — ¿qué contás como 'fundamentos' exactamente?",
-      respuesta: "Los conceptos base sin los que lo demás no se entiende.",
-    },
-  },
-];
-
-const initialEdges: Edge[] = [
-  { id: "e1-2", source: "1", sourceHandle: "main", target: "2" },
-  { id: "e1-3", source: "1", sourceHandle: "branch-right", target: "3" },
-];
-
-const BRANCH_HANDLES = ["branch-left", "branch-right"] as const;
+// Comparación shallow del `data` de un nodo (pregunta/respuesta/pending/isRoot).
+function datosIguales(a: Node["data"], b: Node["data"]): boolean {
+  const ka = Object.keys(a);
+  const kb = Object.keys(b);
+  return (
+    ka.length === kb.length &&
+    ka.every(
+      (k) =>
+        (a as Record<string, unknown>)[k] ===
+        (b as Record<string, unknown>)[k],
+    )
+  );
+}
 
 function Flow() {
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-  const [activeNodeId, setActiveNodeId] = useState<string | null>("2");
-  const { getNode, getViewport, setViewport } = useReactFlow();
+  // ── Fuente de la verdad ──────────────────────────────────────────────────
+  // El árbol de intercambios manda. Los nodos/edges de React Flow se derivan de
+  // él (`arbolAVista`); las posiciones vuelven al árbol al soltar / frenar el
+  // envión (`asentar`). Ver docs/arquitectura.md.
+  //
+  // SSR-safe: el primer render (server + hidratación) usa SIEMPRE la semilla
+  // determinística. El árbol persistido en `localStorage` se carga después del
+  // montaje (`useEffect` de abajo) — leerlo durante el render rompería la
+  // hidratación.
+  const semilla = useMemo(() => arbolInicial(), []);
+  const activoIniId = semilla.intercambios.at(-1)?.id ?? null;
+  const vistaIni = useMemo(() => {
+    const v = arbolAVista(semilla);
+    return {
+      // Marcar seleccionado el activo inicial: si no, React Flow arranca sin
+      // selección y `onSelectionChange` pisa el activo con null en el montaje.
+      nodes: v.nodes.map((n) =>
+        n.id === activoIniId ? { ...n, selected: true } : n,
+      ),
+      edges: v.edges,
+    };
+  }, [semilla, activoIniId]);
+
+  const [arbol, setArbol] = useState<Arbol>(semilla);
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>(vistaIni.nodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(vistaIni.edges);
+  const [activeNodeId, setActiveNodeId] = useState<string | null>(activoIniId);
+  // `true` una vez que se cargó el árbol persistido: recién ahí se empieza a
+  // guardar (si no, el primer effect pisaría lo guardado con la semilla).
+  const [listo, setListo] = useState(false);
+  // Id a seleccionar tras la próxima reconstrucción de la vista (globo recién
+  // creado, o el padre tras un borrado). null = mantener la selección actual.
+  const seleccionarLuegoRef = useRef<string | null>(null);
+  const { getNode, getViewport, setViewport, fitView } = useReactFlow();
+
+  // Hidratar desde localStorage después del montaje. Es el patrón recomendado
+  // para estado local-first en SSR: el primer render coincide con el server
+  // (semilla) y acá se cambia al árbol persistido. El setState en effect es
+  // intencional y corre una sola vez.
+  useEffect(() => {
+    const guardado = cargarArbol();
+    const ultimo = guardado.intercambios.at(-1)?.id ?? null;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- hidratación local-first, corre una vez
+    setArbol(guardado);
+    setActiveNodeId((cur) =>
+      guardado.intercambios.some((i) => i.id === cur) ? cur : ultimo,
+    );
+    seleccionarLuegoRef.current = ultimo;
+    setListo(true);
+  }, []);
+
+  // `fitView` inicial (prop) fitea a la semilla; re-fitear al árbol cargado.
+  useEffect(() => {
+    if (!listo) return;
+    const t = setTimeout(() => void fitView({ duration: 200 }), 0);
+    return () => clearTimeout(t);
+  }, [listo, fitView]);
 
   // Ajustes configurables (tuerquita). En el server no hay localStorage, así
   // que se usan los defaults; en el cliente se leen los guardados. No hay
@@ -114,22 +153,98 @@ function Flow() {
     });
   }, []);
 
-  // Contador de ids para los nodos nuevos (los de prueba van del 1 al 3).
-  const nextId = useRef(4);
+  // Persistir el árbol en cada cambio (recién después de cargar lo guardado).
+  useEffect(() => {
+    if (listo) guardarArbol(arbol);
+  }, [arbol, listo]);
 
-  const activeNode = nodes.find((n) => n.id === activeNodeId) ?? null;
-  const activeNodeLabel = activeNode
-    ? String(activeNode.data.pregunta ?? "")
-    : null;
-
-  const onConnect = useCallback(
-    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
-    [setEdges],
+  // Reconstruir la vista (nodos/edges) cuando cambia el contenido o la
+  // estructura del árbol — NO en cada movimiento: `x`/`y` quedan fuera de la
+  // firma, así arrastrar un globo no dispara un rebuild.
+  const firma = useMemo(
+    () =>
+      JSON.stringify(
+        arbol.intercambios.map((i) => [
+          i.id,
+          i.padreId,
+          i.rama,
+          i.proveedor,
+          i.fecha,
+          i.pregunta,
+          i.respuesta,
+          i.pending,
+        ]),
+      ),
+    [arbol],
   );
+  useEffect(() => {
+    // Hasta cargar lo guardado, `nodes`/`edges` ya salen de la semilla
+    // (`vistaIni`). Evita consumir `seleccionarLuegoRef` en el montaje.
+    if (!listo) return;
+    const vista = arbolAVista(arbol);
+    const forzar = seleccionarLuegoRef.current;
+    seleccionarLuegoRef.current = null;
+
+    // Reconciliar preservando identidad: los nodos que no cambiaron mantienen
+    // su objeto (y su posición viva), así React Flow no los vuelve a medir
+    // (evita el parpadeo / visibility:hidden en cada alta/baja).
+    setNodes((prev) => {
+      const previos = new Map(prev.map((n) => [n.id, n]));
+      let cambio = prev.length !== vista.nodes.length;
+      const next = vista.nodes.map((fresco) => {
+        const antes = previos.get(fresco.id);
+        const selected =
+          forzar !== null ? fresco.id === forzar : antes?.selected ?? false;
+        if (!antes) {
+          cambio = true;
+          return { ...fresco, selected };
+        }
+        if (selected === antes.selected && datosIguales(antes.data, fresco.data)) {
+          return antes;
+        }
+        cambio = true;
+        return { ...antes, data: fresco.data, selected };
+      });
+      return cambio ? next : prev;
+    });
+
+    setEdges((prev) => {
+      const previos = new Map(prev.map((e) => [e.id, e]));
+      let cambio = prev.length !== vista.edges.length;
+      const next = vista.edges.map((fresco) => {
+        const antes = previos.get(fresco.id);
+        if (
+          antes &&
+          antes.source === fresco.source &&
+          antes.target === fresco.target &&
+          antes.sourceHandle === fresco.sourceHandle
+        ) {
+          return antes;
+        }
+        cambio = true;
+        return fresco;
+      });
+      return cambio ? next : prev;
+    });
+    // `firma` resume el árbol sin x/y; setNodes/setEdges son estables.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [firma, listo]);
+
+  const activeNode = buscar(arbol, activeNodeId ?? "");
+  const activeNodeLabel = activeNode ? activeNode.pregunta : null;
+
+  // Conectar handles a mano = reparentar el target (con guarda anti-ciclo).
+  const onConnect = useCallback((c: Connection) => {
+    if (!c.source || !c.target) return;
+    const rama = (c.sourceHandle as Rama | null) ?? "main";
+    setArbol((a) =>
+      reparentar(a, c.target as string, c.source as string, rama),
+    );
+  }, []);
 
   const onSelectionChange = useCallback(
-    ({ nodes: selected }: OnSelectionChangeParams) => {
-      setActiveNodeId(selected[0]?.id ?? null);
+    ({ nodes: sel }: OnSelectionChangeParams) => {
+      setActiveNodeId(sel[0]?.id ?? null);
     },
     [],
   );
@@ -139,66 +254,55 @@ function Flow() {
   // por la derecha (después se puede arrastrar a la izquierda).
   const handleSubmit = useCallback(
     (text: string, kind: BranchKind) => {
-      const parent = nodes.find((n) => n.id === activeNodeId);
-      if (!parent) return;
-
-      const id = String(nextId.current++);
-      const sourceHandle = kind === "main" ? "main" : "branch-right";
-      const siblings = edges.filter((e) => {
-        if (e.source !== parent.id) return false;
-        return kind === "main"
-          ? e.sourceHandle === "main"
-          : e.sourceHandle === "branch-left" || e.sourceHandle === "branch-right";
-      }).length;
-
-      const position =
-        kind === "main"
-          ? { x: parent.position.x + siblings * 40, y: parent.position.y + 240 }
-          : {
-              x: parent.position.x + 400,
-              y: parent.position.y + siblings * 220,
-            };
-
-      const newNode: Node = {
-        id,
-        type: "message",
-        position,
-        data: { pregunta: text, respuesta: null, pending: true },
-        selected: true,
-      };
-
-      setNodes((nds) => [
-        ...nds.map((n) => ({ ...n, selected: false })),
-        newNode,
-      ]);
-      setEdges((eds) => [
-        ...eds,
-        { id: `e${parent.id}-${id}`, source: parent.id, sourceHandle, target: id },
-      ]);
+      if (!activeNodeId) return;
+      const id = nuevoId();
+      seleccionarLuegoRef.current = id;
+      setArbol((a) => {
+        const parent = buscar(a, activeNodeId);
+        if (!parent) return a;
+        const rama: Rama = kind === "main" ? "main" : "branch-right";
+        const hermanos = hijos(a, parent.id).filter((h) =>
+          kind === "main" ? h.rama === "main" : h.rama !== "main",
+        ).length;
+        const pos =
+          kind === "main"
+            ? { x: parent.x + hermanos * 40, y: parent.y + 240 }
+            : { x: parent.x + 400, y: parent.y + hermanos * 220 };
+        return agregar(
+          a,
+          crearIntercambio({
+            id,
+            padreId: parent.id,
+            rama,
+            pregunta: text,
+            x: pos.x,
+            y: pos.y,
+          }),
+        );
+      });
       setActiveNodeId(id);
     },
-    [activeNodeId, nodes, edges, setNodes, setEdges],
+    [activeNodeId],
   );
 
-  // Cuando un globo queda quieto (al soltarlo, o al frenar el envión): si es
-  // una rama, reconectar la flecha al costado (izquierda/derecha) del padre
-  // según dónde quedó.
-  const finalizeBranchSide = useCallback(
-    (nodeId: string) => {
-      setEdges((eds) =>
-        eds.map((e) => {
-          if (e.target !== nodeId) return e;
-          if (!BRANCH_HANDLES.includes(e.sourceHandle as never)) return e;
-          const child = getNode(nodeId);
-          const parent = getNode(e.source);
-          if (!child || !parent) return e;
-          const side =
-            child.position.x < parent.position.x ? "branch-left" : "branch-right";
-          return e.sourceHandle === side ? e : { ...e, sourceHandle: side };
-        }),
-      );
+  // Al soltar / frenar el envión: escribir la posición final al árbol y, si es
+  // una rama, fijar el lado (izq/der) según dónde quedó respecto del padre.
+  const asentar = useCallback(
+    (id: string) => {
+      const n = getNode(id);
+      if (!n) return;
+      const { x, y } = n.position;
+      setArbol((a) => {
+        const ic = buscar(a, id);
+        if (!ic) return a;
+        const conPos = conPosicion(a, id, x, y);
+        if (ic.padreId === null || ic.rama === "main") return conPos;
+        const p = buscar(a, ic.padreId);
+        const lado: Rama = p && x < p.x ? "branch-left" : "branch-right";
+        return conRama(conPos, id, lado);
+      });
     },
-    [getNode, setEdges],
+    [getNode],
   );
 
   // Envión / inercia al soltar, tipo Obsidian Canvas.
@@ -210,7 +314,7 @@ function Flow() {
     onSelectionDrag,
     onSelectionDragStop,
     cancelInertia,
-  } = useNodeInertia(setNodes, finalizeBranchSide, settings.inertia);
+  } = useNodeInertia(setNodes, asentar, settings.inertia);
 
   // Envión también al mover el plano del fondo con la manito.
   const { onMoveStart, onMove, onMoveEnd, cancelPanInertia } = usePanInertia(
@@ -261,40 +365,21 @@ function Flow() {
     (id: string) => {
       cancelInertia();
       cancelPanInertia();
-      const toRemove = new Set<string>([id]);
-      let changed = true;
-      while (changed) {
-        changed = false;
-        for (const e of edges) {
-          if (toRemove.has(e.source) && !toRemove.has(e.target)) {
-            toRemove.add(e.target);
-            changed = true;
-          }
-        }
-      }
-
+      const nDesc = descendientes(arbol, id).length;
       if (
-        toRemove.size > 1 &&
+        nDesc > 0 &&
         !window.confirm(
-          `Se van a eliminar ${toRemove.size} globos: este y todo lo que cuelga de él. ¿Seguir?`,
+          `Se van a eliminar ${nDesc + 1} globos: este y todo lo que cuelga de él. ¿Seguir?`,
         )
       ) {
         return;
       }
-
-      const parentId = edges.find((e) => e.target === id)?.source ?? null;
-
-      setNodes((nds) =>
-        nds
-          .filter((n) => !toRemove.has(n.id))
-          .map((n) => ({ ...n, selected: n.id === parentId })),
-      );
-      setEdges((eds) =>
-        eds.filter((e) => !toRemove.has(e.source) && !toRemove.has(e.target)),
-      );
-      setActiveNodeId(parentId);
+      const padreId = buscar(arbol, id)?.padreId ?? null;
+      seleccionarLuegoRef.current = padreId;
+      setArbol((a) => quitarSubarbol(a, id));
+      setActiveNodeId(padreId);
     },
-    [cancelInertia, cancelPanInertia, edges, setNodes, setEdges],
+    [arbol, cancelInertia, cancelPanInertia],
   );
 
   const nodeActions = useMemo(() => ({ deleteNode }), [deleteNode]);
@@ -325,6 +410,10 @@ function Flow() {
           selectionMode={SelectionMode.Partial}
           selectionKeyCode={null}
           panActivationKeyCode={null}
+          // Borrar es solo por el botón 🗑 (pasa por `deleteNode`: subárbol +
+          // confirmación). El Backspace de React Flow borraría un nodo suelto
+          // sin limpiar hijos ni tocar el árbol.
+          deleteKeyCode={null}
           nodeDragThreshold={3}
           colorMode="dark"
           fitView

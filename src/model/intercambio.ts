@@ -1,0 +1,320 @@
+import type { Edge, Node } from "@xyflow/react";
+
+// Modelo de datos de fase 1. Un **intercambio** = un globo del canvas = una
+// pregunta + su respuesta. El árbol de intercambios es la fuente de la verdad;
+// los nodos/edges de React Flow se derivan de él (ver `arbolAVista`).
+//
+// La forma acá coincide con el frontmatter del `.md` de la spec (§3):
+// `id`, `padre_id`, `rama`, `x`, `y`, `proveedor`, `fecha` + `## Pregunta` /
+// `## Respuesta`. Ver `toMarkdown` / `parseMarkdown`.
+
+export type Rama = "main" | "branch-left" | "branch-right";
+export type Proveedor = "claude" | "deepseek" | "gpt" | "gemini";
+
+export const RAMAS: readonly Rama[] = ["main", "branch-left", "branch-right"];
+export const PROVEEDORES: readonly Proveedor[] = [
+  "claude",
+  "deepseek",
+  "gpt",
+  "gemini",
+];
+
+export type Intercambio = {
+  id: string;
+  // null = raíz del árbol. El `padreId` define las flechas (no hay tabla de edges).
+  padreId: string | null;
+  // De qué lado sale la flecha del padre. `main` = tronco (por abajo);
+  // `branch-*` = rama (por un costado). El usuario lo cambia arrastrando.
+  rama: Rama;
+  // Posición manual en el canvas. Solo se sugiere una al crear el nodo.
+  x: number;
+  y: number;
+  // null hasta que una IA responde de verdad.
+  proveedor: Proveedor | null;
+  fecha: string; // ISO
+  pregunta: string;
+  respuesta: string | null;
+  // La respuesta está en curso (llamada a la IA disparada, sin volver todavía).
+  pending: boolean;
+};
+
+export type Arbol = {
+  // Orden de inserción. No tiene significado semántico (la estructura la define
+  // `padreId`), pero se mantiene estable para render y serialización.
+  intercambios: Intercambio[];
+};
+
+// ── Identidad ──────────────────────────────────────────────────────────────
+
+export function nuevoId(): string {
+  const hex =
+    typeof crypto !== "undefined" && crypto.getRandomValues
+      ? Array.from(crypto.getRandomValues(new Uint8Array(4)), (b) =>
+          b.toString(16).padStart(2, "0"),
+        ).join("")
+      : Math.random().toString(16).slice(2, 10).padStart(8, "0");
+  return `nodo-${hex}`;
+}
+
+export function crearIntercambio(campos: {
+  id?: string;
+  padreId: string | null;
+  rama: Rama;
+  pregunta: string;
+  respuesta?: string | null;
+  proveedor?: Proveedor | null;
+  x: number;
+  y: number;
+  fecha?: string;
+  pending?: boolean;
+}): Intercambio {
+  return {
+    id: campos.id ?? nuevoId(),
+    padreId: campos.padreId,
+    rama: campos.rama,
+    x: campos.x,
+    y: campos.y,
+    proveedor: campos.proveedor ?? null,
+    fecha: campos.fecha ?? new Date().toISOString(),
+    pregunta: campos.pregunta,
+    respuesta: campos.respuesta ?? null,
+    pending: campos.pending ?? false,
+  };
+}
+
+// ── Consultas (puras) ──────────────────────────────────────────────────────
+
+export function buscar(a: Arbol, id: string): Intercambio | null {
+  return a.intercambios.find((i) => i.id === id) ?? null;
+}
+
+export function padre(a: Arbol, id: string): Intercambio | null {
+  const ic = buscar(a, id);
+  return ic?.padreId ? buscar(a, ic.padreId) : null;
+}
+
+export function hijos(a: Arbol, id: string): Intercambio[] {
+  return a.intercambios.filter((i) => i.padreId === id);
+}
+
+export function descendientes(a: Arbol, id: string): Intercambio[] {
+  const out: Intercambio[] = [];
+  const pila = [...hijos(a, id)];
+  while (pila.length) {
+    const ic = pila.pop() as Intercambio;
+    out.push(ic);
+    pila.push(...hijos(a, ic.id));
+  }
+  return out;
+}
+
+export function raices(a: Arbol): Intercambio[] {
+  return a.intercambios.filter((i) => i.padreId === null);
+}
+
+// Camino de intercambios desde la raíz hasta `id` (inclusive). Lo usa el armado
+// de contexto para la IA (spec §4): solo este camino, nunca el árbol entero.
+export function caminoRaizA(a: Arbol, id: string): Intercambio[] {
+  const camino: Intercambio[] = [];
+  const vistos = new Set<string>();
+  let ic = buscar(a, id);
+  while (ic && !vistos.has(ic.id)) {
+    camino.unshift(ic);
+    vistos.add(ic.id);
+    ic = ic.padreId ? buscar(a, ic.padreId) : null;
+  }
+  return camino;
+}
+
+export function esDescendiente(
+  a: Arbol,
+  id: string,
+  posibleAncestro: string,
+): boolean {
+  let ic = buscar(a, id);
+  const vistos = new Set<string>();
+  while (ic?.padreId && !vistos.has(ic.id)) {
+    if (ic.padreId === posibleAncestro) return true;
+    vistos.add(ic.id);
+    ic = buscar(a, ic.padreId);
+  }
+  return false;
+}
+
+// ── Mutaciones (puras: devuelven un Arbol nuevo) ───────────────────────────
+
+export function agregar(a: Arbol, ic: Intercambio): Arbol {
+  return { intercambios: [...a.intercambios, ic] };
+}
+
+export function quitarSubarbol(a: Arbol, id: string): Arbol {
+  const fuera = new Set([id, ...descendientes(a, id).map((i) => i.id)]);
+  return { intercambios: a.intercambios.filter((i) => !fuera.has(i.id)) };
+}
+
+function mapear(
+  a: Arbol,
+  id: string,
+  f: (ic: Intercambio) => Intercambio,
+): Arbol {
+  return { intercambios: a.intercambios.map((i) => (i.id === id ? f(i) : i)) };
+}
+
+export function conPosicion(a: Arbol, id: string, x: number, y: number): Arbol {
+  return mapear(a, id, (i) => (i.x === x && i.y === y ? i : { ...i, x, y }));
+}
+
+export function conRama(a: Arbol, id: string, rama: Rama): Arbol {
+  return mapear(a, id, (i) => (i.rama === rama ? i : { ...i, rama }));
+}
+
+export function conRespuesta(
+  a: Arbol,
+  id: string,
+  campos: {
+    respuesta: string | null;
+    proveedor?: Proveedor | null;
+    pending?: boolean;
+  },
+): Arbol {
+  return mapear(a, id, (i) => ({
+    ...i,
+    respuesta: campos.respuesta,
+    proveedor: campos.proveedor ?? i.proveedor,
+    pending: campos.pending ?? false,
+  }));
+}
+
+// Reengancha `id` bajo otro padre (guarda contra ciclos). Lo usa el conectar
+// handles a mano en el canvas.
+export function reparentar(
+  a: Arbol,
+  id: string,
+  nuevoPadreId: string,
+  rama: Rama,
+): Arbol {
+  if (id === nuevoPadreId) return a;
+  if (!buscar(a, id) || !buscar(a, nuevoPadreId)) return a;
+  if (nuevoPadreId === id || esDescendiente(a, nuevoPadreId, id)) return a;
+  return mapear(a, id, (i) => ({ ...i, padreId: nuevoPadreId, rama }));
+}
+
+// ── Derivación a React Flow ────────────────────────────────────────────────
+
+export function arbolAVista(a: Arbol): { nodes: Node[]; edges: Edge[] } {
+  const nodes: Node[] = a.intercambios.map((ic) => ({
+    id: ic.id,
+    type: "message",
+    position: { x: ic.x, y: ic.y },
+    data: {
+      pregunta: ic.pregunta,
+      respuesta: ic.respuesta,
+      pending: ic.pending,
+      isRoot: ic.padreId === null,
+    },
+  }));
+  const edges: Edge[] = a.intercambios
+    .filter((ic) => ic.padreId !== null)
+    .map((ic) => ({
+      id: `e-${ic.padreId}-${ic.id}`,
+      source: ic.padreId as string,
+      target: ic.id,
+      // Los handles del MessageNode se llaman igual que la rama.
+      sourceHandle: ic.rama,
+    }));
+  return { nodes, edges };
+}
+
+// ── Serialización `.md` ────────────────────────────────────────────────────
+
+export function toMarkdown(ic: Intercambio): string {
+  const front = [
+    `id: ${ic.id}`,
+    `padre_id: ${ic.padreId ?? ""}`,
+    `rama: ${ic.rama}`,
+    `x: ${ic.x}`,
+    `y: ${ic.y}`,
+    `proveedor: ${ic.proveedor ?? ""}`,
+    `fecha: ${ic.fecha}`,
+  ].join("\n");
+  return `---\n${front}\n---\n\n## Pregunta\n\n${ic.pregunta}\n\n## Respuesta\n\n${
+    ic.respuesta ?? ""
+  }\n`;
+}
+
+export function parseMarkdown(texto: string): Intercambio | null {
+  const m = texto.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
+  if (!m) return null;
+
+  const meta: Record<string, string> = {};
+  for (const linea of m[1].split("\n")) {
+    const i = linea.indexOf(":");
+    if (i === -1) continue;
+    meta[linea.slice(0, i).trim()] = linea.slice(i + 1).trim();
+  }
+  if (!meta.id) return null;
+
+  const cuerpo = m[2];
+  const preg = cuerpo.match(
+    /##\s*Pregunta\s*\n+([\s\S]*?)(?:\n+##\s*Respuesta\s*\n|$)/,
+  );
+  const resp = cuerpo.match(/##\s*Respuesta\s*\n+([\s\S]*)$/);
+  const respuestaTxt = (resp?.[1] ?? "").trim();
+
+  return {
+    id: meta.id,
+    padreId: meta.padre_id ? meta.padre_id : null,
+    rama: (RAMAS as string[]).includes(meta.rama)
+      ? (meta.rama as Rama)
+      : "main",
+    x: Number(meta.x) || 0,
+    y: Number(meta.y) || 0,
+    proveedor: (PROVEEDORES as string[]).includes(meta.proveedor)
+      ? (meta.proveedor as Proveedor)
+      : null,
+    fecha: meta.fecha || new Date().toISOString(),
+    pregunta: (preg?.[1] ?? "").trim(),
+    respuesta: respuestaTxt === "" ? null : respuestaTxt,
+    pending: false,
+  };
+}
+
+// ── Árbol semilla (el ejemplo que se ve en la primera carga) ───────────────
+
+export function arbolInicial(): Arbol {
+  return {
+    intercambios: [
+      crearIntercambio({
+        id: "nodo-ejemplo-raiz",
+        padreId: null,
+        rama: "main",
+        x: 250,
+        y: 0,
+        fecha: "2026-08-29T12:00:00.000Z",
+        pregunta: "¿Por dónde arranco a estudiar el tema?",
+        respuesta: "Arrancá por los fundamentos y después subí de nivel.",
+      }),
+      crearIntercambio({
+        id: "nodo-ejemplo-semanas",
+        padreId: "nodo-ejemplo-raiz",
+        rama: "main",
+        x: 250,
+        y: 220,
+        fecha: "2026-08-29T12:01:00.000Z",
+        pregunta: "¿Y cómo divido eso en semanas?",
+        respuesta:
+          "Semana 1 fundamentos, semana 2 práctica, semana 3 un proyecto.",
+      }),
+      crearIntercambio({
+        id: "nodo-ejemplo-fundamentos",
+        padreId: "nodo-ejemplo-raiz",
+        rama: "branch-right",
+        x: 640,
+        y: 60,
+        fecha: "2026-08-29T12:02:00.000Z",
+        pregunta: "Pará — ¿qué contás como 'fundamentos' exactamente?",
+        respuesta: "Los conceptos base sin los que lo demás no se entiende.",
+      }),
+    ],
+  };
+}
