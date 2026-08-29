@@ -52,8 +52,10 @@ src/
                         links con target=_blank). Sin HTML crudo → seguro.
     Composer.tsx        Barra inferior fija para escribir.
     SettingsPanel.tsx   Tuerquita ⚙️: ajustes del lienzo (envión, ventana de contexto) +
-                        config de IA (proveedor, API key, modelo). Campos sin estado local:
-                        se leen de la prop `configIA` y persisten en cada cambio.
+                        config de IA. API key y modelo son BORRADORES (estado local) que se
+                        persisten con el botón "Guardar" (o Enter); el proveedor aplica al toque
+                        (resetea modelo + limpia key). "✓ Guardado" / "Cambios sin guardar" /
+                        "Borrar key".
     settings.ts         Settings = {inertia, ventanaContexto}. DEFAULT_SETTINGS, storage key.
     nodeActions.ts       NodeActionsContext: deleteNode + retryNode (hacia FlowCanvas).
     inertia.ts           Física compartida del "envión": constantes + sampleVelocity / launchVelocity / runGlide.

@@ -30,31 +30,42 @@ export default function SettingsPanel({
 }: Props) {
   const [open, setOpen] = useState(false);
 
-  // Los campos se manejan directo desde la prop `configIA` (sin estado local):
-  // cada cambio persiste al toque. Simple y sin closures viejos.
   const proveedor: Proveedor = configIA?.proveedor ?? "claude";
-  const apiKey = configIA?.apiKey ?? "";
-  const modelo = configIA?.modelo ?? MODELO_POR_DEFECTO[proveedor];
+  const keyGuardada = configIA?.apiKey ?? "";
+  const modeloGuardado = configIA?.modelo ?? MODELO_POR_DEFECTO[proveedor];
+  const hayKey = keyGuardada.trim() !== "";
 
-  const hayKey = apiKey.trim() !== "";
+  // API key y modelo son borradores: se editan libres y recién se persisten con
+  // el botón "Guardar" (o Enter). El proveedor sí aplica al toque.
+  const [keyDraft, setKeyDraft] = useState(keyGuardada);
+  const [modeloDraft, setModeloDraft] = useState(modeloGuardado);
 
-  const guardar = (parche: {
-    apiKey?: string;
-    modelo?: string;
-    proveedor?: Proveedor;
-  }) => {
-    // Al cambiar de proveedor: resetear el modelo a su default y limpiar la key
-    // (la de un proveedor no sirve para otro). Siempre pasamos el objeto
-    // completo; persistir o no lo decide configIA.ts (no guarda sin API key).
-    const cambioProveedor =
-      parche.proveedor !== undefined && parche.proveedor !== proveedor;
+  // Re-sincronizar los borradores cuando la config cambia desde afuera (cambio
+  // de proveedor, "Borrar"). Patrón "ajustar estado en render", no en effect.
+  const [snap, setSnap] = useState({ k: keyGuardada, m: modeloGuardado });
+  if (snap.k !== keyGuardada || snap.m !== modeloGuardado) {
+    setSnap({ k: keyGuardada, m: modeloGuardado });
+    setKeyDraft(keyGuardada);
+    setModeloDraft(modeloGuardado);
+  }
+
+  const dirty =
+    keyDraft.trim() !== keyGuardada.trim() ||
+    modeloDraft.trim() !== modeloGuardado.trim();
+
+  const commit = () => {
+    if (!dirty) return;
     onChangeConfigIA({
-      proveedor: parche.proveedor ?? proveedor,
-      apiKey: cambioProveedor ? "" : (parche.apiKey ?? apiKey),
-      modelo: cambioProveedor
-        ? MODELO_POR_DEFECTO[parche.proveedor as Proveedor]
-        : (parche.modelo ?? modelo),
+      proveedor,
+      apiKey: keyDraft.trim(),
+      modelo: modeloDraft.trim() || MODELO_POR_DEFECTO[proveedor],
     });
+  };
+
+  const cambiarProveedor = (p: Proveedor) => {
+    // Aplica al toque: la key de un proveedor no sirve para otro → se limpia y
+    // el modelo vuelve a su default. Los borradores se re-sincronizan solos.
+    onChangeConfigIA({ proveedor: p, apiKey: "", modelo: MODELO_POR_DEFECTO[p] });
   };
 
   return (
@@ -104,7 +115,7 @@ export default function SettingsPanel({
             <span className="text-white/70">Proveedor</span>
             <select
               value={proveedor}
-              onChange={(e) => guardar({ proveedor: e.target.value as Proveedor })}
+              onChange={(e) => cambiarProveedor(e.target.value as Proveedor)}
               className="mt-1 w-full rounded border border-white/15 bg-neutral-950 px-2 py-1.5 text-sm"
             >
               {PROVEEDORES_DISPONIBLES.map((p) => (
@@ -119,26 +130,33 @@ export default function SettingsPanel({
             <span className="text-white/70">API key</span>
             <input
               type="password"
-              value={apiKey}
-              onChange={(e) => guardar({ apiKey: e.target.value })}
+              value={keyDraft}
+              onChange={(e) => setKeyDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  commit();
+                }
+              }}
               placeholder={PISTA_API_KEY[proveedor]}
               autoComplete="off"
               spellCheck={false}
               className="mt-1 w-full rounded border border-white/15 bg-neutral-950 px-2 py-1.5 text-sm placeholder:text-white/30 focus:border-sky-400 focus:outline-none"
             />
-            <span className="mt-1 block text-[11px] text-white/40">
-              {hayKey
-                ? "Guardada en este navegador. Se manda directo al proveedor."
-                : "Solo se guarda en este navegador; nunca a un servidor de 3maps."}
-            </span>
           </label>
 
           <label className="mt-2 block text-sm">
             <span className="text-white/70">Modelo</span>
             <input
               type="text"
-              value={modelo}
-              onChange={(e) => guardar({ modelo: e.target.value })}
+              value={modeloDraft}
+              onChange={(e) => setModeloDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  commit();
+                }
+              }}
               list="modelos-ia"
               className="mt-1 w-full rounded border border-white/15 bg-neutral-950 px-2 py-1.5 text-sm focus:border-sky-400 focus:outline-none"
             />
@@ -148,6 +166,33 @@ export default function SettingsPanel({
               ))}
             </datalist>
           </label>
+
+          <div className="mt-2 flex items-center gap-3">
+            <button
+              type="button"
+              onClick={commit}
+              disabled={!dirty}
+              className="rounded bg-sky-500 px-3 py-1.5 text-xs font-medium text-white enabled:hover:bg-sky-400 disabled:opacity-40"
+            >
+              {dirty ? "Guardar" : hayKey ? "✓ Guardado" : "Guardar"}
+            </button>
+            {hayKey && (
+              <button
+                type="button"
+                onClick={() => onChangeConfigIA(null)}
+                className="text-xs text-white/50 hover:text-white/80"
+              >
+                Borrar key
+              </button>
+            )}
+          </div>
+          <span className="mt-1.5 block text-[11px] text-white/40">
+            {dirty
+              ? "Cambios sin guardar."
+              : hayKey
+                ? "Guardada en este navegador. Se manda directo al proveedor."
+                : "La key se guarda solo en este navegador; nunca a un servidor de 3maps."}
+          </span>
 
           <label className="mt-2 block text-sm">
             <span className="flex items-center justify-between">
@@ -171,16 +216,6 @@ export default function SettingsPanel({
               Los más recientes van completos; los anteriores se resumen.
             </span>
           </label>
-
-          {hayKey && (
-            <button
-              type="button"
-              onClick={() => onChangeConfigIA(null)}
-              className="mt-3 rounded border border-white/15 px-2 py-1 text-xs text-white/70 hover:bg-white/10"
-            >
-              Borrar API key
-            </button>
-          )}
         </div>
       )}
     </div>

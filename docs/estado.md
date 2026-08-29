@@ -47,7 +47,8 @@ Carpeta local: `D:\IA\3maps`.
   bloque con scroll propio), links (pestaña nueva), citas, tablas GFM. Sin HTML crudo → seguro.
 - **Errores**: recuadro rojo + "↻ Reintentar" (descarta la parcial vieja). El error se persiste
   en el frontmatter del `.md` y sobrevive al reload.
-- **Config en ⚙️**: proveedor, API key (password), modelo (con sugeridos), ventana de contexto (2–20).
+- **Config en ⚙️**: proveedor (aplica al toque), API key + modelo (borradores → botón "Guardar" o
+  Enter; "✓ Guardado" / "Cambios sin guardar" / "Borrar key"), ventana de contexto (2–20).
 
 ### Datos / persistencia (verificado a nivel de datos)
 - El `arbol` de `Intercambio`s es la fuente de la verdad; los nodos/edges de React Flow se
