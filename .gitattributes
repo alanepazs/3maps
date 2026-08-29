@@ -1,0 +1,2 @@
+# Normalizar finales de línea a LF en el repo (evita ruido entre Windows y Linux)
+* text=auto eol=lf
