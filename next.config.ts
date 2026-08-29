@@ -6,6 +6,8 @@ const nextConfig: NextConfig = {
   devIndicators: {
     position: "bottom-right",
   },
+  // Que `next dev` no escriba el bloque nextjs-agent-rules en CLAUDE.md.
+  agentRules: false,
 };
 
 export default nextConfig;
