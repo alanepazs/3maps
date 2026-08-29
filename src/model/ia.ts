@@ -305,12 +305,17 @@ async function mensajeErrorGemini(res: Response, modelo?: string): Promise<strin
   if (res.status === 400 && /api[_ ]?key/i.test(m ?? "")) {
     return "API key de Gemini inválida.";
   }
+  // Para 403/404 el mensaje de Google suele explicar el motivo real (modelo
+  // retirado, "usá tal API", región, billing) — no lo tapamos.
   if (res.status === 403) {
-    return "La API key de Gemini no tiene acceso (o falta habilitar la API).";
+    return m
+      ? `Gemini (403): ${m}`
+      : "La API key de Gemini no tiene acceso (o falta habilitar la API).";
   }
   if (res.status === 404) {
+    if (m) return `Gemini (404): ${m}`;
     return modelo
-      ? `Tu key no tiene acceso al modelo "${modelo}". Mirá "ver modelos disponibles".`
+      ? `Tu key no tiene acceso al modelo "${modelo}".`
       : "Recurso de Gemini no encontrado.";
   }
   if (res.status === 429) {
