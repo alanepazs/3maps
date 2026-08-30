@@ -109,7 +109,7 @@ Ordenados por dependencia. Cada bloque es committeable solo.
 autorizado. Para usarlo el usuario tiene que correr el OAuth desde una sesión interactiva
 (`claude mcp` o `/mcp`). No es bloqueante para planear ni para el código — solo acelera el setup.
 
-### 2.1 — Proxy IA para DeepSeek / GPT — ✅ deployado y verificado (falta key real para el happy path)
+### 2.1 — Proxy IA para DeepSeek / GPT — ✅ cerrado (deployado y verificado con key real)
 
 Decisión: **opción A** (proxy stateless opt-in). Ver `decisiones.md` §7a + F2-6.
 
@@ -127,13 +127,14 @@ Decisión: **opción A** (proxy stateless opt-in). Ver `decisiones.md` §7a + F2
 
 - [x] **Function deployada** (30-08-2026) como `ia-proxy` (via editor del panel, Verify JWT OFF).
       URL: `https://ejecjjpdjoxgrbqrhwwd.supabase.co/functions/v1/ia-proxy`.
-- [x] **Proxy verificado** (con key trucha): OPTIONS → 204 con CORS correcto; POST/GET con key
-      trucha → reenvía a DeepSeek → 401 "key inválida" devuelto **con CORS**; origen no permitido
-      → 403; proveedor inválido → 400. Cliente muestra "API key de DeepSeek inválida." tanto en
-      "verificar key" (`/models`) como al mandar una pregunta (`/chat/completions`).
-
-**Único pendiente**: probar con una key **real** de DeepSeek u OpenAI para ver una respuesta que
-streamee (como pasó con Claude — sin key propia no se llega a eso). DeepSeek es el más barato.
+- [x] **Proxy verificado con key trucha Y con key real** (30-08-2026): OPTIONS → 204 + CORS;
+      origen no permitido → 403; proveedor inválido → 400. Con una key **real** de DeepSeek:
+      "verificar key" listó los modelos reales (`deepseek-v4-flash` / `-vision-exp` / `-pro`) y
+      una pregunta llegó a DeepSeek → devolvió "Insufficient Balance", que el cliente muestra
+      prolijo. **La cadena navegador→proxy→proveedor→respuesta funciona entera.**
+- Lo único no visto: una respuesta streameada de verdad, que necesita una cuenta con saldo
+  (igual que Claude). No es código. **Solo Gemini tiene free tier real** — los otros 3 requieren
+  cargar plata. 2.1 se da por **cerrado**.
 
 ### 2.2 — Auth opcional (Supabase Auth)
 
