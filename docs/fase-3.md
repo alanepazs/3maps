@@ -46,18 +46,22 @@ cambió actualiza el `sourceHandle` del edge `e-<padre>-<nodo>` en el estado `ed
 `asentar` sigue fijando `rama` al árbol al soltar. Durante el envión el ajuste final lo hace
 `asentar` (no se sigue reposicionando en el glide — el envión de una rama suele ser corto).
 
-### 3.4 — Botón "ordenar" (auto-layout del árbol)
+### 3.4 — Botón "ordenar" (auto-layout del árbol)  ✅ (30-08-2026)
 
-Ordenar los globos a una forma canónica:
+Layout propio recursivo en `src/model/layout.ts` — `calcularLayout(arbol, alturaDe)` devuelve
+`Map<id, {x,y}>`:
 
-- **Tronco principal** (cadena de `rama: "main"` desde la raíz) en **vertical**.
-- Cada **rama** (nodo `branch-*`) + sus descendientes `main` → en **vertical hacia abajo**,
-  desplazada al costado (izq/der según su `rama`).
-- Layout recursivo propio (~80 líneas): `ubicar(nodo, x, y)` → coloca, baja los hijos `main`,
-  manda los hijos `branch` al costado. Necesita los altos medidos de los nodos.
-- Escribe `x`/`y` de vuelta al árbol (batch de `conPosicion`).
-- Botón en `<Controls>` o flotante. "Centrar" (fitView) ya está en `<Controls>`.
-- **Decisión**: layout propio vs librería (dagre/elk). → propio (el modelo tronco+rama es específico).
+- **Tronco** (cadena `rama: "main"` desde la raíz) en **vertical** (`x` fijo, `y += altoReal + 64`).
+- Cada **rama** (`branch-left` / `branch-right`) → columna al costado
+  (`x ± (260 + 140)`), alineada arriba con el globo padre, con su propio tronco `main` bajando y
+  sus sub-ramas más al costado. Varias ramas del mismo lado se apilan. Varias raíces se apilan.
+- Guarda anti-ciclo (`vistos`). Alto de cada globo = `getNode(id)?.measured?.height ?? 130`.
+
+`FlowCanvas.ordenar()` escribe las posiciones al árbol **y** a los nodos (la firma de la vista no
+incluye x/y → `setArbol` solo no movería nada) y después `fitView`. Botón `<ControlButton>` "▤"
+en `<Controls>` (oculto en modo compartido). Verificado en el preview pane + 6 asserts en scratch.
+
+- ~~**Decisión**: layout propio vs librería.~~ → propio (el modelo tronco+rama es específico).
 
 ### 3.5 — Varios mapas (crear / cambiar / borrar)
 
@@ -128,14 +132,14 @@ Hoy: para seguir la conversación hay que cerrar el panel → escribir en el map
 1. ~~**Quick wins**: 3.7 (click afuera), 3.8 (título panel), renombrar "Generar link".~~ ✅
 2. ~~**Canvas**: 3.1 (tamaño/expandir) · 3.2 (anti-superposición) + 3.2b (cámara sigue al hijo) ·
    3.3 (flecha en vivo).~~ ✅
-3. **3.9** (composer en el panel).
-4. **3.4** (auto-layout) — el más satisfactorio visualmente.
+3. ~~**3.4** (auto-layout).~~ ✅
+4. **3.9** (composer en el panel).
 5. **3.5** (varios mapas) — el más grande; 3.6 (borrar raíz) puede ir con esto.
 6. Cerebras, y 2.5b si hace falta.
 
 ## Decisiones abiertas (juntar antes de arrancar cada bloque)
 
-- 3.4: layout propio vs librería.
+- ~~3.4: layout propio vs librería.~~ → propio. Hecho.
 - 3.5: selector visible vs en ⚙️; migrar el sync a per-mapa o mantener `arbol.json` default.
 - 3.6: multi-raíz real vs promover 1 hijo.
 - ~~3.1: cortar-con-degradado vs scroll interno.~~ → degradado + pill "ver más". Hecho.

@@ -2,7 +2,8 @@
 
 > Snapshot para retomar rápido. Actualizar al final de cada sesión.
 > Última actualización: 30-08-2026 (fase 2 COMPLETA y en prod. Fase 3: quick wins + bloque canvas
-> hechos — tope/expandir del globo, anti-superposición, cámara que sigue al hijo, flecha en vivo).
+> COMPLETOS — tope/expandir del globo, anti-superposición, cámara sigue al hijo, flecha en vivo,
+> botón "ordenar" / auto-layout).
 
 ## Mapa de docs
 
@@ -148,7 +149,9 @@ Ver **`docs/fase-3.md`**.
   (`setCenter`, mantiene zoom): si estabas leyendo el principio de un padre largo, baja al hijo.
 - **3.3** — la flecha rama↔tronco salta de lado DURANTE el drag (en `onNodeDrag`, actualiza el
   `sourceHandle` del edge en vivo), no al soltar. `asentar` sigue fijando `rama` al soltar.
-- Falta del bloque canvas: 3.4 (botón "ordenar" / auto-layout).
+- **3.4** — botón "▤ Ordenar" en `<Controls>`: auto-layout a la forma canónica (tronco vertical +
+  ramas al costado con su propio tronco). Layout propio recursivo en `src/model/layout.ts`.
+  **Bloque canvas COMPLETO.**
 
 Resto del pedido del usuario:
 - Canvas: tope de tamaño del globo + minimizar/expandir (§8); globo hijo que no se pise con la

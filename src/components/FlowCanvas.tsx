@@ -6,6 +6,7 @@ import {
   ReactFlowProvider,
   Background,
   Controls,
+  ControlButton,
   MiniMap,
   SelectionMode,
   useNodesState,
@@ -55,6 +56,7 @@ import {
   type Rama,
 } from "@/model/intercambio";
 import { cargarArbol, guardarArbol } from "@/model/persistencia";
+import { calcularLayout } from "@/model/layout";
 import {
   armarContexto,
   intercambiosRelevantes,
@@ -600,6 +602,33 @@ function Flow() {
     nodeInertiaDragStart();
   }, [cancelPanInertia, nodeInertiaDragStart]);
 
+  // "Ordenar" (fase 3.4): reacomoda todos los globos a la forma canónica
+  // (tronco vertical + ramas al costado con su propio tronco). Escribe las
+  // posiciones nuevas al árbol Y a los nodos (la firma de la vista no incluye
+  // x/y, así que setArbol solo no movería nada), y después fitea la cámara.
+  const ordenar = useCallback(() => {
+    cancelInertia();
+    cancelPanInertia();
+    const pos = calcularLayout(
+      arbolRef.current,
+      (id) => getNode(id)?.measured?.height,
+    );
+    if (pos.size === 0) return;
+    setNodes((nds) =>
+      nds.map((n) => {
+        const p = pos.get(n.id);
+        return p ? { ...n, position: { x: p.x, y: p.y } } : n;
+      }),
+    );
+    setArbol((a) => ({
+      intercambios: a.intercambios.map((i) => {
+        const p = pos.get(i.id);
+        return p && (p.x !== i.x || p.y !== i.y) ? { ...i, x: p.x, y: p.y } : i;
+      }),
+    }));
+    window.setTimeout(() => void fitView({ duration: 400 }), 50);
+  }, [cancelInertia, cancelPanInertia, getNode, setNodes, fitView]);
+
   // Modo de interacción:
   //   - por defecto: manito → arrastrar el fondo hace pan (con envión).
   //   - con la barra espaciadora apretada: puntero → arrastrar el fondo hace un
@@ -748,7 +777,17 @@ function Flow() {
           zoomOnDoubleClick={false}
         >
           <Background />
-          <Controls />
+          <Controls>
+            {!readOnly && (
+              <ControlButton
+                onClick={ordenar}
+                title="Ordenar el árbol"
+                aria-label="Ordenar el árbol"
+              >
+                <span style={{ fontSize: 14, lineHeight: 1 }}>▤</span>
+              </ControlButton>
+            )}
+          </Controls>
           <MiniMap position="top-right" pannable zoomable />
         </ReactFlow>
         {listo && arbol.intercambios.length === 0 && !readOnly && (

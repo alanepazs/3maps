@@ -36,6 +36,9 @@ src/
                          (= { intercambios: [] }, árbol vacío — el 1er submit crea la raíz).
     persistencia.ts      guardarArbol / cargarArbol en localStorage ("3maps:arbol"), guardando
                          un string .md por intercambio. Cae a arbolInicial() si no hay nada.
+    layout.ts            calcularLayout(arbol, alturaDe) → Map<id,{x,y}>. Auto-layout recursivo
+                         para el botón "Ordenar" (fase 3.4): tronco `main` vertical, ramas
+                         `branch-*` en columnas al costado con su propio tronco. Puro.
     contexto.ts          armarContexto(arbol, nodoId, opts, resumenViejo, relevantes) → Mensaje[]:
                          SOLO el camino raíz→nodo, aplanado a user/assistant, con ventana (últimos
                          N completos + resumen del tramo viejo). `relevantes` = intercambios viejos
@@ -204,6 +207,8 @@ Handlers (todos operan sobre `arbol` vía `setArbol`):
 - `deleteNode(id)` (via NodeActionsContext) — `descendientes` para el conteo, `window.confirm` si
   borra >1, aborta las llamadas en vuelo de lo que se borra, `quitarSubarbol`, deja activo al padre.
 - `onConnect` — conectar handles a mano = `reparentar` el target (con guarda anti-ciclo).
+- `ordenar()` — botón "▤" en `<Controls>` (fase 3.4). `calcularLayout(arbol, alturaDe)` →
+  escribe las posiciones al árbol Y a `nodes` (la firma de la vista no incluye x/y) → `fitView`.
 
 Config de IA: `configIA` (useState `ConfigIA`, lazy init desde `cargarConfigIA()`).
 `guardarKeyIA` (guarda la del proveedor activo), `cambiarProveedorIA` (trae la guardada de otro),
