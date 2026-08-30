@@ -57,13 +57,31 @@ export default function SettingsPanel({
 }: Props) {
   const [open, setOpen] = useState(false);
 
-  // Cuenta (fase 2.2): login opcional por magic link.
-  const { usuario, cargando: cargandoSesion, enviarMagicLink, cerrarSesion } =
-    useSesion();
+  // Cuenta (fase 2.2): login opcional (Google o magic link).
+  const {
+    usuario,
+    cargando: cargandoSesion,
+    signInWithGoogle,
+    enviarMagicLink,
+    cerrarSesion,
+  } = useSesion();
   const [email, setEmail] = useState("");
   const [linkEnviado, setLinkEnviado] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [enviandoLink, setEnviandoLink] = useState(false);
+  const [yendoAGoogle, setYendoAGoogle] = useState(false);
+
+  const hacerGoogle = async () => {
+    if (yendoAGoogle) return;
+    setYendoAGoogle(true);
+    setAuthError(null);
+    try {
+      await signInWithGoogle();
+    } catch (e) {
+      setAuthError(e instanceof Error ? e.message : "No se pudo entrar con Google.");
+      setYendoAGoogle(false);
+    }
+  };
 
   const hacerLogin = async () => {
     if (enviandoLink || !email.trim()) return;
@@ -541,6 +559,17 @@ export default function SettingsPanel({
                     Opcional. Con cuenta, tu árbol se sincroniza entre dispositivos
                     y podés ver / despublicar tus árboles compartidos. Sin cuenta,
                     la app funciona igual (todo local).
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => void hacerGoogle()}
+                    disabled={yendoAGoogle}
+                    className="w-full rounded border border-white/20 bg-white px-2 py-1.5 text-sm font-medium text-neutral-900 hover:bg-white/90 disabled:opacity-50"
+                  >
+                    {yendoAGoogle ? "redirigiendo…" : "Continuar con Google"}
+                  </button>
+                  <p className="my-1.5 text-center text-[11px] text-white/30">
+                    o con un link por mail
                   </p>
                   <input
                     type="email"

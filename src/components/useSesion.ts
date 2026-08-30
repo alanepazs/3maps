@@ -9,14 +9,18 @@ import { getSupabase } from "@/model/supabase";
 // `localStorage`, compartir anónimo. La sesión solo habilita "mis árboles
 // compartidos" / despublicar (2.2b) y el sync entre dispositivos (2.4).
 //
-// Magic link: el usuario pone su mail, le llega un link, lo abre y vuelve con
-// `#access_token=…` en el hash — el cliente de Supabase (`detectSessionInUrl`)
-// lo levanta solo.
+// Dos vías, las dos vuelven con la sesión en el hash (`#access_token=…`) que
+// `detectSessionInUrl` levanta solo:
+//   - Google OAuth (`signInWithGoogle`): un click, sin mail. Recomendado.
+//   - Magic link (`enviarMagicLink`): mail con un link. Limitado a ~4/hora en
+//     el free tier de Supabase.
 
 export type EstadoSesion = {
   usuario: User | null;
   cargando: boolean;
-  // Manda el magic link al mail. `enviado` queda true si salió bien.
+  // Redirige a Google y vuelve logueado.
+  signInWithGoogle: () => Promise<void>;
+  // Manda el magic link al mail.
   enviarMagicLink: (email: string) => Promise<void>;
   cerrarSesion: () => Promise<void>;
 };
@@ -45,18 +49,26 @@ export function useSesion(): EstadoSesion {
     };
   }, [sb]);
 
+  const redirect = () =>
+    typeof window !== "undefined"
+      ? window.location.origin + window.location.pathname
+      : undefined;
+
+  const signInWithGoogle = useCallback(async () => {
+    if (!sb) throw new Error("El login no está disponible en esta instancia.");
+    const { error } = await sb.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: redirect() },
+    });
+    if (error) throw new Error(error.message);
+  }, [sb]);
+
   const enviarMagicLink = useCallback(
     async (email: string) => {
       if (!sb) throw new Error("El login no está disponible en esta instancia.");
       const { error } = await sb.auth.signInWithOtp({
         email: email.trim(),
-        options: {
-          // Vuelve a la misma página desde la que se pidió el link.
-          emailRedirectTo:
-            typeof window !== "undefined"
-              ? window.location.origin + window.location.pathname
-              : undefined,
-        },
+        options: { emailRedirectTo: redirect() },
       });
       if (error) throw new Error(error.message);
     },
@@ -68,5 +80,11 @@ export function useSesion(): EstadoSesion {
     setUsuario(null);
   }, [sb]);
 
-  return { usuario, cargando, enviarMagicLink, cerrarSesion };
+  return {
+    usuario,
+    cargando,
+    signInWithGoogle,
+    enviarMagicLink,
+    cerrarSesion,
+  };
 }
