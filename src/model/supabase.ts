@@ -22,11 +22,12 @@ export function getSupabase(): SupabaseClient | null {
   if (!cliente) {
     cliente = createClient(url, anonKey, {
       auth: {
-        // Fase 2.0/2.3 no usa login todavía; que no intente refrescar sesiones
-        // ni escuchar el hash de la URL (rompería el `?compartir=` que leemos).
-        persistSession: false,
-        autoRefreshToken: false,
-        detectSessionInUrl: false,
+        // Fase 2.2: login opcional por magic link. La sesión (si hay) vive en
+        // localStorage. `detectSessionInUrl` lee el HASH (`#access_token=…`) que
+        // deja el magic link — no toca el `?compartir=<slug>` (query param).
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
       },
     });
   }

@@ -17,6 +17,7 @@ import {
 } from "@/model/ia";
 import type { Proveedor } from "@/model/intercambio";
 import { haySupabase } from "@/model/supabase";
+import { useSesion } from "./useSesion";
 
 type Props = {
   settings: Settings;
@@ -38,6 +39,28 @@ export default function SettingsPanel({
   onCompartir,
 }: Props) {
   const [open, setOpen] = useState(false);
+
+  // Cuenta (fase 2.2): login opcional por magic link.
+  const { usuario, cargando: cargandoSesion, enviarMagicLink, cerrarSesion } =
+    useSesion();
+  const [email, setEmail] = useState("");
+  const [linkEnviado, setLinkEnviado] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [enviandoLink, setEnviandoLink] = useState(false);
+
+  const hacerLogin = async () => {
+    if (enviandoLink || !email.trim()) return;
+    setEnviandoLink(true);
+    setAuthError(null);
+    try {
+      await enviarMagicLink(email);
+      setLinkEnviado(true);
+    } catch (e) {
+      setAuthError(e instanceof Error ? e.message : "No se pudo enviar el link.");
+    } finally {
+      setEnviandoLink(false);
+    }
+  };
 
   // Compartir (fase 2.3): estado del link generado.
   const [compTitulo, setCompTitulo] = useState("");
@@ -415,6 +438,70 @@ export default function SettingsPanel({
               Se antepone a cada pregunta. No afecta el resumen del contexto viejo.
             </span>
           </label>
+
+          {haySupabase() && (
+            <>
+              <hr className="my-3 border-white/10" />
+              <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-white/40">
+                Cuenta
+              </p>
+              {cargandoSesion ? (
+                <p className="text-[11px] text-white/40">…</p>
+              ) : usuario ? (
+                <div className="text-sm">
+                  <p className="text-white/70">
+                    Sesión iniciada como{" "}
+                    <span className="text-white/90">{usuario.email}</span>
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => void cerrarSesion()}
+                    className="mt-1.5 rounded border border-white/15 px-2 py-1 text-[11px] text-white/70 hover:bg-white/10"
+                  >
+                    Cerrar sesión
+                  </button>
+                </div>
+              ) : linkEnviado ? (
+                <p className="text-[11px] text-white/70">
+                  Te mandamos un link a <span className="text-white/90">{email}</span>.
+                  Abrilo desde este dispositivo para entrar. (Revisá spam.)
+                </p>
+              ) : (
+                <div className="text-sm">
+                  <p className="mb-1.5 text-[11px] text-white/40">
+                    Opcional. Sirve para ver y despublicar tus árboles compartidos
+                    y (más adelante) sincronizar entre dispositivos. Sin cuenta, la
+                    app funciona igual.
+                  </p>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        void hacerLogin();
+                      }
+                    }}
+                    placeholder="tu@email.com"
+                    autoComplete="email"
+                    className="w-full rounded border border-white/15 bg-neutral-950 px-2 py-1.5 text-sm placeholder:text-white/30 focus:border-sky-400 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void hacerLogin()}
+                    disabled={enviandoLink || !email.trim()}
+                    className="mt-1.5 rounded bg-sky-500 px-3 py-1.5 text-xs font-medium text-white enabled:hover:bg-sky-400 disabled:opacity-40"
+                  >
+                    {enviandoLink ? "enviando…" : "Enviarme un link para entrar"}
+                  </button>
+                  {authError && (
+                    <p className="mt-1.5 text-[11px] text-red-400">{authError}</p>
+                  )}
+                </div>
+              )}
+            </>
+          )}
 
           {onCompartir && (
             <>
