@@ -179,7 +179,14 @@ Estado / hooks clave:
 Handlers (todos operan sobre `arbol` vía `setArbol`):
 - `handleSubmit(text, kind)` — si el árbol está vacío, el globo es la raíz; si no, cuelga del
   activo. `agregar(crearIntercambio({..., pending:true}))`, lo setea, llama `responder(id, arbolNuevo)`.
-  `kind` "main" → rama "main", abajo; "branch" → rama "branch-right", a la derecha.
+  `kind` "main" → rama "main", abajo (`y = parent.y + altoRealPadre + 60`, alto medido por React
+  Flow → no se pisa con la respuesta larga, fase 3.2); "branch" → rama "branch-right", a la derecha.
+  Al crear cualquier globo, `centrarEnGlobo(x,y)` (`setCenter`, mantiene zoom) baja la cámara al
+  nuevo (fase 3.2b).
+- `onNodeDrag` (envuelve el de `useNodeInertia`) — además de trackear velocidad para el envión,
+  si el nodo arrastrado es una rama, mueve el `sourceHandle` de su flecha al lado (izq/der) en
+  vivo mientras se arrastra, tocando solo el estado `edges` (fase 3.3). `asentar` fija la `rama`
+  al soltar.
 - `responder(nodeId, arbolBase)` — **la llamada a la IA**. Si no hay API key → `conError`. Si no:
   `conRespuesta({pending:true})` + limpia error; arma el contexto con `armarContexto` (tratando a
   `nodeId` como pendiente, así un reintento descarta la respuesta parcial vieja); si el camino

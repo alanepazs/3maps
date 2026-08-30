@@ -134,7 +134,21 @@ function Flow() {
   // Id a seleccionar tras la próxima reconstrucción de la vista (globo recién
   // creado, o el padre tras un borrado). null = mantener la selección actual.
   const seleccionarLuegoRef = useRef<string | null>(null);
-  const { getNode, getViewport, setViewport, fitView } = useReactFlow();
+  const { getNode, getViewport, setViewport, setCenter, fitView } =
+    useReactFlow();
+
+  // Centrar la cámara en un globo recién creado — la cámara "sigue" al hijo
+  // hacia abajo aunque estuvieras leyendo el principio de un padre largo.
+  // Punto ≈ centro del globo (ancho fijo 260, alto aprox. 120). Mantiene el zoom.
+  const centrarEnGlobo = useCallback(
+    (x: number, y: number) => {
+      setCenter(x + 130, y + 120, {
+        zoom: getViewport().zoom,
+        duration: 400,
+      });
+    },
+    [setCenter, getViewport],
+  );
 
   // Hidratar después del montaje. Patrón recomendado para local-first en SSR: el
   // primer render coincide con el server (semilla) y acá se cambia al árbol
@@ -470,6 +484,7 @@ function Flow() {
         seleccionarLuegoRef.current = id;
         setArbol(arbolNuevo);
         setActiveNodeId(id);
+        centrarEnGlobo(250, 0);
         void responder(id, arbolNuevo);
         return;
       }
@@ -481,9 +496,13 @@ function Flow() {
       const hermanos = hijos(arbol, parent.id).filter((h) =>
         kind === "main" ? h.rama === "main" : h.rama !== "main",
       ).length;
+      // Alto real del padre (globo medido por React Flow). Así el hijo "main"
+      // cuelga POR DEBAJO de la respuesta del padre en vez de pisarse con ella
+      // cuando la respuesta es larga / está expandida (fase 3.2).
+      const altoPadre = getNode(parent.id)?.measured?.height ?? 160;
       const pos =
         kind === "main"
-          ? { x: parent.x + hermanos * 40, y: parent.y + 240 }
+          ? { x: parent.x + hermanos * 40, y: parent.y + altoPadre + 60 }
           : { x: parent.x + 400, y: parent.y + hermanos * 220 };
       const nuevo = crearIntercambio({
         id,
@@ -499,9 +518,10 @@ function Flow() {
       seleccionarLuegoRef.current = id;
       setArbol(arbolNuevo);
       setActiveNodeId(id);
+      centrarEnGlobo(pos.x, pos.y);
       void responder(id, arbolNuevo);
     },
-    [arbol, activeNodeId, responder, readOnly],
+    [arbol, activeNodeId, responder, readOnly, getNode, centrarEnGlobo],
   );
 
   const retryNode = useCallback(
@@ -535,13 +555,38 @@ function Flow() {
   // Envión / inercia al soltar, tipo Obsidian Canvas.
   const {
     onNodeDragStart: nodeInertiaDragStart,
-    onNodeDrag,
+    onNodeDrag: nodeInertiaDrag,
     onNodeDragStop,
     onSelectionDragStart,
     onSelectionDrag,
     onSelectionDragStop,
     cancelInertia,
   } = useNodeInertia(setNodes, asentar, settings.inertia);
+
+  // Mientras se arrastra una rama: mover el handle de su flecha al lado
+  // (izq/der) donde va quedando, en vivo — sin esperar al `asentar` del drop
+  // (fase 3.3). Solo toca el estado `edges`; la `rama` del árbol se fija al
+  // soltar. Durante el envión, el ajuste final lo hace `asentar`.
+  const onNodeDrag = useCallback(
+    (evt: unknown, node: Node) => {
+      nodeInertiaDrag(evt, node);
+      const ic = buscar(arbolRef.current, node.id);
+      if (!ic || ic.padreId === null || ic.rama === "main") return;
+      const padre = getNode(ic.padreId);
+      if (!padre) return;
+      const lado: Rama =
+        node.position.x < padre.position.x ? "branch-left" : "branch-right";
+      const edgeId = `e-${ic.padreId}-${node.id}`;
+      setEdges((eds) => {
+        const i = eds.findIndex((e) => e.id === edgeId);
+        if (i === -1 || eds[i].sourceHandle === lado) return eds;
+        const next = eds.slice();
+        next[i] = { ...next[i], sourceHandle: lado };
+        return next;
+      });
+    },
+    [nodeInertiaDrag, getNode, setEdges],
+  );
 
   // Envión también al mover el plano del fondo con la manito.
   const { onMoveStart, onMove, onMoveEnd, cancelPanInertia } = usePanInertia(

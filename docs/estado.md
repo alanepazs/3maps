@@ -1,8 +1,8 @@
 # Estado del proyecto
 
 > Snapshot para retomar rápido. Actualizar al final de cada sesión.
-> Última actualización: 30-08-2026 (fase 2 COMPLETA y en prod. Fase 3 arrancada: bloque 1 de
-> quick wins hecho + 3.1 — tope de alto del globo con degradado + botón expandir).
+> Última actualización: 30-08-2026 (fase 2 COMPLETA y en prod. Fase 3: quick wins + bloque canvas
+> hechos — tope/expandir del globo, anti-superposición, cámara que sigue al hijo, flecha en vivo).
 
 ## Mapa de docs
 
@@ -138,12 +138,17 @@ Ver **`docs/fase-3.md`**.
   globo". `BranchTranscript.tsx`.
 - Botón de compartir renombrado "Generar link" → "Compartir este árbol". `SettingsPanel.tsx`.
 
-**Bloque canvas — 3.1 ✅ hecho (30-08-2026), verificado en el preview pane:**
+**Bloque canvas — ✅ 3.1 / 3.2 / 3.2b / 3.3 hechos (30-08-2026), verificados en el preview pane:**
 - **3.1** — tope de alto del globo (220px) cuando la respuesta pasa 400 chars: se corta con
   degradado + pill "⌄ ver más", toggle Expandir/Colapsar en el `NodeToolbar`. Preferencia por
   globo en `localStorage["3maps:vista"]` (no toca el `.md`). Módulo nuevo `src/components/vista.ts`.
-- Falta del bloque canvas: 3.2 (globo hijo no se pisa con la respuesta del padre), 3.3 (flecha
-  rama↔tronco salta durante el drag).
+- **3.2** — el globo hijo `main` cuelga en `y = parent.y + altoRealDelPadre + 60`
+  (`getNode(id).measured.height`), no más `+ 240` fijo → no se pisa con la respuesta larga.
+- **3.2b** (pedido del usuario) — al crear un globo, la cámara se centra en él
+  (`setCenter`, mantiene zoom): si estabas leyendo el principio de un padre largo, baja al hijo.
+- **3.3** — la flecha rama↔tronco salta de lado DURANTE el drag (en `onNodeDrag`, actualiza el
+  `sourceHandle` del edge en vivo), no al soltar. `asentar` sigue fijando `rama` al soltar.
+- Falta del bloque canvas: 3.4 (botón "ordenar" / auto-layout).
 
 Resto del pedido del usuario:
 - Canvas: tope de tamaño del globo + minimizar/expandir (§8); globo hijo que no se pise con la

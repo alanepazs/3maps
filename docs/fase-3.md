@@ -24,25 +24,27 @@ Preferencia **por globo**, NO va al `.md` ni al árbol: vive en `localStorage["3
 (`{ expandidos: { [id]: boolean } }`), módulo nuevo `src/components/vista.ts`. Estado local en
 `MessageNode` (`override ?? !colapsable`). TODO fase 3.5: clave por mapa.
 
-### 3.2 — El globo hijo no se superpone con la respuesta del padre
+### 3.2 — El globo hijo no se superpone con la respuesta del padre  ✅ (30-08-2026)
 
-`handleSubmit` hoy pone el hijo en `y = parent.y + 240` fijo → si el padre es alto (respuesta
-larga), se pisan.
+`handleSubmit`: el hijo `main` ahora cuelga en `y = parent.y + altoPadre + 60`, con
+`altoPadre = getNode(parent.id)?.measured?.height ?? 160` (alto real medido por React Flow) en
+vez de un `+ 240` fijo. Las ramas (`x = parent.x + 400`) no cambian.
 
-- Usar el alto real del padre: `getNode(parent.id)?.measured?.height` + margen.
-- Rama: `x` con offset que despeje el ancho del padre (globo = 260px fijo).
-- Queda parcialmente cubierto por 3.4 (auto-layout) pero sirve para el caso incremental.
+### 3.2b — La cámara sigue al globo recién creado  ✅ (30-08-2026)
 
-### 3.3 — La flecha rama↔tronco se reposiciona DURANTE el drag, no al soltar
+Pedido del usuario: si estabas leyendo el principio de un globo largo y respondés, la cámara
+debe bajar sola al hijo. `centrarEnGlobo(x, y)` en `FlowCanvas` → `setCenter(x+130, y+120,
+{ zoom: actual, duration: 400 })`, llamado en `handleSubmit` al crear cualquier globo (raíz o
+hijo). Mantiene el zoom.
 
-Hoy: al soltar (`asentar`) se fija `rama` (`branch-left`/`branch-right`) y recién ahí salta el
-handle de la flecha.
+### 3.3 — La flecha rama↔tronco se reposiciona DURANTE el drag, no al soltar  ✅ (30-08-2026)
 
-- En `onNodeDrag`: calcular el lado (`x < parent.x` → izquierda) y si cambió, actualizar el
-  `sourceHandle` del edge `e-<padre>-<nodo>` **en el estado `edges` en vivo** (sin mutar el árbol
-  entero en cada frame).
-- Al soltar, `asentar` ya persiste `rama` al árbol (no cambia).
-- Cuidado con el envión/inercia (`useNodeInertia`) — el reajuste vale también durante el glide.
+`FlowCanvas` envuelve el `onNodeDrag` de `useNodeInertia` (ahora `nodeInertiaDrag`): además de
+trackear velocidad, calcula el lado (`node.position.x < padre.position.x` → izquierda) y si
+cambió actualiza el `sourceHandle` del edge `e-<padre>-<nodo>` en el estado `edges` en vivo (un
+`findIndex` + copia, sin tocar el árbol). Solo para nodos rama (`padreId != null && rama != main`).
+`asentar` sigue fijando `rama` al árbol al soltar. Durante el envión el ajuste final lo hace
+`asentar` (no se sigue reposicionando en el glide — el envión de una rama suele ser corto).
 
 ### 3.4 — Botón "ordenar" (auto-layout del árbol)
 
@@ -124,7 +126,8 @@ Hoy: para seguir la conversación hay que cerrar el panel → escribir en el map
 ## Orden sugerido
 
 1. ~~**Quick wins**: 3.7 (click afuera), 3.8 (título panel), renombrar "Generar link".~~ ✅
-2. **Canvas**: ~~3.1 (tamaño/expandir)~~ ✅ · 3.2 (anti-superposición) · 3.3 (flecha en vivo).
+2. ~~**Canvas**: 3.1 (tamaño/expandir) · 3.2 (anti-superposición) + 3.2b (cámara sigue al hijo) ·
+   3.3 (flecha en vivo).~~ ✅
 3. **3.9** (composer en el panel).
 4. **3.4** (auto-layout) — el más satisfactorio visualmente.
 5. **3.5** (varios mapas) — el más grande; 3.6 (borrar raíz) puede ir con esto.
