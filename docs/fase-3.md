@@ -1,6 +1,6 @@
 # Fase 3 — Pulido de UX (canvas, mapas, panel)
 
-> Plan de trabajo. Estado: **borrador, nada hecho** (30-08-2026).
+> Plan de trabajo. Estado: **bloque 1 (quick wins) hecho** (30-08-2026); resto pendiente.
 > Fase 2 quedó completa y en producción — ver `docs/estado.md` y `docs/fase-2.md`.
 >
 > Pedido del usuario: mejoras de UX del canvas + soporte de varios mapas + ajustes del panel
@@ -85,20 +85,16 @@ Hoy el raíz no se puede borrar (dejaría todo huérfano).
   chequean `length`, no "hay raíz" — habría que revisar que no rompan con multi-raíz.
 - **Decisión**: ¿permitir multi-raíz de verdad, o forzar a que el usuario elija 1 hijo para promover?
 
-### 3.7 — La tuerquita se cierra al clickear afuera
+### 3.7 — La tuerquita se cierra al clickear afuera  ✅ (30-08-2026)
 
-Hoy solo cierra volviendo a tocar ⚙️.
+Listener `pointerdown` en `document` **en fase de captura** (React Flow frena los eventos del
+lienzo antes de que lleguen a `document` en burbuja) + Escape. Cierra si el target queda fuera
+del contenedor (`contenedorRef`), que incluye el botón ⚙️ → su toggle lo maneja su propio
+`onClick`. `SettingsPanel.tsx`.
 
-- Backdrop invisible `pointer-events` + `onClick` que cierra, o listener de `mousedown` en
-  `document` que cierra si el target está fuera del panel.
-- Chico (~10 líneas). Cuidado de no cerrar al interactuar con el panel mismo.
+### 3.8 — Panel lateral: sacar "Transcripción de la rama"  ✅ (30-08-2026)
 
-### 3.8 — Panel lateral: sacar "Transcripción de la rama"
-
-El título confunde cuando abrís un globo del tronco principal (no es "una rama").
-
-- Header: cambiar por algo neutro — "Conversación hasta este globo" o solo el contador de
-  intercambios. Cambio de texto en `BranchTranscript.tsx`.
+Header ahora dice "Conversación hasta este globo" + contador. `BranchTranscript.tsx`.
 
 ### 3.9 — Panel lateral: cuadro de texto para escribir sin cerrarlo
 
@@ -117,7 +113,7 @@ Hoy: para seguir la conversación hay que cerrar el panel → escribir en el map
 - **Cerebras como 5º proveedor**: OpenAI-compatible → entra por el proxy `ia-proxy` (un `case`
   más + `cerebras: "https://api.cerebras.ai/v1"` en el edge function + redeploy). Tiene free tier
   real (verificar límites al día).
-- **Renombrar "Generar link" → "Compartir este árbol"** en `SettingsPanel`. Trivial.
+- ~~**Renombrar "Generar link" → "Compartir este árbol"** en `SettingsPanel`.~~ ✅ (30-08-2026)
 - **2.5b — embeddings de verdad** (`transformers.js`, worker, IndexedDB) si el matching por
   palabras clave se queda corto. Misma firma que `intercambiosRelevantes` → drop-in.
 - **Publicar la pantalla de consentimiento de Google** (config del usuario, no código): Google
@@ -127,7 +123,7 @@ Hoy: para seguir la conversación hay que cerrar el panel → escribir en el map
 
 ## Orden sugerido
 
-1. **Quick wins** (¬½ día): 3.7 (click afuera), 3.8 (título panel), renombrar "Generar link".
+1. ~~**Quick wins**: 3.7 (click afuera), 3.8 (título panel), renombrar "Generar link".~~ ✅
 2. **Canvas** (1-2 días): 3.1 (tamaño/expandir), 3.2 (anti-superposición), 3.3 (flecha en vivo).
 3. **3.9** (composer en el panel).
 4. **3.4** (auto-layout) — el más satisfactorio visualmente.

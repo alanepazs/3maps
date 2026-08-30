@@ -43,7 +43,7 @@ export default function BranchTranscript({
       >
         <div className="flex items-center justify-between border-b border-white/10 px-4 py-2.5">
           <span className="font-medium text-white">
-            Transcripción de la rama
+            Conversación hasta este globo
             <span className="ml-2 text-xs font-normal text-white/40">
               {intercambios.length} interc.
             </span>

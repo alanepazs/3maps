@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { Settings } from "./settings";
 import {
@@ -56,6 +56,33 @@ export default function SettingsPanel({
   estadoSync,
 }: Props) {
   const [open, setOpen] = useState(false);
+  const contenedorRef = useRef<HTMLDivElement>(null);
+
+  // Cerrar al clickear afuera del panel o con Escape (fase 3.7). El botón ⚙️
+  // está dentro del contenedor, así que su click no dispara este cierre — lo
+  // maneja su propio onClick (toggle).
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: PointerEvent) => {
+      if (
+        contenedorRef.current &&
+        !contenedorRef.current.contains(e.target as Node)
+      ) {
+        setOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    // Captura: React Flow frena los eventos del lienzo antes de que lleguen a
+    // `document` en fase de burbuja.
+    document.addEventListener("pointerdown", onDown, true);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onDown, true);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
 
   // Cuenta (fase 2.2): login opcional (Google o magic link).
   const {
@@ -263,7 +290,7 @@ export default function SettingsPanel({
     !modelos.includes(modeloDraft.trim());
 
   return (
-    <div className="absolute left-4 top-4 z-10">
+    <div ref={contenedorRef} className="absolute left-4 top-4 z-10">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -623,7 +650,7 @@ export default function SettingsPanel({
                 disabled={compartiendo}
                 className="mt-2 rounded bg-sky-500 px-3 py-1.5 text-xs font-medium text-white enabled:hover:bg-sky-400 disabled:opacity-40"
               >
-                {compartiendo ? "subiendo…" : "Generar link"}
+                {compartiendo ? "subiendo…" : "Compartir este árbol"}
               </button>
               {compError && (
                 <p className="mt-1.5 text-[11px] text-red-400">{compError}</p>

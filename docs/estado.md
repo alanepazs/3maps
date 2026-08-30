@@ -1,8 +1,9 @@
 # Estado del proyecto
 
 > Snapshot para retomar rápido. Actualizar al final de cada sesión.
-> Última actualización: 30-08-2026 (fase 2 COMPLETA y en prod: compartir, proxy IA, login Google,
-> mis árboles, sync compu↔celu (verificado), contexto relevante liviano. Árbol nuevo arranca vacío).
+> Última actualización: 30-08-2026 (fase 2 COMPLETA y en prod. Fase 3 arrancada: bloque 1 de
+> quick wins hecho — tuerquita cierra al clickear afuera, título del panel lateral, renombre del
+> botón de compartir).
 
 ## Mapa de docs
 
@@ -128,8 +129,17 @@ en `contexto.ts` (match por raíz de palabra + peso por rareza, sin modelo). Res
 ≤3 intercambios viejos más relacionados con la pregunta cuando el tramo viejo se resumió. 2.5b
 (embeddings) queda para si la liviana no alcanza.
 
-### Fase 3 — pulido de UX (planificada, nada hecho)
-Ver **`docs/fase-3.md`**. Pedido del usuario:
+### Fase 3 — pulido de UX (arrancada)
+Ver **`docs/fase-3.md`**.
+
+**Bloque 1 (quick wins) — ✅ hecho (30-08-2026), verificado en el preview pane:**
+- **3.7** — la tuerquita ⚙️ cierra al clickear afuera o con Escape. Listener `pointerdown` en
+  captura (React Flow frena los eventos del lienzo en burbuja). `SettingsPanel.tsx`.
+- **3.8** — el panel lateral ya no dice "Transcripción de la rama" → "Conversación hasta este
+  globo". `BranchTranscript.tsx`.
+- Botón de compartir renombrado "Generar link" → "Compartir este árbol". `SettingsPanel.tsx`.
+
+Resto del pedido del usuario:
 - Canvas: tope de tamaño del globo + minimizar/expandir (§8); globo hijo que no se pise con la
   respuesta del padre; flecha rama↔tronco que salte durante el drag (no al soltar); botón
   "ordenar" (auto-layout tronco vertical + ramas al costado).
