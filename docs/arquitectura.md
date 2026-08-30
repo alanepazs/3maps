@@ -159,6 +159,8 @@ Props de `<ReactFlow>` que importan:
   navegador** (verificado: key trucha → 400 real, no bloqueo CORS). Tiene free tier. Default
   `gemini-3.7-flash`. `thinkingConfig` por generación: `thinkingLevel: "low"` (3.x) /
   `thinkingBudget: 0` (2.x). Ver decisiones §7b.
+  `llamarGemini` es un wrapper: llama a `intentarGemini` y ante un 503 (Google satura los flash
+  3.x) reintenta 1 vez con 1s de pausa, solo si no se streameó texto. Ver decisiones §7c.
 - `mensajeLegible` mapea status/errores → texto legible (usado por ambos adaptadores).
   `mensajeErrorGemini(res, modelo?)` traduce errores de cualquier endpoint de Gemini (400 key /
   401 keys `AQ.` / 403 / 404 / 429 / 503).

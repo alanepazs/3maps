@@ -103,8 +103,22 @@ Historia de dolor real con una key **free tier** recién sacada de AI Studio:
    que todavía no andan en la REST API (problema de Google, reportado en su foro).
 
 **Resultado (29-08-2026)**: con `gemini-3.6-flash` la IA anda end-to-end con una key free real
-(respuesta + streaming + markdown). Google 503ea ese modelo de a ratos → el parser devuelve el
-texto parcial y con Reintentar sale.
+(respuesta + streaming + markdown). Google 503ea los flash 3.x de a ratos → si ya hubo streaming,
+el parser devuelve el texto parcial; si no llegó nada, `llamarGemini` reintenta **una** vez con
+1s de pausa (ver §7c) antes de mostrar el error.
+
+### 7c. `llamarGemini` = wrapper con 1 reintento; `intentarGemini` hace el trabajo
+- **Por qué**: el 503 de Google es transitorio y pasa seguido con los flash 3.x. Reintentar 1 vez
+  con 1s de backoff evita que el usuario tenga que apretar "Reintentar" a mano en la mitad de los
+  casos.
+- **Solo si `acumulado === ""`**: si ya se streameó texto, `intentarGemini` lo devuelve y no
+  llega al reintento → `opts.onTexto` nunca se llamó en el intento fallido → **sin doble emisión**.
+- **Detección del 503**: fetch inicial `res.status === 503`, o error inyectado a mitad del stream
+  con `error.code === 503` / `error.status === "UNAVAILABLE"` (marca `ErrorGemini503`, una clase
+  privada; el wrapper la reempaqueta como `ErrorIA` si el 2º intento también falla).
+- **Backoff abortable** (`esperar(ms, signal)`): si se cancela la llamada durante la pausa,
+  rechaza con `AbortError` — lo trata `FlowCanvas.responder` como cancelación normal.
+- **Revertir** (sacar el wrapper): vuelve a hacer falta apretar "Reintentar" ante cada 503.
 
 **Lección**: la API de Gemini se renovó entera (keys `AQ.…`, solo modelos 3.x para keys nuevas,
 `thinkingLevel` en vez de `thinkingBudget`, 503s intermitentes). Para el default de un servicio

@@ -99,7 +99,9 @@ Carpeta local: `D:\IA\3maps`.
 - [ ] Definir qué pasa al abrir/doble-click en un globo (spec §14: ¿solo ese intercambio o
       transcripción de la rama?).
 - [ ] Adaptador OpenAI-compatible (DeepSeek + GPT) — un `llamarOpenAICompat` para los dos `case`.
-- [ ] Auto-retry en `llamarGemini` para 503 intermitentes (solo si `acumulado === ""`).
+- [x] Auto-retry en `llamarGemini` para 503 intermitentes (29-08-2026): 1 reintento con 1s de
+      pausa, solo si no se streameó nada. `llamarGemini` = wrapper, `intentarGemini` = el trabajo.
+      Ver decisiones §7c. Probado con 5 asserts (scratch, borrado).
 
 ### Más adelante
 - [ ] Export/import: `.zip` de la carpeta de `.md` + carpetas reales con File System Access API,
@@ -117,7 +119,8 @@ Carpeta local: `D:\IA\3maps`.
 - [x] Markdown renderizado en las respuestas — `07f28ef`.
 - [x] Gemini como 2º proveedor (`fetch` + SSE, sin SDK) + saga API renovada — `6cc38e6`.
 - [x] Metadata de modelos al día + desbloquear paid keys de Gemini — `44bd8fb`.
-- [x] System prompt configurable (`Settings.systemPrompt`) — _(commit pendiente)_.
+- [x] System prompt configurable (`Settings.systemPrompt`) — `43ed0bf`.
+- [x] Auto-retry de `llamarGemini` ante 503 (1 reintento, 1s) — _(commit pendiente)_.
 
 ## Issues conocidos / gotchas
 

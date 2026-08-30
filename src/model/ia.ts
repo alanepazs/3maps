@@ -183,12 +183,39 @@ type GeminiChunk = {
   promptFeedback?: { blockReason?: string };
 };
 
+// Google satura los flash 3.x de a ratos y devuelve 503 (en el fetch inicial o
+// inyectado a mitad del stream). Es transitorio: reintentamos UNA vez con 1s de
+// pausa, pero solo si todavía no llegó nada de texto — si ya hubo streaming,
+// `intentarGemini` devuelve la parcial y no tira este error, así que `onTexto`
+// nunca se llamó en el intento que falla y no hay doble emisión.
+class ErrorGemini503 extends Error {}
+
 async function llamarGemini(
   config: ConfigIA,
   mensajes: Mensaje[],
   opts: LlamadaOpts,
 ): Promise<string> {
   const modelo = config.modelo || MODELO_POR_DEFECTO.gemini;
+  for (let intento = 0; ; intento++) {
+    try {
+      return await intentarGemini(config, modelo, mensajes, opts);
+    } catch (e) {
+      if (e instanceof ErrorGemini503 && intento === 0) {
+        await esperar(1000, opts.signal);
+        continue;
+      }
+      if (e instanceof ErrorGemini503) throw new ErrorIA(e.message, e);
+      throw e;
+    }
+  }
+}
+
+async function intentarGemini(
+  config: ConfigIA,
+  modelo: string,
+  mensajes: Mensaje[],
+  opts: LlamadaOpts,
+): Promise<string> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
     modelo,
   )}:streamGenerateContent?alt=sse`;
@@ -234,7 +261,9 @@ async function llamarGemini(
   }
 
   if (!res.ok || !res.body) {
-    throw new ErrorIA(await mensajeErrorGemini(res, modelo));
+    const msg = await mensajeErrorGemini(res, modelo);
+    if (res.status === 503) throw new ErrorGemini503(msg);
+    throw new ErrorIA(msg);
   }
 
   let acumulado = "";
@@ -242,8 +271,11 @@ async function llamarGemini(
   let bloqueo: string | null = null;
   let huboThoughts = false;
   let errorEnStream: string | null = null;
+  let error503EnStream = false;
 
-  type GeminiPayload = GeminiChunk & { error?: { message?: string } };
+  type GeminiPayload = GeminiChunk & {
+    error?: { message?: string; code?: number; status?: string };
+  };
 
   // El stream de Gemini es una línea `data: {json}` por evento (JSON de una
   // línea). Procesamos línea a línea — así da igual si los eventos van separados
@@ -262,6 +294,9 @@ async function llamarGemini(
     }
     if (chunk.error?.message) {
       errorEnStream = chunk.error.message;
+      if (chunk.error.code === 503 || chunk.error.status === "UNAVAILABLE") {
+        error503EnStream = true;
+      }
       return;
     }
     const cand = chunk.candidates?.[0];
@@ -310,8 +345,15 @@ async function llamarGemini(
   // Un {error:...} pretty-printed que Google inyecta al cortar el stream.
   if (!errorEnStream && crudo.includes('"error"')) {
     try {
-      const j = JSON.parse(crudo.trim()) as { error?: { message?: string } };
-      if (j.error?.message) errorEnStream = j.error.message;
+      const j = JSON.parse(crudo.trim()) as {
+        error?: { message?: string; code?: number; status?: string };
+      };
+      if (j.error?.message) {
+        errorEnStream = j.error.message;
+        if (j.error.code === 503 || j.error.status === "UNAVAILABLE") {
+          error503EnStream = true;
+        }
+      }
     } catch {
       // no era JSON limpio
     }
@@ -324,7 +366,9 @@ async function llamarGemini(
   if (acumulado) return acumulado;
 
   if (errorEnStream) {
-    throw new ErrorIA(`Gemini (${modelo}): ${errorEnStream}`);
+    const msg = `Gemini (${modelo}): ${errorEnStream}`;
+    if (error503EnStream) throw new ErrorGemini503(msg);
+    throw new ErrorIA(msg);
   }
   if (finish === "MAX_TOKENS" || huboThoughts) {
     throw new ErrorIA(
@@ -458,6 +502,26 @@ async function listarModelosClaude(config: ConfigIA): Promise<string[]> {
     throw new ErrorIA(mensajeLegible(e), e);
   }
   return ids;
+}
+
+// Pausa abortable — para el backoff del reintento de Gemini. Si la llamada se
+// cancela durante la espera, rechaza con AbortError (lo trata quien llama).
+function esperar(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException("Aborted", "AbortError"));
+      return;
+    }
+    const t = setTimeout(resolve, ms);
+    signal?.addEventListener(
+      "abort",
+      () => {
+        clearTimeout(t);
+        reject(new DOMException("Aborted", "AbortError"));
+      },
+      { once: true },
+    );
+  });
 }
 
 function esAbort(e: unknown): boolean {
