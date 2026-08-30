@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Política de Privacidad — 3maps</title>
+<style>
+  :root { color-scheme: dark; }
+  body {
+    margin: 0; padding: 2.5rem 1.25rem 4rem;
+    background: #0a0a0a; color: #e5e5e5;
+    font: 16px/1.65 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  }
+  main { max-width: 720px; margin: 0 auto; }
+  h1 { font-size: 1.6rem; margin: 0 0 .25rem; }
+  h2 { font-size: 1.1rem; margin: 2rem 0 .5rem; color: #fff; }
+  p, li { color: #cfcfcf; }
+  a { color: #7bb8ff; }
+  .meta { color: #8a8a8a; font-size: .9rem; margin-bottom: 2rem; }
+  code { background: #1c1c1c; padding: .1em .35em; border-radius: 4px; font-size: .9em; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Política de Privacidad de 3maps</h1>
+  <p class="meta">Última actualización: 30 de agosto de 2026</p>
+
+  <p>
+    3maps es una aplicación web para conversar con modelos de IA mostrando la conversación
+    como un árbol de nodos. Corre <strong>enteramente en tu navegador</strong>. Por defecto no
+    requiere cuenta ni servidor propio.
+  </p>
+
+  <h2>Qué se guarda y dónde</h2>
+  <ul>
+    <li>
+      <strong>Tus árboles de conversación</strong> se guardan en el
+      <code>localStorage</code> de tu navegador. No salen de tu dispositivo salvo que
+      actives sync o compartas un árbol (ver abajo).
+    </li>
+    <li>
+      <strong>Tu clave de API del proveedor de IA</strong> (Gemini, Claude, etc.) se guarda
+      solo en tu navegador. Las llamadas a Gemini y Claude van directo del navegador al
+      proveedor. Para DeepSeek y GPT, que no se pueden llamar directo desde el navegador, la
+      clave transita un <em>proxy sin estado</em> que solo la reenvía al proveedor —
+      <strong>no la guarda ni la registra</strong>— y solo si vos activás esa opción a
+      propósito.
+    </li>
+    <li>
+      <strong>Cuenta opcional</strong> (Google o link por mail): la maneja
+      <a href="https://supabase.com" target="_blank" rel="noreferrer">Supabase</a>. Si
+      iniciás sesión, se almacena tu dirección de correo y los árboles que elijas
+      sincronizar o compartir. Se usa únicamente para sincronizar entre tus dispositivos y
+      para que puedas ver y despublicar los árboles que compartiste.
+    </li>
+    <li>
+      <strong>Compartir por link</strong>: el árbol que elegís compartir se sube al
+      almacenamiento de Supabase. Cualquiera con el link puede verlo (solo lectura) hasta
+      que lo despubliques.
+    </li>
+  </ul>
+
+  <h2>Qué NO se hace</h2>
+  <ul>
+    <li>No hay analítica, seguimiento, cookies de terceros ni publicidad.</li>
+    <li>No se venden ni comparten datos con terceros.</li>
+    <li>No se guarda el contenido de tus conversaciones en ningún servidor salvo que vos
+      actives sync o compartas.</li>
+  </ul>
+
+  <h2>Proveedores de IA</h2>
+  <p>
+    Cuando enviás una pregunta, el texto va al proveedor de IA que elegiste. El uso de esos
+    datos se rige por la política de privacidad del proveedor (Google, Anthropic, etc.).
+  </p>
+
+  <h2>Borrar tus datos</h2>
+  <p>
+    Podés borrar los árboles locales limpiando los datos del sitio en tu navegador. Si
+    tenés cuenta y querés borrar tu correo y tus árboles sincronizados/compartidos,
+    escribinos.
+  </p>
+
+  <h2>Contacto</h2>
+  <p>
+    <a href="mailto:alanepazs@gmail.com">alanepazs@gmail.com</a> ·
+    código abierto en
+    <a href="https://github.com/alanepazs/3maps" target="_blank" rel="noreferrer">github.com/alanepazs/3maps</a>
+  </p>
+</main>
+</body>
+</html>
