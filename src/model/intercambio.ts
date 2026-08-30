@@ -308,42 +308,10 @@ export function parseMarkdown(texto: string): Intercambio | null {
   };
 }
 
-// ── Árbol semilla (el ejemplo que se ve en la primera carga) ───────────────
+// ── Árbol inicial ─────────────────────────────────────────────────────────
+// Vacío: un árbol nuevo arranca sin globos. El primer submit del Composer crea
+// la raíz (ver `handleSubmit` en FlowCanvas). Determinístico → SSR-safe.
 
 export function arbolInicial(): Arbol {
-  return {
-    intercambios: [
-      crearIntercambio({
-        id: "nodo-ejemplo-raiz",
-        padreId: null,
-        rama: "main",
-        x: 250,
-        y: 0,
-        fecha: "2026-08-29T12:00:00.000Z",
-        pregunta: "¿Por dónde arranco a estudiar el tema?",
-        respuesta: "Arrancá por los fundamentos y después subí de nivel.",
-      }),
-      crearIntercambio({
-        id: "nodo-ejemplo-semanas",
-        padreId: "nodo-ejemplo-raiz",
-        rama: "main",
-        x: 250,
-        y: 220,
-        fecha: "2026-08-29T12:01:00.000Z",
-        pregunta: "¿Y cómo divido eso en semanas?",
-        respuesta:
-          "Semana 1 fundamentos, semana 2 práctica, semana 3 un proyecto.",
-      }),
-      crearIntercambio({
-        id: "nodo-ejemplo-fundamentos",
-        padreId: "nodo-ejemplo-raiz",
-        rama: "branch-right",
-        x: 640,
-        y: 60,
-        fecha: "2026-08-29T12:02:00.000Z",
-        pregunta: "Pará — ¿qué contás como 'fundamentos' exactamente?",
-        respuesta: "Los conceptos base sin los que lo demás no se entiende.",
-      }),
-    ],
-  };
+  return { intercambios: [] };
 }

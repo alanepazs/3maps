@@ -177,6 +177,7 @@ function Flow() {
   }, [slugInicial]);
 
   // `fitView` inicial (prop) fitea a la semilla; re-fitear al árbol cargado.
+  // Con 0 nodos, `fitView` es un no-op de React Flow.
   useEffect(() => {
     if (!listo) return;
     const t = setTimeout(() => void fitView({ duration: 200 }), 0);
@@ -452,6 +453,27 @@ function Flow() {
   const handleSubmit = useCallback(
     (text: string, kind: BranchKind) => {
       if (readOnly) return;
+
+      // Árbol vacío: el primer globo es la raíz.
+      if (arbol.intercambios.length === 0) {
+        const id = nuevoId();
+        const nuevo = crearIntercambio({
+          id,
+          padreId: null,
+          rama: "main",
+          pregunta: text,
+          x: 250,
+          y: 0,
+          pending: true,
+        });
+        const arbolNuevo: Arbol = { intercambios: [nuevo] };
+        seleccionarLuegoRef.current = id;
+        setArbol(arbolNuevo);
+        setActiveNodeId(id);
+        void responder(id, arbolNuevo);
+        return;
+      }
+
       const parent = buscar(arbol, activeNodeId ?? "");
       if (!parent) return;
       const id = nuevoId();
@@ -684,6 +706,13 @@ function Flow() {
           <Controls />
           <MiniMap position="top-right" pannable zoomable />
         </ReactFlow>
+        {listo && arbol.intercambios.length === 0 && !readOnly && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <p className="max-w-xs text-center text-sm text-white/40">
+              El árbol está vacío. Escribí tu primera pregunta abajo para empezar.
+            </p>
+          </div>
+        )}
         {compartido && (
           <SharedBanner
             titulo={compartido.titulo}
@@ -702,7 +731,11 @@ function Flow() {
           estadoSync={estadoSync}
         />
         {!readOnly && (
-          <Composer activeNodeLabel={activeNodeLabel} onSubmit={handleSubmit} />
+          <Composer
+            activeNodeLabel={activeNodeLabel}
+            arbolVacio={arbol.intercambios.length === 0}
+            onSubmit={handleSubmit}
+          />
         )}
         {transcripcion && transcripcion.length > 0 && (
           <BranchTranscript
