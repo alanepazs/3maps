@@ -50,12 +50,18 @@ import {
   quitarSubarbol,
   reparentar,
   type Arbol,
+  type Proveedor,
   type Rama,
 } from "@/model/intercambio";
 import { cargarArbol, guardarArbol } from "@/model/persistencia";
 import { armarContexto, tramoAResumir } from "@/model/contexto";
-import { llamarIA, resumir, type ConfigIA } from "@/model/ia";
-import { cargarConfigIA, guardarConfigIA } from "@/model/configIA";
+import { llamarIA, resumir, MODELO_POR_DEFECTO, type ConfigIA } from "@/model/ia";
+import {
+  borrarKeyProveedor,
+  cambiarProveedorActivo,
+  cargarConfigIA,
+  guardarConfigIA,
+} from "@/model/configIA";
 import { haySupabase } from "@/model/supabase";
 import {
   cargarArbolCompartido,
@@ -199,15 +205,26 @@ function Flow() {
     });
   }, []);
 
-  // Configuración de la IA (proveedor + API key + modelo). Solo en este
-  // navegador. Lazy init igual que `settings` (el panel arranca cerrado → nada
-  // del render inicial depende de esto → sin mismatch de hidratación).
-  const [configIA, setConfigIA] = useState<ConfigIA | null>(() =>
-    typeof window === "undefined" ? null : cargarConfigIA(),
+  // Configuración de la IA (proveedor activo + su API key + modelo). Solo en
+  // este navegador. `configIA.ts` guarda una key POR PROVEEDOR, así que cambiar
+  // de proveedor y volver no pierde la key. Lazy init igual que `settings`.
+  const [configIA, setConfigIA] = useState<ConfigIA>(() =>
+    typeof window === "undefined"
+      ? { proveedor: "gemini", apiKey: "", modelo: MODELO_POR_DEFECTO.gemini }
+      : cargarConfigIA(),
   );
-  const updateConfigIA = useCallback((c: ConfigIA | null) => {
+  // Guarda la key/modelo del proveedor activo.
+  const guardarKeyIA = useCallback((c: ConfigIA) => {
     setConfigIA(c);
     guardarConfigIA(c);
+  }, []);
+  // Cambia el proveedor activo y trae su key guardada (si tiene).
+  const cambiarProveedorIA = useCallback((p: Proveedor) => {
+    setConfigIA(cambiarProveedorActivo(p));
+  }, []);
+  // Borra solo la key del proveedor activo.
+  const borrarKeyIA = useCallback(() => {
+    setConfigIA((cur) => borrarKeyProveedor(cur.proveedor));
   }, []);
 
   // Llamadas a la IA en curso, por id de nodo (para poder cancelarlas).
@@ -325,7 +342,7 @@ function Flow() {
       // Cancelar cualquier llamada previa para este mismo nodo.
       enVueloRef.current.get(nodeId)?.abort();
 
-      if (!configIA || !configIA.apiKey.trim()) {
+      if (!configIA.apiKey.trim()) {
         setArbol((a) =>
           conError(a, nodeId, "Cargá tu API key en ⚙️ para que la IA responda."),
         );
@@ -642,7 +659,9 @@ function Flow() {
           settings={settings}
           onChange={updateSettings}
           configIA={configIA}
-          onChangeConfigIA={updateConfigIA}
+          onGuardarKeyIA={guardarKeyIA}
+          onCambiarProveedorIA={cambiarProveedorIA}
+          onBorrarKeyIA={borrarKeyIA}
           onCompartir={haySupabase() && !readOnly ? compartir : undefined}
         />
         {!readOnly && (

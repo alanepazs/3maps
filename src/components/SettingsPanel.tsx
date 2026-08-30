@@ -27,20 +27,28 @@ import { useSesion } from "./useSesion";
 type Props = {
   settings: Settings;
   onChange: (patch: Partial<Settings>) => void;
-  configIA: ConfigIA | null;
-  onChangeConfigIA: (c: ConfigIA | null) => void;
+  configIA: ConfigIA;
+  // Guarda la key/modelo del proveedor activo.
+  onGuardarKeyIA: (c: ConfigIA) => void;
+  // Cambia el proveedor activo (trae su key guardada si tiene).
+  onCambiarProveedorIA: (p: Proveedor) => void;
+  // Borra solo la key del proveedor activo.
+  onBorrarKeyIA: () => void;
   // Sube el árbol actual y devuelve el link. `undefined` si no hay backend
   // configurado o si se está viendo un árbol compartido (fase 2.3).
   onCompartir?: (titulo: string) => Promise<{ slug: string; url: string }>;
 };
 
 // Tuerquita arriba a la izquierda. Ajustes del lienzo + configuración de la IA
-// (proveedor, API key, modelo). La API key vive solo en este navegador.
+// (proveedor, API key, modelo). Las API keys viven solo en este navegador —
+// una por proveedor (ver configIA.ts).
 export default function SettingsPanel({
   settings,
   onChange,
   configIA,
-  onChangeConfigIA,
+  onGuardarKeyIA,
+  onCambiarProveedorIA,
+  onBorrarKeyIA,
   onCompartir,
 }: Props) {
   const [open, setOpen] = useState(false);
@@ -129,9 +137,9 @@ export default function SettingsPanel({
     }
   };
 
-  const proveedor: Proveedor = configIA?.proveedor ?? "claude";
-  const keyGuardada = configIA?.apiKey ?? "";
-  const modeloGuardado = configIA?.modelo ?? MODELO_POR_DEFECTO[proveedor];
+  const proveedor: Proveedor = configIA.proveedor;
+  const keyGuardada = configIA.apiKey;
+  const modeloGuardado = configIA.modelo || MODELO_POR_DEFECTO[proveedor];
   const hayKey = keyGuardada.trim() !== "";
 
   // DeepSeek / GPT van por el proxy de 3maps (no habilitan CORS). Necesitan que
@@ -155,10 +163,15 @@ export default function SettingsPanel({
   const [errorModelos, setErrorModelos] = useState<string | null>(null);
 
   // Re-sincronizar los borradores cuando la config cambia desde afuera (cambio
-  // de proveedor, "Borrar"). Patrón "ajustar estado en render", no en effect.
-  const [snap, setSnap] = useState({ k: keyGuardada, m: modeloGuardado });
-  if (snap.k !== keyGuardada || snap.m !== modeloGuardado) {
-    setSnap({ k: keyGuardada, m: modeloGuardado });
+  // de proveedor, "Borrar", key guardada de otro proveedor). Patrón "ajustar
+  // estado en render", no en effect.
+  const [snap, setSnap] = useState({
+    p: proveedor,
+    k: keyGuardada,
+    m: modeloGuardado,
+  });
+  if (snap.p !== proveedor || snap.k !== keyGuardada || snap.m !== modeloGuardado) {
+    setSnap({ p: proveedor, k: keyGuardada, m: modeloGuardado });
     setKeyDraft(keyGuardada);
     setModeloDraft(modeloGuardado);
     setModelos(null);
@@ -201,7 +214,7 @@ export default function SettingsPanel({
 
   const commit = () => {
     if (!dirty) return;
-    onChangeConfigIA({
+    onGuardarKeyIA({
       proveedor,
       apiKey: keyDraft.trim(),
       modelo: modeloDraft.trim() || MODELO_POR_DEFECTO[proveedor],
@@ -215,9 +228,9 @@ export default function SettingsPanel({
   };
 
   const cambiarProveedor = (p: Proveedor) => {
-    // Aplica al toque: la key de un proveedor no sirve para otro → se limpia y
-    // el modelo vuelve a su default. Los borradores se re-sincronizan solos.
-    onChangeConfigIA({ proveedor: p, apiKey: "", modelo: MODELO_POR_DEFECTO[p] });
+    // Aplica al toque. Trae la key guardada de ese proveedor (si probaste otro
+    // y volvés, no hay que re-pegarla). Los borradores se re-sincronizan solos.
+    onCambiarProveedorIA(p);
   };
 
   // El modelo guardado no está entre los que la key puede usar → avisar.
@@ -430,7 +443,7 @@ export default function SettingsPanel({
             {hayKey && (
               <button
                 type="button"
-                onClick={() => onChangeConfigIA(null)}
+                onClick={onBorrarKeyIA}
                 className="text-xs text-white/50 hover:text-white/80"
               >
                 Borrar key
