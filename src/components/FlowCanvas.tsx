@@ -528,17 +528,30 @@ function Flow() {
       if (!parent) return null;
       const id = nuevoId();
       const rama: Rama = kind === "main" ? "main" : "branch-right";
-      const hermanos = hijos(arbol, parent.id).filter((h) =>
-        kind === "main" ? h.rama === "main" : h.rama !== "main",
+      const hermanosMain = hijos(arbol, parent.id).filter(
+        (h) => h.rama === "main",
       ).length;
-      // Alto real del padre (globo medido por React Flow). Así el hijo "main"
-      // cuelga POR DEBAJO de la respuesta del padre en vez de pisarse con ella
-      // cuando la respuesta es larga / está expandida (fase 3.2).
-      const altoPadre = getNode(parent.id)?.measured?.height ?? 160;
-      const pos =
-        kind === "main"
-          ? { x: parent.x + hermanos * 40, y: parent.y + altoPadre + 60 }
-          : { x: parent.x + 400, y: parent.y + hermanos * 220 };
+      // Dimensiones REALES del padre (medidas por React Flow) — así el globo
+      // nuevo no se pisa con la respuesta larga / expandida del padre (fase 3.2).
+      const nodoPadre = getNode(parent.id);
+      const altoPadre = nodoPadre?.measured?.height ?? 160;
+      const anchoPadre = nodoPadre?.measured?.width ?? 260;
+      let pos: { x: number; y: number };
+      if (kind === "main") {
+        pos = { x: parent.x + hermanosMain * 40, y: parent.y + altoPadre + 60 };
+      } else {
+        // Rama: a la derecha, despejando el ANCHO real del padre; apilada por
+        // debajo de las ramas que ya existen de ese lado usando su ALTO real
+        // (el `+ 220` fijo se pisaba con las ramas de respuesta larga).
+        const ramasDerecha = hijos(arbol, parent.id).filter(
+          (h) => h.rama === "branch-right",
+        );
+        let y = parent.y;
+        for (const r of ramasDerecha) {
+          y += (getNode(r.id)?.measured?.height ?? 160) + 48;
+        }
+        pos = { x: parent.x + anchoPadre + 140, y };
+      }
       const nuevo = crearIntercambio({
         id,
         padreId: parent.id,

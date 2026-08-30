@@ -145,8 +145,10 @@ Ver **`docs/fase-3.md`**.
 - **3.1** — tope de alto del globo (220px) cuando la respuesta pasa 400 chars: se corta con
   degradado + pill "⌄ ver más", toggle Expandir/Colapsar en el `NodeToolbar`. Preferencia por
   globo en `localStorage["3maps:vista"]` (no toca el `.md`). Módulo nuevo `src/components/vista.ts`.
-- **3.2** — el globo hijo `main` cuelga en `y = parent.y + altoRealDelPadre + 60`
-  (`getNode(id).measured.height`), no más `+ 240` fijo → no se pisa con la respuesta larga.
+- **3.2** — el globo nuevo usa las dimensiones REALES medidas del padre: hijo `main` en
+  `y = parent.y + altoPadre + 60`; rama en `x = parent.x + anchoPadre + 140` apilada por el alto
+  real de las ramas que ya existen (no más `+240`/`+220`/`+400` fijos → no se pisan con las
+  respuestas largas). Ajuste de ramas: 30-08-2026 (el usuario reportó que las ramas seguían pisándose).
 - **3.2b** (pedido del usuario) — al crear un globo, la cámara se centra en él
   (`setCenter`, mantiene zoom): si estabas leyendo el principio de un padre largo, baja al hijo.
 - **3.3** — la flecha rama↔tronco salta de lado DURANTE el drag (en `onNodeDrag`, actualiza el

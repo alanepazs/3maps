@@ -26,9 +26,11 @@ Preferencia **por globo**, NO va al `.md` ni al árbol: vive en `localStorage["3
 
 ### 3.2 — El globo hijo no se superpone con la respuesta del padre  ✅ (30-08-2026)
 
-`handleSubmit`: el hijo `main` ahora cuelga en `y = parent.y + altoPadre + 60`, con
-`altoPadre = getNode(parent.id)?.measured?.height ?? 160` (alto real medido por React Flow) en
-vez de un `+ 240` fijo. Las ramas (`x = parent.x + 400`) no cambian.
+`handleSubmit` usa las **dimensiones reales medidas** por React Flow (`getNode(id)?.measured`):
+- hijo `main` → `y = parent.y + altoPadre + 60` (en vez de `+ 240` fijo).
+- rama → `x = parent.x + anchoPadre + 140` (despeja el ancho real del padre) e `y` apilado por
+  debajo de las ramas del mismo lado que ya existen usando su **alto real** (en vez de `+ 220`
+  fijo, que se pisaba con las ramas de respuesta larga).
 
 ### 3.2b — La cámara sigue al globo recién creado  ✅ (30-08-2026)
 

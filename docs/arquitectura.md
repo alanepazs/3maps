@@ -198,9 +198,10 @@ Handlers (todos operan sobre `arbol` vía `setArbol`):
   cuelga de `parentId` (para el composer del panel, fase 3.9) o del activo.
   `agregar(crearIntercambio({..., pending:true}))`, lo setea, llama `responder(id, arbolNuevo)`,
   **devuelve el id del globo nuevo** (o null). `kind` "main" → rama "main", abajo
-  (`y = parent.y + altoRealPadre + 60`, alto medido por React Flow → no se pisa con la respuesta
-  larga, fase 3.2); "branch" → rama "branch-right", a la derecha. Al crear cualquier globo,
-  `centrarEnGlobo(x,y)` (`setCenter`, mantiene zoom) baja la cámara al nuevo (fase 3.2b).
+  (`y = parent.y + altoRealPadre + 60`); "branch" → "branch-right", a la derecha despejando el
+  `anchoRealPadre` + `y` apilado por el alto real de las ramas que ya existen de ese lado (fase
+  3.2 — todo con `getNode(id).measured`, en vez de los `+240`/`+220`/`+400` fijos). Al crear
+  cualquier globo, `centrarEnGlobo(x,y)` (`setCenter`, mantiene zoom) baja la cámara al nuevo (3.2b).
 - `responderDesdePanel(text)` — el composer de `BranchTranscript` (fase 3.9):
   `handleSubmit(text, "main", transcriptNodeId)` + mueve el panel al hijo nuevo.
 - `onNodeDrag` (envuelve el de `useNodeInertia`) — además de trackear velocidad para el envión,
