@@ -256,6 +256,9 @@ export function toMarkdown(ic: Intercambio): string {
     // El error va en el frontmatter (JSON en una línea) y no como sección del
     // cuerpo: la respuesta es markdown y puede tener sus propios `## títulos`.
     `error: ${ic.error !== null ? JSON.stringify(ic.error) : ""}`,
+    // Se persiste para poder recuperar una llamada que quedó a medias: al
+    // recargar, un `pendiente` sin terminar pasa a ser un error reintentable.
+    `pendiente: ${ic.pending ? "1" : ""}`,
   ].join("\n");
   return (
     `---\n${front}\n---\n\n` +
@@ -294,6 +297,13 @@ export function parseMarkdown(texto: string): Intercambio | null {
     }
   }
 
+  // Una llamada que quedó `pendiente` al recargar (o al bajar de la nube) ya no
+  // está en vuelo → se marca como error reintentable, sin pisar un error real.
+  if (!error && meta.pendiente === "1") {
+    error =
+      "La respuesta quedó a medias (se cerró la app o se cortó la llamada). Reintentá.";
+  }
+
   return {
     id: meta.id,
     padreId: meta.padre_id ? meta.padre_id : null,
@@ -308,7 +318,7 @@ export function parseMarkdown(texto: string): Intercambio | null {
     fecha: meta.fecha || new Date().toISOString(),
     pregunta: (preg?.[1] ?? "").trim(),
     respuesta: respuestaTxt === "" ? null : respuestaTxt,
-    // `pending` nunca se persiste: una llamada a medias al recargar = no pendiente.
+    // `pending` nunca se restaura como tal: al recargar no hay llamada en vuelo.
     pending: false,
     error,
   };

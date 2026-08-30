@@ -208,7 +208,9 @@ Handlers (todos operan sobre `arbol` vía `setArbol`):
   si el nodo arrastrado es una rama, mueve el `sourceHandle` de su flecha al lado (izq/der) en
   vivo mientras se arrastra, tocando solo el estado `edges` (fase 3.3). `asentar` fija la `rama`
   al soltar.
-- `responder(nodeId, arbolBase)` — **la llamada a la IA**. Si no hay API key → `conError`. Si no:
+- `responder(nodeId, arbolBase)` — **la llamada a la IA**. Watchdog: aborta si no llega nada en
+  45s o el total pasa 180s → error reintentable (deja la respuesta parcial). Si no hay API key →
+  `conError`. Si no:
   `conRespuesta({pending:true})` + limpia error; arma el contexto con `armarContexto` (tratando a
   `nodeId` como pendiente, así un reintento descarta la respuesta parcial vieja); si el camino
   supera la ventana, genera/cachea el `resumenViejo` con `resumir` (sin `systemPrompt`) + calcula
@@ -337,13 +339,16 @@ Barra `absolute inset-x-0 bottom-0`. Props: `activeNodeLabel`, `arbolVacio`,
 - Todas las funciones son **puras**: las mutaciones devuelven un `Arbol` nuevo.
 - `caminoRaizA(arbol, id)` → intercambios de la raíz al nodo. Con guarda anti-ciclo.
 - `toMarkdown` / `parseMarkdown` — `---` frontmatter (`key: value`, parser mínimo sin YAML) +
-  `## Pregunta` / `## Respuesta`. `padre_id` / `proveedor` vacíos → `null`.
+  `## Pregunta` / `## Respuesta`. `padre_id` / `proveedor` vacíos → `null`. `pendiente: 1` (una
+  llamada a medias) → al parsear se convierte en un `error` reintentable (`pending` nunca se
+  restaura como tal).
 
 ## model/persistencia.ts
 
-`localStorage["3maps:arbol"]` = `{ [id]: "<string .md>" }` (un archivo por intercambio, igual que
-va a ser el export a disco — spec §7). `guardarArbol` serializa todo; `cargarArbol` parsea y cae
-a `arbolInicial()` si no hay nada o falla el parseo. El `.zip` / carpetas reales queda pendiente.
+`localStorage["3maps:arbol:<mapId>"]` = `{ [id]: "<string .md>" }` (un archivo por intercambio,
+igual que va a ser el export a disco — spec §7). `guardarArbol(a, mapId)` serializa todo;
+`cargarArbol(mapId)` parsea y cae a `arbolInicial()` si no hay nada o falla el parseo. La clave
+por mapa y el registro de mapas están en `mapas.ts` (fase 3.5). `.zip` / carpetas reales pendiente.
 
 ## model/contexto.ts (armado del contexto para la IA)
 

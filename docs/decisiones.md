@@ -426,6 +426,21 @@ con free tier: **probar con una key nueva de verdad** — los blogs y hasta `Lis
 - `useSync` re-corre el sync inicial al cambiar de `(uid, mapId)`. `3maps:sync` pasó a
   `3maps:sync:<mapId>`.
 
+### F3-6. La llamada a la IA tiene watchdog + `pending` se persiste
+- **Por qué**: al ramificar varias ramas en paralelo, si el stream de un proveedor se queda
+  colgado (conexión abierta sin datos), `reader.read()` no resuelve nunca → el globo queda
+  `pending` para siempre y NO hay botón de reintentar (solo los globos en `error` lo tienen).
+- **Watchdog** en `responder` (FlowCanvas): un `setInterval` cada 5s aborta el `AbortController`
+  si no hubo actividad de `onTexto` en 45s, o si el total pasó 180s. Al abortar por timeout →
+  `conError` con un mensaje reintentable (la respuesta parcial queda a la vista, `conError` no la
+  borra). Un abort "normal" (el usuario re-disparó / borró el globo) sigue siendo silencioso.
+- **`pending` ahora SÍ se persiste** (`pendiente: 1` en el frontmatter). Al recargar o al bajar
+  de la nube, `parseMarkdown` convierte un `pendiente` sin terminar en un `error` reintentable
+  (sin pisar un error real). Antes: `pending` no se guardaba → una llamada cortada al cerrar la
+  app quedaba con texto a medias y sin forma de reintentar.
+- **No se serializan las llamadas** (una rama espera a la otra): la idea de ramificar es lanzar
+  varias exploraciones en paralelo. El watchdog cubre el caso de que una se cuelgue.
+
 ### F3-5. Borrar la raíz: solo cuando ya no le cuelga nada
 - **Decidido con el usuario**: nada de multi-raíz ni de promover un hijo. La raíz se borra solo
   si es el último globo → el mapa queda vacío (con confirm). `arbolAVista` expone `data.sinHijos`;

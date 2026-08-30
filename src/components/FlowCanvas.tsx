@@ -412,6 +412,25 @@ function Flow() {
         }),
       );
 
+      // Watchdog: si la llamada se queda "estática" (el stream se abre pero no
+      // llega nada, o el server deja la conexión colgada) hay que cortarla — si
+      // no, el globo queda `pending` para siempre sin forma de reintentar.
+      const INACTIVIDAD_MS = 45_000;
+      const TOTAL_MS = 180_000;
+      let ultimaActividad = Date.now();
+      const inicio = Date.now();
+      let cortadoPorTimeout = false;
+      const watchdog = window.setInterval(() => {
+        const ahora = Date.now();
+        if (
+          ahora - ultimaActividad > INACTIVIDAD_MS ||
+          ahora - inicio > TOTAL_MS
+        ) {
+          cortadoPorTimeout = true;
+          ctrl.abort();
+        }
+      }, 5_000);
+
       try {
         const ventana = settings.ventanaContexto;
         // El contexto se arma tratando a `nodeId` como pendiente: si es un
@@ -435,6 +454,7 @@ function Flow() {
               resumen = null;
             }
           }
+          ultimaActividad = Date.now(); // el resumen puede tardar
         }
 
         // Rescate por palabras clave (fase 2.5 liviana): si el tramo viejo se
@@ -461,6 +481,7 @@ function Flow() {
           usarProxy: settings.usarProxyIA,
           onTexto: (_delta, acumulado) => {
             const ahora = Date.now();
+            ultimaActividad = ahora;
             if (ahora - ultimoRender < 80) return;
             ultimoRender = ahora;
             setArbol((a) =>
@@ -477,11 +498,25 @@ function Flow() {
           }),
         );
       } catch (e) {
-        if (e instanceof Error && e.name === "AbortError") return; // cancelado
+        if (e instanceof Error && e.name === "AbortError") {
+          // Timeout del watchdog → error reintentable (deja la respuesta parcial
+          // a la vista). Abort "normal" (el usuario re-disparó / borró) → nada.
+          if (cortadoPorTimeout) {
+            setArbol((a) =>
+              conError(
+                a,
+                nodeId,
+                "La respuesta se cortó (no llegó nada en 45s, seguramente el proveedor está saturado). Reintentá.",
+              ),
+            );
+          }
+          return;
+        }
         setArbol((a) =>
           conError(a, nodeId, e instanceof Error ? e.message : String(e)),
         );
       } finally {
+        window.clearInterval(watchdog);
         if (enVueloRef.current.get(nodeId) === ctrl) {
           enVueloRef.current.delete(nodeId);
         }
