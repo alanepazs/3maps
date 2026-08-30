@@ -1,7 +1,18 @@
 # Fase 2 — Compartir y sincronizar
 
-> Plan de trabajo. Estado: **borrador inicial** (empezado 29-08-2026). Nada de esto está hecho.
+> Plan de trabajo. Estado: **decisiones tomadas, sin código todavía** (29-08-2026).
 > Fase 1 (MVP) quedó cerrada — ver `docs/estado.md`.
+
+## Decisiones tomadas (29-08-2026)
+
+1. **Proxy IA (DeepSeek/GPT) → opción A**: edge function stateless opt-in. Nuestro server
+   reenvía sin loguear ni guardar; toggle en ⚙️ que avisa que la key transita el proxy. La
+   invariante de CLAUDE.md pasa a: *"la key nunca se **almacena** en un servidor de 3maps; puede
+   **transitar** un proxy stateless que el usuario activa a propósito"*.
+2. **Primera tanda → 2.0 + 2.3**: fundaciones Supabase + compartir un árbol por link. El resto
+   (proxy, auth completo, sync, embeddings) queda para tandas siguientes.
+3. **Compartir anónimo permitido** — no exige login para generar un link (decisión de arranque;
+   revisable si aparece abuso). El login (2.2) suma "mis árboles" y poder despublicar.
 
 Complementa a `docs/spec-proyecto.md` §7 (compartir), §9 (auth), §13 (roadmap) y a
 `docs/decisiones.md` §7a (por qué DeepSeek/GPT esperan a fase 2).
@@ -151,12 +162,61 @@ No depende de Supabase. Se puede hacer antes, después o en paralelo.
 
 ---
 
-## Decisiones abiertas (resumen)
+## Decisiones abiertas (para tandas siguientes)
 
-1. **Proxy y la key de IA** — A (proxy stateless opt-in) / B (proxy propio del usuario) / C (no
-   hacer DeepSeek/GPT). Recomendado: A.
-2. **Alcance de esta tanda** — ¿los 4 tracks, o empezar por un subconjunto (ej: 2.0 + 2.3
-   compartir, y dejar proxy/sync/embeddings para después)?
-3. **Auth: magic link o Google OAuth** para empezar.
-4. **Compartir anónimo permitido, o solo con login.**
-5. **Embeddings: en fase 2 o se difiere.**
+- **Auth (2.2): magic link o Google OAuth** para empezar.
+- **Sync (2.4): estrategia de conflicto** cuando se edita en dos dispositivos offline.
+- **Embeddings (2.5): en fase 2 o se difiere a fase 3.**
+
+---
+
+## Plan concreto de la primera tanda (2.0 + 2.3)
+
+### Lo que hace falta del lado del usuario (Alan)
+
+1. Crear un proyecto en Supabase (free tier). Ya lo hizo antes, conoce el flujo.
+2. Pasarme dos datos del proyecto (los dos son públicos por diseño, no son secretos):
+   - **Project URL** (algo como `https://xxxx.supabase.co`)
+   - **anon/public key** (el JWT largo que empieza con `eyJ…`)
+3. Estos van en un `.env.local` que **no se commitea** (ya está en `.gitignore` por ser `.env*`).
+   Para el deploy de Pages, se cargan como *repository secrets* / *variables* de GitHub Actions
+   y el workflow los inyecta en el build.
+4. La **service_role key** de Supabase (la secreta de verdad) **nunca** me la pases ni la
+   pongas en el repo. Solo se usa dentro de Supabase (edge functions), configurada en su panel.
+
+### Lo que hago yo — paso a paso
+
+**2.0 — Fundaciones**
+- `src/model/supabase.ts`: cliente de Supabase. Si no hay env configurado → devuelve `null` y la
+  app sigue 100% local como hoy (nadie que no configure nada nota ningún cambio).
+- Agregar `@supabase/supabase-js` a las dependencias.
+- Migración SQL para la tabla `shared_trees` (metadata de los árboles compartidos) + un bucket de
+  Storage `arboles` con sus reglas de acceso (RLS): cualquiera lee por slug, solo el dueño escribe.
+- Actualizar `arquitectura.md` y `decisiones.md`.
+
+**2.3 — Compartir por link**
+- Función `compartirArbol(arbol)`: sube cada `.md` del árbol al bucket bajo un slug aleatorio
+  corto (tipo `a7f3k9`), crea la fila en `shared_trees` con el título y la fecha, y devuelve el
+  link (`https://alanepazs.github.io/3maps/?compartir=a7f3k9`).
+- Botón "Compartir" en la UI (¿en ⚙️? ¿un botón flotante?). Al apretarlo: sube, y muestra el link
+  con un "copiar".
+- Al abrir 3maps con `?compartir=<slug>` en la URL: baja los `.md` de ese slug, los parsea con el
+  parser que ya existe, y muestra el árbol **en modo lectura** con un botón "guardar una copia en
+  este navegador" para quien lo quiera editar.
+- Límite de tamaño (ej. 50 intercambios o 1 MB por árbol) para no quemar el free tier, con un
+  mensaje claro si se pasa.
+
+### Cómo se verifica
+
+- Lógica (subir/bajar/parsear, generar slug, límite de tamaño): scripts de prueba, como siempre.
+- El flujo real (apretar Compartir → abrir el link en otra ventana → ver el árbol): lo probás vos
+  con el proyecto de Supabase de verdad, con mi guía paso a paso, igual que hicimos con las keys
+  de IA.
+
+### Nota sobre el MCP de Supabase
+
+Hay un conector de Supabase para Claude (`plugin:…:supabase`) que **no está autorizado en esta
+sesión** y no se puede autorizar desde acá (es no-interactiva). Si lo autorizás desde una
+terminal `claude` interactiva (`/mcp`), me deja hacer parte del setup (crear tablas, ver el
+estado) sin que copies y pegues. **No es necesario** — sin el MCP, yo escribo el SQL y las
+instrucciones, y vos las corrés en el panel de Supabase. Vos decidís si vale la pena autorizarlo.
