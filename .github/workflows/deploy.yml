@@ -29,6 +29,12 @@ jobs:
         run: npm run build
         env:
           NEXT_PUBLIC_PAGES: "1"
+          # Supabase (fase 2). Son "públicas por diseño" (van en el bundle), pero
+          # se cargan como repo secrets igual — repo → Settings → Secrets and
+          # variables → Actions. Si no están, la app se buildea sin backend
+          # (getSupabase() → null) y sigue funcionando 100% local.
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
       - run: touch out/.nojekyll
       # NOTA: hay que habilitar Pages una vez a mano — repo → Settings → Pages →
       # Source = "GitHub Actions". El GITHUB_TOKEN no puede crear el sitio de
