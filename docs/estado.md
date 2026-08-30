@@ -1,8 +1,8 @@
 # Estado del proyecto
 
 > Snapshot para retomar rápido. Actualizar al final de cada sesión.
-> Última actualización: 29-08-2026 (system prompt + transcripción de rama con toggle de lado +
-> auto-retry Gemini + verificación de key gratis; Claude requiere billing, DeepSeek/GPT a fase 2).
+> Última actualización: 29-08-2026 (MVP fase 1 cerrado; empezado el plan de fase 2 →
+> `docs/fase-2.md`, con decisiones abiertas para el usuario).
 
 ## Mapa de docs
 
@@ -12,6 +12,7 @@
 - `docs/decisiones.md` — por qué el código es así (decisiones de implementación + qué rompés si
   las revertís).
 - `docs/spec-proyecto.md` — diseño de producto (modelo de datos, UX, roadmap, pseudocódigo).
+- `docs/fase-2.md` — plan de fase 2 (Supabase, compartir, sync, proxy IA, embeddings). Borrador.
 - `.claude/napkin.md` — gotchas del entorno (preview pane, git/gh, CDN de Pages).
 
 ## Dónde estamos
@@ -99,16 +100,19 @@ transcripción de la rama con toggle de lado, auto-retry de Gemini ante 503, `la
 verificación de key gratis (`avisoFormatoKey` + `listarModelos` para Claude), prueba real de
 ambos proveedores, DeepSeek/GPT diferidos a fase 2 por CORS.
 
-### Más adelante
+### Fase 2 — plan empezado
+Ver **`docs/fase-2.md`** (borrador). 4 tracks: fundaciones Supabase, proxy IA (DeepSeek/GPT),
+auth opcional, compartir por link + sync, y embeddings locales aparte. **Hay 5 decisiones
+abiertas para el usuario** (proxy sí/no, alcance de la tanda, magic-link vs Google, compartir
+anónimo, embeddings ahora o después). Nada de código todavía.
+
+### Más adelante (fuera de fase 2)
 - [ ] Export/import: `.zip` de la carpeta de `.md` + carpetas reales con File System Access API,
       UI de guardar/abrir (§7). Hoy solo hay persistencia local automática.
-- [ ] Embeddings locales con `transformers.js` para relevancia de contexto (§5).
 - [ ] Estado `expandido`/colapsado por globo para rendimiento con muchos nodos (§8).
 - [ ] **Auto-SWITCH de proveedor por formato de key** (UX): hoy `avisoFormatoKey` solo avisa en
       ámbar. Falta: al pegar una key que pinta de otro proveedor, ofrecer/cambiar el proveedor solo.
-- [ ] **Adaptador OpenAI-compat (DeepSeek + GPT) — FASE 2**: `api.openai.com` y `api.deepseek.com`
-      no habilitan CORS → no se puede llamar desde el navegador. Necesita el proxy de fase 2
-      (edge function que ponga la key server-side). Ver decisiones §7a.
+- [ ] Modelos locales tipo Ollama para tareas internas (§10) — fase 3.
 
 ### Hecho el 29-08-2026
 - [x] Fix del envión al panear (`usePanInertia`) — `ff595e3`.
