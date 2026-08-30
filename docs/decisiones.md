@@ -66,21 +66,23 @@ Complementa a:
   que se parsea el SSE a mano (`data: {json}` → `candidates[0].content.parts[].text`).
 - **Revertir** (meter el SDK de Google, o cargar el de Anthropic estático): más peso, sin ganancia.
 
-### 7a. DeepSeek y GPT están en el tipo `Proveedor` pero **no tienen adaptador** — CORS
+### 7a. DeepSeek y GPT van por el **proxy de 3maps** (no habilitan CORS)
 - **El bloqueo** (verificado 29-08-2026): `api.openai.com` y `api.deepseek.com` **no mandan
   `Access-Control-Allow-Origin`** → el navegador bloquea la respuesta de cualquier `fetch`
   cross-origin. `dangerouslyAllowBrowser` del SDK de OpenAI **no** lo arregla: solo saca el guard
-  interno del SDK, no el bloqueo del browser. No hay endpoint browser-friendly de ninguno de los
-  dos (su doc es toda server-side).
-- **Por qué Claude y Gemini sí andan**: los habilitaron a propósito — Anthropic con el header
-  `anthropic-dangerous-direct-browser-access`, Google en el endpoint REST de `generativelanguage`.
-- **Decisión**: `llamarOpenAICompat` (un helper para los dos `case`, mismo shape de SSE, base
-  distinta: `deepseek-v4-flash` / `gpt-5.4-mini`, `Authorization: Bearer`, `max_tokens` vs
-  `max_completion_tokens`) queda **diferido a fase 2**, cuando haya un proxy (edge function de
-  Supabase) que ponga la key server-side y agregue los headers de CORS. En fase 1 la key vive
-  solo en el navegador (invariante CLAUDE.md) → no hay dónde meter el proxy.
-- `PROVEEDORES_DISPONIBLES` sigue siendo `["claude", "gemini"]`; el `switch` de `llamarIA` tira
-  "todavía no está implementado" para `deepseek`/`gpt`.
+  interno del SDK, no el bloqueo del browser. Su doc es toda server-side.
+- **Por qué Claude y Gemini sí andan directo**: los habilitaron a propósito — Anthropic con el
+  header `anthropic-dangerous-direct-browser-access`, Google en el endpoint REST.
+- **Solución (fase 2.1, opción A)**: el edge function `supabase/functions/ia-proxy` reenvía la
+  request al proveedor con la key del usuario y devuelve la respuesta con CORS. **Stateless**: no
+  loguea ni guarda. La invariante de CLAUDE.md pasa a *"la key nunca se **almacena** en un server
+  de 3maps; puede **transitar** un proxy stateless que el usuario activa a propósito"*. El toggle
+  `settings.usarProxyIA` (default off) + la caja explicativa en ⚙️ hacen el opt-in explícito.
+- `llamarOpenAICompat` en `ia.ts` pega contra `${SUPABASE_URL}/functions/v1/ia-proxy`, no contra
+  el proveedor. SSE estilo OpenAI (`choices[0].delta.content`). `PROVEEDORES_DISPONIBLES` ahora
+  son los 4; sin el toggle, `deepseek`/`gpt` tiran un `ErrorIA` explicativo.
+- **Anti-SSRF**: el cliente manda un *nombre* de proveedor (`x-ia-provider: deepseek|openai`), no
+  una URL; el proxy la mapea a una base fija. Rutas limitadas a `/chat/completions` y `/models`.
 
 ### 7b. Modelos de Gemini: default `gemini-3.7-flash`, "thinking" por generación, + botón "ver modelos"
 Historia de dolor real con una key **free tier** recién sacada de AI Studio:
@@ -300,6 +302,17 @@ con free tier: **probar con una key nueva de verdad** — los blogs y hasta `Lis
 - **Link roto**: `cargarArbolCompartido` devuelve `null` → se limpia la URL y se cae al árbol local.
 - **Revertir** (una ruta `/compartir/[slug]` aparte): `output: "export"` no hace rutas dinámicas
   sin `generateStaticParams`; el query param es lo que funciona con el deploy estático.
+
+### F2-6. El proxy de IA es un edge function **stateless y sin auth de Supabase**
+- **`verify_jwt = false`** (`supabase/config.toml`): pedir la anon key no aporta — es pública, va
+  en el bundle. Y la `sb_publishable_…` nueva **no es un JWT**, así que la verificación la
+  rechazaría. El control de abuso real es la lista de orígenes + que cada request trae su propia
+  API key (el costo de abuso para nosotros = invocaciones del edge function, free tier 500K/mes).
+- **No toca ningún secreto**: la key del proveedor viene en el header `x-ia-key` de cada request.
+  El function no tiene env propias (salvo `PROXY_ALLOWED_ORIGINS`, opcional).
+- **Rate-limit**: no hay todavía. Anotado en `docs/fase-2.md` — necesita estado (KV) en el function.
+- **Revertir** (poner la key del proveedor como secreto del function): serían llamadas con NUESTRA
+  cuenta, no la del usuario — rompe el modelo "cada uno paga la suya".
 
 ---
 

@@ -13,8 +13,9 @@
 - **`react-markdown` + `remark-gfm`** — render de las respuestas de la IA (`components/Markdown.tsx`).
 - **`@supabase/supabase-js`** — backend **opcional** (fase 2). Sin las env `NEXT_PUBLIC_SUPABASE_*`,
   `getSupabase()` → null y la app sigue 100% local. Sin `transformers.js` todavía.
-- Deploy: **GitHub Pages** (`output: "export"`). Las edge functions (fase 2.1+) se deployan
-  aparte con la CLI de Supabase, no por el workflow de Pages.
+- **Edge function** `supabase/functions/ia-proxy` (Deno) — proxy stateless para DeepSeek/GPT
+  (no habilitan CORS). Se deploya aparte con la CLI de Supabase, no por el workflow de Pages.
+- Deploy de la web: **GitHub Pages** (`output: "export"`).
 
 ## Árbol de archivos
 
@@ -41,15 +42,18 @@ src/
                          (arranca en user, sin roles repetidos). tramoAResumir = los intercambios
                          fuera de la ventana.
     ia.ts                llamarIA(config, mensajes, opts) → string. Punto único; switch(proveedor).
-                         Adaptadores: Claude (@anthropic-ai/sdk dinámico) y Gemini (fetch + SSE).
-                         Ambos con streaming vía opts.onTexto. resumir() para el resumen de
-                         contexto. listarModelos(config) → string[] (modelos de esa key; Gemini
-                         GET /v1beta/models, Claude client.models.list()). ErrorIA con mensajes
-                         ya legibles; mensajeErrorGemini() traduce errores de cualquier endpoint.
+                         Adaptadores: Claude (@anthropic-ai/sdk dinámico), Gemini (fetch + SSE), y
+                         DeepSeek/GPT vía llamarOpenAICompat (contra el edge function ia-proxy;
+                         SSE estilo OpenAI). Streaming vía opts.onTexto. opts.usarProxy gatea
+                         deepseek/gpt (si false → ErrorIA explicativo). resumir(). listarModelos
+                         (Claude client.models.list(), Gemini GET /v1beta/models, deepseek/gpt via
+                         proxy GET /models). PROVEEDORES_DISPONIBLES = 4; PROVEEDORES_VIA_PROXY =
+                         [deepseek, gpt]. ErrorIA con mensajes legibles.
     configIA.ts          cargar/guardarConfigIA en localStorage ("3maps:ia"). No persiste sin API
                          key. Aparte de "3maps:settings" porque es sensible.
     supabase.ts          getSupabase() → SupabaseClient | null (null si no hay env). haySupabase()
-                         para mostrar/ocultar UI. auth desactivado (2.3 no usa login).
+                         para mostrar/ocultar UI. proxyIAUrl() = <supabaseUrl>/functions/v1/ia-proxy.
+                         auth desactivado (fase 2.3 no usa login).
     compartir.ts         compartirArbol(arbol, titulo) → sube arboles/<slug>.json a Storage (mismo
                          formato que persistencia.ts) y devuelve {slug, url}. cargarArbolCompartido
                          (slug) lo baja y reconstruye. slugDeLaUrl / limpiarSlugDeLaUrl / linkCompartir.
@@ -79,9 +83,10 @@ src/
                         tokens; 401 si la key es inválida) → chips clickeables + datalist. Aplica a
                         Claude y Gemini; commit() lo dispara al guardar.
                         Textarea "instrucción de sistema" → onChange({systemPrompt}) directo.
-    settings.ts         Settings = {inertia, ventanaContexto, systemPrompt, transcriptSide}.
-                        DEFAULT_SETTINGS, storage key. systemPrompt "" = ninguna; se antepone a la
-                        respuesta, no al resumen. transcriptSide "left"|"right" (default "right").
+    settings.ts         Settings = {inertia, ventanaContexto, systemPrompt, transcriptSide,
+                        usarProxyIA}. DEFAULT_SETTINGS, storage key. systemPrompt "" = ninguna;
+                        se antepone a la respuesta, no al resumen. transcriptSide "left"|"right"
+                        (default "right"). usarProxyIA = opt-in para DeepSeek/GPT (default false).
     nodeActions.ts       NodeActionsContext: deleteNode + retryNode + openNode + readOnly (hacia
                          FlowCanvas). readOnly=true (árbol compartido) esconde Eliminar/Reintentar.
     inertia.ts           Física compartida del "envión": constantes + sampleVelocity / launchVelocity / runGlide.
@@ -89,7 +94,16 @@ src/
     usePanInertia.ts     Hook: envión al soltar el pan del lienzo.
 
 .github/workflows/deploy.yml   Build estático (NEXT_PUBLIC_PAGES=1 → basePath /3maps) + deploy a
-                               GitHub Pages en cada push a main.
+                               GitHub Pages en cada push a main. Inyecta NEXT_PUBLIC_SUPABASE_*
+                               desde repo secrets.
+
+supabase/
+  config.toml                  project_id + [functions.ia-proxy] verify_jwt=false.
+  schema.sql                    bucket `arboles` + políticas RLS (lo corre el usuario).
+  functions/ia-proxy/index.ts   Edge function Deno. Proxy stateless para DeepSeek/GPT: reenvía a
+                               api.openai.com / api.deepseek.com con x-ia-key, agrega CORS, pipe
+                               del stream. Sin logs, sin storage. Se deploya con `supabase
+                               functions deploy ia-proxy`.
 ```
 
 ## FlowCanvas.tsx — el corazón
@@ -144,7 +158,7 @@ Handlers (todos operan sobre `arbol` vía `setArbol`):
   `conRespuesta({pending:true})` + limpia error; arma el contexto con `armarContexto` (tratando a
   `nodeId` como pendiente, así un reintento descarta la respuesta parcial vieja); si el camino
   supera la ventana, genera/cachea el `resumenViejo` con `resumir` (sin `systemPrompt`); `llamarIA`
-  con `opts.sistema = settings.systemPrompt` + `onTexto`
+  con `opts.sistema = settings.systemPrompt`, `opts.usarProxy = settings.usarProxyIA`, y `onTexto`
   throttleado a 80ms → `conRespuesta({respuesta: acc, pending:true})` (streaming); al terminar
   `conRespuesta({pending:false, proveedor})`; en error `conError`. `enVueloRef` (Map<id,
   AbortController>) para cancelar. `arbolRef` espeja `arbol` para leerlo en callbacks async.
@@ -176,14 +190,20 @@ Props de `<ReactFlow>` que importan:
 
 ## IA (model/ia.ts)
 
-- `ConfigIA = { proveedor, apiKey, modelo }`. `PROVEEDORES_DISPONIBLES = ["claude", "gemini"]`
-  (`deepseek`/`gpt` están en el tipo pero **sin adaptador**: `api.openai.com` / `api.deepseek.com`
-  no habilitan CORS → imposible desde el navegador sin proxy; diferido a fase 2, ver decisiones §7a).
-  `MODELO_POR_DEFECTO`,
-  `MODELOS_SUGERIDOS`, `NOMBRE_PROVEEDOR`, `PISTA_API_KEY` por proveedor.
+- `ConfigIA = { proveedor, apiKey, modelo }`. `PROVEEDORES_DISPONIBLES` = los 4.
+  `PROVEEDORES_VIA_PROXY = ["deepseek", "gpt"]` (no habilitan CORS → van por el edge function
+  `ia-proxy`, ver decisiones §7a). `MODELO_POR_DEFECTO`, `MODELOS_SUGERIDOS`, `NOMBRE_PROVEEDOR`,
+  `PISTA_API_KEY` por proveedor.
 - `llamarIA(config, mensajes, opts)` → `switch(config.proveedor)`. Sumar proveedor = un `case`
   nuevo, sin tocar nada del árbol (spec §6). `resumir()` usa el mismo proveedor configurado.
-- La API key va **directo del navegador al proveedor**, nunca a un servidor de 3maps.
+- La API key de Claude/Gemini va **directo del navegador al proveedor**. La de DeepSeek/GPT
+  **transita** el proxy stateless (opt-in `opts.usarProxy` / `settings.usarProxyIA`) — nunca se
+  almacena. Ver §7a.
+- **Adaptador OpenAI-compat** (`llamarOpenAICompat`): `fetch` a `proxyIAUrl()` con headers
+  `x-ia-provider` (openai|deepseek), `x-ia-path`, `x-ia-key`. SSE `data: {json}` →
+  `choices[0].delta.content`. `max_tokens` (deepseek) / `max_completion_tokens` (gpt).
+  Sin `usarProxy` o sin proxy configurado → `ErrorIA` explicativo. `mensajeErrorOpenAICompat`
+  para 401/402/403/404/429/5xx.
 - **Adaptador Claude** (`llamarClaude`): `await import("@anthropic-ai/sdk")` (dinámico),
   `new Anthropic({ apiKey, dangerouslyAllowBrowser: true })`, `client.messages.stream(...)` con
   `signal`. CORS habilitado por el header `anthropic-dangerous-direct-browser-access` del SDK.

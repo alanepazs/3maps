@@ -1,8 +1,8 @@
 # Estado del proyecto
 
 > Snapshot para retomar rápido. Actualizar al final de cada sesión.
-> Última actualización: 29-08-2026 (fase 2.0 + 2.3 completas: Supabase opcional + compartir por
-> link, verificado en producción).
+> Última actualización: 29-08-2026 (fase 2.0 + 2.3 en prod; 2.1 proxy DeepSeek/GPT codeado, falta
+> deployar el edge function).
 
 ## Mapa de docs
 
@@ -56,11 +56,15 @@ Carpeta local: `D:\IA\3maps`.
   `pending` y la respuesta **se escribe en vivo (streaming)** con cursor ▍.
 - **Contexto** = solo el camino raíz→globo (`armarContexto`), aplanado a user/assistant, con
   ventana (últimos N completos + resumen del tramo viejo vía `resumir`, cacheado por sesión).
-- **Proveedores**: 
+- **Proveedores** (4 en el dropdown):
   - **Gemini (Google, `fetch` directo + SSE)**: free tier, probado end-to-end, default `gemini-3.7-flash`.
   - **Claude (Anthropic, `@anthropic-ai/sdk` dinámico)**: requiere billing (Pro o créditos en console.anthropic.com).
+  - **DeepSeek / GPT (proxy)**: no habilitan CORS → van por el edge function `ia-proxy` (fase 2.1).
+    Opt-in (`settings.usarProxyIA`): caja en ⚙️ que avisa que la key transita el proxy stateless.
+    Código listo; falta deployar el function + probar con key real.
   
-  Se eligen en ⚙️; al cambiar se resetea modelo y limpia key. **Key vive solo en navegador**, va directo al proveedor (CORS OK ambos).
+  Se eligen en ⚙️; al cambiar se resetea modelo y limpia key. **La key de Claude/Gemini va directo
+  del navegador al proveedor**; la de DeepSeek/GPT transita el proxy (nunca se guarda).
   Default de Gemini = `gemini-3.7-flash` (Flash estable más nuevo, free tier), con **thinking al
   mínimo** por generación (`thinkingLevel: "low"` en 3.x, `thinkingBudget: 0` en 2.x — si no,
   devolvía respuesta vacía). Los modelos **varían por key** → botón **"verificar key y ver sus
@@ -100,12 +104,14 @@ transcripción de la rama con toggle de lado, auto-retry de Gemini ante 503, `la
 verificación de key gratis (`avisoFormatoKey` + `listarModelos` para Claude), prueba real de
 ambos proveedores, DeepSeek/GPT diferidos a fase 2 por CORS.
 
-### Fase 2 — 2.0 + 2.3 completas (compartir por link, en producción)
-Ver **`docs/fase-2.md`**. Proyecto Supabase `ref` ejecjjpdjoxgrbqrhwwd. `schema.sql` corrido,
-secrets de GitHub cargados. **Flujo de compartir verificado end-to-end en producción**
-(`alanepazs.github.io/3maps`): generar link → abrir en limpio → modo lectura → guardar copia.
+### Fase 2 — 2.0 + 2.3 en prod; 2.1 codeado
+Ver **`docs/fase-2.md`**. Proyecto Supabase `ref` ejecjjpdjoxgrbqrhwwd.
+- **2.0 + 2.3 (compartir por link)**: ✅ verificado end-to-end en producción.
+- **2.1 (proxy DeepSeek/GPT)**: código listo (`supabase/functions/ia-proxy`, `llamarOpenAICompat`,
+  toggle opt-in). **Falta que el usuario:** deploye el edge function (`supabase functions deploy
+  ia-proxy` o el editor del panel + desactivar Verify JWT) y pruebe con una key real.
 
-Siguientes tandas: proxy IA (2.1, opción A stateless), auth (2.2), sync (2.4), embeddings (2.5).
+Siguientes tandas: auth (2.2), sync (2.4), embeddings (2.5).
 
 ### Más adelante (fuera de fase 2)
 - [ ] Export/import: `.zip` de la carpeta de `.md` + carpetas reales con File System Access API,
@@ -134,7 +140,9 @@ Siguientes tandas: proxy IA (2.1, opción A stateless), auth (2.2), sync (2.4), 
       (`avisoFormatoKey` + `listarModelos` para Claude) — `4b0dc55`.
 - [x] Plan de fase 2 (`docs/fase-2.md`) + decisiones — `1152d81`.
 - [x] Fase 2.0: fundaciones Supabase (cliente opcional + schema + workflow) — `76758d3`.
-- [x] Fase 2.3: compartir un árbol por link (código; falta activar) — `51dc403`.
+- [x] Fase 2.3: compartir un árbol por link — `51dc403` (verificado en prod, deploy #35).
+- [x] Fase 2.1: proxy stateless para DeepSeek/GPT (`ia-proxy` + `llamarOpenAICompat`) — `9a2eecc`.
+      Falta deployar el edge function + probar con key real.
 
 ## Issues conocidos / gotchas
 

@@ -109,21 +109,32 @@ Ordenados por dependencia. Cada bloque es committeable solo.
 autorizado. Para usarlo el usuario tiene que correr el OAuth desde una sesión interactiva
 (`claude mcp` o `/mcp`). No es bloqueante para planear ni para el código — solo acelera el setup.
 
-### 2.1 — Proxy IA para DeepSeek / GPT
+### 2.1 — Proxy IA para DeepSeek / GPT — ✅ codeado (`9a2eecc`), falta deployar la function
 
-Depende de: 2.0 y de la **decisión abierta 1**.
+Decisión: **opción A** (proxy stateless opt-in). Ver `decisiones.md` §7a + F2-6.
 
-- `supabase/functions/ia-proxy/index.ts` — reenvía a `api.openai.com` / `api.deepseek.com`,
-  agrega headers de CORS, hace pipe del stream SSE de vuelta. Stateless: sin logs del body, sin
-  storage.
-- `llamarOpenAICompat(config, mensajes, opts)` en `ia.ts` — un helper para los dos `case`
-  (`deepseek` y `gpt`), mismo shape de SSE, cambia base URL y `max_tokens` vs
-  `max_completion_tokens`. Pega contra la URL del proxy, no contra el proveedor.
-- `PROVEEDORES_DISPONIBLES` suma `deepseek` y `gpt`.
-- ⚙️: toggle "usar el proxy de 3maps para DeepSeek/GPT" (opt-in) con el texto que explica que la
-  key transita el proxy. Sin el toggle activo, esos proveedores quedan deshabilitados con un
-  cartel que linkea a la explicación.
-- Actualizar `decisiones.md §7a` (hoy dice "diferido a fase 2") con la decisión final.
+- [x] `supabase/functions/ia-proxy/index.ts` — edge function Deno. Reenvía a `api.openai.com` /
+      `api.deepseek.com` con la key del usuario (`x-ia-key`), agrega CORS, hace pipe del stream.
+      **Stateless**: no loguea el body ni la key, no guarda. Proveedores + rutas fijos (anti-SSRF),
+      orígenes permitidos (`alanepazs.github.io` + `localhost:3000`, override con env
+      `PROXY_ALLOWED_ORIGINS`). `supabase/config.toml` → `verify_jwt = false`.
+- [x] `llamarOpenAICompat` + `listarModelosOpenAICompat` en `ia.ts`. SSE estilo OpenAI
+      (`choices[0].delta.content`). `max_tokens` (deepseek) vs `max_completion_tokens` (gpt).
+      La URL del proxy se deriva de `NEXT_PUBLIC_SUPABASE_URL` (`/functions/v1/ia-proxy`).
+- [x] `PROVEEDORES_DISPONIBLES` = los 4. `settings.usarProxyIA` (opt-in, default false).
+      SettingsPanel: caja ámbar + checkbox. Sin toggle → error claro; sin Supabase → "no disponible".
+- [x] Verificado en navegador: toggle off → error "activá el proxy"; toggle on → intenta el proxy.
+
+**Pendiente del usuario:**
+1. **Deployar la function.** Con la CLI de Supabase (`npm i -g supabase`, `supabase login`):
+   ```
+   supabase functions deploy ia-proxy --project-ref ejecjjpdjoxgrbqrhwwd
+   ```
+   O en el panel: Edge Functions → Create → nombre `ia-proxy` → pegar el contenido de
+   `supabase/functions/ia-proxy/index.ts` → Deploy. Después, en la config de esa function,
+   **desactivar "Verify JWT"**.
+2. **Probar con una key real** de DeepSeek o OpenAI (como pasó con Claude — sin key propia no se
+   puede verificar end-to-end). DeepSeek es el más barato.
 
 ### 2.2 — Auth opcional (Supabase Auth)
 
