@@ -426,6 +426,19 @@ con free tier: **probar con una key nueva de verdad** — los blogs y hasta `Lis
 - `useSync` re-corre el sync inicial al cambiar de `(uid, mapId)`. `3maps:sync` pasó a
   `3maps:sync:<mapId>`.
 
+### F3-7. Al crear un globo se busca un lugar LIBRE (no offsets fijos)
+- **Por qué**: los offsets fijos (`parent.y + 240`, `hermanos * 40`, `parent.x + 400`) se
+  pisaban en varios casos: 2 "continuar hilo" del mismo padre caían casi en el mismo lugar; una
+  rama nueva se pisaba con la respuesta larga del padre o con una rama hermana larga.
+- `ubicarNuevoGlobo` (layout.ts) escanea posiciones candidatas cerca del padre y devuelve la
+  primera que no solapa NINGÚN globo (usa los rects reales medidos por React Flow). `main` →
+  debajo, con columnas alternadas de fallback; `branch` → al lado con menos ramas (empate →
+  derecha), filas hacia abajo si está lleno.
+- **Las ramas alternan izq/der** (antes: siempre `branch-right`) → árbol parejo, tipo mapa de
+  árbol real. El lado también decide el `sourceHandle` de la flecha.
+- El alto del globo nuevo no se conoce al crearlo (aún no se midió) → estimado. El botón
+  "Ordenar" (F3-3) reacomoda todo prolijo después.
+
 ### F3-6. La llamada a la IA tiene watchdog + `pending` se persiste
 - **Por qué**: al ramificar varias ramas en paralelo, si el stream de un proveedor se queda
   colgado (conexión abierta sin datos), `reader.read()` no resuelve nunca → el globo queda

@@ -47,7 +47,6 @@ import {
   conRespuesta,
   crearIntercambio,
   descendientes,
-  hijos,
   nuevoId,
   quitarSubarbol,
   reparentar,
@@ -56,7 +55,7 @@ import {
   type Rama,
 } from "@/model/intercambio";
 import { cargarArbol, guardarArbol } from "@/model/persistencia";
-import { calcularLayout } from "@/model/layout";
+import { calcularLayout, ubicarNuevoGlobo } from "@/model/layout";
 import {
   borrarMapa,
   crearMapa,
@@ -562,38 +561,28 @@ function Flow() {
       const parent = buscar(arbol, parentId ?? activeNodeId ?? "");
       if (!parent) return null;
       const id = nuevoId();
-      const rama: Rama = kind === "main" ? "main" : "branch-right";
-      const hermanosMain = hijos(arbol, parent.id).filter(
-        (h) => h.rama === "main",
-      ).length;
-      // Dimensiones REALES del padre (medidas por React Flow) — así el globo
-      // nuevo no se pisa con la respuesta larga / expandida del padre (fase 3.2).
-      const nodoPadre = getNode(parent.id);
-      const altoPadre = nodoPadre?.measured?.height ?? 160;
-      const anchoPadre = nodoPadre?.measured?.width ?? 260;
-      let pos: { x: number; y: number };
-      if (kind === "main") {
-        pos = { x: parent.x + hermanosMain * 40, y: parent.y + altoPadre + 60 };
-      } else {
-        // Rama: a la derecha, despejando el ANCHO real del padre; apilada por
-        // debajo de las ramas que ya existen de ese lado usando su ALTO real
-        // (el `+ 220` fijo se pisaba con las ramas de respuesta larga).
-        const ramasDerecha = hijos(arbol, parent.id).filter(
-          (h) => h.rama === "branch-right",
-        );
-        let y = parent.y;
-        for (const r of ramasDerecha) {
-          y += (getNode(r.id)?.measured?.height ?? 160) + 48;
-        }
-        pos = { x: parent.x + anchoPadre + 140, y };
-      }
+      // Buscar un lugar libre cerca del padre (no pisa a ningún otro globo) y
+      // el lado de la rama (alterna izq/der para un árbol parejo). Ver layout.ts.
+      const medir = (nid: string) => {
+        const n = getNode(nid);
+        return {
+          w: n?.measured?.width ?? 260,
+          h: n?.measured?.height ?? 160,
+        };
+      };
+      const { x, y, rama } = ubicarNuevoGlobo(
+        arbol,
+        parent.id,
+        kind === "main" ? "main" : "branch",
+        medir,
+      );
       const nuevo = crearIntercambio({
         id,
         padreId: parent.id,
         rama,
         pregunta: text,
-        x: pos.x,
-        y: pos.y,
+        x,
+        y,
         pending: true,
       });
       const arbolNuevo = agregar(arbol, nuevo);
@@ -601,7 +590,7 @@ function Flow() {
       seleccionarLuegoRef.current = id;
       setArbol(arbolNuevo);
       setActiveNodeId(id);
-      centrarEnGlobo(pos.x, pos.y);
+      centrarEnGlobo(x, y);
       void responder(id, arbolNuevo);
       return id;
     },

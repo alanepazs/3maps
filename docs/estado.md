@@ -2,8 +2,10 @@
 
 > Snapshot para retomar rápido. Actualizar al final de cada sesión.
 > Última actualización: 30-08-2026 (fase 2 COMPLETA y en prod. Fase 3: TODOS los bloques del
-> pedido HECHOS — quick wins, canvas, composer en el panel, varios mapas, borrar raíz. Falta
-> probar el sync per-mapa con login real + sueltos: Cerebras, consentimiento de Google).
+> pedido HECHOS — quick wins, canvas, composer en el panel, varios mapas, borrar raíz — + fixes
+> post-uso: llamada IA que quedaba estática, superposición de globos nuevos, ramas alternando
+> izq/der, botón "Rehacer". Falta: probar sync per-mapa con login real + Cerebras + consentimiento
+> Google).
 
 ## Mapa de docs
 
@@ -145,10 +147,11 @@ Ver **`docs/fase-3.md`**.
 - **3.1** — tope de alto del globo (220px) cuando la respuesta pasa 400 chars: se corta con
   degradado + pill "⌄ ver más", toggle Expandir/Colapsar en el `NodeToolbar`. Preferencia por
   globo en `localStorage["3maps:vista"]` (no toca el `.md`). Módulo nuevo `src/components/vista.ts`.
-- **3.2** — el globo nuevo usa las dimensiones REALES medidas del padre: hijo `main` en
-  `y = parent.y + altoPadre + 60`; rama en `x = parent.x + anchoPadre + 140` apilada por el alto
-  real de las ramas que ya existen (no más `+240`/`+220`/`+400` fijos → no se pisan con las
-  respuestas largas). Ajuste de ramas: 30-08-2026 (el usuario reportó que las ramas seguían pisándose).
+- **3.2** — al crear un globo, `ubicarNuevoGlobo` (`layout.ts`) busca un lugar libre cerca del
+  padre que **no pise a NINGÚN otro globo** (escanea candidatos con los rects reales medidos) y
+  devuelve el lado de la rama, **alternando izq/der** (antes: siempre a la derecha) para un árbol
+  parejo. Reemplaza los offsets fijos que se pisaban (2 "continuar hilo" del mismo padre, ramas
+  de respuesta larga). 3 iteraciones sobre este bug (30-08-2026), 8 asserts en scratch.
 - **3.2b** (pedido del usuario) — al crear un globo, la cámara se centra en él
   (`setCenter`, mantiene zoom): si estabas leyendo el principio de un padre largo, baja al hijo.
 - **3.3** — la flecha rama↔tronco salta de lado DURANTE el drag (en `onNodeDrag`, actualiza el
@@ -169,9 +172,10 @@ Ver **`docs/fase-3.md`**.
 - **3.6** — la raíz se puede borrar solo cuando es el último globo (`data.sinHijos` en
   `arbolAVista` → 🗑 en `MessageNode` si `!isRoot || sinHijos`; `deleteNode` confirma).
 
-**Fase 3: todos los bloques del pedido hechos.** Falta: Cerebras (5º proveedor), publicar la
-pantalla de consentimiento de Google, 2.5b si hace falta.
-Hay decisiones abiertas por bloque — ver `docs/fase-3.md`.
+**Fase 3: todos los bloques del pedido hechos + varios fixes post-uso** (llamada estática,
+superposición de globos, ramas siempre a la derecha, botón "Rehacer"). Falta: Cerebras (5º
+proveedor), publicar la pantalla de consentimiento de Google, probar el sync per-mapa con login
+real, 2.5b si hace falta. Decisiones en `docs/decisiones.md` (F3-1..F3-7).
 
 **UX — API key por proveedor** (`0e56112`, 30-08-2026): `configIA.ts` ahora guarda una key por
 proveedor. Cambiás de proveedor en ⚙️ y volvés → la key reaparece sola (antes se borraba).

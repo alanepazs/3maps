@@ -43,6 +43,9 @@ src/
     layout.ts            calcularLayout(arbol, alturaDe) → Map<id,{x,y}>. Auto-layout recursivo
                          para el botón "Ordenar" (fase 3.4): tronco `main` vertical, ramas
                          `branch-*` en columnas al costado con su propio tronco. Puro.
+                         ubicarNuevoGlobo(arbol, parentId, kind, medir) → {x, y, rama}: al crear
+                         un hijo, busca un lugar libre cerca del padre (no pisa a NINGÚN globo,
+                         usa rects reales) y alterna el lado de las ramas (fase 3.2).
     contexto.ts          armarContexto(arbol, nodoId, opts, resumenViejo, relevantes) → Mensaje[]:
                          SOLO el camino raíz→nodo, aplanado a user/assistant, con ventana (últimos
                          N completos + resumen del tramo viejo). `relevantes` = intercambios viejos
@@ -197,11 +200,10 @@ Handlers (todos operan sobre `arbol` vía `setArbol`):
 - `handleSubmit(text, kind, parentId?)` — si el árbol está vacío, el globo es la raíz; si no,
   cuelga de `parentId` (para el composer del panel, fase 3.9) o del activo.
   `agregar(crearIntercambio({..., pending:true}))`, lo setea, llama `responder(id, arbolNuevo)`,
-  **devuelve el id del globo nuevo** (o null). `kind` "main" → rama "main", abajo
-  (`y = parent.y + altoRealPadre + 60`); "branch" → "branch-right", a la derecha despejando el
-  `anchoRealPadre` + `y` apilado por el alto real de las ramas que ya existen de ese lado (fase
-  3.2 — todo con `getNode(id).measured`, en vez de los `+240`/`+220`/`+400` fijos). Al crear
-  cualquier globo, `centrarEnGlobo(x,y)` (`setCenter`, mantiene zoom) baja la cámara al nuevo (3.2b).
+  **devuelve el id del globo nuevo** (o null). La posición y el lado de la rama salen de
+  `ubicarNuevoGlobo` (layout.ts): lugar libre cerca del padre sin pisar ningún globo, ramas
+  alternando izq/der (fase 3.2). Al crear cualquier globo, `centrarEnGlobo(x,y)` (`setCenter`,
+  mantiene zoom) baja la cámara al nuevo (3.2b).
 - `responderDesdePanel(text)` — el composer de `BranchTranscript` (fase 3.9):
   `handleSubmit(text, "main", transcriptNodeId)` + mueve el panel al hijo nuevo.
 - `onNodeDrag` (envuelve el de `useNodeInertia`) — además de trackear velocidad para el envión,

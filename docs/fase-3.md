@@ -24,13 +24,17 @@ Preferencia **por globo**, NO va al `.md` ni al árbol: vive en `localStorage["3
 (`{ expandidos: { [id]: boolean } }`), módulo nuevo `src/components/vista.ts`. Estado local en
 `MessageNode` (`override ?? !colapsable`). TODO fase 3.5: clave por mapa.
 
-### 3.2 — El globo hijo no se superpone con la respuesta del padre  ✅ (30-08-2026)
+### 3.2 — El globo nuevo no se pisa con NINGÚN otro  ✅ (30-08-2026)
 
-`handleSubmit` usa las **dimensiones reales medidas** por React Flow (`getNode(id)?.measured`):
-- hijo `main` → `y = parent.y + altoPadre + 60` (en vez de `+ 240` fijo).
-- rama → `x = parent.x + anchoPadre + 140` (despeja el ancho real del padre) e `y` apilado por
-  debajo de las ramas del mismo lado que ya existen usando su **alto real** (en vez de `+ 220`
-  fijo, que se pisaba con las ramas de respuesta larga).
+`ubicarNuevoGlobo(arbol, parentId, kind, medir)` en `layout.ts` busca un lugar libre cerca del
+padre usando los **rects reales** (medidos por React Flow) de todos los globos:
+- `main` → debajo del padre; si esa columna está ocupada (2ª "continuación" del mismo padre = 2
+  troncos) prueba columnas alternadas a los costados.
+- `branch` → a un costado, eligiendo el lado con **menos ramas** (empate → derecha) para que el
+  árbol quede parejo (antes: siempre a la derecha); si el lado preferido está lleno, prueba el
+  otro y filas más abajo. Devuelve también la `rama` (`branch-left` / `branch-right`).
+- Reemplaza los offsets fijos (`+240` / `+220` / `+400` / `hermanos*40`) que se pisaban.
+- El alto del globo nuevo aún no se conoce (no se midió) → estimado; "Ordenar" reacomoda prolijo.
 
 ### 3.2b — La cámara sigue al globo recién creado  ✅ (30-08-2026)
 
