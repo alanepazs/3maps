@@ -174,7 +174,7 @@ Queda como función avanzada opcional, no como parte del núcleo.
 ## 13. Roadmap por fases
 
 1. **Fase 1 — MVP local-first, sin login, sin backend.** Canvas con React Flow, un proveedor de IA, guardado/exportado en `.md`, ventana de contexto + resumen, embeddings locales para relevancia. Deploy gratis en GitHub Pages.
-2. **Fase 2 — Compartir y sincronizar.** Backend con Supabase, login opcional, compartir árboles por link, multi-proveedor.
+2. **Fase 2 — Compartir y sincronizar.** Backend con Supabase, login opcional, compartir árboles por link, multi-proveedor (DeepSeek/GPT necesitan un proxy: no habilitan CORS para llamadas desde el navegador — ver decisiones §7a).
 3. **Fase 3 — Extras avanzados.** Modelos locales tipo Ollama como opción para usuarios avanzados, mejoras de rendimiento adicionales.
 
 ## 14. Preguntas abiertas / pendientes

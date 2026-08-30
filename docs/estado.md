@@ -1,7 +1,8 @@
 # Estado del proyecto
 
 > Snapshot para retomar rápido. Actualizar al final de cada sesión.
-> Última actualización: 29-08-2026 (metadata de modelos al día + system prompt configurable).
+> Última actualización: 29-08-2026 (system prompt + transcripción de rama + auto-retry Gemini;
+> DeepSeek/GPT diferidos a fase 2 por CORS).
 
 ## Mapa de docs
 
@@ -100,7 +101,6 @@ Carpeta local: `D:\IA\3maps`.
       (`BranchTranscript.tsx`) con el camino raíz→globo (`caminoRaizA`) tipo chat. Trigger: doble
       click (`onNodeDoubleClick` + `zoomOnDoubleClick={false}`) o botón ⤢ del `NodeToolbar` (que
       ahora aparece también en el raíz, solo con ⤢). Cierra con Esc / ✕ / fondo.
-- [ ] Adaptador OpenAI-compatible (DeepSeek + GPT) — un `llamarOpenAICompat` para los dos `case`.
 - [x] Auto-retry en `llamarGemini` para 503 intermitentes (29-08-2026): 1 reintento con 1s de
       pausa, solo si no se streameó nada. `llamarGemini` = wrapper, `intentarGemini` = el trabajo.
       Ver decisiones §7c. Probado con 5 asserts (scratch, borrado).
@@ -111,6 +111,9 @@ Carpeta local: `D:\IA\3maps`.
 - [ ] Embeddings locales con `transformers.js` para relevancia de contexto (§5).
 - [ ] Estado `expandido`/colapsado por globo para rendimiento con muchos nodos (§8).
 - [ ] `lang="es"` en `layout.tsx` (está en `"en"`).
+- [ ] **Adaptador OpenAI-compat (DeepSeek + GPT) — FASE 2**: `api.openai.com` y `api.deepseek.com`
+      no habilitan CORS → no se puede llamar desde el navegador. Necesita el proxy de fase 2
+      (edge function que ponga la key server-side). Ver decisiones §7a.
 
 ### Hecho el 29-08-2026
 - [x] Fix del envión al panear (`usePanInertia`) — `ff595e3`.

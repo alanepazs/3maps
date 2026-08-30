@@ -147,7 +147,9 @@ Props de `<ReactFlow>` que importan:
 ## IA (model/ia.ts)
 
 - `ConfigIA = { proveedor, apiKey, modelo }`. `PROVEEDORES_DISPONIBLES = ["claude", "gemini"]`
-  (`deepseek`/`gpt` declarados en el tipo pero sin adaptador). `MODELO_POR_DEFECTO`,
+  (`deepseek`/`gpt` están en el tipo pero **sin adaptador**: `api.openai.com` / `api.deepseek.com`
+  no habilitan CORS → imposible desde el navegador sin proxy; diferido a fase 2, ver decisiones §7a).
+  `MODELO_POR_DEFECTO`,
   `MODELOS_SUGERIDOS`, `NOMBRE_PROVEEDOR`, `PISTA_API_KEY` por proveedor.
 - `llamarIA(config, mensajes, opts)` → `switch(config.proveedor)`. Sumar proveedor = un `case`
   nuevo, sin tocar nada del árbol (spec §6). `resumir()` usa el mismo proveedor configurado.
