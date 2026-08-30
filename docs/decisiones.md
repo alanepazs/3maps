@@ -2,7 +2,7 @@
 
 > Por qué el código es como es. Cada entrada: **qué se decidió**, **por qué**, y **qué romperías
 > si lo revertís sin pensar**. Si vas a ir en contra de una de estas, que sea a propósito.
-> Última actualización: 29-08-2026.
+> Última actualización: 29-08-2026 (fase 2.0/2.3 — ver sección "Fase 2").
 
 Complementa a:
 - `docs/spec-proyecto.md` — el diseño y las decisiones de producto (modelo de datos, UX, roadmap).
@@ -251,6 +251,55 @@ con free tier: **probar con una key nueva de verdad** — los blogs y hasta `Lis
   toggle, no un lado fijo.
 - **Revertir** (guardar la transcripción como estado / nodo): rompe la invariante "el árbol es la
   fuente de la verdad, la vista se deriva".
+
+---
+
+## Fase 2 — backend opcional (Supabase)
+
+> El plan completo está en `docs/fase-2.md`. Acá van las decisiones de implementación de lo que
+> ya se codeó (2.0 fundaciones + 2.3 compartir por link).
+
+### F2-1. Supabase es **opcional**: `getSupabase()` devuelve `null` si no hay env
+- **Por qué**: la invariante de fase 1 ("todo client-side, sin backend") no se rompe — se vuelve
+  condicional. Sin `NEXT_PUBLIC_SUPABASE_*`, `haySupabase()` es `false`, el botón "Compartir" no
+  aparece, y la app es idéntica a fase 1.
+- **`persistSession: false`** en el cliente: 2.3 no usa login, y `detectSessionInUrl` pelearía
+  con el `?compartir=<slug>` que leemos de la URL.
+- **Revertir** (hacer Supabase obligatorio): rompe el modo local puro y el deploy sin secrets.
+
+### F2-2. Las env `NEXT_PUBLIC_SUPABASE_*` son públicas, pero NO son la key de IA
+- La `anon`/`publishable` key de Supabase **está diseñada para ir en el bundle del navegador**
+  (RLS protege los datos). Distinto de la API key del proveedor de IA, que sigue sin tocar
+  ningún server (invariante intacta). La `service_role` de Supabase **nunca** va al repo ni al
+  cliente — solo dentro de Supabase (edge functions de 2.1+).
+- Van igual como *repo secrets* de GitHub Actions (buena costumbre, no dejarlas en el fuente).
+
+### F2-3. Un árbol compartido = **un JSON** en Storage, no N archivos `.md`
+- **Qué**: `arboles/<slug>.json` con `{ v, titulo, creado, files: { [id]: "<md>" } }` — la misma
+  forma que `localStorage["3maps:arbol"]`. El `.md` sigue siendo el formato canónico (spec §7,
+  "el servidor solo lo aloja"); el JSON es solo el sobre, igual que en localStorage.
+- **Por qué no N archivos**: subir un árbol de 50 globos serían 50 requests. Un PUT vs 50.
+- **`slug` = el secreto**: 10 chars de un alfabeto sin ambiguos. Sin tabla de metadata ni "mis
+  árboles" todavía (llega con login, 2.2/2.4).
+- **Revertir** (esquema relacional para el árbol): duplica formato, diverge del `.md` y del export.
+
+### F2-4. Compartir es **anónimo** y el link **no caduca ni se puede despublicar** (por ahora)
+- **Por qué**: sin login no hay "dueño" que autorice despublicar. La política del bucket permite
+  `insert` a cualquiera pero **no `update` ni `delete`** → nadie pisa el árbol de otro.
+- **Límite conocido**: un anónimo puede spamear archivos chicos y llenar el free tier. Mitigado
+  con tope de 2 MB (bucket) + tope cliente (50 globos / ~1 MB). El rate-limit real necesita un
+  edge function — anotado en `docs/fase-2.md`.
+
+### F2-5. Ver un árbol compartido = **modo lectura efímero**, no se persiste
+- **Qué**: con `?compartir=<slug>` en la URL, el árbol se carga en estado pero el effect de
+  `guardarArbol` se apaga (`!readOnly`). `readOnly` se propaga por `NodeActionsContext` y esconde
+  Eliminar/Reintentar; el `<Composer>` no se renderiza; `handleSubmit`/`deleteNode`/`retryNode`
+  son no-op. Pan/zoom/abrir transcripción sí andan (no mutan el árbol de verdad).
+- **"Guardar en mi 3maps"**: `guardarArbol` + saca el `?compartir=` de la URL + `readOnly` pasa a
+  false → el árbol es ahora local y editable.
+- **Link roto**: `cargarArbolCompartido` devuelve `null` → se limpia la URL y se cae al árbol local.
+- **Revertir** (una ruta `/compartir/[slug]` aparte): `output: "export"` no hace rutas dinámicas
+  sin `generateStaticParams`; el query param es lo que funciona con el deploy estático.
 
 ---
 

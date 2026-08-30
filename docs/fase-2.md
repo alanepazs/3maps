@@ -1,7 +1,21 @@
 # Fase 2 — Compartir y sincronizar
 
-> Plan de trabajo. Estado: **decisiones tomadas, sin código todavía** (29-08-2026).
+> Plan de trabajo. Estado: **2.0 + 2.3 codeados** (29-08-2026), esperando que el usuario corra
+> `supabase/schema.sql` y cargue los secrets de GitHub para probar el flujo real.
 > Fase 1 (MVP) quedó cerrada — ver `docs/estado.md`.
+
+## Pendiente del usuario para activar 2.3
+
+1. **Correr `supabase/schema.sql`** en el panel de Supabase → SQL Editor → pegar → Run.
+   (Crea el bucket `arboles` + las políticas de acceso.)
+2. **Cargar los secrets en GitHub** para que la app publicada tenga backend:
+   repo → Settings → Secrets and variables → Actions → New repository secret:
+   - `NEXT_PUBLIC_SUPABASE_URL` = `https://ejecjjpdjoxgrbqrhwwd.supabase.co`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` = la publishable key (`sb_publishable_…`)
+   Sin esto, la app publicada se buildea sin backend (el botón Compartir no aparece); local sí
+   funciona porque está el `.env.local`.
+3. **Probar** (con guía): ⚙️ → sección Compartir → "Generar link" → abrir el link en otra ventana
+   → ver el árbol en modo lectura → "Guardar en mi 3maps".
 
 ## Decisiones tomadas (29-08-2026)
 
@@ -76,17 +90,20 @@ Ver "Bloques de trabajo" y elegir hasta dónde llega esta tanda.
 
 Ordenados por dependencia. Cada bloque es committeable solo.
 
-### 2.0 — Fundaciones Supabase
+### 2.0 — Fundaciones Supabase — ✅ codeado (`76758d3`)
 
-- Proyecto Supabase (free tier). Supabase CLI para migraciones y edge functions.
-- `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` en `.env.local` (la anon key es
-  pública por diseño — RLS protege los datos; **no** confundir con la service_role key, que nunca
-  va al repo ni al cliente).
-- `src/model/supabase.ts` — cliente singleton, `null` si no hay env (modo local puro).
-- CSP: hoy no hay `Content-Security-Policy` en la app. Si se agrega una, incluir el dominio de
-  Supabase en `connect-src`. Si no, no hay nada que tocar.
-- El deploy sigue siendo GitHub Pages (estático). Las edge functions se deployan aparte con la
-  CLI de Supabase — no pasan por el workflow de Pages.
+- [x] Proyecto Supabase (free tier), región Americas. `ref` = `ejecjjpdjoxgrbqrhwwd`.
+- [x] `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` en `.env.local` (gitignoreado).
+      La anon/publishable key es pública por diseño; la service_role **nunca** va al repo ni al
+      cliente.
+- [x] `src/model/supabase.ts` — `getSupabase()` → cliente singleton o `null` si no hay env.
+      `haySupabase()` para la UI.
+- [x] `supabase/schema.sql` — bucket `arboles` + políticas RLS. **Lo corre el usuario** en el
+      SQL Editor (ver arriba).
+- [x] `deploy.yml` pasa las env desde repo secrets. **Faltan cargar los secrets** (ver arriba).
+- CSP: hoy no hay `Content-Security-Policy` en la app → nada que tocar.
+- El deploy sigue siendo GitHub Pages (estático). Las edge functions (2.1+) se deployan aparte
+  con la CLI de Supabase.
 
 **Nota de entorno:** hay un MCP de Supabase (`plugin:…:supabase`) que en esta sesión no está
 autorizado. Para usarlo el usuario tiene que correr el OAuth desde una sesión interactiva
@@ -117,17 +134,16 @@ Depende de: 2.0.
 - `useSession()` / contexto de auth. La mayor parte de la app lo ignora.
 - Sin login, todo sigue en `localStorage` como hoy.
 
-### 2.3 — Compartir un árbol por link
+### 2.3 — Compartir un árbol por link — ✅ codeado (`51dc403`)
 
-Depende de: 2.0. Auth (2.2) **no** es estrictamente necesaria para compartir de forma anónima,
-pero sí para "mis árboles compartidos" y para poder despublicar.
-
-- Acción "Compartir" → sube los `.md` del árbol a un bucket de Storage bajo un slug aleatorio.
-- Tabla `shared_trees` en Postgres: `slug`, `owner_id` (nullable si anónimo), `titulo`,
-  `created_at`. RLS: lectura pública por slug, escritura solo del dueño.
-- Abrir `…/3maps/?share=<slug>` → baja los `.md`, reconstruye el árbol **en modo lectura** (o con
-  botón "importar a mi copia local"). Reusa el parser de `.md` que ya existe.
-- Límite de tamaño / rate-limit para no comerse el free tier.
+- [x] `src/model/compartir.ts` — `compartirArbol(arbol, titulo)` sube `arboles/<slug>.json` y
+      devuelve `{slug, url}`. `cargarArbolCompartido(slug)` lo baja y reconstruye. Sin tabla de
+      metadata todavía (llega con login).
+- [x] Botón "Compartir" en ⚙️ (sección nueva) → título opcional → "Generar link" → copiar.
+- [x] Abrir `…/?compartir=<slug>` → carga en **modo lectura** (`SharedBanner` + `readOnly` por
+      `NodeActionsContext`); "Guardar en mi 3maps" lo pasa a local editable. Link roto → cae al local.
+- [x] Topes: 50 intercambios / ~1 MB (cliente) + 2 MB (bucket).
+- **Falta**: verificación del flujo real (necesita el bucket creado + probarlo).
 
 ### 2.4 — Sync entre dispositivos
 

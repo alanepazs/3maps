@@ -1,7 +1,7 @@
 # Arquitectura del código
 
 > Mapa de `src/` para no tener que leer todo. Actualizar cuando cambie la estructura.
-> Última actualización: 29-08-2026 (llamada real a la IA + deploy a GitHub Pages).
+> Última actualización: 29-08-2026 (fase 2.0/2.3: Supabase opcional + compartir por link).
 
 ## Stack real (lo que está instalado)
 
@@ -11,7 +11,10 @@
 - **`@anthropic-ai/sdk`** — se importa **dinámicamente** dentro de `model/ia.ts` (solo se baja
   cuando el usuario dispara una llamada; no pesa en la carga inicial).
 - **`react-markdown` + `remark-gfm`** — render de las respuestas de la IA (`components/Markdown.tsx`).
-- Sin backend, sin `transformers.js` todavía (fase 1). Deploy: **GitHub Pages** (`output: "export"`).
+- **`@supabase/supabase-js`** — backend **opcional** (fase 2). Sin las env `NEXT_PUBLIC_SUPABASE_*`,
+  `getSupabase()` → null y la app sigue 100% local. Sin `transformers.js` todavía.
+- Deploy: **GitHub Pages** (`output: "export"`). Las edge functions (fase 2.1+) se deployan
+  aparte con la CLI de Supabase, no por el workflow de Pages.
 
 ## Árbol de archivos
 
@@ -45,6 +48,12 @@ src/
                          ya legibles; mensajeErrorGemini() traduce errores de cualquier endpoint.
     configIA.ts          cargar/guardarConfigIA en localStorage ("3maps:ia"). No persiste sin API
                          key. Aparte de "3maps:settings" porque es sensible.
+    supabase.ts          getSupabase() → SupabaseClient | null (null si no hay env). haySupabase()
+                         para mostrar/ocultar UI. auth desactivado (2.3 no usa login).
+    compartir.ts         compartirArbol(arbol, titulo) → sube arboles/<slug>.json a Storage (mismo
+                         formato que persistencia.ts) y devuelve {slug, url}. cargarArbolCompartido
+                         (slug) lo baja y reconstruye. slugDeLaUrl / limpiarSlugDeLaUrl / linkCompartir.
+                         Topes: MAX_INTERCAMBIOS_COMPARTIR (50), MAX_BYTES_COMPARTIR (~1 MB).
   components/
     FlowCanvas.tsx      ★ El componente central (~500 líneas). Ver detalle abajo.
     MessageNode.tsx     Nodo custom. Estados del cuerpo: pending ("escribiendo…" + texto + ▍),
@@ -57,6 +66,8 @@ src/
                         en un globo o el botón ⤢; cierra con Esc / ✕ / click en el fondo. Botón ⇄
                         en el header cambia el lado (izq/der) → `settings.transcriptSide`.
                         Props: {intercambios, side, onFlipSide, onClose}.
+    SharedBanner.tsx    Cartel arriba cuando se ve un árbol compartido (`?compartir=`). Props:
+                        {titulo, onGuardar, onSalir}. "Guardar en mi 3maps" = pasa a local editable.
     Composer.tsx        Barra inferior fija para escribir.
     SettingsPanel.tsx   Tuerquita ⚙️: ajustes del lienzo (envión, ventana de contexto) +
                         config de IA. API key y modelo son BORRADORES (estado local) que se
@@ -71,7 +82,8 @@ src/
     settings.ts         Settings = {inertia, ventanaContexto, systemPrompt, transcriptSide}.
                         DEFAULT_SETTINGS, storage key. systemPrompt "" = ninguna; se antepone a la
                         respuesta, no al resumen. transcriptSide "left"|"right" (default "right").
-    nodeActions.ts       NodeActionsContext: deleteNode + retryNode + openNode (hacia FlowCanvas).
+    nodeActions.ts       NodeActionsContext: deleteNode + retryNode + openNode + readOnly (hacia
+                         FlowCanvas). readOnly=true (árbol compartido) esconde Eliminar/Reintentar.
     inertia.ts           Física compartida del "envión": constantes + sampleVelocity / launchVelocity / runGlide.
     useNodeInertia.ts    Hook: envión al soltar un globo o una selección.
     usePanInertia.ts     Hook: envión al soltar el pan del lienzo.
@@ -99,9 +111,21 @@ son una **vista derivada** (`arbolAVista`). Nunca al revés.
   **preservando identidad**: los nodos sin cambios mantienen su objeto (y su posición viva), así
   React Flow no los re-mide (evita el parpadeo / `visibility:hidden`).
 - Las **posiciones** vuelven al árbol al soltar / frenar el envión (`asentar`), no en cada frame.
-- `guardarArbol(arbol)` se llama en cada cambio del árbol (una vez `listo`).
+- `guardarArbol(arbol)` se llama en cada cambio del árbol (una vez `listo`) **salvo en modo
+  compartido** (`readOnly`): el árbol es de otro, no se persiste.
 - `seleccionarLuegoRef` — id a seleccionar tras la próxima reconstrucción (globo nuevo, o el
   padre tras un borrado). El effect de `firma` lo consume.
+
+Modo compartido (fase 2.3):
+- `slugInicial` (useMemo, una vez) = `slugDeLaUrl()`. Si hay slug, el effect de hidratación baja
+  el árbol con `cargarArbolCompartido` en vez de leer `localStorage`; si el link está roto,
+  `limpiarSlugDeLaUrl()` + cae al árbol local.
+- `compartido` (useState `{titulo} | null`). `readOnly = compartido !== null` → se propaga por
+  `NodeActionsContext`, oculta el `<Composer>`, y `handleSubmit`/`deleteNode`/`retryNode` son no-op.
+- `<SharedBanner>`: "Guardar en mi 3maps" (`guardarArbol` + `limpiarSlugDeLaUrl` + `setCompartido(null)`)
+  / "Salir" (`limpiarSlugDeLaUrl` + `location.reload()`).
+- `compartir(titulo)` → `compartirArbol(arbolRef.current, titulo)`, pasado a `<SettingsPanel>`
+  como `onCompartir` solo si `haySupabase() && !readOnly`.
 
 Estado / hooks clave:
 - `arbol` / `listo` / `seleccionarLuegoRef` — ver arriba.

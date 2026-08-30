@@ -1,8 +1,8 @@
 # Estado del proyecto
 
 > Snapshot para retomar rápido. Actualizar al final de cada sesión.
-> Última actualización: 29-08-2026 (MVP fase 1 cerrado; empezado el plan de fase 2 →
-> `docs/fase-2.md`, con decisiones abiertas para el usuario).
+> Última actualización: 29-08-2026 (fase 2.0 + 2.3 codeadas: Supabase opcional + compartir por
+> link. Falta que el usuario corra `supabase/schema.sql` + cargue los GitHub secrets para probar).
 
 ## Mapa de docs
 
@@ -100,11 +100,15 @@ transcripción de la rama con toggle de lado, auto-retry de Gemini ante 503, `la
 verificación de key gratis (`avisoFormatoKey` + `listarModelos` para Claude), prueba real de
 ambos proveedores, DeepSeek/GPT diferidos a fase 2 por CORS.
 
-### Fase 2 — decisiones tomadas, sin código todavía
-Ver **`docs/fase-2.md`**. Decidido: proxy IA = opción A (stateless opt-in); primera tanda =
-**2.0 fundaciones Supabase + 2.3 compartir árbol por link**; compartir anónimo permitido.
-**Bloqueado en:** el usuario tiene que crear el proyecto Supabase y pasar Project URL + anon key.
-Proxy (2.1), auth (2.2), sync (2.4), embeddings (2.5) = tandas siguientes.
+### Fase 2 — 2.0 + 2.3 codeadas, falta activar
+Ver **`docs/fase-2.md`**. Proyecto Supabase creado (`ref` ejecjjpdjoxgrbqrhwwd). Código listo:
+`supabase.ts` (cliente opcional), `compartir.ts`, `SharedBanner`, sección Compartir en ⚙️,
+modo lectura para `?compartir=<slug>`. **Falta que el usuario:**
+1. Corra `supabase/schema.sql` en el SQL Editor de Supabase (crea el bucket + políticas).
+2. Cargue `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` como repo secrets de GitHub.
+3. Pruebe el flujo real (Generar link → abrir en otra ventana → Guardar copia).
+
+Proxy IA (2.1, opción A stateless), auth (2.2), sync (2.4), embeddings (2.5) = tandas siguientes.
 
 ### Más adelante (fuera de fase 2)
 - [ ] Export/import: `.zip` de la carpeta de `.md` + carpetas reales con File System Access API,
@@ -131,6 +135,9 @@ Proxy (2.1), auth (2.2), sync (2.4), embeddings (2.5) = tandas siguientes.
 - [x] Prueba real Claude: conecta OK, requiere billing. Gemini = proveedor free — `42254f5`.
 - [x] Toggle de lado del panel de transcripción + verificación de key gratis
       (`avisoFormatoKey` + `listarModelos` para Claude) — `4b0dc55`.
+- [x] Plan de fase 2 (`docs/fase-2.md`) + decisiones — `1152d81`.
+- [x] Fase 2.0: fundaciones Supabase (cliente opcional + schema + workflow) — `76758d3`.
+- [x] Fase 2.3: compartir un árbol por link (código; falta activar) — `51dc403`.
 
 ## Issues conocidos / gotchas
 
@@ -159,6 +166,10 @@ npx tsc --noEmit -p tsconfig.json    # typecheck
 npm run lint
 npm run build          # genera out/ (estático). Con NEXT_PUBLIC_PAGES=1 → basePath /3maps
 ```
+
+- **`.env.local`** (gitignoreado) tiene `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+  para el backend de fase 2. Sin ese archivo, `npm run dev` corre igual pero sin la parte de
+  compartir. En prod las mismas van como repo secrets de GitHub Actions.
 
 - **Verificar en el navegador**: navegador integrado (`mcp__Claude_Browser__*`), NO la extensión
   de Chrome. El login a GitHub del integrado es **intermitente** — para CI usar la API pública
