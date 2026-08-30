@@ -175,19 +175,30 @@ export async function despublicarArbol(slug: string): Promise<void> {
 }
 
 // Baja un árbol compartido por su slug. `null` si no existe o está corrupto.
+//
+// Se hace con `fetch(..., { cache: "no-store" })` en vez del `.download()` del
+// SDK a propósito: Supabase le pone `Cache-Control: max-age=3600` a los objetos
+// públicos, así que el `.download()` del SDK (que usa el caché del browser)
+// seguiría devolviendo un árbol ya DESPUBLICADO por hasta 1 hora a quien lo
+// hubiera abierto antes. Sin caché = el despublicar se siente al instante.
 export async function cargarArbolCompartido(
   slug: string,
 ): Promise<{ arbol: Arbol; titulo: string } | null> {
   const sb = getSupabase();
   if (!sb || !esSlugValido(slug)) return null;
 
-  const { data, error } = await sb.storage
-    .from(BUCKET)
-    .download(`${slug}.json`);
-  if (error || !data) return null;
+  const { data: pub } = sb.storage.from(BUCKET).getPublicUrl(`${slug}.json`);
+  let texto: string;
+  try {
+    const res = await fetch(pub.publicUrl, { cache: "no-store" });
+    if (!res.ok) return null;
+    texto = await res.text();
+  } catch {
+    return null;
+  }
 
   try {
-    const sobre = JSON.parse(await data.text()) as Partial<Sobre>;
+    const sobre = JSON.parse(texto) as Partial<Sobre>;
     if (!sobre || typeof sobre.files !== "object" || !sobre.files) return null;
     const intercambios = Object.values(sobre.files)
       .map(parseMarkdown)
