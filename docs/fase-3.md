@@ -102,15 +102,14 @@ del contenedor (`contenedorRef`), que incluye el botón ⚙️ → su toggle lo 
 
 Header ahora dice "Conversación hasta este globo" + contador. `BranchTranscript.tsx`.
 
-### 3.9 — Panel lateral: cuadro de texto para escribir sin cerrarlo
+### 3.9 — Panel lateral: cuadro de texto para escribir sin cerrarlo  ✅ (30-08-2026)
 
-Hoy: para seguir la conversación hay que cerrar el panel → escribir en el mapa → reabrir.
-
-- Mini-composer al pie de `BranchTranscript` que crea un hijo del **último** intercambio del
-  camino mostrado.
-- `BranchTranscript` recibe un `onSubmit`; `FlowCanvas` lo cablea a `handleSubmit` con el target
-  fijado al último nodo del camino.
-- Medio. Reusa `handleSubmit` / `responder`.
+Mini-composer al pie de `BranchTranscript` (textarea + "↓ Enviar", Enter envía / Shift+Enter
+salto). Crea un hijo `main` del globo abierto y **el panel se mueve a ese hijo**
+(`setTranscriptNodeId(id)`), así se ve la respuesta streameada sin cerrar el panel (chat-style).
+Auto-scroll al último intercambio. `BranchTranscript` recibe `onSubmit?`; `FlowCanvas`
+(`responderDesdePanel`) lo cablea a `handleSubmit(text, "main", transcriptNodeId)` — que ahora
+acepta un `parentId` opcional y devuelve el id del globo nuevo. No se muestra en modo compartido.
 
 ---
 
@@ -133,7 +132,7 @@ Hoy: para seguir la conversación hay que cerrar el panel → escribir en el map
 2. ~~**Canvas**: 3.1 (tamaño/expandir) · 3.2 (anti-superposición) + 3.2b (cámara sigue al hijo) ·
    3.3 (flecha en vivo).~~ ✅
 3. ~~**3.4** (auto-layout).~~ ✅
-4. **3.9** (composer en el panel).
+4. ~~**3.9** (composer en el panel).~~ ✅
 5. **3.5** (varios mapas) — el más grande; 3.6 (borrar raíz) puede ir con esto.
 6. Cerebras, y 2.5b si hace falta.
 

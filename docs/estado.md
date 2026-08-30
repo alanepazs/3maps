@@ -2,8 +2,7 @@
 
 > Snapshot para retomar rápido. Actualizar al final de cada sesión.
 > Última actualización: 30-08-2026 (fase 2 COMPLETA y en prod. Fase 3: quick wins + bloque canvas
-> COMPLETOS — tope/expandir del globo, anti-superposición, cámara sigue al hijo, flecha en vivo,
-> botón "ordenar" / auto-layout).
+> + 3.9 (composer en el panel) HECHOS. Falta: 3.5 varios mapas, 3.6 borrar raíz, sueltos).
 
 ## Mapa de docs
 
@@ -152,16 +151,13 @@ Ver **`docs/fase-3.md`**.
 - **3.4** — botón "▤ Ordenar" en `<Controls>`: auto-layout a la forma canónica (tronco vertical +
   ramas al costado con su propio tronco). Layout propio recursivo en `src/model/layout.ts`.
   **Bloque canvas COMPLETO.**
+- **3.9** — mini-composer al pie de `BranchTranscript` (Enter envía): crea un hijo `main` del
+  globo abierto y el panel se mueve a ese hijo (chat-style, se ve la respuesta sin cerrar).
+  `handleSubmit` ahora acepta `parentId` opcional y devuelve el id nuevo.
 
-Resto del pedido del usuario:
-- Canvas: tope de tamaño del globo + minimizar/expandir (§8); globo hijo que no se pise con la
-  respuesta del padre; flecha rama↔tronco que salte durante el drag (no al soltar); botón
-  "ordenar" (auto-layout tronco vertical + ramas al costado).
-- Varios mapas: crear / cambiar / borrar. Borrar el globo raíz.
-- Panel/ajustes: tuerquita cierra al clickear afuera; sacar el título "Transcripción de la rama";
-  cuadro de texto en el panel lateral para escribir sin cerrarlo.
-- Sueltos: Cerebras (5º proveedor), renombrar "Generar link" → "Compartir este árbol", publicar
-  la pantalla de consentimiento de Google.
+Resto del pedido del usuario (falta):
+- Varios mapas: crear / cambiar / borrar (3.5). Borrar el globo raíz (3.6).
+- Sueltos: Cerebras (5º proveedor), publicar la pantalla de consentimiento de Google.
 Hay decisiones abiertas por bloque — ver `docs/fase-3.md`.
 
 **UX — API key por proveedor** (`0e56112`, 30-08-2026): `configIA.ts` ahora guarda una key por

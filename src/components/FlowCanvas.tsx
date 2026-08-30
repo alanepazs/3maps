@@ -463,12 +463,13 @@ function Flow() {
     ],
   );
 
-  // Crea UN globo (intercambio) colgando del nodo activo y le pide la respuesta
-  // a la IA. "main" cuelga hacia abajo (sigue el hilo); "branch" nace por la
-  // derecha (después se puede arrastrar a la izquierda).
+  // Crea UN globo (intercambio) colgando del nodo activo (o de `parentId`, para
+  // el composer del panel lateral — fase 3.9) y le pide la respuesta a la IA.
+  // "main" cuelga hacia abajo (sigue el hilo); "branch" nace por la derecha
+  // (después se puede arrastrar a la izquierda). Devuelve el id del globo nuevo.
   const handleSubmit = useCallback(
-    (text: string, kind: BranchKind) => {
-      if (readOnly) return;
+    (text: string, kind: BranchKind, parentId?: string): string | null => {
+      if (readOnly) return null;
 
       // Árbol vacío: el primer globo es la raíz.
       if (arbol.intercambios.length === 0) {
@@ -488,11 +489,11 @@ function Flow() {
         setActiveNodeId(id);
         centrarEnGlobo(250, 0);
         void responder(id, arbolNuevo);
-        return;
+        return id;
       }
 
-      const parent = buscar(arbol, activeNodeId ?? "");
-      if (!parent) return;
+      const parent = buscar(arbol, parentId ?? activeNodeId ?? "");
+      if (!parent) return null;
       const id = nuevoId();
       const rama: Rama = kind === "main" ? "main" : "branch-right";
       const hermanos = hijos(arbol, parent.id).filter((h) =>
@@ -522,6 +523,7 @@ function Flow() {
       setActiveNodeId(id);
       centrarEnGlobo(pos.x, pos.y);
       void responder(id, arbolNuevo);
+      return id;
     },
     [arbol, activeNodeId, responder, readOnly, getNode, centrarEnGlobo],
   );
@@ -697,6 +699,17 @@ function Flow() {
     [arbol, transcriptNodeId],
   );
 
+  // Composer del panel lateral (fase 3.9): crea un hijo "main" del globo abierto
+  // y mueve el panel a ese hijo, así se ve su respuesta sin cerrar el panel.
+  const responderDesdePanel = useCallback(
+    (text: string) => {
+      if (!transcriptNodeId) return;
+      const id = handleSubmit(text, "main", transcriptNodeId);
+      if (id) setTranscriptNodeId(id);
+    },
+    [handleSubmit, transcriptNodeId],
+  );
+
   const nodeActions = useMemo(
     () => ({ deleteNode, retryNode, openNode, readOnly }),
     [deleteNode, retryNode, openNode, readOnly],
@@ -832,6 +845,7 @@ function Flow() {
               })
             }
             onClose={() => setTranscriptNodeId(null)}
+            onSubmit={readOnly ? undefined : responderDesdePanel}
           />
         )}
       </div>

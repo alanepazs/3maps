@@ -85,11 +85,13 @@ src/
     Markdown.tsx        <Markdown>{texto}</Markdown> — react-markdown + remark-gfm con estilos
                         compactos para el globo (código y tablas con scroll horizontal propio;
                         links con target=_blank). Sin HTML crudo → seguro.
-    BranchTranscript.tsx  Panel lateral read-only: la rama raíz→globo (`caminoRaizA`) aplanada a
-                        Q/A tipo chat. Vista derivada, sin estado propio. Se abre con doble-click
-                        en un globo o el botón ⤢; cierra con Esc / ✕ / click en el fondo. Botón ⇄
-                        en el header cambia el lado (izq/der) → `settings.transcriptSide`.
-                        Props: {intercambios, side, onFlipSide, onClose}.
+    BranchTranscript.tsx  Panel lateral: el camino raíz→globo (`caminoRaizA`) aplanado a Q/A tipo
+                        chat. Vista derivada. Se abre con doble-click en un globo o el botón ⤢;
+                        cierra con Esc / ✕ / click en el fondo. Botón ⇄ en el header cambia el
+                        lado (izq/der) → `settings.transcriptSide`. Si recibe `onSubmit` (no en
+                        modo compartido): mini-composer al pie que crea un hijo del globo abierto
+                        y mueve el panel a ese hijo (fase 3.9). Auto-scroll al último.
+                        Props: {intercambios, side, onFlipSide, onClose, onSubmit?}.
     SharedBanner.tsx    Cartel arriba cuando se ve un árbol compartido (`?compartir=`). Props:
                         {titulo, onGuardar, onSalir}. "Guardar en mi 3maps" = pasa a local editable.
     useSesion.ts        Hook de auth (fase 2.2): {usuario, cargando, signInWithGoogle,
@@ -180,12 +182,15 @@ Estado / hooks clave:
 - `spaceHeld` (useState) — listener propio de keydown/keyup en `window`. Invierte el modo del lienzo.
 
 Handlers (todos operan sobre `arbol` vía `setArbol`):
-- `handleSubmit(text, kind)` — si el árbol está vacío, el globo es la raíz; si no, cuelga del
-  activo. `agregar(crearIntercambio({..., pending:true}))`, lo setea, llama `responder(id, arbolNuevo)`.
-  `kind` "main" → rama "main", abajo (`y = parent.y + altoRealPadre + 60`, alto medido por React
-  Flow → no se pisa con la respuesta larga, fase 3.2); "branch" → rama "branch-right", a la derecha.
-  Al crear cualquier globo, `centrarEnGlobo(x,y)` (`setCenter`, mantiene zoom) baja la cámara al
-  nuevo (fase 3.2b).
+- `handleSubmit(text, kind, parentId?)` — si el árbol está vacío, el globo es la raíz; si no,
+  cuelga de `parentId` (para el composer del panel, fase 3.9) o del activo.
+  `agregar(crearIntercambio({..., pending:true}))`, lo setea, llama `responder(id, arbolNuevo)`,
+  **devuelve el id del globo nuevo** (o null). `kind` "main" → rama "main", abajo
+  (`y = parent.y + altoRealPadre + 60`, alto medido por React Flow → no se pisa con la respuesta
+  larga, fase 3.2); "branch" → rama "branch-right", a la derecha. Al crear cualquier globo,
+  `centrarEnGlobo(x,y)` (`setCenter`, mantiene zoom) baja la cámara al nuevo (fase 3.2b).
+- `responderDesdePanel(text)` — el composer de `BranchTranscript` (fase 3.9):
+  `handleSubmit(text, "main", transcriptNodeId)` + mueve el panel al hijo nuevo.
 - `onNodeDrag` (envuelve el de `useNodeInertia`) — además de trackear velocidad para el envión,
   si el nodo arrastrado es una rama, mueve el `sourceHandle` de su flecha al lado (izq/der) en
   vivo mientras se arrastra, tocando solo el estado `edges` (fase 3.3). `asentar` fija la `rama`
