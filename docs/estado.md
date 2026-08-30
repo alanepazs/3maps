@@ -46,14 +46,16 @@ Carpeta local: `D:\IA\3maps`.
 - **Tuerquita ⚙️**: panel de ajustes (lienzo + IA). Persiste en `localStorage`
   (`"3maps:settings"` y `"3maps:ia"`).
 
-### IA (✅ Gemini andando end-to-end con key real free tier; Claude aún con stub SSE + key trucha)
+### IA (✅ Gemini free tier; Claude requiere billing)
 - **Llamada real** (`src/model/ia.ts`, wired en `FlowCanvas.responder`): al enviar, el globo queda
   `pending` y la respuesta **se escribe en vivo (streaming)** con cursor ▍.
 - **Contexto** = solo el camino raíz→globo (`armarContexto`), aplanado a user/assistant, con
   ventana (últimos N completos + resumen del tramo viejo vía `resumir`, cacheado por sesión).
-- **Proveedores**: Claude (Anthropic, `@anthropic-ai/sdk` dinámico) y **Gemini (Google, `fetch`
-  directo + SSE, tiene free tier)**. Se eligen en ⚙️; al cambiar se resetea el modelo y se limpia
-  la key. **La API key vive solo en el navegador** y va directo al proveedor (CORS de ambos ok).
+- **Proveedores**: 
+  - **Gemini (Google, `fetch` directo + SSE)**: free tier, probado end-to-end, default `gemini-3.7-flash`.
+  - **Claude (Anthropic, `@anthropic-ai/sdk` dinámico)**: requiere billing (Pro o créditos en console.anthropic.com).
+  
+  Se eligen en ⚙️; al cambiar se resetea modelo y limpia key. **Key vive solo en navegador**, va directo al proveedor (CORS OK ambos).
   Default de Gemini = `gemini-3.7-flash` (Flash estable más nuevo, free tier), con **thinking al
   mínimo** por generación (`thinkingLevel: "low"` en 3.x, `thinkingBudget: 0` en 2.x — si no,
   devolvía respuesta vacía). Los modelos **varían por key** → botón **"ver modelos disponibles"**
@@ -85,7 +87,8 @@ Carpeta local: `D:\IA\3maps`.
 ### Cerca / arranque rápido
 - [x] **Prueba real de la IA — Gemini**: key free tier real (`AQ.…`) + `gemini-3.6-flash` →
       respuesta + streaming + markdown en el globo, perfecto. (29-08-2026)
-- [ ] **Prueba real de la IA — Claude**: falta hacer lo mismo con una key `sk-ant-…` real.
+- [x] **Prueba real de la IA — Claude**: key `sk-ant-…` funciona (sin CORS, se conecta) pero requiere
+      billing en console.anthropic.com. Phase 1 soporta Claude pero no free tier. (29-08-2026)
 - [x] **2º proveedor: Gemini** (`llamarGemini` en `src/model/ia.ts`, `fetch` + SSE). Andando con
       key real. Free tier = solo modelos 3.x (ver decisiones §7b).
 - [x] **UX del botón "Guardar" key**: al guardar muestra "✓ Aplicado" 2s + hint "Config aplicada.
