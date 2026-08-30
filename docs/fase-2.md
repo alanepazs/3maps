@@ -152,12 +152,17 @@ después es fácil). El anónimo no ve ningún cambio.
       `https://alanepazs.github.io` (y `/3maps/`) a Site URL / Redirect URLs. `localhost:3000` ya
       viene permitido. Después, probar con su mail real (free tier: ~2-4 mails/hora).
 
-**2.2b — mis árboles / despublicar** — pendiente
-- Tabla `shared_trees` (slug, owner_id, titulo, creado) + política: el dueño ve/borra las suyas.
-- `compartir.ts`: al compartir logueado, insertar la fila con `owner_id`. `misArbolesCompartidos()`
-  + `despublicarArbol(slug)` (borra el objeto de Storage + la fila). Política de `delete` en el
-  bucket scopeada a `owner = auth.uid()` → solo se puede despublicar lo que compartiste logueado.
-- `SettingsPanel` Compartir: con sesión, lista "Mis árboles compartidos" con botón despublicar.
+**2.2b — mis árboles / despublicar** — ✅ codeado (`d666f8d`)
+- [x] `schema.sql`: tabla `shared_trees` (slug, owner_id, titulo, creado), RLS dueño-solo. Política
+      de `delete` en `storage.objects` scopeada a `owner = auth.uid()`.
+- [x] `compartir.ts`: al compartir logueado → `insert` en `shared_trees` (soft-fail, no rompe el
+      share). `misArbolesCompartidos()` (RLS filtra a las tuyas) + `despublicarArbol(slug)`
+      (borra el objeto de Storage y después la fila).
+- [x] `SettingsPanel` Compartir: con sesión → lista "Mis árboles compartidos" (link + despublicar
+      con `window.confirm`). El hint del link aclara que sin login no se puede despublicar.
+- [x] Verificado en navegador (anónimo): sin regresión, la lista no aparece sin sesión.
+- **Pendiente del usuario**: correr el **`schema.sql` nuevo** (agrega la tabla + la política de
+  delete) + la config de Redirect URLs de 2.2a + login, para probar el flujo logueado.
 
 ### 2.3 — Compartir un árbol por link — ✅ codeado (`51dc403`)
 

@@ -285,9 +285,15 @@ con free tier: **probar con una key nueva de verdad** — los blogs y hasta `Lis
   árboles" todavía (llega con login, 2.2/2.4).
 - **Revertir** (esquema relacional para el árbol): duplica formato, diverge del `.md` y del export.
 
-### F2-4. Compartir es **anónimo** y el link **no caduca ni se puede despublicar** (por ahora)
-- **Por qué**: sin login no hay "dueño" que autorice despublicar. La política del bucket permite
-  `insert` a cualquiera pero **no `update` ni `delete`** → nadie pisa el árbol de otro.
+### F2-4. Compartir es **anónimo**; despublicar necesita haber compartido **logueado**
+- **Anónimo por defecto**: cualquiera genera un link sin cuenta (`insert` abierto en el bucket).
+- **Despublicar** (fase 2.2b): la política de `delete` de `storage.objects` está scopeada a
+  `owner = auth.uid()`. Supabase setea `owner` al subir **con sesión**; los subidos anónimos
+  tienen `owner NULL` → **no se pueden despublicar** (por eso el hint "iniciá sesión antes de
+  compartir"). La tabla `shared_trees` guarda la metadata (slug/titulo/creado) solo de los que
+  compartiste logueado — el árbol en sí no la necesita para abrirse (el título va en el JSON).
+- **`shared_trees` insert es soft-fail**: si falla (tabla no creada, RLS), el `compartirArbol`
+  igual devuelve el link — el árbol ya está subido. Solo no aparece en "mis árboles".
 - **Límite conocido**: un anónimo puede spamear archivos chicos y llenar el free tier. Mitigado
   con tope de 2 MB (bucket) + tope cliente (50 globos / ~1 MB). El rate-limit real necesita un
   edge function — anotado en `docs/fase-2.md`.

@@ -55,9 +55,11 @@ src/
                          para mostrar/ocultar UI. proxyIAUrl() = <supabaseUrl>/functions/v1/ia-proxy.
                          auth con persistSession/detectSessionInUrl true (fase 2.2, magic link).
     compartir.ts         compartirArbol(arbol, titulo) → sube arboles/<slug>.json a Storage (mismo
-                         formato que persistencia.ts) y devuelve {slug, url}. cargarArbolCompartido
-                         (slug) lo baja y reconstruye. slugDeLaUrl / limpiarSlugDeLaUrl / linkCompartir.
-                         Topes: MAX_INTERCAMBIOS_COMPARTIR (50), MAX_BYTES_COMPARTIR (~1 MB).
+                         formato que persistencia.ts), devuelve {slug, url}, y si hay sesión hace
+                         insert en shared_trees (soft-fail). cargarArbolCompartido(slug) lo baja y
+                         reconstruye. misArbolesCompartidos() (RLS filtra a las tuyas) /
+                         despublicarArbol(slug) (borra Storage + fila). slugDeLaUrl /
+                         limpiarSlugDeLaUrl / linkCompartir. Topes: 50 intercambios / ~1 MB.
   components/
     FlowCanvas.tsx      ★ El componente central (~500 líneas). Ver detalle abajo.
     MessageNode.tsx     Nodo custom. Estados del cuerpo: pending ("escribiendo…" + texto + ▍),
@@ -101,7 +103,8 @@ src/
 
 supabase/
   config.toml                  project_id + [functions.ia-proxy] verify_jwt=false.
-  schema.sql                    bucket `arboles` + políticas RLS (lo corre el usuario).
+  schema.sql                    bucket `arboles` + políticas RLS (incl. delete dueño-solo) +
+                               tabla `shared_trees` (metadata de "mis árboles"). Lo corre el usuario.
   functions/ia-proxy/index.ts   Edge function Deno. Proxy stateless para DeepSeek/GPT: reenvía a
                                api.openai.com / api.deepseek.com con x-ia-key, agrega CORS, pipe
                                del stream. Sin logs, sin storage. Se deploya con `supabase
