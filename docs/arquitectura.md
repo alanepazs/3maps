@@ -59,7 +59,9 @@ src/
                         (resetea modelo + limpia key). "✓ Guardado" / "Cambios sin guardar" /
                         "✓ Aplicado" (2s tras guardar) / "Borrar key". Link "ver modelos
                         disponibles" → listarModelos() → chips clickeables + datalist.
-    settings.ts         Settings = {inertia, ventanaContexto}. DEFAULT_SETTINGS, storage key.
+                        Textarea "instrucción de sistema" → onChange({systemPrompt}) directo.
+    settings.ts         Settings = {inertia, ventanaContexto, systemPrompt}. DEFAULT_SETTINGS,
+                        storage key. systemPrompt "" = ninguna; se antepone a la respuesta, no al resumen.
     nodeActions.ts       NodeActionsContext: deleteNode + retryNode (hacia FlowCanvas).
     inertia.ts           Física compartida del "envión": constantes + sampleVelocity / launchVelocity / runGlide.
     useNodeInertia.ts    Hook: envión al soltar un globo o una selección.
@@ -108,7 +110,8 @@ Handlers (todos operan sobre `arbol` vía `setArbol`):
 - `responder(nodeId, arbolBase)` — **la llamada a la IA**. Si no hay API key → `conError`. Si no:
   `conRespuesta({pending:true})` + limpia error; arma el contexto con `armarContexto` (tratando a
   `nodeId` como pendiente, así un reintento descarta la respuesta parcial vieja); si el camino
-  supera la ventana, genera/cachea el `resumenViejo` con `resumir`; `llamarIA` con `onTexto`
+  supera la ventana, genera/cachea el `resumenViejo` con `resumir` (sin `systemPrompt`); `llamarIA`
+  con `opts.sistema = settings.systemPrompt` + `onTexto`
   throttleado a 80ms → `conRespuesta({respuesta: acc, pending:true})` (streaming); al terminar
   `conRespuesta({pending:false, proveedor})`; en error `conError`. `enVueloRef` (Map<id,
   AbortController>) para cancelar. `arbolRef` espeja `arbol` para leerlo en callbacks async.

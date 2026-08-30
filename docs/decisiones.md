@@ -129,6 +129,17 @@ con free tier: **probar con una key nueva de verdad** — los blogs y hasta `Lis
   (la key de un proveedor no sirve para otro). Los borradores se re-sincronizan con el patrón
   "ajustar estado en render" (no en effect → no dispara el lint `set-state-in-effect`).
 
+### 8b. `systemPrompt` vive en `Settings`, no en `configIA`, y NO se aplica al resumen
+- **Por qué en `Settings`**: no es sensible (no es una credencial) y es una preferencia del
+  lienzo, no de la key. Persiste como `inertia` / `ventanaContexto` — escritura directa en cada
+  tecla, sin borrador ni botón "Guardar".
+- **Por qué NO en `resumir()`**: el resumen del tramo viejo es una llamada interna con su propio
+  prompt fijo; meterle la instrucción del usuario ("respondé en catalán", "sé breve") ensucia el
+  resumen que después se reinyecta como contexto. `FlowCanvas.responder` pasa `sistema` solo a la
+  `llamarIA` de la respuesta, nunca a la de `resumir`.
+- **Revertir** (mandarlo también al resumen): resúmenes en el idioma/tono equivocado, contexto
+  degradado en ramas largas.
+
 ### 9. `configIA` vive en su propio `localStorage` key (`"3maps:ia"`), separado de `"3maps:settings"`
 - **Por qué**: es sensible. Y **no se persiste si `apiKey` está vacía** — así se puede editar el
   modelo en memoria antes de que haya key.

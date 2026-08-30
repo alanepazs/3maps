@@ -326,8 +326,10 @@ function Flow() {
         const mensajes = armarContexto(base, nodeId, { ventana }, resumen);
 
         let ultimoRender = 0;
+        const sistema = settings.systemPrompt.trim() || undefined;
         const texto = await llamarIA(configIA, mensajes, {
           signal: ctrl.signal,
+          sistema,
           onTexto: (_delta, acumulado) => {
             const ahora = Date.now();
             if (ahora - ultimoRender < 80) return;
@@ -356,7 +358,7 @@ function Flow() {
         }
       }
     },
-    [configIA, settings.ventanaContexto],
+    [configIA, settings.ventanaContexto, settings.systemPrompt],
   );
 
   // Crea UN globo (intercambio) colgando del nodo activo y le pide la respuesta

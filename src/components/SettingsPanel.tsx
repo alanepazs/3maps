@@ -315,6 +315,20 @@ export default function SettingsPanel({
               Los más recientes van completos; los anteriores se resumen.
             </span>
           </label>
+
+          <label className="mt-2 block text-sm">
+            <span className="text-white/70">Instrucción de sistema (opcional)</span>
+            <textarea
+              value={settings.systemPrompt}
+              onChange={(e) => onChange({ systemPrompt: e.target.value })}
+              rows={3}
+              placeholder="Ej: Respondé en español, conciso y con ejemplos."
+              className="mt-1.5 w-full resize-y rounded border border-white/15 bg-white/5 px-2 py-1 text-xs text-white/90 placeholder:text-white/30 focus:border-sky-500 focus:outline-none"
+            />
+            <span className="mt-1 block text-[11px] text-white/40">
+              Se antepone a cada pregunta. No afecta el resumen del contexto viejo.
+            </span>
+          </label>
         </div>
       )}
     </div>

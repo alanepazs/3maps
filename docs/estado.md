@@ -1,7 +1,7 @@
 # Estado del proyecto
 
 > Snapshot para retomar rápido. Actualizar al final de cada sesión.
-> Última actualización: 29-08-2026 (MVP funcional: IA con streaming + markdown + deploy live).
+> Última actualización: 29-08-2026 (metadata de modelos al día + system prompt configurable).
 
 ## Mapa de docs
 
@@ -64,7 +64,8 @@ Carpeta local: `D:\IA\3maps`.
   en el frontmatter del `.md` y sobrevive al reload.
 - **Config en ⚙️**: proveedor (aplica al toque), API key + modelo (borradores → botón "Guardar" o
   Enter; "✓ Guardado" / "Cambios sin guardar" / "✓ Aplicado" 2s / "Borrar key"),
-  "ver modelos disponibles" (chips con los modelos de tu key), ventana de contexto (2–20).
+  "ver modelos disponibles" (chips con los modelos de tu key), ventana de contexto (2–20),
+  **instrucción de sistema** (textarea opcional; se antepone a cada pregunta, no al resumen).
 
 ### Datos / persistencia (verificado a nivel de datos)
 - El `arbol` de `Intercambio`s es la fuente de la verdad; los nodos/edges de React Flow se
@@ -92,7 +93,9 @@ Carpeta local: `D:\IA\3maps`.
       sugeridos 3.x; `deepseek`/`gpt` con IDs actuales (`deepseek-v4-flash`, `gpt-5.4-mini`);
       placeholder de key Gemini `AQ.…`; `MODELOS_MUERTOS` ya no migra los `2.5-*` (los desbloquea
       para keys con billing); `mensajeErrorGemini` mapea `401 ACCESS_TOKEN_TYPE_UNSUPPORTED`.
-- [ ] **System prompt configurable** (hoy no hay). Sumar a `Settings` + pasarlo a `llamarIA`.
+- [x] **System prompt configurable** (29-08-2026): `Settings.systemPrompt` (textarea en ⚙️,
+      persiste como el resto de `Settings`); `FlowCanvas.responder` lo pasa como `opts.sistema` a
+      `llamarIA` (Claude `system` / Gemini `systemInstruction`). NO se aplica a `resumir()`.
 - [ ] Definir qué pasa al abrir/doble-click en un globo (spec §14: ¿solo ese intercambio o
       transcripción de la rama?).
 - [ ] Adaptador OpenAI-compatible (DeepSeek + GPT) — un `llamarOpenAICompat` para los dos `case`.
@@ -105,14 +108,16 @@ Carpeta local: `D:\IA\3maps`.
 - [ ] Estado `expandido`/colapsado por globo para rendimiento con muchos nodos (§8).
 - [ ] `lang="es"` en `layout.tsx` (está en `"en"`).
 
-### Hecho esta sesión (29-08-2026)
+### Hecho el 29-08-2026
 - [x] Fix del envión al panear (`usePanInertia`) — `ff595e3`.
 - [x] Modelo de datos: árbol de intercambios + `.md` + persistencia — `46f36c5`.
 - [x] Armado del contexto (`src/model/contexto.ts`, 22 asserts) — `c9415a1`.
 - [x] Llamada real a la IA con streaming — `26bc339`.
 - [x] Deploy a GitHub Pages — `2c68326` (+ fixes); LIVE tras habilitar Pages a mano.
 - [x] Markdown renderizado en las respuestas — `07f28ef`.
-- [x] Gemini como 2º proveedor (`fetch` + SSE, sin SDK).
+- [x] Gemini como 2º proveedor (`fetch` + SSE, sin SDK) + saga API renovada — `6cc38e6`.
+- [x] Metadata de modelos al día + desbloquear paid keys de Gemini — `44bd8fb`.
+- [x] System prompt configurable (`Settings.systemPrompt`) — _(commit pendiente)_.
 
 ## Issues conocidos / gotchas
 
