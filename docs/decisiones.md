@@ -383,6 +383,11 @@ con free tier: **probar con una key nueva de verdad** — los blogs y hasta `Lis
   re-ejecutaba → el cleanup mataba el `planInicial` en vuelo y no lo reintentaba → el debounce
   subía el árbol vacío pisando la nube. **Bug que borró un árbol de prueba, fix `e76abaf`.**
 - **`inicialListo` ref**: el debounce de subida NO arranca hasta que el sync inicial se aplicó.
+- **`3maps:sync` incluye `uid`** (a qué cuenta pertenece el árbol local). Si logueás con OTRA
+  cuenta en el mismo navegador y esa cuenta no tiene nada en la nube → `planInicial` devuelve
+  `"vaciar"` (empezar de cero) en vez de subirle el árbol de la cuenta anterior. Estado sin `uid`
+  (formato viejo / nunca sincronizado) = "sin dueño" → se sube normal (primer login legítimo).
+  Bug encontrado al probar con 2 cuentas Google, fix `9b51912`.
 - **Por qué no merge por-nodo / CRDT**: herramienta personal de un solo usuario. El merge real
   (tombstones, timestamps por nodo) no se justifica para "abrir en el celu lo que armé en la compu".
 - **Sube con debounce (1.5s) + flush en `pagehide`/`visibilitychange`**.

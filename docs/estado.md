@@ -1,8 +1,8 @@
 # Estado del proyecto
 
 > Snapshot para retomar rápido. Actualizar al final de cada sesión.
-> Última actualización: 30-08-2026 (fase 2 — 2.0/2.1/2.2/2.3 en prod; 2.4 sync + 2.5 liviana
-> codeados; se arregló un bug de sync que borró un árbol de prueba; árbol nuevo arranca vacío).
+> Última actualización: 30-08-2026 (fase 2 COMPLETA y en prod: compartir, proxy IA, login Google,
+> mis árboles, sync compu↔celu (verificado), contexto relevante liviano. Árbol nuevo arranca vacío).
 
 ## Mapa de docs
 
@@ -116,12 +116,11 @@ Ver **`docs/fase-2.md`**. Proyecto Supabase `ref` ejecjjpdjoxgrbqrhwwd.
   despublicar → el link muere al instante (`cargarArbolCompartido` baja sin caché, ver §F2-4).
   `schema.sql` corrido (tabla `shared_trees`), Redirect URLs configuradas.
 
-**2.4 (sync entre dispositivos)**: codeado (`a7eb13c` + fixes `d4fd33a`, `e76abaf`). Bucket
-privado `sync`, `useSync` hook, LWW **por hora del servidor**. Bugs encontrados al probar:
-(1) comparar por reloj del navegador → ping-pong; (2) `onAuthStateChange` re-ejecutaba el effect
-y mataba el sync inicial en vuelo → el debounce subía el árbol vacío y **borró un árbol de
-prueba**. Ambos arreglados. `schema.sql` ya corrido por el usuario. **Falta:** re-probar 2
-dispositivos (bloqueado por el rate limit de mails de Supabase — considerar login con Google).
+**2.4 (sync entre dispositivos)**: ✅ **andando y verificado** (login Google, compu↔celu).
+Bucket privado `sync`, `useSync` hook, LWW **por hora del servidor**. 3 bugs encontrados al
+probar y arreglados: (1) reloj del navegador → ping-pong (`d4fd33a`); (2) `onAuthStateChange`
+mataba el sync inicial → el debounce borró un árbol (`e76abaf`); (3) al cambiar de cuenta, el
+árbol de la anterior se subía a la nueva (`9b51912`).
 
 **2.5 (contexto viejo relevante — versión liviana)**: codeado (`b94f7e9`). `intercambiosRelevantes`
 en `contexto.ts` (match por raíz de palabra + peso por rareza, sin modelo). Rescata textuales los
@@ -173,7 +172,9 @@ Default de proveedor = gemini. Ver decisiones §9.
 - [x] Fase 2.5 (liviana): rescate de contexto viejo por palabras clave (`intercambiosRelevantes`) — `b94f7e9`. 24 asserts.
 - [x] Sync: hora del servidor + fix del sync inicial que borraba árboles — `d4fd33a`, `e76abaf`.
 - [x] Árbol nuevo arranca vacío (sin globos de ejemplo) — `86bb0ef`.
-- [x] Login con Google (además del magic link) — `7fc343b`. Falta config del usuario (Google Cloud + Supabase provider).
+- [x] Login con Google — `7fc343b`. Config hecha (OAuth client + provider en Supabase). **Anda**:
+      login + sync compu↔celu verificados por el usuario.
+- [x] Sync: cada cuenta su propio árbol (fix leak al cambiar de login) — `9b51912`.
 
 ## Issues conocidos / gotchas
 
