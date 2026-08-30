@@ -1,8 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import type { Settings } from "./settings";
+import {
+  despublicarArbol,
+  misArbolesCompartidos,
+  type ArbolCompartido,
+} from "@/model/compartir";
 import {
   ErrorIA,
   MODELOS_SUGERIDOS,
@@ -69,6 +74,27 @@ export default function SettingsPanel({
   const [compartiendo, setCompartiendo] = useState(false);
   const [copiado, setCopiado] = useState(false);
 
+  // Mis árboles compartidos (fase 2.2b): solo con sesión. Si no hay sesión, la
+  // lista no se muestra (aunque quede algo viejo en el estado).
+  const [mios, setMios] = useState<ArbolCompartido[] | null>(null);
+  const [despublicando, setDespublicando] = useState<string | null>(null);
+
+  const refrescarMios = useCallback(async () => {
+    setMios(await misArbolesCompartidos());
+  }, []);
+
+  // Cargar la lista al abrir el panel logueado (y al cambiar de sesión).
+  useEffect(() => {
+    if (!open || !usuario) return;
+    let vivo = true;
+    void misArbolesCompartidos().then((lista) => {
+      if (vivo) setMios(lista);
+    });
+    return () => {
+      vivo = false;
+    };
+  }, [open, usuario]);
+
   const hacerCompartir = async () => {
     if (!onCompartir || compartiendo) return;
     setCompartiendo(true);
@@ -77,10 +103,29 @@ export default function SettingsPanel({
     try {
       const { url } = await onCompartir(compTitulo);
       setCompLink(url);
+      void refrescarMios();
     } catch (e) {
       setCompError(e instanceof Error ? e.message : "No se pudo compartir.");
     } finally {
       setCompartiendo(false);
+    }
+  };
+
+  const hacerDespublicar = async (slug: string) => {
+    if (despublicando) return;
+    if (!window.confirm("¿Despublicar este árbol? El link deja de funcionar.")) {
+      return;
+    }
+    setDespublicando(slug);
+    try {
+      await despublicarArbol(slug);
+      setMios((prev) => prev?.filter((a) => a.slug !== slug) ?? null);
+    } catch (e) {
+      window.alert(
+        e instanceof Error ? e.message : "No se pudo despublicar.",
+      );
+    } finally {
+      setDespublicando(null);
     }
   };
 
@@ -552,9 +597,52 @@ export default function SettingsPanel({
                   </button>
                   <p className="mt-1 text-[11px] text-white/40">
                     Cualquiera con el link ve una copia de este árbol (solo
-                    lectura). El link no caduca y por ahora no se puede
-                    despublicar.
+                    lectura). El link no caduca.
+                    {!usuario &&
+                      " Para poder despublicarlo, iniciá sesión antes de compartir."}
                   </p>
+                </div>
+              )}
+
+              {usuario && mios !== null && (
+                <div className="mt-3">
+                  <p className="mb-1 text-[11px] text-white/40">
+                    Mis árboles compartidos ({mios.length})
+                  </p>
+                  {mios.length === 0 ? (
+                    <p className="text-[11px] text-white/40">
+                      Todavía no compartiste ninguno con esta cuenta.
+                    </p>
+                  ) : (
+                    <ul className="space-y-1">
+                      {mios.map((a) => (
+                        <li
+                          key={a.slug}
+                          className="flex items-center gap-2 rounded border border-white/10 bg-white/5 px-2 py-1 text-[11px]"
+                        >
+                          <a
+                            href={a.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="min-w-0 flex-1 truncate text-white/80 hover:text-white hover:underline"
+                            title={a.titulo}
+                          >
+                            {a.titulo || a.slug}
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => void hacerDespublicar(a.slug)}
+                            disabled={despublicando === a.slug}
+                            className="shrink-0 rounded border border-red-400/40 px-1.5 py-0.5 text-red-300 hover:bg-red-500/20 disabled:opacity-40"
+                          >
+                            {despublicando === a.slug
+                              ? "…"
+                              : "despublicar"}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               )}
             </>

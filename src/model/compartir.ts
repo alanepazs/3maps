@@ -13,8 +13,12 @@ import { getSupabase } from "./supabase";
 // un poco de metadata. El servidor solo lo aloja (spec §7): el formato canónico
 // sigue siendo el `.md`.
 //
-// El `slug` ES el secreto: quien tiene el link, ve el árbol. Sin login todavía
-// (fase 2.2), así que no hay "despublicar" ni "mis árboles".
+// El `slug` ES el secreto: quien tiene el link, ve el árbol.
+//
+// Fase 2.2b: si compartís LOGUEADO, se guarda una fila en `shared_trees` con tu
+// `owner_id` → aparece en "mis árboles compartidos" (⚙️) y lo podés despublicar.
+// Compartir sin login sigue funcionando, pero ese árbol no se puede despublicar
+// (el objeto de Storage no tiene dueño).
 
 const BUCKET = "arboles";
 const VERSION = 1;
@@ -102,6 +106,22 @@ export async function compartirArbol(
         upsert: false,
       });
     if (!error) {
+      // Si hay sesión, dejar la fila de metadata para "mis árboles". Si falla,
+      // no importa: el árbol ya está compartido, solo no aparece en la lista.
+      const { data: sesion } = await sb.auth.getUser();
+      if (sesion.user) {
+        await sb
+          .from("shared_trees")
+          .insert({
+            slug,
+            owner_id: sesion.user.id,
+            titulo: sobre.titulo,
+            creado: sobre.creado,
+          })
+          .then(({ error: e }) => {
+            if (e) console.warn("shared_trees insert:", e.message);
+          });
+      }
       return { slug, url: linkCompartir(slug) };
     }
     // 409 = ya existe ese slug → probar otro. Cualquier otro error, cortar.
@@ -111,6 +131,47 @@ export async function compartirArbol(
     }
   }
   throw new ErrorCompartir("No se pudo generar un link único. Probá de nuevo.");
+}
+
+// Los árboles que compartiste LOGUEADO (RLS filtra a los tuyos). `[]` sin sesión
+// o sin backend.
+export type ArbolCompartido = {
+  slug: string;
+  titulo: string;
+  creado: string;
+  url: string;
+};
+
+export async function misArbolesCompartidos(): Promise<ArbolCompartido[]> {
+  const sb = getSupabase();
+  if (!sb) return [];
+  const { data, error } = await sb
+    .from("shared_trees")
+    .select("slug, titulo, creado")
+    .order("creado", { ascending: false });
+  if (error || !data) return [];
+  return data.map((r) => ({
+    slug: r.slug as string,
+    titulo: (r.titulo as string) ?? "",
+    creado: (r.creado as string) ?? "",
+    url: linkCompartir(r.slug as string),
+  }));
+}
+
+// Despublica un árbol propio: borra el objeto de Storage y la fila de metadata.
+// Solo funciona con los que compartiste logueado (los anónimos no tienen dueño).
+export async function despublicarArbol(slug: string): Promise<void> {
+  const sb = getSupabase();
+  if (!sb) throw new ErrorCompartir("El backend no está configurado.");
+  const { error: eStorage } = await sb.storage
+    .from(BUCKET)
+    .remove([`${slug}.json`]);
+  if (eStorage) {
+    throw new ErrorCompartir(
+      `No se pudo borrar el árbol: ${eStorage.message}`,
+    );
+  }
+  await sb.from("shared_trees").delete().eq("slug", slug);
 }
 
 // Baja un árbol compartido por su slug. `null` si no existe o está corrupto.
