@@ -202,6 +202,19 @@ con free tier: **probar con una key nueva de verdad** — los blogs y hasta `Lis
 - Pin exacto en `package.json`. No subirlo junto con `@xyflow/react` sin verificar a mano que
   edges y handles (`source id="main"|"branch-left"|"branch-right"`) siguen dibujándose.
 
+### 16. Abrir un globo = panel de transcripción de la rama (`BranchTranscript`)
+- **Qué muestra**: el camino raíz→globo (`caminoRaizA`, ya existía) aplanado a pregunta/respuesta,
+  tipo chat. **No** solo ese intercambio: la rama entera es lo útil para releer/copiar un plan, y
+  "solo este" es el caso degenerado (la última entrada). Decidido con el usuario el 29-08-2026.
+- **Vista derivada, cero estado en el árbol**: igual que todo lo demás (invariante). El único
+  estado nuevo es `transcriptNodeId` en `FlowCanvas` (qué globo está abierto). Si ese nodo se
+  borra, `caminoRaizA` devuelve `[]` y el panel no se renderiza (`length > 0`).
+- **Trigger doble**: `onNodeDoubleClick` (+ `zoomOnDoubleClick={false}`, si no React Flow hace
+  zoom) y botón ⤢ en el `NodeToolbar`. El toolbar ahora se muestra también en el globo raíz
+  (antes estaba detrás de `!isRoot`), pero ahí solo con ⤢ — el raíz sigue sin poder borrarse.
+- **Revertir** (guardar la transcripción como estado / nodo): rompe la invariante "el árbol es la
+  fuente de la verdad, la vista se deriva".
+
 ---
 
 ## Build / deploy

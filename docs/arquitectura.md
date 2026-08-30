@@ -52,6 +52,9 @@ src/
     Markdown.tsx        <Markdown>{texto}</Markdown> — react-markdown + remark-gfm con estilos
                         compactos para el globo (código y tablas con scroll horizontal propio;
                         links con target=_blank). Sin HTML crudo → seguro.
+    BranchTranscript.tsx  Panel lateral read-only: la rama raíz→globo (`caminoRaizA`) aplanada a
+                        Q/A tipo chat. Vista derivada, sin estado propio. Se abre con doble-click
+                        en un globo o el botón ⤢; cierra con Esc / ✕ / click en el fondo.
     Composer.tsx        Barra inferior fija para escribir.
     SettingsPanel.tsx   Tuerquita ⚙️: ajustes del lienzo (envión, ventana de contexto) +
                         config de IA. API key y modelo son BORRADORES (estado local) que se
@@ -62,7 +65,7 @@ src/
                         Textarea "instrucción de sistema" → onChange({systemPrompt}) directo.
     settings.ts         Settings = {inertia, ventanaContexto, systemPrompt}. DEFAULT_SETTINGS,
                         storage key. systemPrompt "" = ninguna; se antepone a la respuesta, no al resumen.
-    nodeActions.ts       NodeActionsContext: deleteNode + retryNode (hacia FlowCanvas).
+    nodeActions.ts       NodeActionsContext: deleteNode + retryNode + openNode (hacia FlowCanvas).
     inertia.ts           Física compartida del "envión": constantes + sampleVelocity / launchVelocity / runGlide.
     useNodeInertia.ts    Hook: envión al soltar un globo o una selección.
     usePanInertia.ts     Hook: envión al soltar el pan del lienzo.
@@ -116,6 +119,8 @@ Handlers (todos operan sobre `arbol` vía `setArbol`):
   `conRespuesta({pending:false, proveedor})`; en error `conError`. `enVueloRef` (Map<id,
   AbortController>) para cancelar. `arbolRef` espeja `arbol` para leerlo en callbacks async.
 - `retryNode(id)` — `responder(id, arbolRef.current)`. Via NodeActionsContext.
+- `openNode(id)` — setea `transcriptNodeId`; `<BranchTranscript>` se renderiza con
+  `caminoRaizA(arbol, transcriptNodeId)`. También lo dispara `onNodeDoubleClick`. Via NodeActionsContext.
 - `asentar(id)` — escribe la posición final al árbol (`conPosicion`) y, si es rama, fija el lado
   (`conRama`) según dónde quedó respecto del padre. Es el `onSettle` de `useNodeInertia`.
 - `deleteNode(id)` (via NodeActionsContext) — `descendientes` para el conteo, `window.confirm` si
@@ -186,8 +191,9 @@ Semilla (`arbolInicial()` en `model/intercambio.ts`): 3 intercambios de ejemplo 
   (IA no conectada)" en gris itálica si `respuesta` es null). Ancho fijo `w-[260px]`.
 - Handles: `target` arriba (el raíz NO lo tiene) · `source id="main"` abajo ·
   `source id="branch-right"` derecha · `source id="branch-left"` izquierda.
-- `<NodeToolbar>` con botón "🗑 Eliminar" visible solo cuando `selected` y `!isRoot`.
-  Llama `deleteNode(id)` del `NodeActionsContext`.
+- `<NodeToolbar>` visible cuando `selected`: botón "⤢ Abrir" (`openNode(id)` → panel de
+  transcripción) siempre, y "🗑 Eliminar" (`deleteNode(id)`) solo si `!isRoot`. Ambos del
+  `NodeActionsContext`.
 - Anillo celeste (`ring-sky-400`) cuando `selected`.
 
 ## Composer.tsx

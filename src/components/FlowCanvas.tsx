@@ -23,6 +23,7 @@ import "@xyflow/react/dist/style.css";
 import MessageNode from "./MessageNode";
 import Composer, { type BranchKind } from "./Composer";
 import SettingsPanel from "./SettingsPanel";
+import BranchTranscript from "./BranchTranscript";
 import { NodeActionsContext } from "./nodeActions";
 import {
   DEFAULT_SETTINGS,
@@ -36,6 +37,7 @@ import {
   arbolAVista,
   arbolInicial,
   buscar,
+  caminoRaizA,
   conError,
   conPosicion,
   conRama,
@@ -505,9 +507,17 @@ function Flow() {
     [arbol, cancelInertia, cancelPanInertia],
   );
 
+  // Panel de transcripción de la rama (doble-click en un globo o botón ⤢).
+  const [transcriptNodeId, setTranscriptNodeId] = useState<string | null>(null);
+  const openNode = useCallback((id: string) => setTranscriptNodeId(id), []);
+  const transcripcion = useMemo(
+    () => (transcriptNodeId ? caminoRaizA(arbol, transcriptNodeId) : null),
+    [arbol, transcriptNodeId],
+  );
+
   const nodeActions = useMemo(
-    () => ({ deleteNode, retryNode }),
-    [deleteNode, retryNode],
+    () => ({ deleteNode, retryNode, openNode }),
+    [deleteNode, retryNode, openNode],
   );
 
   return (
@@ -530,6 +540,7 @@ function Flow() {
           onMove={onMove}
           onMoveEnd={onMoveEnd}
           onNodeClick={() => cancelInertia()}
+          onNodeDoubleClick={(_, node) => setTranscriptNodeId(node.id)}
           onSelectionChange={onSelectionChange}
           panOnDrag={!spaceHeld}
           selectionOnDrag={spaceHeld}
@@ -543,6 +554,9 @@ function Flow() {
           nodeDragThreshold={3}
           colorMode="dark"
           fitView
+          // El doble-click abre la transcripción de la rama (`onNodeDoubleClick`);
+          // si no, React Flow lo usa para hacer zoom.
+          zoomOnDoubleClick={false}
         >
           <Background />
           <Controls />
@@ -555,6 +569,12 @@ function Flow() {
           onChangeConfigIA={updateConfigIA}
         />
         <Composer activeNodeLabel={activeNodeLabel} onSubmit={handleSubmit} />
+        {transcripcion && transcripcion.length > 0 && (
+          <BranchTranscript
+            intercambios={transcripcion}
+            onClose={() => setTranscriptNodeId(null)}
+          />
+        )}
       </div>
     </NodeActionsContext.Provider>
   );

@@ -10,9 +10,12 @@ export type NodeActions = {
   deleteNode: (id: string) => void;
   // Vuelve a pedirle la respuesta a la IA para este intercambio.
   retryNode: (id: string) => void;
+  // Abre el panel de transcripción de la rama (raíz→este nodo).
+  openNode: (id: string) => void;
 };
 
 export const NodeActionsContext = createContext<NodeActions>({
   deleteNode: () => {},
   retryNode: () => {},
+  openNode: () => {},
 });

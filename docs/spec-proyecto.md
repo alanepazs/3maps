@@ -23,7 +23,7 @@ Una web app donde el usuario conversa con una IA (Claude, GPT, Gemini, DeepSeek 
   - Por defecto (sin teclas): manito. Arrastrar el fondo hace **pan** (con envión).
   - Con la **barra espaciadora** apretada: puntero. Arrastrar el fondo hace un **recuadro de selección** para agarrar varios globos; después se arrastra la selección para moverlos en grupo.
   - En ambos modos, arrastrar un globo lo mueve.
-- Pendiente de definir (ver sección 14): al abrir/hacer doble click en un globo, ¿se ve solo ese intercambio, o se abre una vista de transcripción con toda la rama en orden, tipo chat normal?
+- **Abrir un globo** (doble click, o botón ⤢ de su barra): abre un panel lateral read-only con la **transcripción de la rama** (raíz→ese globo) aplanada a pregunta/respuesta, tipo chat normal. Es una vista derivada del árbol (`caminoRaizA`), no toca estado. Se cierra con Esc, la ✕ o el fondo. (Resuelto 29-08-2026.)
 
 ## 3. Modelo de datos
 
@@ -179,7 +179,6 @@ Queda como función avanzada opcional, no como parte del núcleo.
 
 ## 14. Preguntas abiertas / pendientes
 
-- ¿Abrir un globo muestra solo ese intercambio, o la transcripción entera de esa rama? (sección 2)
 - ¿Qué tan agresivo debe ser el resumen de contexto viejo antes de perder calidad de respuesta? (sección 5)
 - ¿Formato final de compartir: siempre `.zip` de carpeta, o también un `.md` único concatenado como opción rápida?
 
@@ -188,3 +187,4 @@ Queda como función avanzada opcional, no como parte del núcleo.
 - **Nombre del proyecto: `3maps`.** "3" = three = *tree* (árbol); además suena a "maps". (29-08-2026)
 - **Un globo = un intercambio (pregunta + respuesta), no un mensaje suelto.** 1 archivo `.md` por intercambio. Se decidió para que el árbol no crezca visualmente de más. (29-08-2026)
 - **El tronco es siempre vertical; las ramas salen por un costado y se pueden pasar de derecha a izquierda arrastrando.** (29-08-2026)
+- **Abrir un globo = transcripción de la rama (raíz→globo), no solo ese intercambio.** Panel lateral read-only, vista derivada (`caminoRaizA`). Trigger: doble click + botón ⤢. (29-08-2026)

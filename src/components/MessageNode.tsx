@@ -33,7 +33,7 @@ export default function MessageNode({
   const respuesta = data.respuesta ? String(data.respuesta) : null;
   const pending = Boolean(data.pending);
   const error = data.error ? String(data.error) : null;
-  const { deleteNode, retryNode } = useContext(NodeActionsContext);
+  const { deleteNode, retryNode, openNode } = useContext(NodeActionsContext);
 
   return (
     <div
@@ -41,18 +41,27 @@ export default function MessageNode({
         selected ? "border-sky-400 ring-2 ring-sky-400/40" : "border-white/20"
       }`}
     >
-      {/* El nodo raíz no se puede eliminar: borrarlo dejaría todo huérfano. */}
-      {!isRoot && (
-        <NodeToolbar isVisible={selected} position={Position.Top} align="end">
+      <NodeToolbar isVisible={selected} position={Position.Top} align="end">
+        <div className="flex gap-1.5">
           <button
             type="button"
-            onClick={() => deleteNode(id)}
-            className="rounded border border-red-400/40 bg-neutral-900 px-2 py-1 text-xs text-red-300 hover:bg-red-500/20"
+            onClick={() => openNode(id)}
+            className="rounded border border-white/20 bg-neutral-900 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
           >
-            🗑 Eliminar
+            ⤢ Abrir
           </button>
-        </NodeToolbar>
-      )}
+          {/* El nodo raíz no se puede eliminar: borrarlo dejaría todo huérfano. */}
+          {!isRoot && (
+            <button
+              type="button"
+              onClick={() => deleteNode(id)}
+              className="rounded border border-red-400/40 bg-neutral-900 px-2 py-1 text-xs text-red-300 hover:bg-red-500/20"
+            >
+              🗑 Eliminar
+            </button>
+          )}
+        </div>
+      </NodeToolbar>
 
       {!isRoot && (
         <Handle type="target" position={Position.Top} isConnectable={isConnectable} />

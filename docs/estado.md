@@ -96,8 +96,10 @@ Carpeta local: `D:\IA\3maps`.
 - [x] **System prompt configurable** (29-08-2026): `Settings.systemPrompt` (textarea en ⚙️,
       persiste como el resto de `Settings`); `FlowCanvas.responder` lo pasa como `opts.sistema` a
       `llamarIA` (Claude `system` / Gemini `systemInstruction`). NO se aplica a `resumir()`.
-- [ ] Definir qué pasa al abrir/doble-click en un globo (spec §14: ¿solo ese intercambio o
-      transcripción de la rama?).
+- [x] **Abrir un globo → transcripción de la rama** (29-08-2026): panel lateral read-only
+      (`BranchTranscript.tsx`) con el camino raíz→globo (`caminoRaizA`) tipo chat. Trigger: doble
+      click (`onNodeDoubleClick` + `zoomOnDoubleClick={false}`) o botón ⤢ del `NodeToolbar` (que
+      ahora aparece también en el raíz, solo con ⤢). Cierra con Esc / ✕ / fondo.
 - [ ] Adaptador OpenAI-compatible (DeepSeek + GPT) — un `llamarOpenAICompat` para los dos `case`.
 - [x] Auto-retry en `llamarGemini` para 503 intermitentes (29-08-2026): 1 reintento con 1s de
       pausa, solo si no se streameó nada. `llamarGemini` = wrapper, `intentarGemini` = el trabajo.
@@ -121,6 +123,7 @@ Carpeta local: `D:\IA\3maps`.
 - [x] Metadata de modelos al día + desbloquear paid keys de Gemini — `44bd8fb`.
 - [x] System prompt configurable (`Settings.systemPrompt`) — `43ed0bf`.
 - [x] Auto-retry de `llamarGemini` ante 503 (1 reintento, 1s) — `780e5fb`.
+- [x] Abrir un globo → panel de transcripción de la rama (`BranchTranscript`) — _(commit pendiente)_.
 
 ## Issues conocidos / gotchas
 
