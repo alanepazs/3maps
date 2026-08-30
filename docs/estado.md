@@ -120,7 +120,7 @@ Carpeta local: `D:\IA\3maps`.
 - [x] Gemini como 2º proveedor (`fetch` + SSE, sin SDK) + saga API renovada — `6cc38e6`.
 - [x] Metadata de modelos al día + desbloquear paid keys de Gemini — `44bd8fb`.
 - [x] System prompt configurable (`Settings.systemPrompt`) — `43ed0bf`.
-- [x] Auto-retry de `llamarGemini` ante 503 (1 reintento, 1s) — _(commit pendiente)_.
+- [x] Auto-retry de `llamarGemini` ante 503 (1 reintento, 1s) — `780e5fb`.
 
 ## Issues conocidos / gotchas
 
