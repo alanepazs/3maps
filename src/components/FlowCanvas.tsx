@@ -55,7 +55,11 @@ import {
   type Rama,
 } from "@/model/intercambio";
 import { cargarArbol, guardarArbol } from "@/model/persistencia";
-import { armarContexto, tramoAResumir } from "@/model/contexto";
+import {
+  armarContexto,
+  intercambiosRelevantes,
+  tramoAResumir,
+} from "@/model/contexto";
 import { llamarIA, resumir, MODELO_POR_DEFECTO, type ConfigIA } from "@/model/ia";
 import {
   borrarKeyProveedor,
@@ -384,7 +388,21 @@ function Flow() {
           }
         }
 
-        const mensajes = armarContexto(base, nodeId, { ventana }, resumen);
+        // Rescate por palabras clave (fase 2.5 liviana): si el tramo viejo se
+        // resumió, traer textuales los que más comparten vocabulario con la
+        // pregunta actual, para que un dato puntual no se pierda en el resumen.
+        const preguntaActual = buscar(base, nodeId)?.pregunta ?? "";
+        const relevantes = resumen
+          ? intercambiosRelevantes(viejos, preguntaActual)
+          : [];
+
+        const mensajes = armarContexto(
+          base,
+          nodeId,
+          { ventana },
+          resumen,
+          relevantes,
+        );
 
         let ultimoRender = 0;
         const sistema = settings.systemPrompt.trim() || undefined;
