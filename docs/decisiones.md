@@ -347,10 +347,15 @@ con free tier: **probar con una key nueva de verdad** — los blogs y hasta `Lis
 - **Revertir** (poner la key del proveedor como secreto del function): serían llamadas con NUESTRA
   cuenta, no la del usuario — rompe el modelo "cada uno paga la suya".
 
-### F2-7. Login opcional = **magic link**; la sesión vuelve en el hash, no pelea con `?compartir=`
-- **Magic link** (no OAuth) para arrancar: cero setup de OAuth app. `signInWithOtp` con
-  `emailRedirectTo` = la página actual. Agregar GitHub/Google después = un provider más en
-  `useSesion`, sin tocar el resto.
+### F2-7. Login opcional = **Google OAuth + magic link**; la sesión vuelve en el hash
+- **Google OAuth** (`signInWithGoogle` → `signInWithOAuth({provider:'google'})`) es el camino
+  principal: un click, sin mail, anda en incógnito. Se agregó cuando el magic link se volvió
+  impráctico para probar sync en 2 dispositivos (límite de ~4 mails/hora del free tier +
+  el link se abre en la pestaña equivocada).
+- **Magic link** (`signInWithOtp`) queda como alternativa sin depender de Google.
+- Las dos vuelven con `#access_token=…` en el **hash**, que `detectSessionInUrl` levanta.
+- Config del provider: OAuth client en Google Cloud (redirect URI
+  `<supabase>/auth/v1/callback`) + habilitar Google en Supabase → Auth → Providers.
 - **`detectSessionInUrl: true` + `?compartir=` conviven**: el magic link vuelve como
   `…#access_token=…` (fragmento **hash**), que `detectSessionInUrl` levanta y limpia; el slug de
   compartir es un **query param** (`?compartir=`), otro espacio. Se pusieron `persistSession` y

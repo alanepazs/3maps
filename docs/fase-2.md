@@ -147,19 +147,21 @@ Decisión: **opción A** (proxy stateless opt-in). Ver `decisiones.md` §7a + F2
 
 ### 2.2 — Auth opcional (Supabase Auth)
 
-Decisión: **magic link por email** para empezar (cero setup de OAuth app; agregar GitHub/Google
-después es fácil). El anónimo no ve ningún cambio.
+**Google OAuth** (principal) + **magic link** (alternativa). El anónimo no ve ningún cambio.
+Se agregó Google (`7fc343b`) porque el magic link se volvió impráctico para probar sync en 2
+dispositivos (límite de mails + el link se abre en la pestaña equivocada).
 
-**2.2a — core** — ✅ codeado (`c873f95`)
-- [x] `supabase.ts`: `persistSession` / `autoRefreshToken` / `detectSessionInUrl` = true. El
-      magic link vuelve en el **hash** (`#access_token=…`), no toca el `?compartir=` (query).
-- [x] `useSesion.ts`: hook `{ usuario, cargando, enviarMagicLink, cerrarSesion }`.
-- [x] `SettingsPanel` → sección "Cuenta" (solo si `haySupabase()`): input de email + "Enviarme un
-      link"; con sesión → email + "Cerrar sesión".
-- [x] Verificado: `signInWithOtp` llega a Supabase Auth (rechaza `example.com` → el path anda).
-- **Pendiente del usuario:** Supabase → Authentication → URL Configuration → agregar
-      `https://alanepazs.github.io` (y `/3maps/`) a Site URL / Redirect URLs. `localhost:3000` ya
-      viene permitido. Después, probar con su mail real (free tier: ~2-4 mails/hora).
+**2.2a — core** — ✅ codeado (`c873f95` + `7fc343b`)
+- [x] `supabase.ts`: `persistSession` / `autoRefreshToken` / `detectSessionInUrl` = true. La
+      sesión vuelve en el **hash** (`#access_token=…`), no toca el `?compartir=` (query).
+- [x] `useSesion.ts`: `{ usuario, cargando, signInWithGoogle, enviarMagicLink, cerrarSesion }`.
+- [x] `SettingsPanel` → "Cuenta" (solo si `haySupabase()`): botón "Continuar con Google" + input
+      de email; con sesión → email + "Cerrar sesión".
+- **Pendiente del usuario** (ver instrucciones en el chat):
+  1. Google Cloud → OAuth 2.0 Client ID (Web). Redirect URI:
+     `https://ejecjjpdjoxgrbqrhwwd.supabase.co/auth/v1/callback`.
+  2. Supabase → Authentication → Providers → Google → habilitar + pegar Client ID/Secret.
+  3. (ya hecho) Supabase → Auth → URL Configuration con `alanepazs.github.io` en Redirect URLs.
 
 **2.2b — mis árboles / despublicar** — ✅ codeado (`d666f8d`)
 - [x] `schema.sql`: tabla `shared_trees` (slug, owner_id, titulo, creado), RLS dueño-solo. Política

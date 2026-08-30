@@ -84,8 +84,9 @@ src/
                         Props: {intercambios, side, onFlipSide, onClose}.
     SharedBanner.tsx    Cartel arriba cuando se ve un árbol compartido (`?compartir=`). Props:
                         {titulo, onGuardar, onSalir}. "Guardar en mi 3maps" = pasa a local editable.
-    useSesion.ts        Hook de auth (fase 2.2): {usuario, cargando, enviarMagicLink, cerrarSesion}.
-                        onAuthStateChange + getUser. Sin Supabase → usuario null, cargando false.
+    useSesion.ts        Hook de auth (fase 2.2): {usuario, cargando, signInWithGoogle,
+                        enviarMagicLink, cerrarSesion}. onAuthStateChange + getUser. Google OAuth
+                        (principal) o magic link. Sin Supabase → usuario null, cargando false.
     useSync.ts          Hook de sync (fase 2.4): sync inicial al loguear (traer si la nube es más
                         nueva, si no subir), push con debounce 1.5s + flush en pagehide. Devuelve
                         EstadoSync ("off"|"sincronizando"|"ok"|"error"). No corre en modo compartido.

@@ -173,6 +173,7 @@ Default de proveedor = gemini. Ver decisiones §9.
 - [x] Fase 2.5 (liviana): rescate de contexto viejo por palabras clave (`intercambiosRelevantes`) — `b94f7e9`. 24 asserts.
 - [x] Sync: hora del servidor + fix del sync inicial que borraba árboles — `d4fd33a`, `e76abaf`.
 - [x] Árbol nuevo arranca vacío (sin globos de ejemplo) — `86bb0ef`.
+- [x] Login con Google (además del magic link) — `7fc343b`. Falta config del usuario (Google Cloud + Supabase provider).
 
 ## Issues conocidos / gotchas
 
