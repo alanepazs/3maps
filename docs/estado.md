@@ -63,8 +63,9 @@ Carpeta local: `D:\IA\3maps`.
     Opt-in (`settings.usarProxyIA`): caja en ⚙️ que avisa que la key transita el proxy stateless.
     Código listo; falta deployar el function + probar con key real.
   
-  Se eligen en ⚙️; al cambiar se resetea modelo y limpia key. **La key de Claude/Gemini va directo
-  del navegador al proveedor**; la de DeepSeek/GPT transita el proxy (nunca se guarda).
+  Se eligen en ⚙️; **cada proveedor tiene su propia key guardada** (cambiás y volvés, no la
+  perdés — `configIA.ts`, decisiones §9). **La key de Claude/Gemini va directo del navegador al
+  proveedor**; la de DeepSeek/GPT transita el proxy (nunca se guarda).
   Default de Gemini = `gemini-3.7-flash` (Flash estable más nuevo, free tier), con **thinking al
   mínimo** por generación (`thinkingLevel: "low"` en 3.x, `thinkingBudget: 0` en 2.x — si no,
   devolvía respuesta vacía). Los modelos **varían por key** → botón **"verificar key y ver sus
@@ -77,7 +78,7 @@ Carpeta local: `D:\IA\3maps`.
   bloque con scroll propio), links (pestaña nueva), citas, tablas GFM. Sin HTML crudo → seguro.
 - **Errores**: recuadro rojo + "↻ Reintentar" (descarta la parcial vieja). El error se persiste
   en el frontmatter del `.md` y sobrevive al reload.
-- **Config en ⚙️**: proveedor (aplica al toque), API key + modelo (borradores → botón "Guardar" o
+- **Config en ⚙️**: proveedor (aplica al toque, trae su key guardada), API key + modelo (borradores → botón "Guardar" o
   Enter; "✓ Guardado" / "Cambios sin guardar" / "✓ Aplicado" 2s / "Borrar key"; aviso de formato),
   "verificar key y ver sus modelos" (chips; gratis), ventana de contexto (2–20),
   **instrucción de sistema** (textarea opcional; se antepone a cada pregunta, no al resumen).
@@ -118,6 +119,10 @@ Ver **`docs/fase-2.md`**. Proyecto Supabase `ref` ejecjjpdjoxgrbqrhwwd.
 **Fase 2 base cerrada.** Siguientes tandas: sync entre dispositivos (2.4), embeddings (2.5).
 Opcionales sueltos: Cerebras como 5º proveedor; renombrar "Generar link" → "Compartir este árbol".
 
+**UX — API key por proveedor** (`0e56112`, 30-08-2026): `configIA.ts` ahora guarda una key por
+proveedor. Cambiás de proveedor en ⚙️ y volvés → la key reaparece sola (antes se borraba).
+Default de proveedor = gemini. Ver decisiones §9.
+
 ### Más adelante (fuera de fase 2)
 - [ ] Export/import: `.zip` de la carpeta de `.md` + carpetas reales con File System Access API,
       UI de guardar/abrir (§7). Hoy solo hay persistencia local automática.
@@ -152,6 +157,7 @@ Opcionales sueltos: Cerebras como 5º proveedor; renombrar "Generar link" → "C
 - [x] Fase 2.2b: mis árboles compartidos + despublicar (`shared_trees`) — `d666f8d`.
 - [x] Fix: cargar árbol compartido sin caché → despublicar instantáneo — `e9b5c0c`.
 - [x] Fase 2.2 verificada end-to-end en prod (login Gmail + compartir + despublicar) — 30-08-2026.
+- [x] UX: una API key por proveedor (`configIA.ts` multi-key) — `0e56112`. Probado + verificado.
 
 ## Issues conocidos / gotchas
 

@@ -49,8 +49,11 @@ src/
                          (Claude client.models.list(), Gemini GET /v1beta/models, deepseek/gpt via
                          proxy GET /models). PROVEEDORES_DISPONIBLES = 4; PROVEEDORES_VIA_PROXY =
                          [deepseek, gpt]. ErrorIA con mensajes legibles.
-    configIA.ts          cargar/guardarConfigIA en localStorage ("3maps:ia"). No persiste sin API
-                         key. Aparte de "3maps:settings" porque es sensible.
+    configIA.ts          localStorage "3maps:ia" = { activo, keys: {[proveedor]:{apiKey,modelo}} } —
+                         UNA key por proveedor (cambiar y volver no la pierde). cargarConfigIA()
+                         (siempre devuelve ConfigIA, default gemini), guardarConfigIA(c),
+                         cambiarProveedorActivo(p), borrarKeyProveedor(p), configGuardadaDe(p).
+                         Migra el formato viejo. Aparte de "3maps:settings" porque es sensible.
     supabase.ts          getSupabase() → SupabaseClient | null (null si no hay env). haySupabase()
                          para mostrar/ocultar UI. proxyIAUrl() = <supabaseUrl>/functions/v1/ia-proxy.
                          auth con persistSession/detectSessionInUrl true (fase 2.2, magic link).
@@ -79,8 +82,9 @@ src/
     Composer.tsx        Barra inferior fija para escribir.
     SettingsPanel.tsx   Tuerquita ⚙️: ajustes del lienzo (envión, ventana de contexto) +
                         config de IA. API key y modelo son BORRADORES (estado local) que se
-                        persisten con el botón "Guardar" (o Enter); el proveedor aplica al toque
-                        (resetea modelo + limpia key). "✓ Guardado" / "Cambios sin guardar" /
+                        persisten con el botón "Guardar" (o Enter); el proveedor aplica al toque y
+                        TRAE la key guardada de ese proveedor (una por proveedor, ver configIA.ts).
+                        "✓ Guardado" / "Cambios sin guardar" /
                         "✓ Aplicado" (2s tras guardar) / "Borrar key". Aviso ámbar bajo el input
                         si el formato de la key no pinta del proveedor (avisoFormatoKey, local).
                         Botón "verificar key y ver sus modelos" → listarModelos() (gratis, no gasta
@@ -176,7 +180,9 @@ Handlers (todos operan sobre `arbol` vía `setArbol`):
   borra >1, aborta las llamadas en vuelo de lo que se borra, `quitarSubarbol`, deja activo al padre.
 - `onConnect` — conectar handles a mano = `reparentar` el target (con guarda anti-ciclo).
 
-Config de IA: `configIA` (useState, lazy init desde `cargarConfigIA()`), `updateConfigIA` persiste.
+Config de IA: `configIA` (useState `ConfigIA`, lazy init desde `cargarConfigIA()`).
+`guardarKeyIA` (guarda la del proveedor activo), `cambiarProveedorIA` (trae la guardada de otro),
+`borrarKeyIA` (borra solo la activa) → pasan a `<SettingsPanel>`.
 Puede tener `apiKey: ""` en memoria (para editar el modelo antes de la key); `configIA.ts` no lo
 persiste sin key. `resumenCacheRef` (Map) cachea resúmenes del tramo viejo por sesión.
 - Envión: `useNodeInertia(setNodes, asentar, settings.inertia)` devuelve

@@ -188,11 +188,17 @@ con free tier: **probar con una key nueva de verdad** — los blogs y hasta `Lis
 - **Revertir** (sacar el chequeo de formato): vuelven los "pegué la key de Gemini en Claude" que
   solo se descubrían tras una llamada fallida.
 
-### 9. `configIA` vive en su propio `localStorage` key (`"3maps:ia"`), separado de `"3maps:settings"`
-- **Por qué**: es sensible. Y **no se persiste si `apiKey` está vacía** — así se puede editar el
-  modelo en memoria antes de que haya key.
-- **Invariante CLAUDE.md**: la key va **directo del navegador al proveedor**, nunca a un server
-  de 3maps. No agregar telemetría, proxy ni "guardar en la nube" para la key.
+### 9. `configIA` = **una key/modelo POR PROVEEDOR**, en su propio `localStorage` key (`"3maps:ia"`)
+- **Forma**: `{ activo: Proveedor, keys: { [proveedor]: { apiKey, modelo } } }`. Antes era un solo
+  `{ proveedor, apiKey, modelo }` y cambiar de proveedor te borraba la key — molesto al probar
+  otro y volver. Ahora `cambiarProveedorActivo(p)` trae la key guardada de `p`. `cargarConfigIA()`
+  siempre devuelve un `ConfigIA` (apiKey puede ser `""`); default `gemini` (el único con free tier).
+- **Migración**: al cargar, el formato viejo `{ proveedor, apiKey, modelo }` se convierte (la key
+  vieja queda bajo su proveedor).
+- **"Borrar key"** borra solo la del proveedor activo (`borrarKeyProveedor`), no las otras.
+- Separado de `"3maps:settings"` porque es más sensible (varias API keys). **Invariante
+  CLAUDE.md**: las keys van **directo del navegador al proveedor** (salvo DeepSeek/GPT que
+  transitan el proxy, §7a), nunca se guardan en un server de 3maps.
 
 ### 10. Contexto = **solo el camino raíz→nodo**, aplanado, ventana + resumen
 - **Por qué** (invariante CLAUDE.md / spec §5): mandar el árbol entero explota el costo.
