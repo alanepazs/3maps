@@ -373,6 +373,7 @@ function Flow() {
         const texto = await llamarIA(configIA, mensajes, {
           signal: ctrl.signal,
           sistema,
+          usarProxy: settings.usarProxyIA,
           onTexto: (_delta, acumulado) => {
             const ahora = Date.now();
             if (ahora - ultimoRender < 80) return;
@@ -401,7 +402,12 @@ function Flow() {
         }
       }
     },
-    [configIA, settings.ventanaContexto, settings.systemPrompt],
+    [
+      configIA,
+      settings.ventanaContexto,
+      settings.systemPrompt,
+      settings.usarProxyIA,
+    ],
   );
 
   // Crea UN globo (intercambio) colgando del nodo activo y le pide la respuesta

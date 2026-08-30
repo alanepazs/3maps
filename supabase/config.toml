@@ -1,0 +1,7 @@
+project_id = "ejecjjpdjoxgrbqrhwwd"
+
+# El proxy de IA no pide auth de Supabase: es stateless y el control de abuso es
+# la lista de orígenes + que cada request trae su propia API key. Ver
+# supabase/functions/ia-proxy/index.ts y docs/decisiones.md §7a.
+[functions.ia-proxy]
+verify_jwt = false

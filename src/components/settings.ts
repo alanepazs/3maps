@@ -15,6 +15,9 @@ export type Settings = {
   // De qué lado del canvas se abre el panel de transcripción de la rama.
   // Se cambia con el botón ⇄ del propio panel.
   transcriptSide: "left" | "right";
+  // El usuario aceptó que su API key de DeepSeek / GPT transite el proxy de
+  // 3maps (esas APIs no se pueden llamar directo desde el navegador). Opt-in.
+  usarProxyIA: boolean;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -22,6 +25,7 @@ export const DEFAULT_SETTINGS: Settings = {
   ventanaContexto: 6,
   systemPrompt: "",
   transcriptSide: "right",
+  usarProxyIA: false,
 };
 
 export const SETTINGS_STORAGE_KEY = "3maps:settings";

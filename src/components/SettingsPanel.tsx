@@ -10,11 +10,13 @@ import {
   NOMBRE_PROVEEDOR,
   PISTA_API_KEY,
   PROVEEDORES_DISPONIBLES,
+  PROVEEDORES_VIA_PROXY,
   avisoFormatoKey,
   listarModelos,
   type ConfigIA,
 } from "@/model/ia";
 import type { Proveedor } from "@/model/intercambio";
+import { haySupabase } from "@/model/supabase";
 
 type Props = {
   settings: Settings;
@@ -63,6 +65,15 @@ export default function SettingsPanel({
   const keyGuardada = configIA?.apiKey ?? "";
   const modeloGuardado = configIA?.modelo ?? MODELO_POR_DEFECTO[proveedor];
   const hayKey = keyGuardada.trim() !== "";
+
+  // DeepSeek / GPT van por el proxy de 3maps (no habilitan CORS). Necesitan que
+  // el usuario acepte el opt-in Y que la instancia tenga el proxy configurado.
+  const proveedorViaProxy = PROVEEDORES_VIA_PROXY.includes(proveedor);
+  const proxyDisponible = haySupabase();
+  // Se puede operar con este proveedor: siempre para claude/gemini; para
+  // deepseek/gpt solo con el proxy disponible y el toggle activado.
+  const proveedorHabilitado =
+    !proveedorViaProxy || (proxyDisponible && settings.usarProxyIA);
 
   // API key y modelo son borradores: se editan libres y recién se persisten con
   // el botón "Guardar" (o Enter). El proveedor sí aplica al toque.
@@ -201,10 +212,43 @@ export default function SettingsPanel({
               {PROVEEDORES_DISPONIBLES.map((p) => (
                 <option key={p} value={p}>
                   {NOMBRE_PROVEEDOR[p]}
+                  {PROVEEDORES_VIA_PROXY.includes(p) ? " (proxy)" : ""}
                 </option>
               ))}
             </select>
           </label>
+
+          {proveedorViaProxy && (
+            <div className="mt-2 rounded border border-amber-400/30 bg-amber-400/5 p-2 text-[11px] text-white/70">
+              <p>
+                {NOMBRE_PROVEEDOR[proveedor]} no se puede llamar directo desde el
+                navegador (no habilita CORS). 3maps lo hace a través de un{" "}
+                <span className="text-white/90">proxy propio</span>: tu API key{" "}
+                <span className="text-white/90">pasa por el servidor de 3maps</span>,
+                que solo la reenvía — no la guarda ni la registra.
+              </p>
+              {!proxyDisponible ? (
+                <p className="mt-1.5 text-amber-300">
+                  Esta instancia de 3maps no tiene el proxy configurado. Usá
+                  Gemini o Claude.
+                </p>
+              ) : (
+                <label className="mt-1.5 flex items-start gap-1.5 text-white/80">
+                  <input
+                    type="checkbox"
+                    checked={settings.usarProxyIA}
+                    onChange={(e) =>
+                      onChange({ usarProxyIA: e.target.checked })
+                    }
+                    className="mt-0.5 accent-sky-500"
+                  />
+                  <span>
+                    Entiendo y quiero usar el proxy de 3maps para DeepSeek / GPT.
+                  </span>
+                </label>
+              )}
+            </div>
+          )}
 
           <label className="mt-2 block text-sm">
             <span className="text-white/70">API key</span>
@@ -261,7 +305,7 @@ export default function SettingsPanel({
           <button
             type="button"
             onClick={verModelos}
-            disabled={!keyEfectiva || cargandoModelos}
+            disabled={!keyEfectiva || cargandoModelos || !proveedorHabilitado}
             className="mt-1.5 rounded border border-white/15 px-2 py-1 text-[11px] text-white/70 enabled:hover:bg-white/10 disabled:opacity-40"
           >
             {cargandoModelos

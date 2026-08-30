@@ -37,3 +37,9 @@ export function getSupabase(): SupabaseClient | null {
 export function haySupabase(): boolean {
   return Boolean(url && anonKey);
 }
+
+// URL del edge function `ia-proxy` (fase 2.1). Se deriva de la URL del proyecto
+// — no hace falta otra env. `null` si no hay Supabase configurado.
+export function proxyIAUrl(): string | null {
+  return url ? `${url.replace(/\/$/, "")}/functions/v1/ia-proxy` : null;
+}

@@ -1,5 +1,6 @@
 import type { Mensaje } from "./contexto";
 import type { Proveedor } from "./intercambio";
+import { proxyIAUrl } from "./supabase";
 
 // Punto único de entrada a la IA. Adentro decide el proveedor (spec §6): sumar
 // otro proveedor = un `case` nuevo acá, sin tocar la lógica del árbol.
@@ -13,7 +14,18 @@ export type ConfigIA = {
   modelo: string;
 };
 
-export const PROVEEDORES_DISPONIBLES: Proveedor[] = ["claude", "gemini"];
+// Claude y Gemini andan directo desde el navegador. DeepSeek y GPT necesitan el
+// proxy de 3maps (no habilitan CORS) — aparecen en la lista pero solo funcionan
+// con el toggle "usar proxy" activado en ⚙️. Ver decisiones §7a y fase-2.md §2.1.
+export const PROVEEDORES_DISPONIBLES: Proveedor[] = [
+  "gemini",
+  "claude",
+  "deepseek",
+  "gpt",
+];
+
+// Proveedores que van contra `api.openai.com` / `api.deepseek.com` vía el proxy.
+export const PROVEEDORES_VIA_PROXY: Proveedor[] = ["deepseek", "gpt"];
 
 export const MODELOS_SUGERIDOS: Record<Proveedor, string[]> = {
   claude: ["claude-haiku-4-5", "claude-sonnet-5", "claude-opus-5"],
@@ -86,6 +98,9 @@ export type LlamadaOpts = {
   // Se llama con cada fragmento de texto que llega (para stremear en vivo).
   onTexto?: (delta: string, acumulado: string) => void;
   signal?: AbortSignal;
+  // El usuario aceptó que su key transite el proxy de 3maps (solo aplica a
+  // DeepSeek / GPT). Sin esto, esos proveedores tiran un error explicativo.
+  usarProxy?: boolean;
 };
 
 // Error "de dominio" con un mensaje ya apto para mostrarle al usuario.
@@ -114,6 +129,9 @@ export async function llamarIA(
       return llamarClaude(config, mensajes, opts);
     case "gemini":
       return llamarGemini(config, mensajes, opts);
+    case "deepseek":
+    case "gpt":
+      return llamarOpenAICompat(config, mensajes, opts);
     default:
       throw new ErrorIA(
         `El proveedor "${config.proveedor}" todavía no está implementado.`,
@@ -464,6 +482,155 @@ async function mensajeErrorGemini(res: Response, modelo?: string): Promise<strin
   return m ?? `Error ${res.status} de Gemini.`;
 }
 
+// ── Adaptador: OpenAI-compatible (DeepSeek / GPT) vía el proxy de 3maps ────
+// `api.openai.com` y `api.deepseek.com` NO habilitan CORS → no se puede llamar
+// desde el navegador. El edge function `ia-proxy` reenvía y agrega el CORS. La
+// key del usuario TRANSITA por el proxy (stateless, no se guarda) — el usuario
+// lo habilita con el toggle "usar proxy" en ⚙️. Ver decisiones §7a / fase-2.md.
+
+// El proveedor tal como lo espera el proxy (header `x-ia-provider`).
+function upstreamDe(proveedor: Proveedor): "openai" | "deepseek" {
+  return proveedor === "gpt" ? "openai" : "deepseek";
+}
+
+type OpenAIChunk = {
+  choices?: Array<{ delta?: { content?: string }; finish_reason?: string | null }>;
+  error?: { message?: string };
+};
+
+async function llamarOpenAICompat(
+  config: ConfigIA,
+  mensajes: Mensaje[],
+  opts: LlamadaOpts,
+): Promise<string> {
+  const nombre = NOMBRE_PROVEEDOR[config.proveedor];
+  if (!opts.usarProxy) {
+    throw new ErrorIA(
+      `${nombre} necesita el proxy de 3maps (esas APIs no se pueden llamar ` +
+        `directo desde el navegador). Activá "usar proxy" en ⚙️.`,
+    );
+  }
+  const proxy = proxyIAUrl();
+  if (!proxy) {
+    throw new ErrorIA(
+      `Esta instancia de 3maps no tiene el proxy configurado, así que ${nombre} ` +
+        `no está disponible. Usá Gemini o Claude.`,
+    );
+  }
+
+  const body = {
+    model: config.modelo,
+    stream: true,
+    messages: [
+      ...(opts.sistema ? [{ role: "system", content: opts.sistema }] : []),
+      ...mensajes.map((m) => ({ role: m.rol, content: m.texto })),
+    ],
+    // OpenAI (modelos nuevos) renombró `max_tokens` → `max_completion_tokens`;
+    // DeepSeek sigue con `max_tokens`.
+    [config.proveedor === "gpt" ? "max_completion_tokens" : "max_tokens"]:
+      opts.maxTokens ?? 4096,
+  };
+
+  let res: Response;
+  try {
+    res = await fetch(proxy, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-ia-provider": upstreamDe(config.proveedor),
+        "x-ia-path": "/chat/completions",
+        "x-ia-key": config.apiKey,
+      },
+      body: JSON.stringify(body),
+      signal: opts.signal,
+    });
+  } catch (e) {
+    if (esAbort(e)) throw e;
+    throw new ErrorIA(
+      `No se pudo contactar el proxy de 3maps para ${nombre} (red o CSP).`,
+      e,
+    );
+  }
+
+  if (!res.ok || !res.body) {
+    throw new ErrorIA(await mensajeErrorOpenAICompat(res, nombre));
+  }
+
+  let acumulado = "";
+  let errorEnStream: string | null = null;
+  const reader = res.body.getReader();
+  const dec = new TextDecoder();
+  let buf = "";
+
+  const procesarLinea = (linea: string) => {
+    const l = linea.trim();
+    if (!l.startsWith("data:")) return;
+    const payload = l.slice(5).trim();
+    if (!payload || payload === "[DONE]") return;
+    let chunk: OpenAIChunk;
+    try {
+      chunk = JSON.parse(payload) as OpenAIChunk;
+    } catch {
+      return; // fragmento parcial
+    }
+    if (chunk.error?.message) {
+      errorEnStream = chunk.error.message;
+      return;
+    }
+    const delta = chunk.choices?.[0]?.delta?.content;
+    if (delta) {
+      acumulado += delta;
+      opts.onTexto?.(delta, acumulado);
+    }
+  };
+
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lineas = buf.split("\n");
+      buf = lineas.pop() ?? "";
+      for (const linea of lineas) procesarLinea(linea);
+    }
+    if (buf) procesarLinea(buf);
+  } catch (e) {
+    if (esAbort(e)) throw e;
+    if (acumulado) return acumulado; // stream cortado a mitad
+    throw new ErrorIA(mensajeLegible(e), e);
+  }
+
+  if (acumulado) return acumulado;
+  if (errorEnStream) throw new ErrorIA(`${nombre}: ${errorEnStream}`);
+  throw new ErrorIA(`${nombre} no devolvió texto. Probá de nuevo o cambiá de modelo.`);
+}
+
+async function mensajeErrorOpenAICompat(
+  res: Response,
+  nombre: string,
+): Promise<string> {
+  let m: string | undefined;
+  try {
+    const j = (await res.json()) as { error?: { message?: string } };
+    m = j?.error?.message;
+  } catch {
+    // sin body legible
+  }
+  if (res.status === 401) return `API key de ${nombre} inválida.`;
+  if (res.status === 402 || /quota|balance|billing|insufficient/i.test(m ?? "")) {
+    return `${nombre}: la cuenta no tiene saldo. ${m ?? ""}`.trim();
+  }
+  if (res.status === 403) return `${nombre} (403): ${m ?? "sin acceso"}.`;
+  if (res.status === 404) {
+    return m ? `${nombre} (404): ${m}` : `El modelo indicado no existe en ${nombre}.`;
+  }
+  if (res.status === 429) return `Límite de ${nombre} alcanzado. Probá más tarde.`;
+  if (res.status === 502 || res.status === 503) {
+    return `${nombre} está caído o saturado. Probá de nuevo.`;
+  }
+  return m ? `${nombre}: ${m}` : `Error ${res.status} de ${nombre}.`;
+}
+
 // ── Listar modelos disponibles para la key del usuario ────────────────────
 // Cada key tiene acceso a un set distinto de modelos; esto evita adivinar
 // nombres. Lo usa el botón "ver modelos disponibles" de SettingsPanel.
@@ -476,11 +643,41 @@ export async function listarModelos(config: ConfigIA): Promise<string[]> {
       return listarModelosClaude(config);
     case "gemini":
       return listarModelosGemini(config);
+    case "deepseek":
+    case "gpt":
+      return listarModelosOpenAICompat(config);
     default:
       throw new ErrorIA(
         `Listar modelos no está implementado para "${config.proveedor}".`,
       );
   }
+}
+
+async function listarModelosOpenAICompat(config: ConfigIA): Promise<string[]> {
+  const nombre = NOMBRE_PROVEEDOR[config.proveedor];
+  const proxy = proxyIAUrl();
+  if (!proxy) {
+    throw new ErrorIA(`El proxy de 3maps no está configurado; ${nombre} no disponible.`);
+  }
+  let res: Response;
+  try {
+    res = await fetch(proxy, {
+      method: "GET",
+      headers: {
+        "x-ia-provider": upstreamDe(config.proveedor),
+        "x-ia-path": "/models",
+        "x-ia-key": config.apiKey,
+      },
+    });
+  } catch (e) {
+    throw new ErrorIA(`No se pudo contactar el proxy de 3maps (red o CSP).`, e);
+  }
+  if (!res.ok) throw new ErrorIA(await mensajeErrorOpenAICompat(res, nombre));
+  const j = (await res.json()) as { data?: Array<{ id?: string }> };
+  return (j.data ?? [])
+    .map((m) => m.id ?? "")
+    .filter(Boolean)
+    .sort();
 }
 
 async function listarModelosGemini(config: ConfigIA): Promise<string[]> {
