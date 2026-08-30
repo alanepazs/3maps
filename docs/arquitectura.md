@@ -36,11 +36,12 @@ src/
                          (semilla de ejemplo).
     persistencia.ts      guardarArbol / cargarArbol en localStorage ("3maps:arbol"), guardando
                          un string .md por intercambio. Cae a arbolInicial() si no hay nada.
-    contexto.ts          armarContexto(arbol, nodoId, opts, resumenViejo) → Mensaje[] para la IA:
+    contexto.ts          armarContexto(arbol, nodoId, opts, resumenViejo, relevantes) → Mensaje[]:
                          SOLO el camino raíz→nodo, aplanado a user/assistant, con ventana (últimos
-                         N completos + resumen del tramo viejo). Secuencia válida para la API
-                         (arranca en user, sin roles repetidos). tramoAResumir = los intercambios
-                         fuera de la ventana.
+                         N completos + resumen del tramo viejo). `relevantes` = intercambios viejos
+                         rescatados textuales JUSTO antes de la pregunta (no parte el prefijo).
+                         tramoAResumir = fuera de la ventana. intercambiosRelevantes(viejos,
+                         pregunta) = match por raíz de palabra + peso por rareza (fase 2.5 liviana).
     ia.ts                llamarIA(config, mensajes, opts) → string. Punto único; switch(proveedor).
                          Adaptadores: Claude (@anthropic-ai/sdk dinámico), Gemini (fetch + SSE), y
                          DeepSeek/GPT vía llamarOpenAICompat (contra el edge function ia-proxy;
@@ -174,7 +175,8 @@ Handlers (todos operan sobre `arbol` vía `setArbol`):
 - `responder(nodeId, arbolBase)` — **la llamada a la IA**. Si no hay API key → `conError`. Si no:
   `conRespuesta({pending:true})` + limpia error; arma el contexto con `armarContexto` (tratando a
   `nodeId` como pendiente, así un reintento descarta la respuesta parcial vieja); si el camino
-  supera la ventana, genera/cachea el `resumenViejo` con `resumir` (sin `systemPrompt`); `llamarIA`
+  supera la ventana, genera/cachea el `resumenViejo` con `resumir` (sin `systemPrompt`) + calcula
+  `intercambiosRelevantes` (rescate por palabras clave, fase 2.5); `llamarIA`
   con `opts.sistema = settings.systemPrompt`, `opts.usarProxy = settings.usarProxyIA`, y `onTexto`
   throttleado a 80ms → `conRespuesta({respuesta: acc, pending:true})` (streaming); al terminar
   `conRespuesta({pending:false, proveedor})`; en error `conError`. `enVueloRef` (Map<id,

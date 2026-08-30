@@ -210,6 +210,19 @@ con free tier: **probar con una key nueva de verdad** — los blogs y hasta `Lis
 - El **prefijo del contexto se mantiene consistente** entre llamadas de la misma rama → aprovecha
   el prompt caching del proveedor. No reordenar ni regenerar el prefijo por gusto.
 
+### 10b. Rescate de contexto viejo por palabras clave (fase 2.5, versión liviana)
+- **Problema**: cuando el tramo viejo se resume, un dato puntual ("tengo 2 horas por día") se
+  puede aplanar y perder.
+- **Solución elegida (con el usuario)**: `intercambiosRelevantes(viejos, pregunta)` — sin modelo,
+  sin descarga. Match por **raíz aproximada** de palabra (`raiz()` saca sufijos comunes del
+  español) + **peso por rareza** (raíz en ≤1 intercambio viejo → x2). Devuelve ≤3; `armarContexto`
+  los mete **textuales justo antes de la pregunta actual** — no toca el prefijo estable → el
+  prompt caching sigue.
+- **Solo si hay resumen**: si el tramo viejo va completo, ya están.
+- **Alternativa (2.5b, no hecha)**: embeddings con `transformers.js`. Entiende sinónimos pero es
+  ~25 MB + worker + IndexedDB. Misma firma → drop-in si la liviana no alcanza.
+- **Revertir** (sacar el rescate): se vuelve a perder detalle viejo en ramas largas.
+
 ### 11. `ErrorIA` con mensajes ya en español, listos para mostrar
 - **Por qué**: la UI (`MessageNode`) solo pinta `error` en el recuadro rojo, sin traducir nada.
 - `mensajeLegible()` mapea `status`/errores de red a texto. Si sumás un proveedor, mapeá sus

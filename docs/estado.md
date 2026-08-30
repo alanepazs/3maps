@@ -1,8 +1,8 @@
 # Estado del proyecto
 
 > Snapshot para retomar rápido. Actualizar al final de cada sesión.
-> Última actualización: 30-08-2026 (fase 2 — 2.0/2.1/2.2/2.3 en prod + 2.4 sync codeado.
-> Falta: correr el schema.sql nuevo (bucket `sync`) + probar sync con 2 dispositivos. Después 2.5).
+> Última actualización: 30-08-2026 (fase 2 — 2.0/2.1/2.2/2.3 en prod + 2.4 sync + 2.5 (liviana)
+> codeados. Falta: correr el schema.sql nuevo (bucket `sync`) + probar sync con 2 dispositivos).
 
 ## Mapa de docs
 
@@ -120,8 +120,12 @@ Ver **`docs/fase-2.md`**. Proyecto Supabase `ref` ejecjjpdjoxgrbqrhwwd.
 last-write-wins. Línea de estado en ⚙️ Cuenta. **Falta que el usuario:** correr el `schema.sql`
 nuevo (agrega el bucket `sync`) + probar abriendo el mismo árbol logueado en 2 lados.
 
-Siguiente: embeddings (2.5). Opcionales sueltos: Cerebras como 5º proveedor; renombrar
-"Generar link" → "Compartir este árbol".
+**2.5 (contexto viejo relevante — versión liviana)**: codeado (`b94f7e9`). `intercambiosRelevantes`
+en `contexto.ts` (match por raíz de palabra + peso por rareza, sin modelo). Rescata textuales los
+≤3 intercambios viejos más relacionados con la pregunta cuando el tramo viejo se resumió. 2.5b
+(embeddings) queda para si la liviana no alcanza.
+
+Opcionales sueltos: Cerebras como 5º proveedor; renombrar "Generar link" → "Compartir este árbol".
 
 **UX — API key por proveedor** (`0e56112`, 30-08-2026): `configIA.ts` ahora guarda una key por
 proveedor. Cambiás de proveedor en ⚙️ y volvés → la key reaparece sola (antes se borraba).
@@ -163,6 +167,7 @@ Default de proveedor = gemini. Ver decisiones §9.
 - [x] Fase 2.2 verificada end-to-end en prod (login Gmail + compartir + despublicar) — 30-08-2026.
 - [x] UX: una API key por proveedor (`configIA.ts` multi-key) — `0e56112`. Probado + verificado.
 - [x] Fase 2.4: sync del árbol entre dispositivos (`sync.ts` + `useSync`, LWW) — `a7eb13c`.
+- [x] Fase 2.5 (liviana): rescate de contexto viejo por palabras clave (`intercambiosRelevantes`) — `b94f7e9`. 24 asserts.
 
 ## Issues conocidos / gotchas
 

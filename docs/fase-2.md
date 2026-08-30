@@ -1,7 +1,7 @@
 # Fase 2 — Compartir y sincronizar
 
-> Estado: **2.0, 2.1, 2.2, 2.3 verificadas en producción; 2.4 codeada** (30-08-2026).
-> Falta: 2.5 (embeddings) + que el usuario corra el `schema.sql` nuevo y pruebe 2.4.
+> Estado: **2.0–2.3 en producción; 2.4 + 2.5 (liviana) codeadas** (30-08-2026).
+> Falta: que el usuario corra el `schema.sql` nuevo y pruebe 2.4. 2.5b (embeddings) si hace falta.
 > Fase 1 (MVP) quedó cerrada — ver `docs/estado.md`.
 
 ## Setup ya hecho por el usuario
@@ -208,18 +208,25 @@ guardó" = el último que subió a la nube.
   se pierden esos cambios offline (LWW). El flush en `pagehide` lo hace poco probable.
 - **Pendiente del usuario**: correr el `schema.sql` nuevo (agrega el bucket `sync`).
 
-### 2.5 — Embeddings locales (`transformers.js`) — track independiente
+### 2.5 — Contexto viejo relevante — ✅ hecha la versión LIVIANA (`b94f7e9`)
 
-No depende de Supabase. Se puede hacer antes, después o en paralelo.
+Decisión (con el usuario): **relevancia por palabras clave, sin modelo.** La versión con
+embeddings (`transformers.js`, ~25 MB, worker) queda como "2.5b si la liviana no alcanza".
 
-- `transformers.js` en un web worker. Modelo chico de embeddings (~25 MB, se baja una vez y
-  queda en cache del browser).
-- Calcular embedding por intercambio al crearlo. Guardar junto al `.md` (¿frontmatter? ¿store
-  aparte en IndexedDB?).
-- Al armar contexto: en vez de solo la ventana lineal (últimos N + resumen), traer también los
-  intercambios viejos **semánticamente cercanos** a la pregunta actual (spec §5.4).
-- UX del primer uso: la descarga del modelo no puede bloquear la app.
-- Riesgo: complejidad alta para la ganancia. Evaluar si entra en esta fase o queda para después.
+- [x] `contexto.ts` → `intercambiosRelevantes(viejos, pregunta, k=3)`: match por **raíz
+      aproximada** de palabra (español es muy inflexivo: `horas`~`hora`, `estudiar`~`estudio`) +
+      **peso por rareza** (una raíz que aparece en ≤1 intercambio viejo pesa doble). Umbral 2.
+- [x] `armarContexto` los rescata **textuales, justo antes de la pregunta actual** → el prefijo
+      estable (resumen + ventana) no se parte, el prompt caching sigue.
+- [x] Solo actúa cuando el tramo viejo se resumió (si va completo, ya están).
+- [x] `FlowCanvas.responder` pasa los relevantes. Probado: 24 asserts.
+- **Límite**: no entiende sinónimos ("reparto de días" ≠ "2 horas diarias" si no comparten
+  raíces). Para eso está 2.5b (embeddings).
+
+**2.5b — embeddings (si hace falta)** — pendiente
+- `transformers.js` en un web worker, modelo chico (~25 MB, cache del browser).
+- Embedding por intercambio, guardado en IndexedDB. Similitud coseno contra la pregunta actual.
+- Reemplazaría a `intercambiosRelevantes` (misma firma, mismo lugar en `armarContexto`).
 
 ---
 
