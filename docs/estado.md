@@ -16,10 +16,14 @@
 
 ## Dónde estamos
 
-**Fase 1 — MVP funcional y en producción.** Canvas de nodos + modelo de datos + **llamada real a
-la IA** (Claude, con la API key del usuario, streaming, respuestas en markdown) + deploy estático
-automático a GitHub Pages. Todo client-side, sin backend. El árbol de intercambios es la fuente
-de la verdad y se persiste en `localStorage` como `.md`.
+**Fase 1 — MVP cerrado y en producción.** Canvas de nodos + modelo de datos + **llamada real a
+la IA** (Gemini free tier o Claude con billing, API key del usuario, streaming, respuestas en
+markdown) + panel de transcripción de la rama + deploy estático automático a GitHub Pages. Todo
+client-side, sin backend. El árbol de intercambios es la fuente de la verdad y se persiste en
+`localStorage` como `.md`.
+
+**Proveedor recomendado: Gemini** (free tier real). Claude anda pero necesita saldo. DeepSeek/GPT
+esperan a fase 2 (no habilitan CORS → necesitan proxy).
 
 Repo: https://github.com/alanepazs/3maps · rama `main`.
 Carpeta local: `D:\IA\3maps`.
@@ -46,7 +50,7 @@ Carpeta local: `D:\IA\3maps`.
 - **Tuerquita ⚙️**: panel de ajustes (lienzo + IA). Persiste en `localStorage`
   (`"3maps:settings"` y `"3maps:ia"`).
 
-### IA (✅ Gemini free tier; Claude requiere billing)
+### IA (✅ Gemini free tier probado end-to-end; Claude requiere billing)
 - **Llamada real** (`src/model/ia.ts`, wired en `FlowCanvas.responder`): al enviar, el globo queda
   `pending` y la respuesta **se escribe en vivo (streaming)** con cursor ▍.
 - **Contexto** = solo el camino raíz→globo (`armarContexto`), aplanado a user/assistant, con
@@ -87,34 +91,13 @@ Carpeta local: `D:\IA\3maps`.
 
 ## Pendientes (próximos pasos)
 
-### Cerca / arranque rápido
-- [x] **Prueba real de la IA — Gemini**: key free tier real (`AQ.…`) + `gemini-3.6-flash` →
-      respuesta + streaming + markdown en el globo, perfecto. (29-08-2026)
-- [x] **Prueba real de la IA — Claude**: key `sk-ant-…` funciona (sin CORS, se conecta) pero requiere
-      billing en console.anthropic.com. Phase 1 soporta Claude pero no free tier. (29-08-2026)
-- [x] **2º proveedor: Gemini** (`llamarGemini` en `src/model/ia.ts`, `fetch` + SSE). Andando con
-      key real. Free tier = solo modelos 3.x (ver decisiones §7b).
-- [x] **UX del botón "Guardar" key**: al guardar muestra "✓ Aplicado" 2s + hint "Config aplicada.
-      Ya podés mandar una pregunta." antes de volver a "✓ Guardado".
-- [x] **Metadata de modelos al día + paid keys** (29-08-2026): default Gemini `gemini-3.7-flash`,
-      sugeridos 3.x; `deepseek`/`gpt` con IDs actuales (`deepseek-v4-flash`, `gpt-5.4-mini`);
-      placeholder de key Gemini `AQ.…`; `MODELOS_MUERTOS` ya no migra los `2.5-*` (los desbloquea
-      para keys con billing); `mensajeErrorGemini` mapea `401 ACCESS_TOKEN_TYPE_UNSUPPORTED`.
-- [x] **System prompt configurable** (29-08-2026): `Settings.systemPrompt` (textarea en ⚙️,
-      persiste como el resto de `Settings`); `FlowCanvas.responder` lo pasa como `opts.sistema` a
-      `llamarIA` (Claude `system` / Gemini `systemInstruction`). NO se aplica a `resumir()`.
-- [x] **Abrir un globo → transcripción de la rama** (29-08-2026): panel lateral read-only
-      (`BranchTranscript.tsx`) con el camino raíz→globo (`caminoRaizA`) tipo chat. Trigger: doble
-      click (`onNodeDoubleClick` + `zoomOnDoubleClick={false}`) o botón ⤢ del `NodeToolbar` (que
-      ahora aparece también en el raíz, solo con ⤢). Cierra con Esc / ✕ / fondo. Botón ⇄ cambia
-      el lado (izq/der) → `settings.transcriptSide`, persiste. Verificado en navegador.
-- [x] Auto-retry en `llamarGemini` para 503 intermitentes (29-08-2026): 1 reintento con 1s de
-      pausa, solo si no se streameó nada. `llamarGemini` = wrapper, `intentarGemini` = el trabajo.
-      Ver decisiones §7c. Probado con 5 asserts (scratch, borrado).
-- [x] `lang="es"` en `layout.tsx` — `25fbbf0`.
-- [x] **Verificar key gratis + aviso de formato** (29-08-2026): botón "verificar key y ver sus
-      modelos" ahora aplica a Claude y Gemini (`listarModelos` no gasta tokens, 401 si es inválida);
-      `avisoFormatoKey` marca en ámbar si la key no pinta del proveedor. Ver decisiones §8c.
+### Checklist MVP fase 1 — ✅ completo
+
+Todo lo "cerca / arranque rápido" quedó hecho (ver "Hecho el 29-08-2026" con los hashes).
+Resumen de lo cerrado esta sesión: metadata de modelos + paid keys, system prompt configurable,
+transcripción de la rama con toggle de lado, auto-retry de Gemini ante 503, `lang="es"`,
+verificación de key gratis (`avisoFormatoKey` + `listarModelos` para Claude), prueba real de
+ambos proveedores, DeepSeek/GPT diferidos a fase 2 por CORS.
 
 ### Más adelante
 - [ ] Export/import: `.zip` de la carpeta de `.md` + carpetas reales con File System Access API,
@@ -139,6 +122,11 @@ Carpeta local: `D:\IA\3maps`.
 - [x] System prompt configurable (`Settings.systemPrompt`) — `43ed0bf`.
 - [x] Auto-retry de `llamarGemini` ante 503 (1 reintento, 1s) — `780e5fb`.
 - [x] Abrir un globo -> panel de transcripcion de la rama (`BranchTranscript`) — `da7a339`.
+- [x] `lang="es"` en `layout.tsx` — `25fbbf0`.
+- [x] DeepSeek/GPT diferidos a fase 2 (CORS, sin proxy no se puede) — `a44f1dc`.
+- [x] Prueba real Claude: conecta OK, requiere billing. Gemini = proveedor free — `42254f5`.
+- [x] Toggle de lado del panel de transcripción + verificación de key gratis
+      (`avisoFormatoKey` + `listarModelos` para Claude) — `4b0dc55`.
 
 ## Issues conocidos / gotchas
 
