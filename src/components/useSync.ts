@@ -85,8 +85,17 @@ export function useSync(opts: {
       if (plan.accion === "traer") {
         setArbolRef.current(plan.arbol);
         guardarArbol(plan.arbol);
-        marcarSincronizado(plan.updatedAt, plan.arbol);
+        marcarSincronizado(plan.updatedAt, plan.arbol, uid);
         sincronizado.current = plan.arbol;
+        inicialListo.current = true;
+        setEstado("ok");
+      } else if (plan.accion === "vaciar") {
+        // El árbol local es de otra cuenta y esta no tiene nada → empezar vacío.
+        const vacio: Arbol = { intercambios: [] };
+        setArbolRef.current(vacio);
+        guardarArbol(vacio);
+        marcarSincronizado("", vacio, uid);
+        sincronizado.current = vacio;
         inicialListo.current = true;
         setEstado("ok");
       } else if (plan.accion === "subir") {

@@ -32,7 +32,9 @@ const VERSION = 1;
 const LOG = "[3maps sync]";
 
 type SobreSync = { v: number; files: Record<string, string> };
-type EstadoLocal = { at: string; hash: string };
+// `uid`: a qué cuenta pertenece el árbol local — si logueás con otra, no se
+// sube el árbol de la anterior. "" = nunca sincronizado (árbol "sin dueño").
+type EstadoLocal = { at: string; hash: string; uid: string };
 
 function leerEstado(): EstadoLocal {
   try {
@@ -40,14 +42,15 @@ function leerEstado(): EstadoLocal {
       typeof window !== "undefined"
         ? localStorage.getItem(SYNC_STATE_KEY)
         : null;
-    if (!raw) return { at: "", hash: "" };
+    if (!raw) return { at: "", hash: "", uid: "" };
     const o = JSON.parse(raw) as Partial<EstadoLocal>;
     return {
       at: typeof o.at === "string" ? o.at : "",
       hash: typeof o.hash === "string" ? o.hash : "",
+      uid: typeof o.uid === "string" ? o.uid : "",
     };
   } catch {
-    return { at: "", hash: "" };
+    return { at: "", hash: "", uid: "" };
   }
 }
 
@@ -167,40 +170,53 @@ export async function subirArbolNube(
   // Releer la hora que le puso el servidor.
   const meta = await metaNube(uid);
   const at = meta?.updatedAt ?? new Date().toISOString();
-  escribirEstado({ at, hash: hashFiles(files) });
+  escribirEstado({ at, hash: hashFiles(files), uid });
   console.info(LOG, "subir: OK", { intercambios: a.intercambios.length, at });
   return at;
 }
 
-// Marca que lo local está al día con la nube en `updatedAt` (tras traer).
-export function marcarSincronizado(updatedAt: string, arbol: Arbol): void {
-  escribirEstado({ at: updatedAt, hash: hashFiles(filesDe(arbol)) });
+// Marca que lo local está al día con la nube (tras traer, o tras vaciar).
+export function marcarSincronizado(
+  updatedAt: string,
+  arbol: Arbol,
+  uid: string,
+): void {
+  escribirEstado({ at: updatedAt, hash: hashFiles(filesDe(arbol)), uid });
 }
 
-// Decide qué hacer al abrir. `sube` o `trae` o `nada`.
+// Decide qué hacer al abrir (o al loguear).
+//   - subir  : el árbol local es de esta cuenta (o "sin dueño") → va a la nube.
+//   - traer  : la nube tiene una versión más nueva / de esta cuenta.
+//   - vaciar : el árbol local es de OTRA cuenta y esta no tiene nada → empezar
+//              de cero (NO subir el árbol ajeno).
+//   - nada   : ya está sincronizado.
 export async function planInicial(
   arbolLocal: Arbol,
   uid: string,
 ): Promise<
   | { accion: "subir" }
   | { accion: "traer"; arbol: Arbol; updatedAt: string }
+  | { accion: "vaciar" }
   | { accion: "nada" }
 > {
   const local = leerEstado();
+  // El árbol local pertenece a otra cuenta (se logueó con otro mail).
+  const ajeno = local.uid !== "" && local.uid !== uid;
   const meta = await metaNube(uid);
 
-  if (!meta) return { accion: "subir" };
+  if (!meta) {
+    return ajeno ? { accion: "vaciar" } : { accion: "subir" };
+  }
 
-  if (meta.updatedAt !== local.at) {
-    // Otro dispositivo escribió (o es la primera vez en este navegador).
+  if (ajeno || meta.updatedAt !== local.at) {
     const bajado = await bajarArbolNube(uid);
     if (bajado) {
       return { accion: "traer", arbol: bajado.arbol, updatedAt: bajado.updatedAt };
     }
-    return { accion: "subir" };
+    return ajeno ? { accion: "vaciar" } : { accion: "subir" };
   }
 
-  // La nube es la versión que ya teníamos. ¿Cambió lo local sin subir?
+  // Misma cuenta, la nube es nuestra última versión. ¿Cambió lo local sin subir?
   const hashLocal = hashFiles(filesDe(arbolLocal));
   return hashLocal === local.hash ? { accion: "nada" } : { accion: "subir" };
 }
