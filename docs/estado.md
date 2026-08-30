@@ -12,7 +12,8 @@
 - `docs/decisiones.md` — por qué el código es así (decisiones de implementación + qué rompés si
   las revertís).
 - `docs/spec-proyecto.md` — diseño de producto (modelo de datos, UX, roadmap, pseudocódigo).
-- `docs/fase-2.md` — plan de fase 2 (Supabase, compartir, sync, proxy IA, embeddings). Borrador.
+- `docs/fase-2.md` — plan de fase 2 (Supabase, compartir, sync, proxy IA, embeddings). COMPLETA.
+- `docs/fase-3.md` — plan de fase 3 (pulido de UX: canvas, varios mapas, panel). Borrador.
 - `.claude/napkin.md` — gotchas del entorno (preview pane, git/gh, CDN de Pages).
 
 ## Dónde estamos
@@ -127,7 +128,17 @@ en `contexto.ts` (match por raíz de palabra + peso por rareza, sin modelo). Res
 ≤3 intercambios viejos más relacionados con la pregunta cuando el tramo viejo se resumió. 2.5b
 (embeddings) queda para si la liviana no alcanza.
 
-Opcionales sueltos: Cerebras como 5º proveedor; renombrar "Generar link" → "Compartir este árbol".
+### Fase 3 — pulido de UX (planificada, nada hecho)
+Ver **`docs/fase-3.md`**. Pedido del usuario:
+- Canvas: tope de tamaño del globo + minimizar/expandir (§8); globo hijo que no se pise con la
+  respuesta del padre; flecha rama↔tronco que salte durante el drag (no al soltar); botón
+  "ordenar" (auto-layout tronco vertical + ramas al costado).
+- Varios mapas: crear / cambiar / borrar. Borrar el globo raíz.
+- Panel/ajustes: tuerquita cierra al clickear afuera; sacar el título "Transcripción de la rama";
+  cuadro de texto en el panel lateral para escribir sin cerrarlo.
+- Sueltos: Cerebras (5º proveedor), renombrar "Generar link" → "Compartir este árbol", publicar
+  la pantalla de consentimiento de Google.
+Hay decisiones abiertas por bloque — ver `docs/fase-3.md`.
 
 **UX — API key por proveedor** (`0e56112`, 30-08-2026): `configIA.ts` ahora guarda una key por
 proveedor. Cambiás de proveedor en ⚙️ y volvés → la key reaparece sola (antes se borraba).
