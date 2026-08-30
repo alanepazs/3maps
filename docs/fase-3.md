@@ -66,8 +66,11 @@ Hoy: **un** árbol. `localStorage["3maps:arbol"]`, `sync/<uid>/arbol.json`.
 - Sync: `sync/<uid>/<mapId>.json` por mapa. `planInicial` + `useSync` pasan a ser **por mapa
   activo**. Para "mis mapas" desde otro dispositivo: `list()` la carpeta del uid.
 - UI: selector de mapa (dropdown arriba, o en ⚙️) + "＋ Nuevo mapa" + borrar mapa. Renombrar → después.
-- **El más grande.** Se puede partir: 3.5a "nuevo mapa" (guarda el actual, arranca uno vacío);
-  3.5b selector para cambiar; 3.5c borrar.
+- **El más grande.** Se puede partir:
+  - **3.5a — "Nuevo mapa"**: guarda el mapa actual (localStorage + sync) y arranca uno vacío en
+    otra "instancia". Es lo mínimo para tener más de un mapa aunque no haya selector todavía.
+  - **3.5b — selector** para cambiar entre mapas guardados.
+  - **3.5c — borrar** un mapa.
 - **Decisión**: ¿selector siempre visible o dentro de ⚙️? ¿el sync de fase 2.4 se migra a
   per-mapa de una, o `arbol.json` sigue siendo el "mapa por defecto"?
 
