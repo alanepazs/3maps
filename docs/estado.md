@@ -111,7 +111,8 @@ Carpeta local: `D:\IA\3maps`.
       UI de guardar/abrir (§7). Hoy solo hay persistencia local automática.
 - [ ] Embeddings locales con `transformers.js` para relevancia de contexto (§5).
 - [ ] Estado `expandido`/colapsado por globo para rendimiento con muchos nodos (§8).
-- [ ] `lang="es"` en `layout.tsx` (está en `"en"`).
+- [ ] **Auto-detect proveedor por formato de key** (UX): usuario pega key → código detecta
+      `sk-ant-…` (Claude) / `AQ.…` (Gemini) / etc. → setea proveedor + modelos automáticamente.
 - [ ] **Adaptador OpenAI-compat (DeepSeek + GPT) — FASE 2**: `api.openai.com` y `api.deepseek.com`
       no habilitan CORS → no se puede llamar desde el navegador. Necesita el proxy de fase 2
       (edge function que ponga la key server-side). Ver decisiones §7a.
