@@ -69,6 +69,18 @@ export default function MessageNode({
           >
             ⤢ Abrir
           </button>
+          {/* Volver a pedir la respuesta — para regenerar, o para recuperar una
+              llamada que quedó a medias / estática (fase 3). */}
+          {!readOnly && (
+            <button
+              type="button"
+              onClick={() => retryNode(id)}
+              className="rounded border border-white/20 bg-neutral-900 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
+              title="Volver a pedir la respuesta"
+            >
+              ↻ Rehacer
+            </button>
+          )}
           {colapsable && (
             <button
               type="button"

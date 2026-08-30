@@ -314,9 +314,10 @@ Semilla (`arbolInicial()` en `model/intercambio.ts`): 3 intercambios de ejemplo 
   (IA no conectada)" en gris itálica si `respuesta` es null). Ancho fijo `w-[260px]`.
 - Handles: `target` arriba (el raíz NO lo tiene) · `source id="main"` abajo ·
   `source id="branch-right"` derecha · `source id="branch-left"` izquierda.
-- `<NodeToolbar>` visible cuando `selected`: botón "⤢ Abrir" (`openNode(id)` → panel de
-  transcripción) siempre, "⌄ Expandir/⌃ Colapsar" si la respuesta es larga (fase 3.1), y
-  "🗑 Eliminar" (`deleteNode(id)`) si `!isRoot || sinHijos` (fase 3.6). Ambos del
+- `<NodeToolbar>` visible cuando `selected`: "⤢ Abrir" (`openNode(id)`) siempre, "↻ Rehacer"
+  (`retryNode(id)` — regenerar / recuperar un globo estático) si `!readOnly`, "⌄ Expandir/⌃
+  Colapsar" si la respuesta es larga (fase 3.1), "🗑 Eliminar" (`deleteNode(id)`) si
+  `!isRoot || sinHijos` (fase 3.6). Todos del
   `NodeActionsContext`.
 - Anillo celeste (`ring-sky-400`) cuando `selected`.
 

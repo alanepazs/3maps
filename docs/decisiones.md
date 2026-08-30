@@ -440,6 +440,10 @@ con free tier: **probar con una key nueva de verdad** — los blogs y hasta `Lis
   app quedaba con texto a medias y sin forma de reintentar.
 - **No se serializan las llamadas** (una rama espera a la otra): la idea de ramificar es lanzar
   varias exploraciones en paralelo. El watchdog cubre el caso de que una se cuelgue.
+- **Botón "↻ Rehacer" en el toolbar de todo globo** (`retryNode`): además de regenerar una
+  respuesta que no te gustó, recupera un globo que quedó estático de ANTES de este fix (su `.md`
+  no tiene `pendiente:` → el watchdog/parseo no lo salvan). Antes "Reintentar" solo aparecía en
+  el cuerpo de un globo en `error`.
 
 ### F3-5. Borrar la raíz: solo cuando ya no le cuelga nada
 - **Decidido con el usuario**: nada de multi-raíz ni de promover un hijo. La raíz se borra solo

@@ -227,7 +227,9 @@ Default de proveedor = gemini. Ver decisiones §9.
   el stream se abre pero el server deja la conexión colgada, o el proveedor está saturado. **Fix**:
   (1) watchdog en `responder` — si no llega nada en 45s (o el total pasa 180s) aborta y deja un
   error reintentable con la respuesta parcial a la vista; (2) `pending` se persiste en el `.md`
-  (`pendiente: 1`) → al recargar / bajar de la nube, una llamada a medias pasa a error reintentable.
+  (`pendiente: 1`) → al recargar / bajar de la nube, una llamada a medias pasa a error reintentable;
+  (3) botón **"↻ Rehacer"** en el `NodeToolbar` de todo globo → vuelve a pedir la respuesta
+  (regenerar, o recuperar un globo que quedó estático de ANTES del fix, sin `pendiente:` en su `.md`).
 - **Preview pane de Claude (`mcp__Claude_Browser__*`)**: `requestAnimationFrame` y `ResizeObserver`
   quedan **congelados cuando el pane está quieto**, y `setTimeout` throttlea a ~1s. Efecto: los
   nodos de React Flow quedan `visibility:hidden` (no se los mide) → sin nodos medidos no se dibujan
