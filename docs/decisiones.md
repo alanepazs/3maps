@@ -314,6 +314,20 @@ con free tier: **probar con una key nueva de verdad** — los blogs y hasta `Lis
 - **Revertir** (poner la key del proveedor como secreto del function): serían llamadas con NUESTRA
   cuenta, no la del usuario — rompe el modelo "cada uno paga la suya".
 
+### F2-7. Login opcional = **magic link**; la sesión vuelve en el hash, no pelea con `?compartir=`
+- **Magic link** (no OAuth) para arrancar: cero setup de OAuth app. `signInWithOtp` con
+  `emailRedirectTo` = la página actual. Agregar GitHub/Google después = un provider más en
+  `useSesion`, sin tocar el resto.
+- **`detectSessionInUrl: true` + `?compartir=` conviven**: el magic link vuelve como
+  `…#access_token=…` (fragmento **hash**), que `detectSessionInUrl` levanta y limpia; el slug de
+  compartir es un **query param** (`?compartir=`), otro espacio. Se pusieron `persistSession` y
+  `autoRefreshToken` en true (antes false, cuando 2.3 no usaba login).
+- **Sin sesión, la app es igual**: `useSesion` devuelve `usuario: null`; nada del canvas ni de
+  compartir-anónimo depende de estar logueado. El login solo suma "mis árboles" (2.2b) y sync (2.4).
+- **Free tier**: Supabase manda ~2-4 mails/hora sin SMTP propio. Si molesta, configurar SMTP o
+  sumar un provider OAuth.
+- **Revertir** (volver a `persistSession: false`): rompe que la sesión sobreviva al reload.
+
 ---
 
 ## Build / deploy

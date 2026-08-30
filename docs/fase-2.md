@@ -137,12 +137,26 @@ streamee (como pasó con Claude — sin key propia no se llega a eso). DeepSeek 
 
 ### 2.2 — Auth opcional (Supabase Auth)
 
-Depende de: 2.0.
+Decisión: **magic link por email** para empezar (cero setup de OAuth app; agregar GitHub/Google
+después es fácil). El anónimo no ve ningún cambio.
 
-- Magic link por email, o OAuth con Google (elegir uno para empezar).
-- Botón "Iniciar sesión" discreto (¿en ⚙️? ¿esquina?). El usuario anónimo no ve cambios.
-- `useSession()` / contexto de auth. La mayor parte de la app lo ignora.
-- Sin login, todo sigue en `localStorage` como hoy.
+**2.2a — core** — ✅ codeado (`c873f95`)
+- [x] `supabase.ts`: `persistSession` / `autoRefreshToken` / `detectSessionInUrl` = true. El
+      magic link vuelve en el **hash** (`#access_token=…`), no toca el `?compartir=` (query).
+- [x] `useSesion.ts`: hook `{ usuario, cargando, enviarMagicLink, cerrarSesion }`.
+- [x] `SettingsPanel` → sección "Cuenta" (solo si `haySupabase()`): input de email + "Enviarme un
+      link"; con sesión → email + "Cerrar sesión".
+- [x] Verificado: `signInWithOtp` llega a Supabase Auth (rechaza `example.com` → el path anda).
+- **Pendiente del usuario:** Supabase → Authentication → URL Configuration → agregar
+      `https://alanepazs.github.io` (y `/3maps/`) a Site URL / Redirect URLs. `localhost:3000` ya
+      viene permitido. Después, probar con su mail real (free tier: ~2-4 mails/hora).
+
+**2.2b — mis árboles / despublicar** — pendiente
+- Tabla `shared_trees` (slug, owner_id, titulo, creado) + política: el dueño ve/borra las suyas.
+- `compartir.ts`: al compartir logueado, insertar la fila con `owner_id`. `misArbolesCompartidos()`
+  + `despublicarArbol(slug)` (borra el objeto de Storage + la fila). Política de `delete` en el
+  bucket scopeada a `owner = auth.uid()` → solo se puede despublicar lo que compartiste logueado.
+- `SettingsPanel` Compartir: con sesión, lista "Mis árboles compartidos" con botón despublicar.
 
 ### 2.3 — Compartir un árbol por link — ✅ codeado (`51dc403`)
 
@@ -194,7 +208,6 @@ No depende de Supabase. Se puede hacer antes, después o en paralelo.
 
 ## Decisiones abiertas (para tandas siguientes)
 
-- **Auth (2.2): magic link o Google OAuth** para empezar.
 - **Sync (2.4): estrategia de conflicto** cuando se edita en dos dispositivos offline.
 - **Embeddings (2.5): en fase 2 o se difiere a fase 3.**
 

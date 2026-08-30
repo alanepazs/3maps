@@ -53,7 +53,7 @@ src/
                          key. Aparte de "3maps:settings" porque es sensible.
     supabase.ts          getSupabase() → SupabaseClient | null (null si no hay env). haySupabase()
                          para mostrar/ocultar UI. proxyIAUrl() = <supabaseUrl>/functions/v1/ia-proxy.
-                         auth desactivado (fase 2.3 no usa login).
+                         auth con persistSession/detectSessionInUrl true (fase 2.2, magic link).
     compartir.ts         compartirArbol(arbol, titulo) → sube arboles/<slug>.json a Storage (mismo
                          formato que persistencia.ts) y devuelve {slug, url}. cargarArbolCompartido
                          (slug) lo baja y reconstruye. slugDeLaUrl / limpiarSlugDeLaUrl / linkCompartir.
@@ -72,6 +72,8 @@ src/
                         Props: {intercambios, side, onFlipSide, onClose}.
     SharedBanner.tsx    Cartel arriba cuando se ve un árbol compartido (`?compartir=`). Props:
                         {titulo, onGuardar, onSalir}. "Guardar en mi 3maps" = pasa a local editable.
+    useSesion.ts        Hook de auth (fase 2.2): {usuario, cargando, enviarMagicLink, cerrarSesion}.
+                        onAuthStateChange + getUser. Sin Supabase → usuario null, cargando false.
     Composer.tsx        Barra inferior fija para escribir.
     SettingsPanel.tsx   Tuerquita ⚙️: ajustes del lienzo (envión, ventana de contexto) +
                         config de IA. API key y modelo son BORRADORES (estado local) que se

@@ -1,8 +1,8 @@
 # Estado del proyecto
 
 > Snapshot para retomar rápido. Actualizar al final de cada sesión.
-> Última actualización: 30-08-2026 (fase 2.0 + 2.3 + 2.1 en prod: compartir por link + proxy
-> DeepSeek/GPT. Falta solo una key real de DeepSeek/OpenAI para el happy path del proxy).
+> Última actualización: 30-08-2026 (fase 2.0/2.1/2.3 en prod; 2.2a login por magic link codeado,
+> falta config de Redirect URLs en Supabase + probar con mail real).
 
 ## Mapa de docs
 
@@ -108,10 +108,14 @@ ambos proveedores, DeepSeek/GPT diferidos a fase 2 por CORS.
 Ver **`docs/fase-2.md`**. Proyecto Supabase `ref` ejecjjpdjoxgrbqrhwwd.
 - **2.0 + 2.3 (compartir por link)**: ✅ verificado end-to-end en producción.
 - **2.1 (proxy DeepSeek/GPT)**: edge function `ia-proxy` **deployado y verificado** (30-08-2026).
-  CORS OK, reenvío OK, allow-list de orígenes OK. Con key trucha el cliente muestra el error real
-  de DeepSeek. **Falta solo** una key real de DeepSeek/OpenAI para ver una respuesta streameada.
+  CORS OK, reenvío OK, allow-list de orígenes OK. El usuario ya tiene key de DeepSeek → falta
+  probar el happy path (respuesta streameada).
+- **2.2a (login por magic link)**: `useSesion` + sección "Cuenta" en ⚙️. `signInWithOtp` llega a
+  Supabase Auth. **Falta que el usuario:** Supabase → Authentication → URL Configuration → agregar
+  `https://alanepazs.github.io` a Site URL / Redirect URLs; después probar con su mail.
+- **2.2b (mis árboles / despublicar)**: pendiente — tabla `shared_trees` + lista + unpublish.
 
-Siguientes tandas: auth (2.2), sync (2.4), embeddings (2.5).
+Siguientes tandas: 2.2b, sync (2.4), embeddings (2.5).
 
 ### Más adelante (fuera de fase 2)
 - [ ] Export/import: `.zip` de la carpeta de `.md` + carpetas reales con File System Access API,
@@ -143,6 +147,7 @@ Siguientes tandas: auth (2.2), sync (2.4), embeddings (2.5).
 - [x] Fase 2.3: compartir un árbol por link — `51dc403` (verificado en prod, deploy #35).
 - [x] Fase 2.1: proxy stateless para DeepSeek/GPT (`ia-proxy` + `llamarOpenAICompat`) — `9a2eecc`.
       Function deployada + verificada 30-08-2026 (falta key real para el happy path).
+- [x] Fase 2.2a: login opcional por magic link (`useSesion` + sección Cuenta) — `c873f95`.
 
 ## Issues conocidos / gotchas
 
