@@ -66,7 +66,7 @@ Complementa a:
   que se parsea el SSE a mano (`data: {json}` → `candidates[0].content.parts[].text`).
 - **Revertir** (meter el SDK de Google, o cargar el de Anthropic estático): más peso, sin ganancia.
 
-### 7b. Modelos de Gemini: default `gemini-2.5-flash`, sin "thinking", + botón "ver modelos"
+### 7b. Modelos de Gemini: default `gemini-3.7-flash`, "thinking" por generación, + botón "ver modelos"
 Historia de dolor real con una key **free tier** recién sacada de AI Studio:
 - `gemini-2.0-flash` → 404: Google lo **retiró** (para todos). Un modelo pinneado se pudre.
 - `gemini-flash-latest` → 503 "high demand": el alias resuelve a un flash **paid-tier**
@@ -77,9 +77,9 @@ Historia de dolor real con una key **free tier** recién sacada de AI Studio:
   thoughts.
 
 **Decisiones tomadas:**
-1. **Default = `gemini-3.6-flash`** — una key free tier NUEVA da **404** en TODOS los `2.5-*`
-   ("no longer available to new users, use gemini-3.6-flash"). Google empuja a la generación 3.x.
-   `MODELOS_MUERTOS` migra los `2.5-*` y los alias `-latest` al default.
+1. **Default = `gemini-3.7-flash`** (era `3.6`; `3.7` es el Flash estable más nuevo). Una key free
+   tier NUEVA da **404** en TODOS los `2.5-*` ("no longer available to new users, use gemini-3.x").
+   Google empuja a la generación 3.x. Sugeridos = `3.7 / 3.6 / 3.5-flash / 3.5-flash-lite`.
 2. **`thinkingConfig` con la forma correcta por generación** + `maxOutputTokens: 8192`:
    - **3.x** → `{ thinkingLevel: "low" }` (mandar `thinkingBudget` acá = **400 "invalid argument"**).
    - **2.x/1.x** → `{ thinkingBudget: 0 }`.
@@ -92,12 +92,15 @@ Historia de dolor real con una key **free tier** recién sacada de AI Studio:
    **esa key** puede usar (única fuente de verdad, varía por key). Claude usa `client.models.list()`.
    **Se dispara solo al Guardar una key de Gemini** (`commit()`) — el usuario ve las opciones sin
    tener que buscar el botón. Si el modelo guardado no está en la lista → aviso ámbar.
-4. **`MODELOS_MUERTOS`** en `configIA.ts` migra al default, al cargar: los retirados
-   (`gemini-2.0-flash`, `gemini-1.5-flash`, `gemini-pro`, `gemini-2.5-flash-lite`) **y** los alias
-   paid (`gemini-flash-latest`, `gemini-pro-latest`). Una config vieja se auto-repara sin tocar ⚙️.
+4. **`MODELOS_MUERTOS`** en `configIA.ts` migra al default, al cargar, SOLO lo que ya no existe
+   para nadie: retirados (`gemini-2.0-flash`, `gemini-1.5-flash`, `gemini-pro`) + alias paid
+   (`gemini-flash-latest`, `gemini-pro-latest`). **Los `2.5-*` NO se migran** (26-08 correção): una
+   key con billing o cuenta vieja sí los puede llamar (corrección 29-08-2026); para la key free
+   nueva que les da 404 ya está el aviso ámbar + "ver modelos" + Reintentar con el error real.
 5. **`mensajeErrorGemini(res, modelo?)`**: helper único de errores para todos los endpoints de
    Gemini (`llamarGemini` + `listarModelosGemini`). 404 con modelo → sugiere el botón; 503 → texto
-   de Google.
+   de Google; **401 / `ACCESS_TOKEN_TYPE_UNSUPPORTED`** → explica que la cuenta emite keys `AQ.…`
+   que todavía no andan en la REST API (problema de Google, reportado en su foro).
 
 **Resultado (29-08-2026)**: con `gemini-3.6-flash` la IA anda end-to-end con una key free real
 (respuesta + streaming + markdown). Google 503ea ese modelo de a ratos → el parser devuelve el
@@ -108,6 +111,15 @@ texto parcial y con Reintentar sale.
 con free tier: **probar con una key nueva de verdad** — los blogs y hasta `ListModels` mienten
 (lista modelos que la key ve pero no puede llamar). El botón "ver modelos disponibles" + el
 `mensajeErrorGemini` transparente fueron lo que destrabó el diagnóstico.
+
+**Revisión 29-08-2026** (contra la doc oficial actual de Google, no solo la key de prueba):
+- `gemini-3.7-flash` existe y es el Flash estable más nuevo → nuevo default.
+- Free tier desde 01-abr-2026 = solo Flash / Flash-Lite; los Pro son pago. Coincide con lo visto.
+- `thinkingLevel` (3.x) / `thinkingBudget` (2.5), no los dos → 400. Confirmado, es lo que hace el código.
+- Keys `AIza…` viejas: Google las rechaza del todo desde septiembre 2026. Placeholder de la key
+  pasó a `"AQ.…"`.
+- Reportes en el foro de Google: keys `AQ.…` que dan `401 ACCESS_TOKEN_TYPE_UNSUPPORTED` contra
+  `generativelanguage` en algunas cuentas (la de prueba no). Mapeado en `mensajeErrorGemini`.
 
 ### 8. La API key es un **borrador** en `SettingsPanel`; se persiste con el botón "Guardar" (o Enter)
 - **Por qué**: no persistir keys a medio tipear, y dejar explícito cuándo la key "entra en

@@ -154,8 +154,11 @@ Props de `<ReactFlow>` que importan:
   SSE propio (líneas `data: {json}`), acumula `candidates[0].content.parts[].text`. `finishReason`
   SAFETY / `promptFeedback.blockReason` → error de seguridad. CORS de Gemini **anda desde el
   navegador** (verificado: key trucha → 400 real, no bloqueo CORS). Tiene free tier. Default
-  `gemini-2.0-flash`.
+  `gemini-3.7-flash`. `thinkingConfig` por generación: `thinkingLevel: "low"` (3.x) /
+  `thinkingBudget: 0` (2.x). Ver decisiones §7b.
 - `mensajeLegible` mapea status/errores → texto legible (usado por ambos adaptadores).
+  `mensajeErrorGemini(res, modelo?)` traduce errores de cualquier endpoint de Gemini (400 key /
+  401 keys `AQ.` / 403 / 404 / 429 / 503).
 
 ## Deploy (next.config.ts + .github/workflows/deploy.yml)
 

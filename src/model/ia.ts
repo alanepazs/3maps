@@ -17,25 +17,25 @@ export const PROVEEDORES_DISPONIBLES: Proveedor[] = ["claude", "gemini"];
 
 export const MODELOS_SUGERIDOS: Record<Proveedor, string[]> = {
   claude: ["claude-haiku-4-5", "claude-sonnet-5", "claude-opus-5"],
-  deepseek: ["deepseek-chat"],
-  gpt: ["gpt-4o-mini"],
-  // Una key free tier NUEVA solo puede usar los 3.x: Google devuelve 404 en los
-  // 2.5-* ("no longer available to new users, use gemini-3.6-flash"). El botón
-  // "ver modelos disponibles" en ⚙️ lista lo que la key concreta puede usar.
-  // Ver decisiones §7b.
+  deepseek: ["deepseek-v4-flash", "deepseek-v4-pro"],
+  gpt: ["gpt-5.4-mini", "gpt-5.5"],
+  // El free tier de Gemini (desde abr-2026) es solo Flash / Flash-Lite; los Pro
+  // pasaron a pago. Una key free tier NUEVA además devuelve 404 en los 2.5-*
+  // ("no longer available to new users, use gemini-3.x"). El botón "ver modelos
+  // disponibles" en ⚙️ lista lo que la key concreta puede usar. Ver decisiones §7b.
   gemini: [
+    "gemini-3.7-flash",
     "gemini-3.6-flash",
     "gemini-3.5-flash",
     "gemini-3.5-flash-lite",
-    "gemini-2.5-flash",
   ],
 };
 
 export const MODELO_POR_DEFECTO: Record<Proveedor, string> = {
   claude: "claude-haiku-4-5",
-  deepseek: "deepseek-chat",
-  gpt: "gpt-4o-mini",
-  gemini: "gemini-3.6-flash",
+  deepseek: "deepseek-v4-flash",
+  gpt: "gpt-5.4-mini",
+  gemini: "gemini-3.7-flash",
 };
 
 export const NOMBRE_PROVEEDOR: Record<Proveedor, string> = {
@@ -50,7 +50,7 @@ export const PISTA_API_KEY: Record<Proveedor, string> = {
   claude: "sk-ant-…",
   deepseek: "sk-…",
   gpt: "sk-…",
-  gemini: "AIza…",
+  gemini: "AQ.…",
 };
 
 export type LlamadaOpts = {
@@ -341,14 +341,32 @@ async function llamarGemini(
 // Traduce una respuesta de error de Gemini (cualquier endpoint) a texto legible.
 async function mensajeErrorGemini(res: Response, modelo?: string): Promise<string> {
   let m: string | undefined;
+  let estado: string | undefined;
   try {
-    const j = (await res.json()) as { error?: { message?: string } };
+    const j = (await res.json()) as {
+      error?: { message?: string; status?: string };
+    };
     m = j?.error?.message;
+    estado = j?.error?.status;
   } catch {
     // sin body legible
   }
   if (res.status === 400 && /api[_ ]?key/i.test(m ?? "")) {
     return "API key de Gemini inválida.";
+  }
+  // Keys nuevas con formato "AQ.…": en algunas cuentas de Google todavía no
+  // funcionan contra la REST API (generativelanguage) y devuelven 401
+  // ACCESS_TOKEN_TYPE_UNSUPPORTED. Es un problema del lado de Google.
+  if (
+    res.status === 401 ||
+    estado === "ACCESS_TOKEN_TYPE_UNSUPPORTED" ||
+    /ACCESS_TOKEN_TYPE_UNSUPPORTED/i.test(m ?? "")
+  ) {
+    return (
+      "Tu cuenta de Google emite keys 'AQ.…' que todavía no funcionan en la " +
+      "REST API de Gemini (error de Google, no de 3maps). Probá regenerar la " +
+      "key en AI Studio o usar otra cuenta."
+    );
   }
   // Para 403/404 el mensaje de Google suele explicar el motivo real (modelo
   // retirado, "usá tal API", región, billing) — no lo tapamos.

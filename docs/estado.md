@@ -53,10 +53,11 @@ Carpeta local: `D:\IA\3maps`.
 - **Proveedores**: Claude (Anthropic, `@anthropic-ai/sdk` dinámico) y **Gemini (Google, `fetch`
   directo + SSE, tiene free tier)**. Se eligen en ⚙️; al cambiar se resetea el modelo y se limpia
   la key. **La API key vive solo en el navegador** y va directo al proveedor (CORS de ambos ok).
-  Default de Gemini = `gemini-2.5-flash` (GA, free tier), con **thinking apagado**
-  (`thinkingBudget: 0` — si no, devolvía respuesta vacía). Los modelos **varían por key** → botón
-  **"ver modelos disponibles"** en ⚙️ (`listarModelos`, GET `/v1beta/models` con la key propia →
-  chips). `configIA.ts` migra modelos retirados y alias paid al cargar. Ver decisiones §7b.
+  Default de Gemini = `gemini-3.7-flash` (Flash estable más nuevo, free tier), con **thinking al
+  mínimo** por generación (`thinkingLevel: "low"` en 3.x, `thinkingBudget: 0` en 2.x — si no,
+  devolvía respuesta vacía). Los modelos **varían por key** → botón **"ver modelos disponibles"**
+  en ⚙️ (`listarModelos`, GET `/v1beta/models` con la key propia → chips). `configIA.ts` migra al
+  cargar solo lo retirado-para-todos + alias paid (los `2.5-*` ya NO se migran). Ver decisiones §7b.
 - **Respuesta en markdown** (`src/components/Markdown.tsx`): títulos, listas, código (inline y
   bloque con scroll propio), links (pestaña nueva), citas, tablas GFM. Sin HTML crudo → seguro.
 - **Errores**: recuadro rojo + "↻ Reintentar" (descarta la parcial vieja). El error se persiste
@@ -87,9 +88,15 @@ Carpeta local: `D:\IA\3maps`.
       key real. Free tier = solo modelos 3.x (ver decisiones §7b).
 - [x] **UX del botón "Guardar" key**: al guardar muestra "✓ Aplicado" 2s + hint "Config aplicada.
       Ya podés mandar una pregunta." antes de volver a "✓ Guardado".
+- [x] **Metadata de modelos al día + paid keys** (29-08-2026): default Gemini `gemini-3.7-flash`,
+      sugeridos 3.x; `deepseek`/`gpt` con IDs actuales (`deepseek-v4-flash`, `gpt-5.4-mini`);
+      placeholder de key Gemini `AQ.…`; `MODELOS_MUERTOS` ya no migra los `2.5-*` (los desbloquea
+      para keys con billing); `mensajeErrorGemini` mapea `401 ACCESS_TOKEN_TYPE_UNSUPPORTED`.
 - [ ] **System prompt configurable** (hoy no hay). Sumar a `Settings` + pasarlo a `llamarIA`.
 - [ ] Definir qué pasa al abrir/doble-click en un globo (spec §14: ¿solo ese intercambio o
       transcripción de la rama?).
+- [ ] Adaptador OpenAI-compatible (DeepSeek + GPT) — un `llamarOpenAICompat` para los dos `case`.
+- [ ] Auto-retry en `llamarGemini` para 503 intermitentes (solo si `acumulado === ""`).
 
 ### Más adelante
 - [ ] Export/import: `.zip` de la carpeta de `.md` + carpetas reales con File System Access API,
