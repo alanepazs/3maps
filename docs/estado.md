@@ -1,8 +1,8 @@
 # Estado del proyecto
 
 > Snapshot para retomar rápido. Actualizar al final de cada sesión.
-> Última actualización: 30-08-2026 (fase 2 — 2.0/2.1/2.2/2.3 CERRADAS y verificadas en prod:
-> compartir por link, proxy DeepSeek/GPT, login por magic link, mis árboles + despublicar).
+> Última actualización: 30-08-2026 (fase 2 — 2.0/2.1/2.2/2.3 en prod + 2.4 sync codeado.
+> Falta: correr el schema.sql nuevo (bucket `sync`) + probar sync con 2 dispositivos. Después 2.5).
 
 ## Mapa de docs
 
@@ -116,8 +116,12 @@ Ver **`docs/fase-2.md`**. Proyecto Supabase `ref` ejecjjpdjoxgrbqrhwwd.
   despublicar → el link muere al instante (`cargarArbolCompartido` baja sin caché, ver §F2-4).
   `schema.sql` corrido (tabla `shared_trees`), Redirect URLs configuradas.
 
-**Fase 2 base cerrada.** Siguientes tandas: sync entre dispositivos (2.4), embeddings (2.5).
-Opcionales sueltos: Cerebras como 5º proveedor; renombrar "Generar link" → "Compartir este árbol".
+**2.4 (sync entre dispositivos)**: codeado (`a7eb13c`). Bucket privado `sync`, `useSync` hook,
+last-write-wins. Línea de estado en ⚙️ Cuenta. **Falta que el usuario:** correr el `schema.sql`
+nuevo (agrega el bucket `sync`) + probar abriendo el mismo árbol logueado en 2 lados.
+
+Siguiente: embeddings (2.5). Opcionales sueltos: Cerebras como 5º proveedor; renombrar
+"Generar link" → "Compartir este árbol".
 
 **UX — API key por proveedor** (`0e56112`, 30-08-2026): `configIA.ts` ahora guarda una key por
 proveedor. Cambiás de proveedor en ⚙️ y volvés → la key reaparece sola (antes se borraba).
@@ -158,6 +162,7 @@ Default de proveedor = gemini. Ver decisiones §9.
 - [x] Fix: cargar árbol compartido sin caché → despublicar instantáneo — `e9b5c0c`.
 - [x] Fase 2.2 verificada end-to-end en prod (login Gmail + compartir + despublicar) — 30-08-2026.
 - [x] UX: una API key por proveedor (`configIA.ts` multi-key) — `0e56112`. Probado + verificado.
+- [x] Fase 2.4: sync del árbol entre dispositivos (`sync.ts` + `useSync`, LWW) — `a7eb13c`.
 
 ## Issues conocidos / gotchas
 

@@ -1,7 +1,7 @@
 # Fase 2 — Compartir y sincronizar
 
-> Estado: **2.0, 2.1, 2.2, 2.3 CERRADAS y verificadas en producción** (30-08-2026).
-> Falta: 2.4 (sync entre dispositivos) y 2.5 (embeddings).
+> Estado: **2.0, 2.1, 2.2, 2.3 verificadas en producción; 2.4 codeada** (30-08-2026).
+> Falta: 2.5 (embeddings) + que el usuario corra el `schema.sql` nuevo y pruebe 2.4.
 > Fase 1 (MVP) quedó cerrada — ver `docs/estado.md`.
 
 ## Setup ya hecho por el usuario
@@ -188,14 +188,25 @@ después es fácil). El anónimo no ve ningún cambio.
 
 **2.3 completo.** Nada pendiente del usuario para compartir por link.
 
-### 2.4 — Sync entre dispositivos
+### 2.4 — Sync entre dispositivos — ✅ codeado (`a7eb13c`)
 
-Depende de: 2.2 y 2.3 (reusa Storage).
+Decisión (con el usuario): **last-write-wins, sin prompt de conflicto.** "Gana el último que
+guardó" = el último que subió a la nube.
 
-- Usuario logueado: su árbol se sincroniza a su Storage privado.
-- Estrategia de conflicto: last-write-wins por archivo `.md`, con `updated_at`. Documentar el
-  caso "edité en dos dispositivos offline".
-- Vista "Mis árboles".
+- [x] `schema.sql`: bucket **privado** `sync`, RLS `for all` scopeada a
+      `storage.foldername(name)[1] = auth.uid()` → cada uno solo su carpeta `<uid>/`.
+- [x] `sync.ts`: `bajarArbolNube()` / `subirArbolNube(arbol)` → `sync/<uid>/arbol.json` (mismo
+      formato `.md`-por-intercambio). `localStorage["3maps:sync"] = { at }` guarda el `updated_at`
+      del último sync.
+- [x] `useSync.ts`: al loguear → si `nube.updated_at > ultimoSyncAt()` trae la nube, si no sube
+      la local. En cada cambio → sube (debounce 1.5s) + flush en `pagehide` / `visibilitychange`.
+      No corre en modo `?compartir=`.
+- [x] `SettingsPanel` → línea de estado en "Cuenta" (`☁ sincronizando…` / `☁ …se sincroniza` /
+      `⚠ no se pudo`).
+- [x] Verificado sin regresión (logout). El flujo de 2 dispositivos lo prueba el usuario.
+- **Límite aceptado**: si editás offline en un dispositivo y otro sube antes de que sincronices,
+  se pierden esos cambios offline (LWW). El flush en `pagehide` lo hace poco probable.
+- **Pendiente del usuario**: correr el `schema.sql` nuevo (agrega el bucket `sync`).
 
 ### 2.5 — Embeddings locales (`transformers.js`) — track independiente
 

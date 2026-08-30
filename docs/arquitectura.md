@@ -57,6 +57,10 @@ src/
     supabase.ts          getSupabase() → SupabaseClient | null (null si no hay env). haySupabase()
                          para mostrar/ocultar UI. proxyIAUrl() = <supabaseUrl>/functions/v1/ia-proxy.
                          auth con persistSession/detectSessionInUrl true (fase 2.2, magic link).
+    sync.ts              Sync del árbol de trabajo entre dispositivos (fase 2.4, solo con sesión).
+                         bajarArbolNube() / subirArbolNube(arbol) → bucket privado sync/<uid>/arbol.json
+                         (mismo formato .md-por-intercambio). localStorage "3maps:sync" = { at }
+                         (updated_at del último sync). Last-write-wins (decisiones F2-8).
     compartir.ts         compartirArbol(arbol, titulo) → sube arboles/<slug>.json a Storage (mismo
                          formato que persistencia.ts), devuelve {slug, url}, y si hay sesión hace
                          insert en shared_trees (soft-fail). cargarArbolCompartido(slug) lo baja y
@@ -79,6 +83,9 @@ src/
                         {titulo, onGuardar, onSalir}. "Guardar en mi 3maps" = pasa a local editable.
     useSesion.ts        Hook de auth (fase 2.2): {usuario, cargando, enviarMagicLink, cerrarSesion}.
                         onAuthStateChange + getUser. Sin Supabase → usuario null, cargando false.
+    useSync.ts          Hook de sync (fase 2.4): sync inicial al loguear (traer si la nube es más
+                        nueva, si no subir), push con debounce 1.5s + flush en pagehide. Devuelve
+                        EstadoSync ("off"|"sincronizando"|"ok"|"error"). No corre en modo compartido.
     Composer.tsx        Barra inferior fija para escribir.
     SettingsPanel.tsx   Tuerquita ⚙️: ajustes del lienzo (envión, ventana de contexto) +
                         config de IA. API key y modelo son BORRADORES (estado local) que se
@@ -107,8 +114,9 @@ src/
 
 supabase/
   config.toml                  project_id + [functions.ia-proxy] verify_jwt=false.
-  schema.sql                    bucket `arboles` + políticas RLS (incl. delete dueño-solo) +
-                               tabla `shared_trees` (metadata de "mis árboles"). Lo corre el usuario.
+  schema.sql                    bucket `arboles` + RLS (incl. delete dueño-solo) + tabla
+                               `shared_trees` + bucket privado `sync` (RLS por carpeta `<uid>/`,
+                               fase 2.4). Lo corre el usuario.
   functions/ia-proxy/index.ts   Edge function Deno. Proxy stateless para DeepSeek/GPT: reenvía a
                                api.openai.com / api.deepseek.com con x-ia-key, agrega CORS, pipe
                                del stream. Sin logs, sin storage. Se deploya con `supabase

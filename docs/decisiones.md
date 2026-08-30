@@ -345,6 +345,20 @@ con free tier: **probar con una key nueva de verdad** — los blogs y hasta `Lis
   sumar un provider OAuth.
 - **Revertir** (volver a `persistSession: false`): rompe que la sesión sobreviva al reload.
 
+### F2-8. Sync del árbol de trabajo = **last-write-wins**, sin prompt de conflicto
+- **Decidido con el usuario**: "gana el último que guardó". Un `<uid>/arbol.json` en el bucket
+  privado `sync`; `useSync` compara `nube.updated_at` con `localStorage["3maps:sync"].at` (el
+  `updated_at` que sincronizamos por última vez). Nube más nueva → traer; si no → subir.
+- **Por qué no merge por-nodo / CRDT**: es una herramienta personal de un solo usuario. El costo
+  de un merge real (tombstones, timestamps por nodo, tests) no se justifica para "abrir en el
+  celu lo que armé en la compu".
+- **Sube con debounce (1.5s) + flush en `pagehide`/`visibilitychange`** → la ventana para perder
+  cambios (editar y cerrar en <1.5s justo cuando otro dispositivo sube) es chica.
+- **No corre en modo `?compartir=`** (`activo = !readOnly`): ese árbol es de otro.
+- **`sincronizado` ref** = la instancia de `Arbol` que ya está en la nube; si `arbol` sigue
+  siendo esa referencia, el debounce no sube nada (evita el re-upload tras un "traer").
+- **Revertir** (sync manual con botones): más control, pero te olvidás y perdés trabajo.
+
 ---
 
 ## Build / deploy
