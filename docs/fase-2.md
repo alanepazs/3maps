@@ -109,7 +109,7 @@ Ordenados por dependencia. Cada bloque es committeable solo.
 autorizado. Para usarlo el usuario tiene que correr el OAuth desde una sesión interactiva
 (`claude mcp` o `/mcp`). No es bloqueante para planear ni para el código — solo acelera el setup.
 
-### 2.1 — Proxy IA para DeepSeek / GPT — ✅ codeado (`9a2eecc`), falta deployar la function
+### 2.1 — Proxy IA para DeepSeek / GPT — ✅ deployado y verificado (falta key real para el happy path)
 
 Decisión: **opción A** (proxy stateless opt-in). Ver `decisiones.md` §7a + F2-6.
 
@@ -125,16 +125,15 @@ Decisión: **opción A** (proxy stateless opt-in). Ver `decisiones.md` §7a + F2
       SettingsPanel: caja ámbar + checkbox. Sin toggle → error claro; sin Supabase → "no disponible".
 - [x] Verificado en navegador: toggle off → error "activá el proxy"; toggle on → intenta el proxy.
 
-**Pendiente del usuario:**
-1. **Deployar la function.** Con la CLI de Supabase (`npm i -g supabase`, `supabase login`):
-   ```
-   supabase functions deploy ia-proxy --project-ref ejecjjpdjoxgrbqrhwwd
-   ```
-   O en el panel: Edge Functions → Create → nombre `ia-proxy` → pegar el contenido de
-   `supabase/functions/ia-proxy/index.ts` → Deploy. Después, en la config de esa function,
-   **desactivar "Verify JWT"**.
-2. **Probar con una key real** de DeepSeek o OpenAI (como pasó con Claude — sin key propia no se
-   puede verificar end-to-end). DeepSeek es el más barato.
+- [x] **Function deployada** (30-08-2026) como `ia-proxy` (via editor del panel, Verify JWT OFF).
+      URL: `https://ejecjjpdjoxgrbqrhwwd.supabase.co/functions/v1/ia-proxy`.
+- [x] **Proxy verificado** (con key trucha): OPTIONS → 204 con CORS correcto; POST/GET con key
+      trucha → reenvía a DeepSeek → 401 "key inválida" devuelto **con CORS**; origen no permitido
+      → 403; proveedor inválido → 400. Cliente muestra "API key de DeepSeek inválida." tanto en
+      "verificar key" (`/models`) como al mandar una pregunta (`/chat/completions`).
+
+**Único pendiente**: probar con una key **real** de DeepSeek u OpenAI para ver una respuesta que
+streamee (como pasó con Claude — sin key propia no se llega a eso). DeepSeek es el más barato.
 
 ### 2.2 — Auth opcional (Supabase Auth)
 

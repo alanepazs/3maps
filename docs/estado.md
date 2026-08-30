@@ -1,8 +1,8 @@
 # Estado del proyecto
 
 > Snapshot para retomar rápido. Actualizar al final de cada sesión.
-> Última actualización: 29-08-2026 (fase 2.0 + 2.3 en prod; 2.1 proxy DeepSeek/GPT codeado, falta
-> deployar el edge function).
+> Última actualización: 30-08-2026 (fase 2.0 + 2.3 + 2.1 en prod: compartir por link + proxy
+> DeepSeek/GPT. Falta solo una key real de DeepSeek/OpenAI para el happy path del proxy).
 
 ## Mapa de docs
 
@@ -107,9 +107,9 @@ ambos proveedores, DeepSeek/GPT diferidos a fase 2 por CORS.
 ### Fase 2 — 2.0 + 2.3 en prod; 2.1 codeado
 Ver **`docs/fase-2.md`**. Proyecto Supabase `ref` ejecjjpdjoxgrbqrhwwd.
 - **2.0 + 2.3 (compartir por link)**: ✅ verificado end-to-end en producción.
-- **2.1 (proxy DeepSeek/GPT)**: código listo (`supabase/functions/ia-proxy`, `llamarOpenAICompat`,
-  toggle opt-in). **Falta que el usuario:** deploye el edge function (`supabase functions deploy
-  ia-proxy` o el editor del panel + desactivar Verify JWT) y pruebe con una key real.
+- **2.1 (proxy DeepSeek/GPT)**: edge function `ia-proxy` **deployado y verificado** (30-08-2026).
+  CORS OK, reenvío OK, allow-list de orígenes OK. Con key trucha el cliente muestra el error real
+  de DeepSeek. **Falta solo** una key real de DeepSeek/OpenAI para ver una respuesta streameada.
 
 Siguientes tandas: auth (2.2), sync (2.4), embeddings (2.5).
 
@@ -142,7 +142,7 @@ Siguientes tandas: auth (2.2), sync (2.4), embeddings (2.5).
 - [x] Fase 2.0: fundaciones Supabase (cliente opcional + schema + workflow) — `76758d3`.
 - [x] Fase 2.3: compartir un árbol por link — `51dc403` (verificado en prod, deploy #35).
 - [x] Fase 2.1: proxy stateless para DeepSeek/GPT (`ia-proxy` + `llamarOpenAICompat`) — `9a2eecc`.
-      Falta deployar el edge function + probar con key real.
+      Function deployada + verificada 30-08-2026 (falta key real para el happy path).
 
 ## Issues conocidos / gotchas
 
