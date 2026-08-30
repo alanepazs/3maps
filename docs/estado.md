@@ -104,6 +104,7 @@ Carpeta local: `D:\IA\3maps`.
 - [x] Auto-retry en `llamarGemini` para 503 intermitentes (29-08-2026): 1 reintento con 1s de
       pausa, solo si no se streameó nada. `llamarGemini` = wrapper, `intentarGemini` = el trabajo.
       Ver decisiones §7c. Probado con 5 asserts (scratch, borrado).
+- [x] `lang="es"` en `layout.tsx` — `25fbbf0`.
 
 ### Más adelante
 - [ ] Export/import: `.zip` de la carpeta de `.md` + carpetas reales con File System Access API,
