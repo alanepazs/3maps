@@ -358,19 +358,23 @@ con free tier: **probar con una key nueva de verdad** — los blogs y hasta `Lis
   sumar un provider OAuth.
 - **Revertir** (volver a `persistSession: false`): rompe que la sesión sobreviva al reload.
 
-### F2-8. Sync del árbol de trabajo = **last-write-wins**, sin prompt de conflicto
+### F2-8. Sync del árbol de trabajo = **last-write-wins por hora del SERVIDOR**, sin prompt
 - **Decidido con el usuario**: "gana el último que guardó". Un `<uid>/arbol.json` en el bucket
-  privado `sync`; `useSync` compara `nube.updated_at` con `localStorage["3maps:sync"].at` (el
-  `updated_at` que sincronizamos por última vez). Nube más nueva → traer; si no → subir.
-- **Por qué no merge por-nodo / CRDT**: es una herramienta personal de un solo usuario. El costo
-  de un merge real (tombstones, timestamps por nodo, tests) no se justifica para "abrir en el
-  celu lo que armé en la compu".
-- **Sube con debounce (1.5s) + flush en `pagehide`/`visibilitychange`** → la ventana para perder
-  cambios (editar y cerrar en <1.5s justo cuando otro dispositivo sube) es chica.
-- **No corre en modo `?compartir=`** (`activo = !readOnly`): ese árbol es de otro.
-- **`sincronizado` ref** = la instancia de `Arbol` que ya está en la nube; si `arbol` sigue
-  siendo esa referencia, el debounce no sube nada (evita el re-upload tras un "traer").
-- **Revertir** (sync manual con botones): más control, pero te olvidás y perdés trabajo.
+  privado `sync`.
+- **El orden lo define la hora del SERVIDOR de Supabase** (`updated_at` del objeto de Storage,
+  leído con `storage.list()`), **NUNCA `new Date()` del navegador**. Los relojes de los
+  dispositivos no coinciden — con la hora del cliente, el device atrasado nunca "ganaba" y el
+  otro re-subía en cada carga (ping-pong). Bug real encontrado al probar, fix en `d4fd33a`.
+- **`localStorage["3maps:sync"] = { at, hash }`**: `at` = el `updated_at` (servidor) de la
+  versión que sincronizamos; `hash` (djb2 del contenido) para saber si lo local cambió sin subir.
+- **`planInicial(arbolLocal, uid)`** al abrir: sin objeto → subir; `at` de la nube ≠ nuestro `at`
+  → traer (otro dispositivo escribió); iguales y hash local cambió → subir; iguales y mismo hash
+  → **nada** (antes re-subía siempre).
+- **Por qué no merge por-nodo / CRDT**: herramienta personal de un solo usuario. El merge real
+  (tombstones, timestamps por nodo) no se justifica para "abrir en el celu lo que armé en la compu".
+- **Sube con debounce (1.5s) + flush en `pagehide`/`visibilitychange`**.
+- **No corre en modo `?compartir=`** (`activo = !readOnly`).
+- **Revertir** (hora del cliente / sync manual): vuelve el ping-pong / te olvidás y perdés trabajo.
 
 ---
 

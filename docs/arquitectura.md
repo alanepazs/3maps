@@ -59,9 +59,11 @@ src/
                          para mostrar/ocultar UI. proxyIAUrl() = <supabaseUrl>/functions/v1/ia-proxy.
                          auth con persistSession/detectSessionInUrl true (fase 2.2, magic link).
     sync.ts              Sync del árbol de trabajo entre dispositivos (fase 2.4, solo con sesión).
-                         bajarArbolNube() / subirArbolNube(arbol) → bucket privado sync/<uid>/arbol.json
-                         (mismo formato .md-por-intercambio). localStorage "3maps:sync" = { at }
-                         (updated_at del último sync). Last-write-wins (decisiones F2-8).
+                         Bucket privado sync/<uid>/arbol.json (formato .md-por-intercambio).
+                         planInicial(arbolLocal, uid) decide subir/traer/nada. subirArbolNube /
+                         bajarArbolNube / metaNube (lee updated_at del SERVIDOR via storage.list).
+                         localStorage "3maps:sync" = { at, hash }. LWW por hora del servidor
+                         (decisiones F2-8).
     compartir.ts         compartirArbol(arbol, titulo) → sube arboles/<slug>.json a Storage (mismo
                          formato que persistencia.ts), devuelve {slug, url}, y si hay sesión hace
                          insert en shared_trees (soft-fail). cargarArbolCompartido(slug) lo baja y
