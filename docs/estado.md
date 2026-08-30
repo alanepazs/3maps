@@ -1,8 +1,8 @@
 # Estado del proyecto
 
 > Snapshot para retomar rápido. Actualizar al final de cada sesión.
-> Última actualización: 29-08-2026 (fase 2.0 + 2.3 codeadas: Supabase opcional + compartir por
-> link. Falta que el usuario corra `supabase/schema.sql` + cargue los GitHub secrets para probar).
+> Última actualización: 29-08-2026 (fase 2.0 + 2.3 completas: Supabase opcional + compartir por
+> link, verificado en producción).
 
 ## Mapa de docs
 
@@ -100,14 +100,12 @@ transcripción de la rama con toggle de lado, auto-retry de Gemini ante 503, `la
 verificación de key gratis (`avisoFormatoKey` + `listarModelos` para Claude), prueba real de
 ambos proveedores, DeepSeek/GPT diferidos a fase 2 por CORS.
 
-### Fase 2 — 2.0 + 2.3 andando (compartir por link)
-Ver **`docs/fase-2.md`**. Proyecto Supabase `ref` ejecjjpdjoxgrbqrhwwd. `schema.sql` corrido
-(bucket `arboles` + políticas). Flujo de compartir **verificado end-to-end en local** contra el
-Supabase real (generar link → abrir en limpio → modo lectura → guardar copia).
-**Falta solo:** cargar `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` como repo
-secrets de GitHub para que ande también en la app publicada.
+### Fase 2 — 2.0 + 2.3 completas (compartir por link, en producción)
+Ver **`docs/fase-2.md`**. Proyecto Supabase `ref` ejecjjpdjoxgrbqrhwwd. `schema.sql` corrido,
+secrets de GitHub cargados. **Flujo de compartir verificado end-to-end en producción**
+(`alanepazs.github.io/3maps`): generar link → abrir en limpio → modo lectura → guardar copia.
 
-Proxy IA (2.1, opción A stateless), auth (2.2), sync (2.4), embeddings (2.5) = tandas siguientes.
+Siguientes tandas: proxy IA (2.1, opción A stateless), auth (2.2), sync (2.4), embeddings (2.5).
 
 ### Más adelante (fuera de fase 2)
 - [ ] Export/import: `.zip` de la carpeta de `.md` + carpetas reales con File System Access API,

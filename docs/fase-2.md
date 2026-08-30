@@ -143,10 +143,11 @@ Depende de: 2.0.
 - [x] Abrir `…/?compartir=<slug>` → carga en **modo lectura** (`SharedBanner` + `readOnly` por
       `NodeActionsContext`); "Guardar en mi 3maps" lo pasa a local editable. Link roto → cae al local.
 - [x] Topes: 50 intercambios / ~1 MB (cliente) + 2 MB (bucket).
-- [x] **Flujo verificado end-to-end** (29-08-2026, local contra el Supabase real): generar link →
-      abrir en limpio (sin datos locales) → ver en modo lectura → "Guardar en mi 3maps". El bucket
-      `arboles` y las políticas del `schema.sql` funcionan.
-- **Falta**: cargar los repo secrets de GitHub para que ande también en la app publicada.
+- [x] **Flujo verificado end-to-end** (29-08-2026): en local y **en producción**
+      (`alanepazs.github.io/3maps`, deploy #35 con los secrets cargados). Generar link → abrir en
+      limpio → modo lectura → "Guardar en mi 3maps". Bucket `arboles` + políticas OK.
+
+**2.3 completo.** Nada pendiente del usuario para compartir por link.
 
 ### 2.4 — Sync entre dispositivos
 
