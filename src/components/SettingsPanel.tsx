@@ -21,6 +21,9 @@ type Props = {
   onChange: (patch: Partial<Settings>) => void;
   configIA: ConfigIA | null;
   onChangeConfigIA: (c: ConfigIA | null) => void;
+  // Sube el árbol actual y devuelve el link. `undefined` si no hay backend
+  // configurado o si se está viendo un árbol compartido (fase 2.3).
+  onCompartir?: (titulo: string) => Promise<{ slug: string; url: string }>;
 };
 
 // Tuerquita arriba a la izquierda. Ajustes del lienzo + configuración de la IA
@@ -30,8 +33,31 @@ export default function SettingsPanel({
   onChange,
   configIA,
   onChangeConfigIA,
+  onCompartir,
 }: Props) {
   const [open, setOpen] = useState(false);
+
+  // Compartir (fase 2.3): estado del link generado.
+  const [compTitulo, setCompTitulo] = useState("");
+  const [compLink, setCompLink] = useState<string | null>(null);
+  const [compError, setCompError] = useState<string | null>(null);
+  const [compartiendo, setCompartiendo] = useState(false);
+  const [copiado, setCopiado] = useState(false);
+
+  const hacerCompartir = async () => {
+    if (!onCompartir || compartiendo) return;
+    setCompartiendo(true);
+    setCompError(null);
+    setCompLink(null);
+    try {
+      const { url } = await onCompartir(compTitulo);
+      setCompLink(url);
+    } catch (e) {
+      setCompError(e instanceof Error ? e.message : "No se pudo compartir.");
+    } finally {
+      setCompartiendo(false);
+    }
+  };
 
   const proveedor: Proveedor = configIA?.proveedor ?? "claude";
   const keyGuardada = configIA?.apiKey ?? "";
@@ -345,6 +371,63 @@ export default function SettingsPanel({
               Se antepone a cada pregunta. No afecta el resumen del contexto viejo.
             </span>
           </label>
+
+          {onCompartir && (
+            <>
+              <hr className="my-3 border-white/10" />
+              <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-white/40">
+                Compartir
+              </p>
+              <label className="block text-sm">
+                <span className="text-white/70">Título (opcional)</span>
+                <input
+                  type="text"
+                  value={compTitulo}
+                  onChange={(e) => setCompTitulo(e.target.value)}
+                  placeholder="Se usa la primera pregunta si lo dejás vacío"
+                  className="mt-1 w-full rounded border border-white/15 bg-neutral-950 px-2 py-1.5 text-sm placeholder:text-white/30 focus:border-sky-400 focus:outline-none"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={hacerCompartir}
+                disabled={compartiendo}
+                className="mt-2 rounded bg-sky-500 px-3 py-1.5 text-xs font-medium text-white enabled:hover:bg-sky-400 disabled:opacity-40"
+              >
+                {compartiendo ? "subiendo…" : "Generar link"}
+              </button>
+              {compError && (
+                <p className="mt-1.5 text-[11px] text-red-400">{compError}</p>
+              )}
+              {compLink && (
+                <div className="mt-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={compLink}
+                    onFocus={(e) => e.currentTarget.select()}
+                    className="w-full rounded border border-white/15 bg-neutral-950 px-2 py-1.5 text-[11px] text-white/80"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void navigator.clipboard.writeText(compLink);
+                      setCopiado(true);
+                      window.setTimeout(() => setCopiado(false), 2000);
+                    }}
+                    className="mt-1 rounded border border-white/15 px-2 py-1 text-[11px] text-white/70 hover:bg-white/10"
+                  >
+                    {copiado ? "✓ copiado" : "copiar link"}
+                  </button>
+                  <p className="mt-1 text-[11px] text-white/40">
+                    Cualquiera con el link ve una copia de este árbol (solo
+                    lectura). El link no caduca y por ahora no se puede
+                    despublicar.
+                  </p>
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
     </div>

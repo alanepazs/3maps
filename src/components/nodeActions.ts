@@ -12,10 +12,13 @@ export type NodeActions = {
   retryNode: (id: string) => void;
   // Abre el panel de transcripción de la rama (raíz→este nodo).
   openNode: (id: string) => void;
+  // `true` cuando se ve un árbol compartido: se esconden eliminar / reintentar.
+  readOnly: boolean;
 };
 
 export const NodeActionsContext = createContext<NodeActions>({
   deleteNode: () => {},
   retryNode: () => {},
   openNode: () => {},
+  readOnly: false,
 });

@@ -24,6 +24,7 @@ import MessageNode from "./MessageNode";
 import Composer, { type BranchKind } from "./Composer";
 import SettingsPanel from "./SettingsPanel";
 import BranchTranscript from "./BranchTranscript";
+import SharedBanner from "./SharedBanner";
 import { NodeActionsContext } from "./nodeActions";
 import {
   DEFAULT_SETTINGS,
@@ -55,6 +56,13 @@ import { cargarArbol, guardarArbol } from "@/model/persistencia";
 import { armarContexto, tramoAResumir } from "@/model/contexto";
 import { llamarIA, resumir, type ConfigIA } from "@/model/ia";
 import { cargarConfigIA, guardarConfigIA } from "@/model/configIA";
+import { haySupabase } from "@/model/supabase";
+import {
+  cargarArbolCompartido,
+  compartirArbol,
+  limpiarSlugDeLaUrl,
+  slugDeLaUrl,
+} from "@/model/compartir";
 
 // Definido a nivel de módulo (no dentro del componente): si React Flow recibe
 // un objeto nodeTypes nuevo en cada render, remonta todos los nodos.
@@ -105,16 +113,48 @@ function Flow() {
   // `true` una vez que se cargó el árbol persistido: recién ahí se empieza a
   // guardar (si no, el primer effect pisaría lo guardado con la semilla).
   const [listo, setListo] = useState(false);
+
+  // Modo "árbol compartido": si la URL trae `?compartir=<slug>` se carga ese
+  // árbol y NO se toca `localStorage` hasta que el usuario guarde una copia.
+  // Ver docs/fase-2.md (2.3).
+  const slugInicial = useMemo(() => slugDeLaUrl(), []);
+  const [compartido, setCompartido] = useState<{ titulo: string } | null>(null);
+  const readOnly = compartido !== null;
   // Id a seleccionar tras la próxima reconstrucción de la vista (globo recién
   // creado, o el padre tras un borrado). null = mantener la selección actual.
   const seleccionarLuegoRef = useRef<string | null>(null);
   const { getNode, getViewport, setViewport, fitView } = useReactFlow();
 
-  // Hidratar desde localStorage después del montaje. Es el patrón recomendado
-  // para estado local-first en SSR: el primer render coincide con el server
-  // (semilla) y acá se cambia al árbol persistido. El setState en effect es
-  // intencional y corre una sola vez.
+  // Hidratar después del montaje. Patrón recomendado para local-first en SSR: el
+  // primer render coincide con el server (semilla) y acá se cambia al árbol
+  // real. Si la URL trae `?compartir=<slug>`, se baja ese árbol de Supabase en
+  // vez de leer localStorage (y si el link está roto, se cae al local).
   useEffect(() => {
+    if (slugInicial) {
+      let cancelado = false;
+      void cargarArbolCompartido(slugInicial).then((res) => {
+        if (cancelado) return;
+        if (res) {
+          const ultimo = res.arbol.intercambios.at(-1)?.id ?? null;
+          setArbol(res.arbol);
+          setActiveNodeId(ultimo);
+          seleccionarLuegoRef.current = ultimo;
+          setCompartido({ titulo: res.titulo });
+        } else {
+          limpiarSlugDeLaUrl();
+          const guardado = cargarArbol();
+          const ultimo = guardado.intercambios.at(-1)?.id ?? null;
+          setArbol(guardado);
+          setActiveNodeId(ultimo);
+          seleccionarLuegoRef.current = ultimo;
+        }
+        setListo(true);
+      });
+      return () => {
+        cancelado = true;
+      };
+    }
+
     const guardado = cargarArbol();
     const ultimo = guardado.intercambios.at(-1)?.id ?? null;
     setArbol(guardado);
@@ -123,7 +163,7 @@ function Flow() {
     );
     seleccionarLuegoRef.current = ultimo;
     setListo(true);
-  }, []);
+  }, [slugInicial]);
 
   // `fitView` inicial (prop) fitea a la semilla; re-fitear al árbol cargado.
   useEffect(() => {
@@ -181,9 +221,10 @@ function Flow() {
   }, [arbol]);
 
   // Persistir el árbol en cada cambio (recién después de cargar lo guardado).
+  // En modo compartido no se toca localStorage — el árbol es de otro.
   useEffect(() => {
-    if (listo) guardarArbol(arbol);
-  }, [arbol, listo]);
+    if (listo && !readOnly) guardarArbol(arbol);
+  }, [arbol, listo, readOnly]);
 
   // Reconstruir la vista (nodos/edges) cuando cambia el contenido o la
   // estructura del árbol — NO en cada movimiento: `x`/`y` quedan fuera de la
@@ -368,6 +409,7 @@ function Flow() {
   // derecha (después se puede arrastrar a la izquierda).
   const handleSubmit = useCallback(
     (text: string, kind: BranchKind) => {
+      if (readOnly) return;
       const parent = buscar(arbol, activeNodeId ?? "");
       if (!parent) return;
       const id = nuevoId();
@@ -395,14 +437,15 @@ function Flow() {
       setActiveNodeId(id);
       void responder(id, arbolNuevo);
     },
-    [arbol, activeNodeId, responder],
+    [arbol, activeNodeId, responder, readOnly],
   );
 
   const retryNode = useCallback(
     (id: string) => {
+      if (readOnly) return;
       void responder(id, arbolRef.current);
     },
-    [responder],
+    [responder, readOnly],
   );
 
   // Al soltar / frenar el envión: escribir la posición final al árbol y, si es
@@ -483,6 +526,7 @@ function Flow() {
   // Elimina un nodo y todos sus descendientes. Deja como activo al padre.
   const deleteNode = useCallback(
     (id: string) => {
+      if (readOnly) return;
       cancelInertia();
       cancelPanInertia();
       const desc = descendientes(arbol, id);
@@ -504,7 +548,7 @@ function Flow() {
       setArbol((a) => quitarSubarbol(a, id));
       setActiveNodeId(padreId);
     },
-    [arbol, cancelInertia, cancelPanInertia],
+    [arbol, cancelInertia, cancelPanInertia, readOnly],
   );
 
   // Panel de transcripción de la rama (doble-click en un globo o botón ⤢).
@@ -516,9 +560,28 @@ function Flow() {
   );
 
   const nodeActions = useMemo(
-    () => ({ deleteNode, retryNode, openNode }),
-    [deleteNode, retryNode, openNode],
+    () => ({ deleteNode, retryNode, openNode, readOnly }),
+    [deleteNode, retryNode, openNode, readOnly],
   );
+
+  // ── Compartir (fase 2.3) ─────────────────────────────────────────────────
+  // "Compartir" sube el árbol actual a Supabase y devuelve el link. Solo si el
+  // backend está configurado y no estamos ya viendo un árbol de otro.
+  const compartir = useCallback(
+    (titulo: string) => compartirArbol(arbolRef.current, titulo),
+    [],
+  );
+  // "Guardar en mi 3maps": el árbol compartido pasa a ser local y editable.
+  const guardarCopiaLocal = useCallback(() => {
+    guardarArbol(arbolRef.current);
+    limpiarSlugDeLaUrl();
+    setCompartido(null);
+  }, []);
+  // "Salir": volver al árbol local propio (recarga para re-hidratar limpio).
+  const salirDeCompartido = useCallback(() => {
+    limpiarSlugDeLaUrl();
+    window.location.reload();
+  }, []);
 
   return (
     <NodeActionsContext.Provider value={nodeActions}>
@@ -562,13 +625,23 @@ function Flow() {
           <Controls />
           <MiniMap position="top-right" pannable zoomable />
         </ReactFlow>
+        {compartido && (
+          <SharedBanner
+            titulo={compartido.titulo}
+            onGuardar={guardarCopiaLocal}
+            onSalir={salirDeCompartido}
+          />
+        )}
         <SettingsPanel
           settings={settings}
           onChange={updateSettings}
           configIA={configIA}
           onChangeConfigIA={updateConfigIA}
+          onCompartir={haySupabase() && !readOnly ? compartir : undefined}
         />
-        <Composer activeNodeLabel={activeNodeLabel} onSubmit={handleSubmit} />
+        {!readOnly && (
+          <Composer activeNodeLabel={activeNodeLabel} onSubmit={handleSubmit} />
+        )}
         {transcripcion && transcripcion.length > 0 && (
           <BranchTranscript
             intercambios={transcripcion}

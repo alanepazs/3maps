@@ -33,7 +33,8 @@ export default function MessageNode({
   const respuesta = data.respuesta ? String(data.respuesta) : null;
   const pending = Boolean(data.pending);
   const error = data.error ? String(data.error) : null;
-  const { deleteNode, retryNode, openNode } = useContext(NodeActionsContext);
+  const { deleteNode, retryNode, openNode, readOnly } =
+    useContext(NodeActionsContext);
 
   return (
     <div
@@ -50,8 +51,9 @@ export default function MessageNode({
           >
             ⤢ Abrir
           </button>
-          {/* El nodo raíz no se puede eliminar: borrarlo dejaría todo huérfano. */}
-          {!isRoot && (
+          {/* El nodo raíz no se puede eliminar: borrarlo dejaría todo huérfano.
+              En un árbol compartido (readOnly) tampoco. */}
+          {!isRoot && !readOnly && (
             <button
               type="button"
               onClick={() => deleteNode(id)}
@@ -81,13 +83,15 @@ export default function MessageNode({
               <Markdown>{respuesta}</Markdown>
             </div>
           )}
-          <button
-            type="button"
-            onClick={() => retryNode(id)}
-            className="mt-2 rounded border border-white/20 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
-          >
-            ↻ Reintentar
-          </button>
+          {!readOnly && (
+            <button
+              type="button"
+              onClick={() => retryNode(id)}
+              className="mt-2 rounded border border-white/20 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
+            >
+              ↻ Reintentar
+            </button>
+          )}
         </div>
       ) : (
         <div
