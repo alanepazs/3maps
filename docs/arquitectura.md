@@ -33,7 +33,7 @@ src/
                          caminoRaizA, padre, raices), mutaciones (agregar, quitarSubarbol,
                          conPosicion, conRama, conRespuesta, reparentar), arbolAVista (deriva
                          nodes/edges de React Flow), toMarkdown / parseMarkdown, arbolInicial
-                         (semilla de ejemplo).
+                         (= { intercambios: [] }, árbol vacío — el 1er submit crea la raíz).
     persistencia.ts      guardarArbol / cargarArbol en localStorage ("3maps:arbol"), guardando
                          un string .md por intercambio. Cae a arbolInicial() si no hay nada.
     contexto.ts          armarContexto(arbol, nodoId, opts, resumenViejo, relevantes) → Mensaje[]:
@@ -171,9 +171,9 @@ Estado / hooks clave:
 - `spaceHeld` (useState) — listener propio de keydown/keyup en `window`. Invierte el modo del lienzo.
 
 Handlers (todos operan sobre `arbol` vía `setArbol`):
-- `handleSubmit(text, kind)` — arma el árbol nuevo con `agregar(crearIntercambio({..., pending:true}))`
-  colgando del activo, lo setea, y llama `responder(id, arbolNuevo)`. `kind` "main" → rama "main",
-  abajo; "branch" → rama "branch-right", a la derecha.
+- `handleSubmit(text, kind)` — si el árbol está vacío, el globo es la raíz; si no, cuelga del
+  activo. `agregar(crearIntercambio({..., pending:true}))`, lo setea, llama `responder(id, arbolNuevo)`.
+  `kind` "main" → rama "main", abajo; "branch" → rama "branch-right", a la derecha.
 - `responder(nodeId, arbolBase)` — **la llamada a la IA**. Si no hay API key → `conError`. Si no:
   `conRespuesta({pending:true})` + limpia error; arma el contexto con `armarContexto` (tratando a
   `nodeId` como pendiente, así un reintento descarta la respuesta parcial vieja); si el camino
@@ -279,10 +279,11 @@ Semilla (`arbolInicial()` en `model/intercambio.ts`): 3 intercambios de ejemplo 
 
 ## Composer.tsx
 
-Barra `absolute inset-x-0 bottom-0`. Props: `activeNodeLabel` (la pregunta del activo),
+Barra `absolute inset-x-0 bottom-0`. Props: `activeNodeLabel`, `arbolVacio`,
 `onSubmit(text, "main"|"branch")`.
-- `Enter` → submit("main"). `Shift+Enter` → salto de línea (default del textarea).
-- Botones "⑂ Ramificar" y "↓ Continuar hilo". Deshabilitados si no hay activo o el texto está vacío.
+- `Enter` → submit("main"). `Shift+Enter` → salto de línea.
+- `arbolVacio` → hint "Escribí tu primera pregunta", botón "Empezar" (sin "Ramificar"). Si no,
+  "⑂ Ramificar" + "↓ Continuar hilo", deshabilitados sin activo o con texto vacío.
 
 ## model/intercambio.ts (modelo de datos)
 

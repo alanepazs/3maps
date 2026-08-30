@@ -44,7 +44,10 @@ Complementa a:
 - **Por qué**: leer `localStorage` durante el render rompe la hidratación (server ve semilla,
   cliente ve lo guardado). El `setState` dentro del effect es a propósito y corre una vez.
 - **`listo`** (useState) gatea: hasta que no cargó, no se persiste ni se reconcilia la vista.
-- **La semilla** usa ids `nodo-ejemplo-*` y fechas fijas para que el primer render coincida.
+- **La semilla es `arbolInicial()` = `{ intercambios: [] }`** (árbol vacío). Antes eran 3 globos
+  de ejemplo (un plan de estudio inventado) — molestaban al aparecer en cada navegador limpio /
+  sesión nueva. El primer submit del `Composer` crea la raíz (`handleSubmit` detecta el árbol
+  vacío). `[]` es trivialmente determinístico → SSR-safe.
 - **Revertir rompe**: warning de hidratación + posible parpadeo semilla→guardado.
 
 ---
@@ -370,6 +373,11 @@ con free tier: **probar con una key nueva de verdad** — los blogs y hasta `Lis
 - **`planInicial(arbolLocal, uid)`** al abrir: sin objeto → subir; `at` de la nube ≠ nuestro `at`
   → traer (otro dispositivo escribió); iguales y hash local cambió → subir; iguales y mismo hash
   → **nada** (antes re-subía siempre).
+- **El sync inicial corre UNA vez por uid y NO se cancela** (`inicialDe` ref, sin `vivo`/cleanup):
+  `onAuthStateChange` emite un evento extra (`TOKEN_REFRESHED`) con un `user` nuevo → el effect se
+  re-ejecutaba → el cleanup mataba el `planInicial` en vuelo y no lo reintentaba → el debounce
+  subía el árbol vacío pisando la nube. **Bug que borró un árbol de prueba, fix `e76abaf`.**
+- **`inicialListo` ref**: el debounce de subida NO arranca hasta que el sync inicial se aplicó.
 - **Por qué no merge por-nodo / CRDT**: herramienta personal de un solo usuario. El merge real
   (tombstones, timestamps por nodo) no se justifica para "abrir en el celu lo que armé en la compu".
 - **Sube con debounce (1.5s) + flush en `pagehide`/`visibilitychange`**.

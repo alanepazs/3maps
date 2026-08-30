@@ -1,8 +1,8 @@
 # Estado del proyecto
 
 > Snapshot para retomar rápido. Actualizar al final de cada sesión.
-> Última actualización: 30-08-2026 (fase 2 — 2.0/2.1/2.2/2.3 en prod + 2.4 sync + 2.5 (liviana)
-> codeados. Falta: correr el schema.sql nuevo (bucket `sync`) + probar sync con 2 dispositivos).
+> Última actualización: 30-08-2026 (fase 2 — 2.0/2.1/2.2/2.3 en prod; 2.4 sync + 2.5 liviana
+> codeados; se arregló un bug de sync que borró un árbol de prueba; árbol nuevo arranca vacío).
 
 ## Mapa de docs
 
@@ -116,9 +116,12 @@ Ver **`docs/fase-2.md`**. Proyecto Supabase `ref` ejecjjpdjoxgrbqrhwwd.
   despublicar → el link muere al instante (`cargarArbolCompartido` baja sin caché, ver §F2-4).
   `schema.sql` corrido (tabla `shared_trees`), Redirect URLs configuradas.
 
-**2.4 (sync entre dispositivos)**: codeado (`a7eb13c`). Bucket privado `sync`, `useSync` hook,
-last-write-wins. Línea de estado en ⚙️ Cuenta. **Falta que el usuario:** correr el `schema.sql`
-nuevo (agrega el bucket `sync`) + probar abriendo el mismo árbol logueado en 2 lados.
+**2.4 (sync entre dispositivos)**: codeado (`a7eb13c` + fixes `d4fd33a`, `e76abaf`). Bucket
+privado `sync`, `useSync` hook, LWW **por hora del servidor**. Bugs encontrados al probar:
+(1) comparar por reloj del navegador → ping-pong; (2) `onAuthStateChange` re-ejecutaba el effect
+y mataba el sync inicial en vuelo → el debounce subía el árbol vacío y **borró un árbol de
+prueba**. Ambos arreglados. `schema.sql` ya corrido por el usuario. **Falta:** re-probar 2
+dispositivos (bloqueado por el rate limit de mails de Supabase — considerar login con Google).
 
 **2.5 (contexto viejo relevante — versión liviana)**: codeado (`b94f7e9`). `intercambiosRelevantes`
 en `contexto.ts` (match por raíz de palabra + peso por rareza, sin modelo). Rescata textuales los
@@ -168,6 +171,8 @@ Default de proveedor = gemini. Ver decisiones §9.
 - [x] UX: una API key por proveedor (`configIA.ts` multi-key) — `0e56112`. Probado + verificado.
 - [x] Fase 2.4: sync del árbol entre dispositivos (`sync.ts` + `useSync`, LWW) — `a7eb13c`.
 - [x] Fase 2.5 (liviana): rescate de contexto viejo por palabras clave (`intercambiosRelevantes`) — `b94f7e9`. 24 asserts.
+- [x] Sync: hora del servidor + fix del sync inicial que borraba árboles — `d4fd33a`, `e76abaf`.
+- [x] Árbol nuevo arranca vacío (sin globos de ejemplo) — `86bb0ef`.
 
 ## Issues conocidos / gotchas
 
