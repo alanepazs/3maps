@@ -572,6 +572,13 @@ function Flow() {
         {transcripcion && transcripcion.length > 0 && (
           <BranchTranscript
             intercambios={transcripcion}
+            side={settings.transcriptSide}
+            onFlipSide={() =>
+              updateSettings({
+                transcriptSide:
+                  settings.transcriptSide === "left" ? "right" : "left",
+              })
+            }
             onClose={() => setTranscriptNodeId(null)}
           />
         )}

@@ -170,6 +170,22 @@ con free tier: **probar con una key nueva de verdad** — los blogs y hasta `Lis
 - **Revertir** (mandarlo también al resumen): resúmenes en el idioma/tono equivocado, contexto
   degradado en ramas largas.
 
+### 8c. Verificar la key sin gastar tokens: formato local + `listarModelos`
+- **Problema**: no hay forma gratis de saber si una key "anda de verdad" salvo mandarle una
+  llamada — y la de Claude, además de gastar, revela el problema de saldo recién en el 400.
+- **Dos chequeos, ninguno cuesta tokens**:
+  1. `avisoFormatoKey(proveedor, key)` en `ia.ts` — regex local (`sk-ant-` / `AQ.`|`AIza` / `sk-`).
+     Solo caza typos y keys pegadas en el proveedor equivocado; una key bien formada pero falsa
+     pasa. `SettingsPanel` lo muestra como aviso ámbar bajo el input, sin bloquear "Guardar".
+  2. Botón **"verificar key y ver sus modelos"** → `listarModelos` (`GET /v1/models` en Claude,
+     `/v1beta/models` en Gemini). Listar modelos **no consume tokens** en ninguno de los dos y
+     falla con 401 si la key es inválida → confirma auth real. Antes el botón era solo Gemini;
+     ahora aplica a los dos, y `commit()` lo dispara al guardar cualquier key.
+- **Límite**: `listarModelos` confirma que la key **autentica**, no que tenga **saldo**. El saldo
+  de Claude sigue apareciendo recién al mandar la primera pregunta (400 `credit balance too low`).
+- **Revertir** (sacar el chequeo de formato): vuelven los "pegué la key de Gemini en Claude" que
+  solo se descubrían tras una llamada fallida.
+
 ### 9. `configIA` vive en su propio `localStorage` key (`"3maps:ia"`), separado de `"3maps:settings"`
 - **Por qué**: es sensible. Y **no se persiste si `apiKey` está vacía** — así se puede editar el
   modelo en memoria antes de que haya key.
@@ -228,6 +244,11 @@ con free tier: **probar con una key nueva de verdad** — los blogs y hasta `Lis
 - **Trigger doble**: `onNodeDoubleClick` (+ `zoomOnDoubleClick={false}`, si no React Flow hace
   zoom) y botón ⤢ en el `NodeToolbar`. El toolbar ahora se muestra también en el globo raíz
   (antes estaba detrás de `!isRoot`), pero ahí solo con ⤢ — el raíz sigue sin poder borrarse.
+- **Lado del panel configurable** (izq/der): botón ⇄ en el header del panel → `settings.transcriptSide`
+  (persiste como el resto de `Settings`). Se prefirió el toggle en el propio panel antes que una
+  opción en ⚙️: se decide en el momento de mirarlo. Default `"right"`. El panel es un overlay
+  full-height con backdrop: a la derecha tapa el minimapa, a la izquierda tapa la ⚙️ — por eso el
+  toggle, no un lado fijo.
 - **Revertir** (guardar la transcripción como estado / nodo): rompe la invariante "el árbol es la
   fuente de la verdad, la vista se deriva".
 

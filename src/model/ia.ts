@@ -50,8 +50,35 @@ export const PISTA_API_KEY: Record<Proveedor, string> = {
   claude: "sk-ant-…",
   deepseek: "sk-…",
   gpt: "sk-…",
-  gemini: "AQ.…",
+  gemini: "AQ.… o AIza…",
 };
+
+// Chequeo de formato local (gratis, sin red). No confirma que la key funcione
+// ni que tenga saldo — solo detecta typos y keys pegadas en el proveedor
+// equivocado (ej: una key de Gemini en el campo de Claude). Devuelve un aviso
+// o null si el formato es plausible.
+export function avisoFormatoKey(
+  proveedor: Proveedor,
+  key: string,
+): string | null {
+  const k = key.trim();
+  if (k === "") return null; // vacío: no es un error, es "todavía no cargó"
+  switch (proveedor) {
+    case "claude":
+      return /^sk-ant-/.test(k)
+        ? null
+        : "No parece una key de Claude (empiezan con \"sk-ant-\").";
+    case "gemini":
+      return /^(AQ\.|AIza)/.test(k)
+        ? null
+        : "No parece una key de Gemini (empiezan con \"AQ.\" o \"AIza\").";
+    case "deepseek":
+    case "gpt":
+      return /^sk-/.test(k) ? null : "No parece una key válida (empiezan con \"sk-\").";
+    default:
+      return null;
+  }
+}
 
 export type LlamadaOpts = {
   sistema?: string;

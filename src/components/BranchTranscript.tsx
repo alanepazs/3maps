@@ -7,12 +7,17 @@ import type { Intercambio } from "@/model/intercambio";
 
 // Panel lateral read-only: la rama raíz→globo aplanada a preguntas y respuestas,
 // tipo chat normal. Es una vista derivada del árbol (no toca estado). Se abre
-// con doble-click en un globo o con el botón ⤢ de su barra.
+// con doble-click en un globo o con el botón ⤢ de su barra. El lado (izq/der) lo
+// elige el usuario con el botón ⇄ y se persiste en Settings.
 export default function BranchTranscript({
   intercambios,
+  side,
+  onFlipSide,
   onClose,
 }: {
   intercambios: Intercambio[];
+  side: "left" | "right";
+  onFlipSide: () => void;
   onClose: () => void;
 }) {
   useEffect(() => {
@@ -25,11 +30,15 @@ export default function BranchTranscript({
 
   return (
     <div
-      className="absolute inset-0 z-20 flex justify-end bg-black/40"
+      className={`absolute inset-0 z-20 flex bg-black/40 ${
+        side === "left" ? "justify-start" : "justify-end"
+      }`}
       onClick={onClose}
     >
       <div
-        className="flex h-full w-full max-w-[460px] flex-col border-l border-white/15 bg-neutral-950 text-sm shadow-2xl"
+        className={`flex h-full w-full max-w-[460px] flex-col bg-neutral-950 text-sm shadow-2xl ${
+          side === "left" ? "border-r border-white/15" : "border-l border-white/15"
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-white/10 px-4 py-2.5">
@@ -39,14 +48,25 @@ export default function BranchTranscript({
               {intercambios.length} interc.
             </span>
           </span>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded px-2 py-1 text-white/60 hover:bg-white/10 hover:text-white"
-            aria-label="Cerrar"
-          >
-            ✕
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={onFlipSide}
+              className="rounded px-2 py-1 text-white/60 hover:bg-white/10 hover:text-white"
+              aria-label={side === "left" ? "Mover a la derecha" : "Mover a la izquierda"}
+              title={side === "left" ? "Mover a la derecha" : "Mover a la izquierda"}
+            >
+              ⇄
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded px-2 py-1 text-white/60 hover:bg-white/10 hover:text-white"
+              aria-label="Cerrar"
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">

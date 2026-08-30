@@ -10,6 +10,7 @@ import {
   NOMBRE_PROVEEDOR,
   PISTA_API_KEY,
   PROVEEDORES_DISPONIBLES,
+  avisoFormatoKey,
   listarModelos,
   type ConfigIA,
 } from "@/model/ia";
@@ -65,6 +66,10 @@ export default function SettingsPanel({
 
   const keyEfectiva = keyDraft.trim() || keyGuardada.trim();
 
+  // Chequeo de formato local (gratis): avisa si la key no pinta del proveedor
+  // elegido. No garantiza que funcione — para eso, "ver modelos".
+  const avisoFormato = avisoFormatoKey(proveedor, keyDraft);
+
   const verModelos = async () => {
     if (!keyEfectiva || cargandoModelos) return;
     setCargandoModelos(true);
@@ -98,9 +103,10 @@ export default function SettingsPanel({
     });
     setAplicado(true);
     window.setTimeout(() => setAplicado(false), 2000);
-    // Al guardar una key de Gemini, traer de una la lista de modelos que esa key
-    // puede usar (varía por key) → el usuario ve las opciones sin buscar el botón.
-    if (proveedor === "gemini" && keyDraft.trim()) void verModelos();
+    // Al guardar una key, traer de una la lista de modelos que esa key puede
+    // usar (varía por key) → el usuario ve las opciones y confirma que la key
+    // es válida sin gastar tokens.
+    if (keyDraft.trim()) void verModelos();
   };
 
   const cambiarProveedor = (p: Proveedor) => {
@@ -189,8 +195,17 @@ export default function SettingsPanel({
               placeholder={PISTA_API_KEY[proveedor]}
               autoComplete="off"
               spellCheck={false}
-              className="mt-1 w-full rounded border border-white/15 bg-neutral-950 px-2 py-1.5 text-sm placeholder:text-white/30 focus:border-sky-400 focus:outline-none"
+              className={`mt-1 w-full rounded border bg-neutral-950 px-2 py-1.5 text-sm placeholder:text-white/30 focus:outline-none ${
+                avisoFormato
+                  ? "border-amber-400/60 focus:border-amber-400"
+                  : "border-white/15 focus:border-sky-400"
+              }`}
             />
+            {avisoFormato && (
+              <span className="mt-1 block text-[11px] text-amber-400">
+                {avisoFormato}
+              </span>
+            )}
           </label>
 
           <label className="mt-2 block text-sm">
@@ -217,18 +232,19 @@ export default function SettingsPanel({
             </datalist>
           </label>
 
-          {proveedor === "gemini" && (
-            <button
-              type="button"
-              onClick={verModelos}
-              disabled={!keyEfectiva || cargandoModelos}
-              className="mt-1.5 rounded border border-white/15 px-2 py-1 text-[11px] text-white/70 enabled:hover:bg-white/10 disabled:opacity-40"
-            >
-              {cargandoModelos
-                ? "buscando modelos…"
-                : "↻ ver modelos que tu key puede usar"}
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={verModelos}
+            disabled={!keyEfectiva || cargandoModelos}
+            className="mt-1.5 rounded border border-white/15 px-2 py-1 text-[11px] text-white/70 enabled:hover:bg-white/10 disabled:opacity-40"
+          >
+            {cargandoModelos
+              ? "verificando key…"
+              : "↻ verificar key y ver sus modelos"}
+          </button>
+          <span className="mt-1 block text-[11px] text-white/40">
+            Consulta gratis (no gasta tokens): si la key es inválida, avisa acá.
+          </span>
 
           {errorModelos && (
             <p className="mt-1.5 text-[11px] text-red-400">{errorModelos}</p>

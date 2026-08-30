@@ -12,12 +12,16 @@ export type Settings = {
   // (ambos adaptadores la mandan como system / systemInstruction). "" = ninguna.
   // No se usa para el resumen del tramo viejo (ese es interno).
   systemPrompt: string;
+  // De qué lado del canvas se abre el panel de transcripción de la rama.
+  // Se cambia con el botón ⇄ del propio panel.
+  transcriptSide: "left" | "right";
 };
 
 export const DEFAULT_SETTINGS: Settings = {
   inertia: 1,
   ventanaContexto: 6,
   systemPrompt: "",
+  transcriptSide: "right",
 };
 
 export const SETTINGS_STORAGE_KEY = "3maps:settings";

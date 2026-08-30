@@ -54,17 +54,23 @@ src/
                         links con target=_blank). Sin HTML crudo → seguro.
     BranchTranscript.tsx  Panel lateral read-only: la rama raíz→globo (`caminoRaizA`) aplanada a
                         Q/A tipo chat. Vista derivada, sin estado propio. Se abre con doble-click
-                        en un globo o el botón ⤢; cierra con Esc / ✕ / click en el fondo.
+                        en un globo o el botón ⤢; cierra con Esc / ✕ / click en el fondo. Botón ⇄
+                        en el header cambia el lado (izq/der) → `settings.transcriptSide`.
+                        Props: {intercambios, side, onFlipSide, onClose}.
     Composer.tsx        Barra inferior fija para escribir.
     SettingsPanel.tsx   Tuerquita ⚙️: ajustes del lienzo (envión, ventana de contexto) +
                         config de IA. API key y modelo son BORRADORES (estado local) que se
                         persisten con el botón "Guardar" (o Enter); el proveedor aplica al toque
                         (resetea modelo + limpia key). "✓ Guardado" / "Cambios sin guardar" /
-                        "✓ Aplicado" (2s tras guardar) / "Borrar key". Link "ver modelos
-                        disponibles" → listarModelos() → chips clickeables + datalist.
+                        "✓ Aplicado" (2s tras guardar) / "Borrar key". Aviso ámbar bajo el input
+                        si el formato de la key no pinta del proveedor (avisoFormatoKey, local).
+                        Botón "verificar key y ver sus modelos" → listarModelos() (gratis, no gasta
+                        tokens; 401 si la key es inválida) → chips clickeables + datalist. Aplica a
+                        Claude y Gemini; commit() lo dispara al guardar.
                         Textarea "instrucción de sistema" → onChange({systemPrompt}) directo.
-    settings.ts         Settings = {inertia, ventanaContexto, systemPrompt}. DEFAULT_SETTINGS,
-                        storage key. systemPrompt "" = ninguna; se antepone a la respuesta, no al resumen.
+    settings.ts         Settings = {inertia, ventanaContexto, systemPrompt, transcriptSide}.
+                        DEFAULT_SETTINGS, storage key. systemPrompt "" = ninguna; se antepone a la
+                        respuesta, no al resumen. transcriptSide "left"|"right" (default "right").
     nodeActions.ts       NodeActionsContext: deleteNode + retryNode + openNode (hacia FlowCanvas).
     inertia.ts           Física compartida del "envión": constantes + sampleVelocity / launchVelocity / runGlide.
     useNodeInertia.ts    Hook: envión al soltar un globo o una selección.
@@ -171,6 +177,12 @@ Props de `<ReactFlow>` que importan:
 - `mensajeLegible` mapea status/errores → texto legible (usado por ambos adaptadores).
   `mensajeErrorGemini(res, modelo?)` traduce errores de cualquier endpoint de Gemini (400 key /
   401 keys `AQ.` / 403 / 404 / 429 / 503).
+- `avisoFormatoKey(proveedor, key)` — chequeo de formato local (sin red, sin tokens): regex del
+  prefijo (`sk-ant-` / `AQ.`|`AIza` / `sk-`). Devuelve aviso o null. Solo caza typos y provider
+  equivocado. Lo usa `SettingsPanel` para el aviso ámbar. Ver decisiones §8c.
+- `listarModelos(config)` → `listarModelosClaude` (`client.models.list()`) / `listarModelosGemini`
+  (`GET /v1beta/models`). **No gasta tokens** en ninguno; 401 si la key es inválida → sirve de
+  verificación gratis de la key. Filtra a modelos que soportan `generateContent`.
 
 ## Deploy (next.config.ts + .github/workflows/deploy.yml)
 

@@ -23,7 +23,7 @@ Una web app donde el usuario conversa con una IA (Claude, GPT, Gemini, DeepSeek 
   - Por defecto (sin teclas): manito. Arrastrar el fondo hace **pan** (con envión).
   - Con la **barra espaciadora** apretada: puntero. Arrastrar el fondo hace un **recuadro de selección** para agarrar varios globos; después se arrastra la selección para moverlos en grupo.
   - En ambos modos, arrastrar un globo lo mueve.
-- **Abrir un globo** (doble click, o botón ⤢ de su barra): abre un panel lateral read-only con la **transcripción de la rama** (raíz→ese globo) aplanada a pregunta/respuesta, tipo chat normal. Es una vista derivada del árbol (`caminoRaizA`), no toca estado. Se cierra con Esc, la ✕ o el fondo. (Resuelto 29-08-2026.)
+- **Abrir un globo** (doble click, o botón ⤢ de su barra): abre un panel lateral read-only con la **transcripción de la rama** (raíz→ese globo) aplanada a pregunta/respuesta, tipo chat normal. Es una vista derivada del árbol (`caminoRaizA`), no toca estado. Se cierra con Esc, la ✕ o el fondo. El botón ⇄ del panel lo pasa de un lado al otro del canvas (se recuerda). (Resuelto 29-08-2026.)
 
 ## 3. Modelo de datos
 

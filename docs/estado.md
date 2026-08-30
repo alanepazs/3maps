@@ -1,8 +1,8 @@
 # Estado del proyecto
 
 > Snapshot para retomar rápido. Actualizar al final de cada sesión.
-> Última actualización: 29-08-2026 (system prompt + transcripción de rama + auto-retry Gemini;
-> DeepSeek/GPT diferidos a fase 2 por CORS).
+> Última actualización: 29-08-2026 (system prompt + transcripción de rama con toggle de lado +
+> auto-retry Gemini + verificación de key gratis; Claude requiere billing, DeepSeek/GPT a fase 2).
 
 ## Mapa de docs
 
@@ -58,16 +58,19 @@ Carpeta local: `D:\IA\3maps`.
   Se eligen en ⚙️; al cambiar se resetea modelo y limpia key. **Key vive solo en navegador**, va directo al proveedor (CORS OK ambos).
   Default de Gemini = `gemini-3.7-flash` (Flash estable más nuevo, free tier), con **thinking al
   mínimo** por generación (`thinkingLevel: "low"` en 3.x, `thinkingBudget: 0` en 2.x — si no,
-  devolvía respuesta vacía). Los modelos **varían por key** → botón **"ver modelos disponibles"**
-  en ⚙️ (`listarModelos`, GET `/v1beta/models` con la key propia → chips). `configIA.ts` migra al
-  cargar solo lo retirado-para-todos + alias paid (los `2.5-*` ya NO se migran). Ver decisiones §7b.
+  devolvía respuesta vacía). Los modelos **varían por key** → botón **"verificar key y ver sus
+  modelos"** en ⚙️ (`listarModelos`, Claude + Gemini; **no gasta tokens**, 401 si es inválida).
+  `configIA.ts` migra al cargar solo lo retirado-para-todos + alias paid (los `2.5-*` ya NO se
+  migran). Ver decisiones §7b, §8c.
+- **Chequeo de formato de key** (`avisoFormatoKey`, local, gratis): aviso ámbar bajo el input si
+  la key no pinta del proveedor elegido (`sk-ant-` / `AQ.`|`AIza` / `sk-`). No bloquea Guardar.
 - **Respuesta en markdown** (`src/components/Markdown.tsx`): títulos, listas, código (inline y
   bloque con scroll propio), links (pestaña nueva), citas, tablas GFM. Sin HTML crudo → seguro.
 - **Errores**: recuadro rojo + "↻ Reintentar" (descarta la parcial vieja). El error se persiste
   en el frontmatter del `.md` y sobrevive al reload.
 - **Config en ⚙️**: proveedor (aplica al toque), API key + modelo (borradores → botón "Guardar" o
-  Enter; "✓ Guardado" / "Cambios sin guardar" / "✓ Aplicado" 2s / "Borrar key"),
-  "ver modelos disponibles" (chips con los modelos de tu key), ventana de contexto (2–20),
+  Enter; "✓ Guardado" / "Cambios sin guardar" / "✓ Aplicado" 2s / "Borrar key"; aviso de formato),
+  "verificar key y ver sus modelos" (chips; gratis), ventana de contexto (2–20),
   **instrucción de sistema** (textarea opcional; se antepone a cada pregunta, no al resumen).
 
 ### Datos / persistencia (verificado a nivel de datos)
@@ -103,19 +106,23 @@ Carpeta local: `D:\IA\3maps`.
 - [x] **Abrir un globo → transcripción de la rama** (29-08-2026): panel lateral read-only
       (`BranchTranscript.tsx`) con el camino raíz→globo (`caminoRaizA`) tipo chat. Trigger: doble
       click (`onNodeDoubleClick` + `zoomOnDoubleClick={false}`) o botón ⤢ del `NodeToolbar` (que
-      ahora aparece también en el raíz, solo con ⤢). Cierra con Esc / ✕ / fondo.
+      ahora aparece también en el raíz, solo con ⤢). Cierra con Esc / ✕ / fondo. Botón ⇄ cambia
+      el lado (izq/der) → `settings.transcriptSide`, persiste. Verificado en navegador.
 - [x] Auto-retry en `llamarGemini` para 503 intermitentes (29-08-2026): 1 reintento con 1s de
       pausa, solo si no se streameó nada. `llamarGemini` = wrapper, `intentarGemini` = el trabajo.
       Ver decisiones §7c. Probado con 5 asserts (scratch, borrado).
 - [x] `lang="es"` en `layout.tsx` — `25fbbf0`.
+- [x] **Verificar key gratis + aviso de formato** (29-08-2026): botón "verificar key y ver sus
+      modelos" ahora aplica a Claude y Gemini (`listarModelos` no gasta tokens, 401 si es inválida);
+      `avisoFormatoKey` marca en ámbar si la key no pinta del proveedor. Ver decisiones §8c.
 
 ### Más adelante
 - [ ] Export/import: `.zip` de la carpeta de `.md` + carpetas reales con File System Access API,
       UI de guardar/abrir (§7). Hoy solo hay persistencia local automática.
 - [ ] Embeddings locales con `transformers.js` para relevancia de contexto (§5).
 - [ ] Estado `expandido`/colapsado por globo para rendimiento con muchos nodos (§8).
-- [ ] **Auto-detect proveedor por formato de key** (UX): usuario pega key → código detecta
-      `sk-ant-…` (Claude) / `AQ.…` (Gemini) / etc. → setea proveedor + modelos automáticamente.
+- [ ] **Auto-SWITCH de proveedor por formato de key** (UX): hoy `avisoFormatoKey` solo avisa en
+      ámbar. Falta: al pegar una key que pinta de otro proveedor, ofrecer/cambiar el proveedor solo.
 - [ ] **Adaptador OpenAI-compat (DeepSeek + GPT) — FASE 2**: `api.openai.com` y `api.deepseek.com`
       no habilitan CORS → no se puede llamar desde el navegador. Necesita el proxy de fase 2
       (edge function que ponga la key server-side). Ver decisiones §7a.
