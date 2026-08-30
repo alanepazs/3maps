@@ -2,8 +2,7 @@
 
 > Snapshot para retomar rápido. Actualizar al final de cada sesión.
 > Última actualización: 30-08-2026 (fase 2 COMPLETA y en prod. Fase 3 arrancada: bloque 1 de
-> quick wins hecho — tuerquita cierra al clickear afuera, título del panel lateral, renombre del
-> botón de compartir).
+> quick wins hecho + 3.1 — tope de alto del globo con degradado + botón expandir).
 
 ## Mapa de docs
 
@@ -138,6 +137,13 @@ Ver **`docs/fase-3.md`**.
 - **3.8** — el panel lateral ya no dice "Transcripción de la rama" → "Conversación hasta este
   globo". `BranchTranscript.tsx`.
 - Botón de compartir renombrado "Generar link" → "Compartir este árbol". `SettingsPanel.tsx`.
+
+**Bloque canvas — 3.1 ✅ hecho (30-08-2026), verificado en el preview pane:**
+- **3.1** — tope de alto del globo (220px) cuando la respuesta pasa 400 chars: se corta con
+  degradado + pill "⌄ ver más", toggle Expandir/Colapsar en el `NodeToolbar`. Preferencia por
+  globo en `localStorage["3maps:vista"]` (no toca el `.md`). Módulo nuevo `src/components/vista.ts`.
+- Falta del bloque canvas: 3.2 (globo hijo no se pisa con la respuesta del padre), 3.3 (flecha
+  rama↔tronco salta durante el drag).
 
 Resto del pedido del usuario:
 - Canvas: tope de tamaño del globo + minimizar/expandir (§8); globo hijo que no se pise con la

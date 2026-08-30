@@ -1,4 +1,4 @@
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import {
   Handle,
   NodeToolbar,
@@ -8,6 +8,7 @@ import {
 
 import Markdown from "./Markdown";
 import { NodeActionsContext } from "./nodeActions";
+import { ALTO_COLAPSADO, LIMITE_COLAPSO, guardarExpandido, leerExpandido } from "./vista";
 
 // Un globo = un intercambio completo: la pregunta (encabezado) + la respuesta
 // de la IA (cuerpo).
@@ -36,6 +37,22 @@ export default function MessageNode({
   const { deleteNode, retryNode, openNode, readOnly } =
     useContext(NodeActionsContext);
 
+  // Vista colapsada / expandida (fase 3.1). Preferencia por globo, no va al `.md`.
+  // Mientras streamea se muestra completo; el tope aplica recién con la respuesta
+  // final larga.
+  const largoRespuesta = respuesta?.length ?? 0;
+  const colapsable = !pending && largoRespuesta > LIMITE_COLAPSO;
+  const [override, setOverride] = useState<boolean | undefined>(() =>
+    leerExpandido(id),
+  );
+  const expandido = override ?? !colapsable;
+  const mostrarColapsado = colapsable && !expandido;
+  const alternarExpandido = () => {
+    const nuevo = !expandido;
+    setOverride(nuevo);
+    guardarExpandido(id, nuevo);
+  };
+
   return (
     <div
       className={`w-[260px] overflow-hidden rounded-md border bg-neutral-900 text-sm ${
@@ -51,6 +68,15 @@ export default function MessageNode({
           >
             ⤢ Abrir
           </button>
+          {colapsable && (
+            <button
+              type="button"
+              onClick={alternarExpandido}
+              className="rounded border border-white/20 bg-neutral-900 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
+            >
+              {expandido ? "⌃ Colapsar" : "⌄ Expandir"}
+            </button>
+          )}
           {/* El nodo raíz no se puede eliminar: borrarlo dejaría todo huérfano.
               En un árbol compartido (readOnly) tampoco. */}
           {!isRoot && !readOnly && (
@@ -95,18 +121,34 @@ export default function MessageNode({
         </div>
       ) : (
         <div
-          className={`px-3 py-2 text-left ${
+          className={`relative px-3 py-2 text-left ${
             respuesta || pending ? "text-white/90" : "italic text-white/40"
           }`}
         >
-          {respuesta != null && <Markdown>{respuesta}</Markdown>}
-          {pending &&
-            (respuesta ? (
-              <span className="italic text-white/40"> ▍</span>
-            ) : (
-              <span className="italic text-white/40">escribiendo…</span>
-            ))}
-          {respuesta == null && !pending && "Respuesta pendiente"}
+          <div
+            className={mostrarColapsado ? "overflow-hidden" : undefined}
+            style={
+              mostrarColapsado ? { maxHeight: ALTO_COLAPSADO } : undefined
+            }
+          >
+            {respuesta != null && <Markdown>{respuesta}</Markdown>}
+            {pending &&
+              (respuesta ? (
+                <span className="italic text-white/40"> ▍</span>
+              ) : (
+                <span className="italic text-white/40">escribiendo…</span>
+              ))}
+            {respuesta == null && !pending && "Respuesta pendiente"}
+          </div>
+          {mostrarColapsado && (
+            <button
+              type="button"
+              onClick={alternarExpandido}
+              className="nodrag absolute inset-x-0 bottom-0 flex items-end justify-center bg-gradient-to-t from-neutral-900 via-neutral-900/85 to-transparent pb-1 pt-10 text-xs text-sky-300 hover:text-sky-200"
+            >
+              ⌄ ver más
+            </button>
+          )}
         </div>
       )}
 

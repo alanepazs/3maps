@@ -74,6 +74,11 @@ src/
     FlowCanvas.tsx      ★ El componente central (~500 líneas). Ver detalle abajo.
     MessageNode.tsx     Nodo custom. Estados del cuerpo: pending ("escribiendo…" + texto + ▍),
                         error (recuadro rojo + "↻ Reintentar"), respuesta (markdown), o vacío.
+                        Respuesta > 400 chars → cuerpo colapsado a 220px con degradado + pill
+                        "⌄ ver más" y toggle Expandir/Colapsar en el toolbar (fase 3.1, ver vista.ts).
+    vista.ts            Preferencias de VISTA por globo (colapsado/expandido). NO van al `.md`:
+                        localStorage["3maps:vista"] = {expandidos:{[id]:bool}}. LIMITE_COLAPSO=400,
+                        ALTO_COLAPSADO=220. leerExpandido / guardarExpandido.
     Markdown.tsx        <Markdown>{texto}</Markdown> — react-markdown + remark-gfm con estilos
                         compactos para el globo (código y tablas con scroll horizontal propio;
                         links con target=_blank). Sin HTML crudo → seguro.

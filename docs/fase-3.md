@@ -13,16 +13,16 @@ está **desactualizado** (es de antes de toda la fase 2) → correr `graphify --
 
 ## Bloques
 
-### 3.1 — Límite de tamaño del globo + minimizar / expandir  (spec §8)
+### 3.1 — Límite de tamaño del globo + minimizar / expandir  ✅ (30-08-2026)
 
-Hoy un globo con respuesta larga crece sin techo.
+Cuerpo del globo con **alto máximo 220px** (`ALTO_COLAPSADO`) cuando está colapsado, cortado con
+degradado + pill "⌄ ver más" clickeable. Toggle "⌄ Expandir / ⌃ Colapsar" en el `NodeToolbar`
+(junto a ⤢ / 🗑). Default: colapsado si la respuesta supera 400 chars (`LIMITE_COLAPSO`);
+mientras streamea se muestra completo, el tope aplica con la respuesta final.
 
-- Cuerpo del globo con **alto máximo** (~220px) + `overflow` cortado con degradado y "…".
-- Estado `expandido` **por globo** — es una preferencia de vista, NO va al `.md`. Guardar en un
-  `Set<id>` / `localStorage["3maps:vista"]` (por mapa).
-- Botón ⌄ / ⌃ en el `NodeToolbar` (junto a ⤢ / 🗑).
-- Default: colapsado si la respuesta supera ~400 chars.
-- **Decisión**: cortar-con-degradado vs scroll interno. → cortar + botón expandir.
+Preferencia **por globo**, NO va al `.md` ni al árbol: vive en `localStorage["3maps:vista"]`
+(`{ expandidos: { [id]: boolean } }`), módulo nuevo `src/components/vista.ts`. Estado local en
+`MessageNode` (`override ?? !colapsable`). TODO fase 3.5: clave por mapa.
 
 ### 3.2 — El globo hijo no se superpone con la respuesta del padre
 
@@ -124,7 +124,7 @@ Hoy: para seguir la conversación hay que cerrar el panel → escribir en el map
 ## Orden sugerido
 
 1. ~~**Quick wins**: 3.7 (click afuera), 3.8 (título panel), renombrar "Generar link".~~ ✅
-2. **Canvas** (1-2 días): 3.1 (tamaño/expandir), 3.2 (anti-superposición), 3.3 (flecha en vivo).
+2. **Canvas**: ~~3.1 (tamaño/expandir)~~ ✅ · 3.2 (anti-superposición) · 3.3 (flecha en vivo).
 3. **3.9** (composer en el panel).
 4. **3.4** (auto-layout) — el más satisfactorio visualmente.
 5. **3.5** (varios mapas) — el más grande; 3.6 (borrar raíz) puede ir con esto.
@@ -135,4 +135,4 @@ Hoy: para seguir la conversación hay que cerrar el panel → escribir en el map
 - 3.4: layout propio vs librería.
 - 3.5: selector visible vs en ⚙️; migrar el sync a per-mapa o mantener `arbol.json` default.
 - 3.6: multi-raíz real vs promover 1 hijo.
-- 3.1: cortar-con-degradado vs scroll interno.
+- ~~3.1: cortar-con-degradado vs scroll interno.~~ → degradado + pill "ver más". Hecho.
