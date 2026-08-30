@@ -100,13 +100,12 @@ transcripción de la rama con toggle de lado, auto-retry de Gemini ante 503, `la
 verificación de key gratis (`avisoFormatoKey` + `listarModelos` para Claude), prueba real de
 ambos proveedores, DeepSeek/GPT diferidos a fase 2 por CORS.
 
-### Fase 2 — 2.0 + 2.3 codeadas, falta activar
-Ver **`docs/fase-2.md`**. Proyecto Supabase creado (`ref` ejecjjpdjoxgrbqrhwwd). Código listo:
-`supabase.ts` (cliente opcional), `compartir.ts`, `SharedBanner`, sección Compartir en ⚙️,
-modo lectura para `?compartir=<slug>`. **Falta que el usuario:**
-1. Corra `supabase/schema.sql` en el SQL Editor de Supabase (crea el bucket + políticas).
-2. Cargue `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` como repo secrets de GitHub.
-3. Pruebe el flujo real (Generar link → abrir en otra ventana → Guardar copia).
+### Fase 2 — 2.0 + 2.3 andando (compartir por link)
+Ver **`docs/fase-2.md`**. Proyecto Supabase `ref` ejecjjpdjoxgrbqrhwwd. `schema.sql` corrido
+(bucket `arboles` + políticas). Flujo de compartir **verificado end-to-end en local** contra el
+Supabase real (generar link → abrir en limpio → modo lectura → guardar copia).
+**Falta solo:** cargar `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` como repo
+secrets de GitHub para que ande también en la app publicada.
 
 Proxy IA (2.1, opción A stateless), auth (2.2), sync (2.4), embeddings (2.5) = tandas siguientes.
 
