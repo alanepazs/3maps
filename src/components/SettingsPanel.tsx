@@ -23,6 +23,7 @@ import {
 import type { Proveedor } from "@/model/intercambio";
 import { haySupabase } from "@/model/supabase";
 import { useSesion } from "./useSesion";
+import type { EstadoSync } from "./useSync";
 
 type Props = {
   settings: Settings;
@@ -37,6 +38,8 @@ type Props = {
   // Sube el árbol actual y devuelve el link. `undefined` si no hay backend
   // configurado o si se está viendo un árbol compartido (fase 2.3).
   onCompartir?: (titulo: string) => Promise<{ slug: string; url: string }>;
+  // Estado del sync entre dispositivos (fase 2.4).
+  estadoSync?: EstadoSync;
 };
 
 // Tuerquita arriba a la izquierda. Ajustes del lienzo + configuración de la IA
@@ -50,6 +53,7 @@ export default function SettingsPanel({
   onCambiarProveedorIA,
   onBorrarKeyIA,
   onCompartir,
+  estadoSync,
 }: Props) {
   const [open, setOpen] = useState(false);
 
@@ -511,6 +515,13 @@ export default function SettingsPanel({
                     Sesión iniciada como{" "}
                     <span className="text-white/90">{usuario.email}</span>
                   </p>
+                  <p className="mt-0.5 text-[11px] text-white/40">
+                    {estadoSync === "sincronizando"
+                      ? "☁ sincronizando…"
+                      : estadoSync === "error"
+                        ? "⚠ no se pudo sincronizar (se reintenta al editar)"
+                        : "☁ tu árbol se sincroniza entre dispositivos"}
+                  </p>
                   <button
                     type="button"
                     onClick={() => void cerrarSesion()}
@@ -527,9 +538,9 @@ export default function SettingsPanel({
               ) : (
                 <div className="text-sm">
                   <p className="mb-1.5 text-[11px] text-white/40">
-                    Opcional. Sirve para ver y despublicar tus árboles compartidos
-                    y (más adelante) sincronizar entre dispositivos. Sin cuenta, la
-                    app funciona igual.
+                    Opcional. Con cuenta, tu árbol se sincroniza entre dispositivos
+                    y podés ver / despublicar tus árboles compartidos. Sin cuenta,
+                    la app funciona igual (todo local).
                   </p>
                   <input
                     type="email"

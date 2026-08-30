@@ -23,6 +23,7 @@ import "@xyflow/react/dist/style.css";
 import MessageNode from "./MessageNode";
 import Composer, { type BranchKind } from "./Composer";
 import SettingsPanel from "./SettingsPanel";
+import { useSync } from "./useSync";
 import BranchTranscript from "./BranchTranscript";
 import SharedBanner from "./SharedBanner";
 import { NodeActionsContext } from "./nodeActions";
@@ -606,6 +607,23 @@ function Flow() {
     window.location.reload();
   }, []);
 
+  // ── Sync entre dispositivos (fase 2.4) ───────────────────────────────────
+  // Solo con sesión y fuera del modo compartido. Last-write-wins.
+  const aplicarArbolNube = useCallback((a: Arbol) => {
+    const ultimo = a.intercambios.at(-1)?.id ?? null;
+    seleccionarLuegoRef.current = ultimo;
+    setArbol(a);
+    setActiveNodeId((cur) =>
+      a.intercambios.some((i) => i.id === cur) ? cur : ultimo,
+    );
+  }, []);
+  const estadoSync = useSync({
+    arbol,
+    setArbol: aplicarArbolNube,
+    listo,
+    activo: !readOnly,
+  });
+
   return (
     <NodeActionsContext.Provider value={nodeActions}>
       <div className="relative h-full w-full">
@@ -663,6 +681,7 @@ function Flow() {
           onCambiarProveedorIA={cambiarProveedorIA}
           onBorrarKeyIA={borrarKeyIA}
           onCompartir={haySupabase() && !readOnly ? compartir : undefined}
+          estadoSync={estadoSync}
         />
         {!readOnly && (
           <Composer activeNodeLabel={activeNodeLabel} onSubmit={handleSubmit} />

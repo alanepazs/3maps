@@ -6,14 +6,14 @@
 -- Es idempotente: se puede correr de nuevo sin romper nada.
 --
 -- Qué crea:
---   • Bucket de Storage `arboles` (público para lectura). Cada árbol compartido
---     es UN archivo JSON: `arboles/<slug>.json`.
---   • Políticas RLS de Storage: cualquiera sube y lee; solo el DUEÑO borra lo
+--   • Bucket `arboles` (público para lectura). Cada árbol compartido es UN
+--     archivo JSON: `arboles/<slug>.json`.
+--   • Políticas RLS de `arboles`: cualquiera sube y lee; solo el DUEÑO borra lo
 --     suyo (los subidos sin login no tienen dueño → no se pueden despublicar).
 --   • Tabla `shared_trees`: metadata de los árboles que compartiste LOGUEADO,
---     para la lista "mis árboles compartidos" en ⚙️ (fase 2.2b). El árbol en sí
---     NO necesita esta tabla para abrirse (el título va en el JSON) — es solo
---     para que el dueño los vea y los despublique.
+--     para la lista "mis árboles compartidos" en ⚙️ (fase 2.2b).
+--   • Bucket PRIVADO `sync` (fase 2.4): el árbol de trabajo de cada usuario en
+--     `sync/<uid>/arbol.json`. RLS: cada uno ve y escribe SOLO su carpeta.
 -- ─────────────────────────────────────────────────────────────────────────────
 
 -- ── 1) Bucket ────────────────────────────────────────────────────────────────
@@ -76,6 +76,29 @@ create policy "shared_trees: dueño borra"
   on public.shared_trees for delete
   to authenticated
   using (owner_id = auth.uid());
+
+-- ── 4) Bucket privado `sync` (fase 2.4: árbol de trabajo entre dispositivos) ──
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('sync', 'sync', false, 5242880, array['application/json'])
+on conflict (id) do update
+  set public = excluded.public,
+      file_size_limit = excluded.file_size_limit,
+      allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "3maps: sync propio" on storage.objects;
+
+-- Cada usuario ve y escribe SOLO archivos bajo su carpeta `<uid>/…`.
+create policy "3maps: sync propio"
+  on storage.objects for all
+  to authenticated
+  using (
+    bucket_id = 'sync'
+    and (storage.foldername(name))[1] = (select auth.uid()::text)
+  )
+  with check (
+    bucket_id = 'sync'
+    and (storage.foldername(name))[1] = (select auth.uid()::text)
+  );
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Límite conocido (ver docs/fase-2.md): un anónimo puede subir muchos archivos
