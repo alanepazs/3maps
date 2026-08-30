@@ -123,7 +123,7 @@ Carpeta local: `D:\IA\3maps`.
 - [x] Metadata de modelos al día + desbloquear paid keys de Gemini — `44bd8fb`.
 - [x] System prompt configurable (`Settings.systemPrompt`) — `43ed0bf`.
 - [x] Auto-retry de `llamarGemini` ante 503 (1 reintento, 1s) — `780e5fb`.
-- [x] Abrir un globo → panel de transcripción de la rama (`BranchTranscript`) — _(commit pendiente)_.
+- [x] Abrir un globo -> panel de transcripcion de la rama (`BranchTranscript`) — `da7a339`.
 
 ## Issues conocidos / gotchas
 
