@@ -1,8 +1,8 @@
 # Estado del proyecto
 
 > Snapshot para retomar rápido. Actualizar al final de cada sesión.
-> Última actualización: 30-08-2026 (fase 2.0/2.1/2.3 en prod; 2.2a login + 2.2b mis árboles /
-> despublicar codeados. Falta: correr schema.sql nuevo + config Redirect URLs + login).
+> Última actualización: 30-08-2026 (fase 2 — 2.0/2.1/2.2/2.3 CERRADAS y verificadas en prod:
+> compartir por link, proxy DeepSeek/GPT, login por magic link, mis árboles + despublicar).
 
 ## Mapa de docs
 
@@ -110,18 +110,13 @@ Ver **`docs/fase-2.md`**. Proyecto Supabase `ref` ejecjjpdjoxgrbqrhwwd.
 - **2.1 (proxy DeepSeek/GPT)**: edge function `ia-proxy` **deployado y verificado** (30-08-2026).
   CORS OK, reenvío OK, allow-list de orígenes OK. El usuario ya tiene key de DeepSeek → falta
   probar el happy path (respuesta streameada).
-- **2.2a (login por magic link)**: `useSesion` + sección "Cuenta" en ⚙️. `signInWithOtp` llega a
-  Supabase Auth.
-- **2.2b (mis árboles / despublicar)**: tabla `shared_trees` + lista en ⚙️ + botón despublicar.
-  Solo se despublica lo compartido logueado (los anónimos no tienen dueño). Verificado anónimo
-  (sin regresión).
-- **Falta que el usuario** (para 2.2 completo):
-  1. Correr el **`supabase/schema.sql` nuevo** (agrega `shared_trees` + política delete).
-  2. Supabase → Authentication → URL Configuration → agregar `https://alanepazs.github.io/3maps/`
-     a Site URL / Redirect URLs.
-  3. Probar: login con su mail → compartir un árbol → verlo en "mis árboles" → despublicarlo.
+- **2.2 (login + mis árboles + despublicar)**: ✅ **verificado end-to-end en prod** (30-08-2026).
+  Login por magic link con Gmail real; compartir logueado → aparece en "Mis árboles compartidos";
+  despublicar → el link muere al instante (`cargarArbolCompartido` baja sin caché, ver §F2-4).
+  `schema.sql` corrido (tabla `shared_trees`), Redirect URLs configuradas.
 
-Siguientes tandas: sync (2.4), embeddings (2.5).
+**Fase 2 base cerrada.** Siguientes tandas: sync entre dispositivos (2.4), embeddings (2.5).
+Opcionales sueltos: Cerebras como 5º proveedor; renombrar "Generar link" → "Compartir este árbol".
 
 ### Más adelante (fuera de fase 2)
 - [ ] Export/import: `.zip` de la carpeta de `.md` + carpetas reales con File System Access API,
@@ -155,6 +150,8 @@ Siguientes tandas: sync (2.4), embeddings (2.5).
       Function deployada + verificada 30-08-2026 (falta key real para el happy path).
 - [x] Fase 2.2a: login opcional por magic link (`useSesion` + sección Cuenta) — `c873f95`.
 - [x] Fase 2.2b: mis árboles compartidos + despublicar (`shared_trees`) — `d666f8d`.
+- [x] Fix: cargar árbol compartido sin caché → despublicar instantáneo — `e9b5c0c`.
+- [x] Fase 2.2 verificada end-to-end en prod (login Gmail + compartir + despublicar) — 30-08-2026.
 
 ## Issues conocidos / gotchas
 

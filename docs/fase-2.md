@@ -1,10 +1,17 @@
 # Fase 2 — Compartir y sincronizar
 
-> Plan de trabajo. Estado: **2.0 + 2.3 codeados** (29-08-2026), esperando que el usuario corra
-> `supabase/schema.sql` y cargue los secrets de GitHub para probar el flujo real.
+> Estado: **2.0, 2.1, 2.2, 2.3 CERRADAS y verificadas en producción** (30-08-2026).
+> Falta: 2.4 (sync entre dispositivos) y 2.5 (embeddings).
 > Fase 1 (MVP) quedó cerrada — ver `docs/estado.md`.
 
-## Pendiente del usuario para activar 2.3
+## Setup ya hecho por el usuario
+
+- `supabase/schema.sql` corrido (bucket `arboles` + políticas + tabla `shared_trees`).
+- Repo secrets de GitHub: `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+- Edge function `ia-proxy` deployada (Verify JWT off).
+- Supabase Auth → URL Configuration: `alanepazs.github.io` en Site URL / Redirect URLs.
+
+<details><summary>Instrucciones originales de setup (por si hay que rehacerlo)</summary>
 
 1. **Correr `supabase/schema.sql`** en el panel de Supabase → SQL Editor → pegar → Run.
    (Crea el bucket `arboles` + las políticas de acceso.)
@@ -16,6 +23,8 @@
    funciona porque está el `.env.local`.
 3. **Probar** (con guía): ⚙️ → sección Compartir → "Generar link" → abrir el link en otra ventana
    → ver el árbol en modo lectura → "Guardar en mi 3maps".
+
+</details>
 
 ## Decisiones tomadas (29-08-2026)
 

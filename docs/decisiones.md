@@ -294,6 +294,11 @@ con free tier: **probar con una key nueva de verdad** — los blogs y hasta `Lis
   compartiste logueado — el árbol en sí no la necesita para abrirse (el título va en el JSON).
 - **`shared_trees` insert es soft-fail**: si falla (tabla no creada, RLS), el `compartirArbol`
   igual devuelve el link — el árbol ya está subido. Solo no aparece en "mis árboles".
+- **`cargarArbolCompartido` baja con `fetch(getPublicUrl, {cache: "no-store"})`, NO con el
+  `.download()` del SDK**: Supabase le pone `Cache-Control: max-age=3600` a los objetos públicos;
+  el `.download()` usa el caché del browser → un árbol despublicado seguía visible hasta 1h para
+  quien ya había abierto el link. Sin caché, el despublicar se siente al instante. Los archivos
+  son <1 MB y se bajan on-demand, así que re-descargar no duele. Commit `e9b5c0c`.
 - **Límite conocido**: un anónimo puede spamear archivos chicos y llenar el free tier. Mitigado
   con tope de 2 MB (bucket) + tope cliente (50 globos / ~1 MB). El rate-limit real necesita un
   edge function — anotado en `docs/fase-2.md`.
