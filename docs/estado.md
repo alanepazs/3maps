@@ -100,11 +100,11 @@ transcripción de la rama con toggle de lado, auto-retry de Gemini ante 503, `la
 verificación de key gratis (`avisoFormatoKey` + `listarModelos` para Claude), prueba real de
 ambos proveedores, DeepSeek/GPT diferidos a fase 2 por CORS.
 
-### Fase 2 — plan empezado
-Ver **`docs/fase-2.md`** (borrador). 4 tracks: fundaciones Supabase, proxy IA (DeepSeek/GPT),
-auth opcional, compartir por link + sync, y embeddings locales aparte. **Hay 5 decisiones
-abiertas para el usuario** (proxy sí/no, alcance de la tanda, magic-link vs Google, compartir
-anónimo, embeddings ahora o después). Nada de código todavía.
+### Fase 2 — decisiones tomadas, sin código todavía
+Ver **`docs/fase-2.md`**. Decidido: proxy IA = opción A (stateless opt-in); primera tanda =
+**2.0 fundaciones Supabase + 2.3 compartir árbol por link**; compartir anónimo permitido.
+**Bloqueado en:** el usuario tiene que crear el proyecto Supabase y pasar Project URL + anon key.
+Proxy (2.1), auth (2.2), sync (2.4), embeddings (2.5) = tandas siguientes.
 
 ### Más adelante (fuera de fase 2)
 - [ ] Export/import: `.zip` de la carpeta de `.md` + carpetas reales con File System Access API,
