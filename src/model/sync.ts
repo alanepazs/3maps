@@ -1,46 +1,48 @@
 "use client";
 
 import { parseMarkdown, toMarkdown, type Arbol } from "./intercambio";
+import { ID_PRINCIPAL, type Mapas } from "./mapas";
 import { getSupabase } from "./supabase";
 
-// Sync del árbol de trabajo entre dispositivos (fase 2.4). Solo con sesión.
+// Sync entre dispositivos (fase 2.4, per-mapa desde fase 3.5). Solo con sesión.
 //
 // Estrategia: **last-write-wins**, sin detección de conflicto (decidido con el
-// usuario). El árbol vive en un bucket PRIVADO `sync` bajo `<uid>/arbol.json`.
+// usuario). Bucket PRIVADO `sync`. Un archivo por mapa: `<uid>/<mapId>.json`
+// (el mapa "principal" migra desde el viejo `<uid>/arbol.json`).
 //
 // El ORDEN lo define la **hora del servidor de Supabase** (el `updated_at` que
 // Storage le pone al objeto), NUNCA `new Date()` del navegador — los relojes de
 // los dispositivos no coinciden y eso rompía el LWW (ping-pong).
 //
-// `localStorage["3maps:sync"] = { at, hash }`:
+// `localStorage["3maps:sync:<mapId>"] = { at, hash, uid }`:
 //   - `at`   = el `updated_at` (del servidor) de la versión que sincronizamos.
-//   - `hash` = hash del contenido de esa versión, para saber si lo local cambió
-//     sin haberse subido todavía.
+//   - `hash` = hash del contenido de esa versión (para saber si lo local cambió
+//     sin haberse subido todavía).
+//   - `uid`  = a qué cuenta pertenece el árbol local.
 //
-// Al abrir:
-//   - no hay objeto en la nube            → subir la local.
-//   - `at` de la nube != nuestro `at`     → alguien más escribió → traer.
-//   - iguales, pero el hash local cambió  → subir.
-//   - iguales y mismo hash                → ya está, no hacer nada.
+// Además `<uid>/_mapas.json` = índice `{ [mapId]: {titulo, creado} }` para que
+// la LISTA de mapas aparezca en todos los dispositivos (unión, sin propagar
+// borrados).
 
 const BUCKET = "sync";
-const CARPETA = (uid: string) => uid;
-const ARCHIVO = "arbol.json";
-const RUTA = (uid: string) => `${uid}/${ARCHIVO}`;
-const SYNC_STATE_KEY = "3maps:sync";
+const ARCHIVO_LEGACY = "arbol.json";
+const INDICE = "_mapas.json";
+const SYNC_STATE_KEY = (mapId: string) => `3maps:sync:${mapId}`;
 const VERSION = 1;
 const LOG = "[3maps sync]";
 
-type SobreSync = { v: number; files: Record<string, string> };
-// `uid`: a qué cuenta pertenece el árbol local — si logueás con otra, no se
-// sube el árbol de la anterior. "" = nunca sincronizado (árbol "sin dueño").
+const archivoDe = (mapId: string) => `${mapId}.json`;
+const rutaDe = (uid: string, archivo: string) => `${uid}/${archivo}`;
+
+type SobreSync = { v: number; titulo?: string; files: Record<string, string> };
+type SobreIndice = { v: number; mapas: Mapas };
 type EstadoLocal = { at: string; hash: string; uid: string };
 
-function leerEstado(): EstadoLocal {
+function leerEstado(mapId: string): EstadoLocal {
   try {
     const raw =
       typeof window !== "undefined"
-        ? localStorage.getItem(SYNC_STATE_KEY)
+        ? localStorage.getItem(SYNC_STATE_KEY(mapId))
         : null;
     if (!raw) return { at: "", hash: "", uid: "" };
     const o = JSON.parse(raw) as Partial<EstadoLocal>;
@@ -54,9 +56,9 @@ function leerEstado(): EstadoLocal {
   }
 }
 
-function escribirEstado(e: EstadoLocal): void {
+function escribirEstado(mapId: string, e: EstadoLocal): void {
   try {
-    localStorage.setItem(SYNC_STATE_KEY, JSON.stringify(e));
+    localStorage.setItem(SYNC_STATE_KEY(mapId), JSON.stringify(e));
   } catch {
     // ignorar
   }
@@ -74,46 +76,57 @@ function filesDe(a: Arbol): Record<string, string> {
   return Object.fromEntries(a.intercambios.map((ic) => [ic.id, toMarkdown(ic)]));
 }
 
-export function estadoSyncLocal(): EstadoLocal {
-  return leerEstado();
+export function estadoSyncLocal(mapId: string): EstadoLocal {
+  return leerEstado(mapId);
 }
 
-// Metadata del objeto en la nube (hora del SERVIDOR). `null` si no existe.
-async function metaNube(uid: string): Promise<{ updatedAt: string } | null> {
+// Metadata del objeto en la nube (hora del SERVIDOR) + qué archivo lo tiene
+// (para el mapa "principal", cae al `arbol.json` viejo si no hay `principal.json`).
+async function metaNube(
+  uid: string,
+  mapId: string,
+): Promise<{ updatedAt: string; archivo: string } | null> {
   const sb = getSupabase();
   if (!sb || !uid) return null;
   const { data, error } = await sb.storage
     .from(BUCKET)
-    .list(CARPETA(uid), { limit: 100, search: ARCHIVO });
+    .list(uid, { limit: 1000 });
   if (error) {
     console.warn(LOG, "meta: error", error.message);
     return null;
   }
-  const f = data?.find((x) => x.name === ARCHIVO);
-  if (!f) return null;
-  // `updated_at` puede venir en `f.updated_at` o dentro de `f.metadata`.
-  const updatedAt =
-    (f as { updated_at?: string }).updated_at ??
-    (f as { created_at?: string }).created_at ??
-    "";
-  return { updatedAt };
+  const candidatos =
+    mapId === ID_PRINCIPAL
+      ? [archivoDe(mapId), ARCHIVO_LEGACY]
+      : [archivoDe(mapId)];
+  for (const archivo of candidatos) {
+    const f = data?.find((x) => x.name === archivo);
+    if (f) {
+      const updatedAt =
+        (f as { updated_at?: string }).updated_at ??
+        (f as { created_at?: string }).created_at ??
+        "";
+      return { updatedAt, archivo };
+    }
+  }
+  return null;
 }
 
 // Baja y parsea el árbol de la nube. `null` si no existe o está corrupto.
 export async function bajarArbolNube(
   uid: string,
-): Promise<{ arbol: Arbol; updatedAt: string } | null> {
+  mapId: string,
+): Promise<{ arbol: Arbol; updatedAt: string; titulo?: string } | null> {
   const sb = getSupabase();
-  if (!sb || !uid) {
-    console.warn(LOG, "bajar: sin cliente o sin uid");
-    return null;
-  }
-  const meta = await metaNube(uid);
+  if (!sb || !uid) return null;
+  const meta = await metaNube(uid, mapId);
   if (!meta) {
-    console.info(LOG, "bajar: todavía no hay árbol en la nube");
+    console.info(LOG, "bajar: todavía no hay árbol en la nube", mapId);
     return null;
   }
-  const { data, error } = await sb.storage.from(BUCKET).download(RUTA(uid));
+  const { data, error } = await sb.storage
+    .from(BUCKET)
+    .download(rutaDe(uid, meta.archivo));
   if (error || !data) {
     console.warn(LOG, "bajar: error al descargar", error?.message);
     return null;
@@ -131,11 +144,11 @@ export async function bajarArbolNube(
       console.warn(LOG, "bajar: 0 intercambios tras parsear");
       return null;
     }
-    console.info(LOG, "bajar: OK", {
-      intercambios: intercambios.length,
+    return {
+      arbol: { intercambios },
       updatedAt: meta.updatedAt,
-    });
-    return { arbol: { intercambios }, updatedAt: meta.updatedAt };
+      titulo: typeof sobre.titulo === "string" ? sobre.titulo : undefined,
+    };
   } catch (e) {
     console.warn(LOG, "bajar: JSON inválido", e);
     return null;
@@ -147,18 +160,17 @@ export async function bajarArbolNube(
 export async function subirArbolNube(
   a: Arbol,
   uid: string,
+  mapId: string,
+  titulo?: string,
 ): Promise<string | null> {
   const sb = getSupabase();
-  if (!sb || !uid) {
-    console.warn(LOG, "subir: sin cliente o sin uid");
-    return null;
-  }
+  if (!sb || !uid) return null;
   const files = filesDe(a);
-  const sobre: SobreSync = { v: VERSION, files };
+  const sobre: SobreSync = { v: VERSION, titulo, files };
 
   const { error } = await sb.storage
     .from(BUCKET)
-    .upload(RUTA(uid), JSON.stringify(sobre), {
+    .upload(rutaDe(uid, archivoDe(mapId)), JSON.stringify(sobre), {
       contentType: "application/json",
       upsert: true,
     });
@@ -167,56 +179,109 @@ export async function subirArbolNube(
     return null;
   }
 
-  // Releer la hora que le puso el servidor.
-  const meta = await metaNube(uid);
+  const meta = await metaNube(uid, mapId);
   const at = meta?.updatedAt ?? new Date().toISOString();
-  escribirEstado({ at, hash: hashFiles(files), uid });
-  console.info(LOG, "subir: OK", { intercambios: a.intercambios.length, at });
+  escribirEstado(mapId, { at, hash: hashFiles(files), uid });
+  console.info(LOG, "subir: OK", { mapId, intercambios: a.intercambios.length, at });
   return at;
 }
 
 // Marca que lo local está al día con la nube (tras traer, o tras vaciar).
 export function marcarSincronizado(
+  mapId: string,
   updatedAt: string,
   arbol: Arbol,
   uid: string,
 ): void {
-  escribirEstado({ at: updatedAt, hash: hashFiles(filesDe(arbol)), uid });
+  escribirEstado(mapId, {
+    at: updatedAt,
+    hash: hashFiles(filesDe(arbol)),
+    uid,
+  });
 }
 
-// Decide qué hacer al abrir (o al loguear).
+// Borra el archivo del mapa en la nube (al borrar el mapa localmente).
+export async function borrarMapaNube(uid: string, mapId: string): Promise<void> {
+  const sb = getSupabase();
+  if (!sb || !uid) return;
+  await sb.storage.from(BUCKET).remove([rutaDe(uid, archivoDe(mapId))]);
+  try {
+    localStorage.removeItem(SYNC_STATE_KEY(mapId));
+  } catch {
+    // ignorar
+  }
+}
+
+// ── Índice de mapas (para que la lista aparezca en todos los dispositivos) ───
+
+export async function bajarIndiceMapasNube(uid: string): Promise<Mapas | null> {
+  const sb = getSupabase();
+  if (!sb || !uid) return null;
+  const { data, error } = await sb.storage
+    .from(BUCKET)
+    .download(rutaDe(uid, INDICE));
+  if (error || !data) return null;
+  try {
+    const sobre = JSON.parse(await data.text()) as Partial<SobreIndice>;
+    return sobre && sobre.mapas && typeof sobre.mapas === "object"
+      ? sobre.mapas
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function subirIndiceMapasNube(
+  uid: string,
+  mapas: Mapas,
+): Promise<void> {
+  const sb = getSupabase();
+  if (!sb || !uid) return;
+  const sobre: SobreIndice = { v: VERSION, mapas };
+  await sb.storage
+    .from(BUCKET)
+    .upload(rutaDe(uid, INDICE), JSON.stringify(sobre), {
+      contentType: "application/json",
+      upsert: true,
+    });
+}
+
+// Decide qué hacer al abrir un mapa (o al loguear / cambiar de mapa).
 //   - subir  : el árbol local es de esta cuenta (o "sin dueño") → va a la nube.
 //   - traer  : la nube tiene una versión más nueva / de esta cuenta.
-//   - vaciar : el árbol local es de OTRA cuenta y esta no tiene nada → empezar
-//              de cero (NO subir el árbol ajeno).
+//   - vaciar : el árbol local es de OTRA cuenta y esta no tiene nada.
 //   - nada   : ya está sincronizado.
 export async function planInicial(
   arbolLocal: Arbol,
   uid: string,
+  mapId: string,
 ): Promise<
   | { accion: "subir" }
-  | { accion: "traer"; arbol: Arbol; updatedAt: string }
+  | { accion: "traer"; arbol: Arbol; updatedAt: string; titulo?: string }
   | { accion: "vaciar" }
   | { accion: "nada" }
 > {
-  const local = leerEstado();
-  // El árbol local pertenece a otra cuenta (se logueó con otro mail).
+  const local = leerEstado(mapId);
   const ajeno = local.uid !== "" && local.uid !== uid;
-  const meta = await metaNube(uid);
+  const meta = await metaNube(uid, mapId);
 
   if (!meta) {
     return ajeno ? { accion: "vaciar" } : { accion: "subir" };
   }
 
   if (ajeno || meta.updatedAt !== local.at) {
-    const bajado = await bajarArbolNube(uid);
+    const bajado = await bajarArbolNube(uid, mapId);
     if (bajado) {
-      return { accion: "traer", arbol: bajado.arbol, updatedAt: bajado.updatedAt };
+      return {
+        accion: "traer",
+        arbol: bajado.arbol,
+        updatedAt: bajado.updatedAt,
+        titulo: bajado.titulo,
+      };
     }
     return ajeno ? { accion: "vaciar" } : { accion: "subir" };
   }
 
-  // Misma cuenta, la nube es nuestra última versión. ¿Cambió lo local sin subir?
   const hashLocal = hashFiles(filesDe(arbolLocal));
   return hashLocal === local.hash ? { accion: "nada" } : { accion: "subir" };
 }

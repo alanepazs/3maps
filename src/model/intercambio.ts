@@ -212,6 +212,9 @@ export function reparentar(
 // ── Derivación a React Flow ────────────────────────────────────────────────
 
 export function arbolAVista(a: Arbol): { nodes: Node[]; edges: Edge[] } {
+  const conPadre = new Set(
+    a.intercambios.map((ic) => ic.padreId).filter((p): p is string => p !== null),
+  );
   const nodes: Node[] = a.intercambios.map((ic) => ({
     id: ic.id,
     type: "message",
@@ -222,6 +225,9 @@ export function arbolAVista(a: Arbol): { nodes: Node[]; edges: Edge[] } {
       pending: ic.pending,
       error: ic.error,
       isRoot: ic.padreId === null,
+      // Sin hijos → se puede borrar aunque sea la raíz (fase 3.6): borrar la
+      // raíz solo cuando ya no queda nada colgando de ella.
+      sinHijos: !conPadre.has(ic.id),
     },
   }));
   const edges: Edge[] = a.intercambios

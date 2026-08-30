@@ -1,8 +1,9 @@
 # Estado del proyecto
 
 > Snapshot para retomar rápido. Actualizar al final de cada sesión.
-> Última actualización: 30-08-2026 (fase 2 COMPLETA y en prod. Fase 3: quick wins + bloque canvas
-> + 3.9 (composer en el panel) HECHOS. Falta: 3.5 varios mapas, 3.6 borrar raíz, sueltos).
+> Última actualización: 30-08-2026 (fase 2 COMPLETA y en prod. Fase 3: TODOS los bloques del
+> pedido HECHOS — quick wins, canvas, composer en el panel, varios mapas, borrar raíz. Falta
+> probar el sync per-mapa con login real + sueltos: Cerebras, consentimiento de Google).
 
 ## Mapa de docs
 
@@ -87,9 +88,11 @@ Carpeta local: `D:\IA\3maps`.
 ### Datos / persistencia (verificado a nivel de datos)
 - El `arbol` de `Intercambio`s es la fuente de la verdad; los nodos/edges de React Flow se
   derivan (`arbolAVista`). Crear/ramificar/borrar/mover escriben al árbol.
-- `localStorage["3maps:arbol"]` = un string `.md` por intercambio. Sobrevive al reload
-  (se reconstruye parseando los `.md`). Sin mismatch de hidratación (primer render = semilla
-  determinística, se carga lo guardado en un effect de montaje).
+- `localStorage["3maps:arbol:<mapId>"]` = un string `.md` por intercambio, por mapa (fase 3.5).
+  Sobrevive al reload (se reconstruye parseando los `.md`). Sin mismatch de hidratación (primer
+  render = semilla determinística + mapas vacíos, se carga lo guardado en un effect de montaje).
+- Registro de mapas: `3maps:mapas` = `{[mapId]:{titulo,creado}}` + `3maps:mapaActivo` (`mapas.ts`,
+  migra el viejo `3maps:arbol` → `3maps:arbol:principal`).
 
 ### Deploy (LIVE)
 - `output: "export"` + `basePath: /3maps` (solo si `NEXT_PUBLIC_PAGES=1`) + workflow
@@ -155,9 +158,17 @@ Ver **`docs/fase-3.md`**.
   globo abierto y el panel se mueve a ese hijo (chat-style, se ve la respuesta sin cerrar).
   `handleSubmit` ahora acepta `parentId` opcional y devuelve el id nuevo.
 
-Resto del pedido del usuario (falta):
-- Varios mapas: crear / cambiar / borrar (3.5). Borrar el globo raíz (3.6).
-- Sueltos: Cerebras (5º proveedor), publicar la pantalla de consentimiento de Google.
+**Bloque mapas — ✅ 3.5 / 3.6 hechos (30-08-2026), verificados en el preview pane:**
+- **3.5** — varios mapas. `src/model/mapas.ts` (registro + migración `3maps:arbol` →
+  `3maps:arbol:principal`). `MapaSwitcher.tsx` = chip al lado de ⚙️: cambiar / ＋ Nuevo (arranca
+  vacío) / renombrar / borrar (no el único). `persistencia.ts` y `useSync` toman `mapId`. Sync
+  per-mapa: `sync/<uid>/<mapId>.json` (+ índice `_mapas.json` para la lista entre dispositivos;
+  `principal` cae a `arbol.json` viejo si hace falta). **Falta probar el sync con login real.**
+- **3.6** — la raíz se puede borrar solo cuando es el último globo (`data.sinHijos` en
+  `arbolAVista` → 🗑 en `MessageNode` si `!isRoot || sinHijos`; `deleteNode` confirma).
+
+**Fase 3: todos los bloques del pedido hechos.** Falta: Cerebras (5º proveedor), publicar la
+pantalla de consentimiento de Google, 2.5b si hace falta.
 Hay decisiones abiertas por bloque — ver `docs/fase-3.md`.
 
 **UX — API key por proveedor** (`0e56112`, 30-08-2026): `configIA.ts` ahora guarda una key por

@@ -1,0 +1,139 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+
+import type { Mapas } from "@/model/mapas";
+
+// Selector de mapas (fase 3.5). Chip arriba a la izquierda, al lado de la
+// tuerquita. Cambiar de mapa + "＋ Nuevo mapa" + renombrar / borrar el actual.
+export default function MapaSwitcher({
+  mapas,
+  activoId,
+  onCambiar,
+  onNuevo,
+  onBorrar,
+  onRenombrar,
+}: {
+  mapas: Mapas;
+  activoId: string;
+  onCambiar: (id: string) => void;
+  onNuevo: () => void;
+  onBorrar: () => void;
+  onRenombrar: (titulo: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const contenedorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: PointerEvent) => {
+      if (
+        contenedorRef.current &&
+        !contenedorRef.current.contains(e.target as Node)
+      ) {
+        setOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("pointerdown", onDown, true);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onDown, true);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const lista = Object.entries(mapas).sort(
+    (a, b) => (a[1].creado < b[1].creado ? -1 : 1),
+  );
+  const activo = mapas[activoId];
+  const unico = lista.length <= 1;
+
+  const renombrar = () => {
+    const t = window.prompt("Nuevo nombre del mapa:", activo?.titulo ?? "");
+    if (t && t.trim()) onRenombrar(t.trim());
+  };
+
+  return (
+    <div ref={contenedorRef} className="absolute left-16 top-4 z-10">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex h-9 max-w-[220px] items-center gap-1.5 rounded-full border border-white/15 bg-neutral-900/95 px-3 text-sm text-white/90 shadow-lg backdrop-blur transition-colors hover:bg-white/10"
+        title="Cambiar de mapa"
+      >
+        <span className="truncate">{activo?.titulo ?? "Mapa"}</span>
+        <span className="text-white/40">▾</span>
+      </button>
+
+      {open && (
+        <div className="mt-2 w-64 rounded-lg border border-white/15 bg-neutral-900/95 p-2 text-white shadow-xl backdrop-blur">
+          <p className="mb-1 px-1 text-[11px] font-medium uppercase tracking-wide text-white/40">
+            Mapas
+          </p>
+          <ul className="max-h-64 space-y-0.5 overflow-y-auto">
+            {lista.map(([id, meta]) => (
+              <li key={id}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onCambiar(id);
+                    setOpen(false);
+                  }}
+                  className={`flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm ${
+                    id === activoId
+                      ? "bg-sky-500/20 text-white"
+                      : "text-white/80 hover:bg-white/10"
+                  }`}
+                >
+                  <span className="w-3 shrink-0 text-sky-400">
+                    {id === activoId ? "•" : ""}
+                  </span>
+                  <span className="truncate">{meta.titulo}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          <hr className="my-2 border-white/10" />
+          <button
+            type="button"
+            onClick={() => {
+              onNuevo();
+              setOpen(false);
+            }}
+            className="w-full rounded px-2 py-1.5 text-left text-sm text-white/80 hover:bg-white/10"
+          >
+            ＋ Nuevo mapa
+          </button>
+          <button
+            type="button"
+            onClick={renombrar}
+            className="w-full rounded px-2 py-1.5 text-left text-sm text-white/80 hover:bg-white/10"
+          >
+            ✎ Renombrar “{activo?.titulo ?? ""}”
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              onBorrar();
+              setOpen(false);
+            }}
+            disabled={unico}
+            className="w-full rounded px-2 py-1.5 text-left text-sm text-red-300 enabled:hover:bg-red-500/15 disabled:opacity-30"
+          >
+            🗑 Borrar este mapa
+          </button>
+          {unico && (
+            <p className="px-2 pt-1 text-[11px] text-white/30">
+              Es tu único mapa.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

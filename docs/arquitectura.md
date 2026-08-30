@@ -34,8 +34,12 @@ src/
                          conPosicion, conRama, conRespuesta, reparentar), arbolAVista (deriva
                          nodes/edges de React Flow), toMarkdown / parseMarkdown, arbolInicial
                          (= { intercambios: [] }, árbol vacío — el 1er submit crea la raíz).
-    persistencia.ts      guardarArbol / cargarArbol en localStorage ("3maps:arbol"), guardando
-                         un string .md por intercambio. Cae a arbolInicial() si no hay nada.
+    persistencia.ts      guardarArbol(arbol, mapId) / cargarArbol(mapId) en localStorage
+                         ("3maps:arbol:<mapId>"), un string .md por intercambio. Cae a
+                         arbolInicial() si no hay nada.
+    mapas.ts             Registro de mapas (fase 3.5). "3maps:mapas" = {[id]:{titulo,creado}},
+                         "3maps:mapaActivo". leerMapas() migra el formato viejo (un solo
+                         "3maps:arbol" → mapa "principal"). crear/renombrar/borrar/fusionarMapasNube.
     layout.ts            calcularLayout(arbol, alturaDe) → Map<id,{x,y}>. Auto-layout recursivo
                          para el botón "Ordenar" (fase 3.4): tronco `main` vertical, ramas
                          `branch-*` en columnas al costado con su propio tronco. Puro.
@@ -61,12 +65,14 @@ src/
     supabase.ts          getSupabase() → SupabaseClient | null (null si no hay env). haySupabase()
                          para mostrar/ocultar UI. proxyIAUrl() = <supabaseUrl>/functions/v1/ia-proxy.
                          auth con persistSession/detectSessionInUrl true (fase 2.2, magic link).
-    sync.ts              Sync del árbol de trabajo entre dispositivos (fase 2.4, solo con sesión).
-                         Bucket privado sync/<uid>/arbol.json (formato .md-por-intercambio).
-                         planInicial(arbolLocal, uid) decide subir/traer/nada. subirArbolNube /
-                         bajarArbolNube / metaNube (lee updated_at del SERVIDOR via storage.list).
-                         localStorage "3maps:sync" = { at, hash }. LWW por hora del servidor
-                         (decisiones F2-8).
+    sync.ts              Sync entre dispositivos (fase 2.4, PER-MAPA desde 3.5; solo con sesión).
+                         Bucket privado sync/<uid>/<mapId>.json (formato .md-por-intercambio +
+                         `titulo`). planInicial(arbolLocal, uid, mapId) decide subir/traer/nada.
+                         subir/bajarArbolNube / metaNube (lee updated_at del SERVIDOR via
+                         storage.list). localStorage "3maps:sync:<mapId>" = {at, hash, uid}. LWW
+                         por hora del servidor (decisiones F2-8). El mapa "principal" cae al viejo
+                         arbol.json si no hay principal.json. Índice sync/<uid>/_mapas.json
+                         (subir/bajarIndiceMapasNube) para la lista entre dispositivos.
     compartir.ts         compartirArbol(arbol, titulo) → sube arboles/<slug>.json a Storage (mismo
                          formato que persistencia.ts), devuelve {slug, url}, y si hay sesión hace
                          insert en shared_trees (soft-fail). cargarArbolCompartido(slug) lo baja y
@@ -97,9 +103,15 @@ src/
     useSesion.ts        Hook de auth (fase 2.2): {usuario, cargando, signInWithGoogle,
                         enviarMagicLink, cerrarSesion}. onAuthStateChange + getUser. Google OAuth
                         (principal) o magic link. Sin Supabase → usuario null, cargando false.
-    useSync.ts          Hook de sync (fase 2.4): sync inicial al loguear (traer si la nube es más
-                        nueva, si no subir), push con debounce 1.5s + flush en pagehide. Devuelve
-                        EstadoSync ("off"|"sincronizando"|"ok"|"error"). No corre en modo compartido.
+    useSync.ts          Hook de sync (fase 2.4, per-mapa desde 3.5). Args: {arbol, setArbol, listo,
+                        activo, mapId, titulo, onTituloNube?}. Sync inicial al loguear O al cambiar
+                        de (uid, mapId) — traer si la nube es más nueva, si no subir; push con
+                        debounce 1.5s + flush en pagehide. Devuelve EstadoSync
+                        ("off"|"sincronizando"|"ok"|"error"). No corre en modo compartido.
+    MapaSwitcher.tsx    Selector de mapas (fase 3.5): chip arriba a la izquierda al lado de ⚙️.
+                        Lista + ＋ Nuevo mapa + ✎ Renombrar (window.prompt) + 🗑 Borrar (confirm;
+                        deshabilitado si es el único). Cierra al clickear afuera. Props:
+                        {mapas, activoId, onCambiar, onNuevo, onBorrar, onRenombrar}.
     Composer.tsx        Barra inferior fija para escribir.
     SettingsPanel.tsx   Tuerquita ⚙️: ajustes del lienzo (envión, ventana de contexto) +
                         config de IA. API key y modelo son BORRADORES (estado local) que se
@@ -210,10 +222,14 @@ Handlers (todos operan sobre `arbol` vía `setArbol`):
 - `asentar(id)` — escribe la posición final al árbol (`conPosicion`) y, si es rama, fija el lado
   (`conRama`) según dónde quedó respecto del padre. Es el `onSettle` de `useNodeInertia`.
 - `deleteNode(id)` (via NodeActionsContext) — `descendientes` para el conteo, `window.confirm` si
-  borra >1, aborta las llamadas en vuelo de lo que se borra, `quitarSubarbol`, deja activo al padre.
+  borra >1, aborta las llamadas en vuelo de lo que se borra, `quitarSubarbol`, deja activo al
+  padre. Borrar la raíz solo se permite sin hijos (fase 3.6) → confirma "el mapa queda vacío".
 - `onConnect` — conectar handles a mano = `reparentar` el target (con guarda anti-ciclo).
 - `ordenar()` — botón "▤" en `<Controls>` (fase 3.4). `calcularLayout(arbol, alturaDe)` →
   escribe las posiciones al árbol Y a `nodes` (la firma de la vista no incluye x/y) → `fitView`.
+- Mapas (fase 3.5): `cambiarMapa` / `nuevoMapa` / `borrarMapaActual` / `renombrarMapaActual` →
+  `<MapaSwitcher>`. `mapaId` + `mapas` (estado, poblado al hidratar). El efecto de persistir y
+  `useSync` toman `mapId`. Al loguear, `bajarIndiceMapasNube` + `fusionarMapasNube` (unión).
 
 Config de IA: `configIA` (useState `ConfigIA`, lazy init desde `cargarConfigIA()`).
 `guardarKeyIA` (guarda la del proveedor activo), `cambiarProveedorIA` (trae la guardada de otro),
@@ -290,13 +306,14 @@ Semilla (`arbolInicial()` en `model/intercambio.ts`): 3 intercambios de ejemplo 
 
 ## MessageNode.tsx
 
-`data`: `{ pregunta, respuesta, pending?, isRoot? }`.
+`data`: `{ pregunta, respuesta, pending?, error?, isRoot?, sinHijos? }` (`sinHijos` = fase 3.6).
 - Render: encabezado con la pregunta (si hay) + cuerpo con la respuesta (o "Respuesta pendiente
   (IA no conectada)" en gris itálica si `respuesta` es null). Ancho fijo `w-[260px]`.
 - Handles: `target` arriba (el raíz NO lo tiene) · `source id="main"` abajo ·
   `source id="branch-right"` derecha · `source id="branch-left"` izquierda.
 - `<NodeToolbar>` visible cuando `selected`: botón "⤢ Abrir" (`openNode(id)` → panel de
-  transcripción) siempre, y "🗑 Eliminar" (`deleteNode(id)`) solo si `!isRoot`. Ambos del
+  transcripción) siempre, "⌄ Expandir/⌃ Colapsar" si la respuesta es larga (fase 3.1), y
+  "🗑 Eliminar" (`deleteNode(id)`) si `!isRoot || sinHijos` (fase 3.6). Ambos del
   `NodeActionsContext`.
 - Anillo celeste (`ring-sky-400`) cuando `selected`.
 

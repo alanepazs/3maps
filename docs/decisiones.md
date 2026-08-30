@@ -396,6 +396,43 @@ con free tier: **probar con una key nueva de verdad** — los blogs y hasta `Lis
 
 ---
 
+## Fase 3 — pulido de UX
+
+### F3-1. Preferencia de vista (colapsado/expandido del globo) va aparte del `.md`
+- `localStorage["3maps:vista"]` = `{ expandidos: { [id]: bool } }`, NO frontmatter. Es cómo mirás
+  este navegador, no contenido. Estado local en `MessageNode` (`override ?? !colapsable`, colapsa
+  por defecto arriba de 400 chars). Global (no per-mapa): los ids son únicos entre mapas.
+
+### F3-2. La flecha rama↔tronco salta de lado DURANTE el drag, no al soltar
+- `FlowCanvas` envuelve el `onNodeDrag` de `useNodeInertia`: si el nodo es rama, actualiza el
+  `sourceHandle` del edge en el estado `edges` en vivo (un `findIndex` + copia por frame, sin
+  tocar el árbol). `asentar` sigue fijando `rama` al soltar. Es solo cosmético.
+
+### F3-3. Auto-layout ("Ordenar") = layout propio, no dagre/elk
+- El modelo tronco (`main` vertical) + ramas (`branch-*` en columnas al costado con su propio
+  tronco) es específico; una librería genérica no lo respeta. `calcularLayout` en `layout.ts`,
+  recursivo (~60 líneas), usa los altos medidos por React Flow. Escribe x/y al árbol Y a `nodes`
+  (la firma de la vista excluye x/y a propósito → `setArbol` solo no movería nada).
+
+### F3-4. Varios mapas: un árbol por mapa, sync PER-MAPA, borrado no se propaga
+- **Decidido con el usuario**: selector visible (chip al lado de ⚙️, no enterrado en ⚙️); cada
+  mapa sincroniza en su propio `sync/<uid>/<mapId>.json`.
+- `mapas.ts`: `3maps:mapas` + `3maps:mapaActivo` + `3maps:arbol:<mapId>`. **Migración**: al leer
+  por primera vez se crea el mapa `principal` y se mueve el viejo `3maps:arbol`. En la nube, el
+  mapa `principal` cae al viejo `arbol.json` si todavía no hay `principal.json`.
+- **Índice `sync/<uid>/_mapas.json`** para que la LISTA de mapas aparezca en otros dispositivos:
+  al loguear se fusiona (UNIÓN — se agregan los que faltan localmente). **No se propagan
+  borrados** entre dispositivos: herramienta personal, y propagar borrados necesitaría tombstones.
+- `useSync` re-corre el sync inicial al cambiar de `(uid, mapId)`. `3maps:sync` pasó a
+  `3maps:sync:<mapId>`.
+
+### F3-5. Borrar la raíz: solo cuando ya no le cuelga nada
+- **Decidido con el usuario**: nada de multi-raíz ni de promover un hijo. La raíz se borra solo
+  si es el último globo → el mapa queda vacío (con confirm). `arbolAVista` expone `data.sinHijos`;
+  `MessageNode` muestra 🗑 si `!isRoot || sinHijos`.
+
+---
+
 ## Build / deploy
 
 ### 16. `output: "export"` + `basePath: "/3maps"` **condicional a `NEXT_PUBLIC_PAGES === "1"`**

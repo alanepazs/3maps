@@ -58,6 +58,23 @@ import {
 import { cargarArbol, guardarArbol } from "@/model/persistencia";
 import { calcularLayout } from "@/model/layout";
 import {
+  borrarMapa,
+  crearMapa,
+  fusionarMapasNube,
+  leerMapas,
+  mapaActivoId,
+  renombrarMapa,
+  setMapaActivo,
+  type Mapas,
+} from "@/model/mapas";
+import {
+  bajarIndiceMapasNube,
+  borrarMapaNube,
+  subirIndiceMapasNube,
+} from "@/model/sync";
+import { useSesion } from "./useSesion";
+import MapaSwitcher from "./MapaSwitcher";
+import {
   armarContexto,
   intercambiosRelevantes,
   tramoAResumir,
@@ -123,6 +140,13 @@ function Flow() {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>(vistaIni.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(vistaIni.edges);
   const [activeNodeId, setActiveNodeId] = useState<string | null>(activoIniId);
+
+  // Mapa activo (fase 3.5). Cada mapa es un árbol independiente. El registro
+  // (`3maps:mapas`) y la migración del formato viejo viven en `mapas.ts`. Igual
+  // que el árbol: valores neutros en SSR + 1er render, se pueblan al hidratar.
+  const [mapaId, setMapaId] = useState<string>("principal");
+  const [mapas, setMapas] = useState<Mapas>({});
+  const { usuario } = useSesion();
   // `true` una vez que se cargó el árbol persistido: recién ahí se empieza a
   // guardar (si no, el primer effect pisaría lo guardado con la semilla).
   const [listo, setListo] = useState(false);
@@ -157,6 +181,12 @@ function Flow() {
   // real. Si la URL trae `?compartir=<slug>`, se baja ese árbol de Supabase en
   // vez de leer localStorage (y si el link está roto, se cae al local).
   useEffect(() => {
+    // Poblar el registro de mapas (corre la migración del formato viejo) —
+    // recién acá, no en el render, para no romper la hidratación.
+    const idActivo = mapaActivoId();
+    setMapaId(idActivo);
+    setMapas(leerMapas());
+
     if (slugInicial) {
       let cancelado = false;
       void cargarArbolCompartido(slugInicial).then((res) => {
@@ -169,7 +199,7 @@ function Flow() {
           setCompartido({ titulo: res.titulo });
         } else {
           limpiarSlugDeLaUrl();
-          const guardado = cargarArbol();
+          const guardado = cargarArbol(idActivo);
           const ultimo = guardado.intercambios.at(-1)?.id ?? null;
           setArbol(guardado);
           setActiveNodeId(ultimo);
@@ -182,7 +212,7 @@ function Flow() {
       };
     }
 
-    const guardado = cargarArbol();
+    const guardado = cargarArbol(idActivo);
     const ultimo = guardado.intercambios.at(-1)?.id ?? null;
     setArbol(guardado);
     setActiveNodeId((cur) =>
@@ -190,6 +220,8 @@ function Flow() {
     );
     seleccionarLuegoRef.current = ultimo;
     setListo(true);
+    // Solo corre al montar (o al cambiar el slug de compartir). Cambiar de mapa
+    // en vivo va por `cambiarMapa`, no por acá.
   }, [slugInicial]);
 
   // `fitView` inicial (prop) fitea a la semilla; re-fitear al árbol cargado.
@@ -259,11 +291,11 @@ function Flow() {
     arbolRef.current = arbol;
   }, [arbol]);
 
-  // Persistir el árbol en cada cambio (recién después de cargar lo guardado).
-  // En modo compartido no se toca localStorage — el árbol es de otro.
+  // Persistir el árbol del mapa activo en cada cambio (recién después de cargar
+  // lo guardado). En modo compartido no se toca localStorage — el árbol es de otro.
   useEffect(() => {
-    if (listo && !readOnly) guardarArbol(arbol);
-  }, [arbol, listo, readOnly]);
+    if (listo && !readOnly) guardarArbol(arbol, mapaId);
+  }, [arbol, listo, readOnly, mapaId]);
 
   // Reconstruir la vista (nodos/edges) cuando cambia el contenido o la
   // estructura del árbol — NO en cada movimiento: `x`/`y` quedan fuera de la
@@ -678,6 +710,14 @@ function Flow() {
       ) {
         return;
       }
+      // Borrar la raíz (ya sin hijos) deja el mapa vacío — confirmar (fase 3.6).
+      if (
+        desc.length === 0 &&
+        buscar(arbol, id)?.padreId === null &&
+        !window.confirm("Vas a borrar el último globo. El mapa queda vacío. ¿Seguir?")
+      ) {
+        return;
+      }
       // Cortar cualquier llamada a la IA en curso de lo que se borra.
       for (const q of [id, ...desc.map((d) => d.id)]) {
         enVueloRef.current.get(q)?.abort();
@@ -722,19 +762,109 @@ function Flow() {
     (titulo: string) => compartirArbol(arbolRef.current, titulo),
     [],
   );
-  // "Guardar en mi 3maps": el árbol compartido pasa a ser local y editable.
+  // "Guardar en mi 3maps": el árbol compartido pasa a ser local y editable
+  // (queda en el mapa activo).
   const guardarCopiaLocal = useCallback(() => {
-    guardarArbol(arbolRef.current);
+    guardarArbol(arbolRef.current, mapaId);
     limpiarSlugDeLaUrl();
     setCompartido(null);
-  }, []);
+  }, [mapaId]);
   // "Salir": volver al árbol local propio (recarga para re-hidratar limpio).
   const salirDeCompartido = useCallback(() => {
     limpiarSlugDeLaUrl();
     window.location.reload();
   }, []);
 
-  // ── Sync entre dispositivos (fase 2.4) ───────────────────────────────────
+  // ── Mapas (fase 3.5): crear / cambiar / borrar / renombrar ────────────────
+  const cargarEnMapa = useCallback((id: string, t: Arbol) => {
+    const ultimo = t.intercambios.at(-1)?.id ?? null;
+    seleccionarLuegoRef.current = ultimo;
+    setArbol(t);
+    setActiveNodeId(ultimo);
+    setTranscriptNodeId(null);
+    setMapaActivo(id);
+    setMapaId(id);
+  }, []);
+
+  const cambiarMapa = useCallback(
+    (id: string) => {
+      if (id === mapaId) return;
+      cancelInertia();
+      cancelPanInertia();
+      cargarEnMapa(id, cargarArbol(id));
+      window.setTimeout(() => void fitView({ duration: 300 }), 60);
+    },
+    [mapaId, cancelInertia, cancelPanInertia, cargarEnMapa, fitView],
+  );
+
+  const nuevoMapa = useCallback(() => {
+    cancelInertia();
+    cancelPanInertia();
+    const n = Object.keys(leerMapas()).length + 1;
+    const id = crearMapa(`Mapa ${n}`);
+    const m = leerMapas();
+    setMapas(m);
+    const vacio: Arbol = { intercambios: [] };
+    guardarArbol(vacio, id);
+    cargarEnMapa(id, vacio);
+    if (usuario) void subirIndiceMapasNube(usuario.id, m);
+  }, [cancelInertia, cancelPanInertia, cargarEnMapa, usuario]);
+
+  const borrarMapaActual = useCallback(() => {
+    const ids = Object.keys(mapas);
+    if (ids.length <= 1) return;
+    const titulo = mapas[mapaId]?.titulo ?? "este mapa";
+    if (
+      !window.confirm(
+        `¿Borrar el mapa “${titulo}”? Se pierde su árbol (esto no se puede deshacer).`,
+      )
+    ) {
+      return;
+    }
+    cancelInertia();
+    cancelPanInertia();
+    const m = borrarMapa(mapaId);
+    setMapas(m);
+    if (usuario) {
+      void borrarMapaNube(usuario.id, mapaId);
+      void subirIndiceMapasNube(usuario.id, m);
+    }
+    const siguiente = Object.keys(m)[0];
+    cargarEnMapa(siguiente, cargarArbol(siguiente));
+    window.setTimeout(() => void fitView({ duration: 300 }), 60);
+  }, [
+    mapas,
+    mapaId,
+    usuario,
+    cancelInertia,
+    cancelPanInertia,
+    cargarEnMapa,
+    fitView,
+  ]);
+
+  const renombrarMapaActual = useCallback(
+    (titulo: string) => {
+      const m = renombrarMapa(mapaId, titulo);
+      setMapas(m);
+      if (usuario) void subirIndiceMapasNube(usuario.id, m);
+    },
+    [mapaId, usuario],
+  );
+
+  // Sync de la LISTA de mapas entre dispositivos (unión, sin propagar borrados):
+  // al loguear, traer el índice de la nube y fusionar los que falten localmente.
+  useEffect(() => {
+    if (!usuario || readOnly) return;
+    let vivo = true;
+    void bajarIndiceMapasNube(usuario.id).then((nube) => {
+      if (vivo && nube) setMapas(fusionarMapasNube(nube));
+    });
+    return () => {
+      vivo = false;
+    };
+  }, [usuario, readOnly]);
+
+  // ── Sync entre dispositivos (fase 2.4, per-mapa desde 3.5) ────────────────
   // Solo con sesión y fuera del modo compartido. Last-write-wins.
   const aplicarArbolNube = useCallback((a: Arbol) => {
     const ultimo = a.intercambios.at(-1)?.id ?? null;
@@ -744,11 +874,18 @@ function Flow() {
       a.intercambios.some((i) => i.id === cur) ? cur : ultimo,
     );
   }, []);
+  const onTituloNube = useCallback(
+    (titulo: string) => setMapas(renombrarMapa(mapaId, titulo)),
+    [mapaId],
+  );
   const estadoSync = useSync({
     arbol,
     setArbol: aplicarArbolNube,
     listo,
     activo: !readOnly,
+    mapId: mapaId,
+    titulo: mapas[mapaId]?.titulo ?? "",
+    onTituloNube,
   });
 
   return (
@@ -827,6 +964,16 @@ function Flow() {
           onCompartir={haySupabase() && !readOnly ? compartir : undefined}
           estadoSync={estadoSync}
         />
+        {listo && !readOnly && Object.keys(mapas).length > 0 && (
+          <MapaSwitcher
+            mapas={mapas}
+            activoId={mapaId}
+            onCambiar={cambiarMapa}
+            onNuevo={nuevoMapa}
+            onBorrar={borrarMapaActual}
+            onRenombrar={renombrarMapaActual}
+          />
+        )}
         {!readOnly && (
           <Composer
             activeNodeLabel={activeNodeLabel}

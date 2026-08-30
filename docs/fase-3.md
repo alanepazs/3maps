@@ -63,33 +63,32 @@ en `<Controls>` (oculto en modo compartido). Verificado en el preview pane + 6 a
 
 - ~~**Decisión**: layout propio vs librería.~~ → propio (el modelo tronco+rama es específico).
 
-### 3.5 — Varios mapas (crear / cambiar / borrar)
+### 3.5 — Varios mapas (crear / cambiar / borrar / renombrar)  ✅ (30-08-2026)
 
-Hoy: **un** árbol. `localStorage["3maps:arbol"]`, `sync/<uid>/arbol.json`.
+Cada mapa es un árbol independiente. Módulo nuevo `src/model/mapas.ts`:
+`3maps:mapas = { [mapId]: {titulo, creado} }`, `3maps:mapaActivo`, árbol en `3maps:arbol:<mapId>`.
+**Migración** del formato viejo: al leer por primera vez se crea el mapa `principal` y se mueve el
+`3maps:arbol` a `3maps:arbol:principal`. `persistencia.ts` (`guardarArbol`/`cargarArbol`) y el
+efecto de persistir toman `mapId`.
 
-- `localStorage`: `3maps:mapas` = `{ [mapId]: { titulo, creado } }` + `3maps:mapaActivo`; el
-  árbol de cada mapa en `3maps:arbol:<mapId>`.
-- Sync: `sync/<uid>/<mapId>.json` por mapa. `planInicial` + `useSync` pasan a ser **por mapa
-  activo**. Para "mis mapas" desde otro dispositivo: `list()` la carpeta del uid.
-- UI: selector de mapa (dropdown arriba, o en ⚙️) + "＋ Nuevo mapa" + borrar mapa. Renombrar → después.
-- **El más grande.** Se puede partir:
-  - **3.5a — "Nuevo mapa"**: guarda el mapa actual (localStorage + sync) y arranca uno vacío en
-    otra "instancia". Es lo mínimo para tener más de un mapa aunque no haya selector todavía.
-  - **3.5b — selector** para cambiar entre mapas guardados.
-  - **3.5c — borrar** un mapa.
-- **Decisión**: ¿selector siempre visible o dentro de ⚙️? ¿el sync de fase 2.4 se migra a
-  per-mapa de una, o `arbol.json` sigue siendo el "mapa por defecto"?
+UI: `MapaSwitcher.tsx` — chip arriba a la izquierda al lado de ⚙️ (decisión: visible, no en ⚙️).
+Lista de mapas + "＋ Nuevo mapa" (auto-nombrado "Mapa N", arranca vacío; el actual ya está
+guardado) + "✎ Renombrar" (`window.prompt`) + "🗑 Borrar este mapa" (confirm; deshabilitado si es
+el único). Cambiar de mapa: `cambiarMapa` carga el árbol de ese mapa + `fitView`.
 
-### 3.6 — Borrar el globo raíz
+**Sync per-mapa** (decisión: cada mapa sincroniza solo): `sync.ts` + `useSync` toman `mapId`.
+Archivo `sync/<uid>/<mapId>.json` (con `titulo` adentro). El mapa `principal` cae al viejo
+`arbol.json` si todavía no hay `principal.json`. `useSync` re-corre el sync inicial al cambiar de
+`(uid, mapId)`. Índice `sync/<uid>/_mapas.json` para que la LISTA aparezca en todos los
+dispositivos (unión al loguear, sin propagar borrados). Borrar un mapa borra su archivo en la nube.
 
-Hoy el raíz no se puede borrar (dejaría todo huérfano).
+- Falta probar el sync per-mapa con login real (mismo patrón que 2.4, ya verificado).
 
-- Permitirlo. Qué pasa con los hijos:
-  - 1 hijo → ese hijo pasa a ser raíz (se le pone `padreId: null`, `rama: "main"`).
-  - >1 hijo → confirmar "van a quedar N árboles sueltos" y hacer raíz a cada hijo.
-- `arbolAVista` / `raices()` ya soportan varios sin `padreId`. El `Composer` y el empty-state
-  chequean `length`, no "hay raíz" — habría que revisar que no rompan con multi-raíz.
-- **Decisión**: ¿permitir multi-raíz de verdad, o forzar a que el usuario elija 1 hijo para promover?
+### 3.6 — Borrar el globo raíz  ✅ (30-08-2026)
+
+Decisión del usuario: **la raíz solo se puede borrar cuando ya no le cuelga nada** (es el último
+globo). `arbolAVista` marca `data.sinHijos`; `MessageNode` muestra 🗑 cuando `!isRoot || sinHijos`.
+`deleteNode` confirma "el mapa queda vacío" antes de borrar la raíz. No hace falta multi-raíz.
 
 ### 3.7 — La tuerquita se cierra al clickear afuera  ✅ (30-08-2026)
 
@@ -133,12 +132,20 @@ acepta un `parentId` opcional y devuelve el id del globo nuevo. No se muestra en
    3.3 (flecha en vivo).~~ ✅
 3. ~~**3.4** (auto-layout).~~ ✅
 4. ~~**3.9** (composer en el panel).~~ ✅
-5. **3.5** (varios mapas) — el más grande; 3.6 (borrar raíz) puede ir con esto.
+5. ~~**3.5** (varios mapas) + 3.6 (borrar raíz).~~ ✅
 6. Cerebras, y 2.5b si hace falta.
 
-## Decisiones abiertas (juntar antes de arrancar cada bloque)
+## Decisiones (todas cerradas)
 
-- ~~3.4: layout propio vs librería.~~ → propio. Hecho.
-- 3.5: selector visible vs en ⚙️; migrar el sync a per-mapa o mantener `arbol.json` default.
-- 3.6: multi-raíz real vs promover 1 hijo.
-- ~~3.1: cortar-con-degradado vs scroll interno.~~ → degradado + pill "ver más". Hecho.
+- 3.4: layout propio vs librería → **propio**.
+- 3.5: selector visible vs en ⚙️ → **visible** (chip al lado de ⚙️).
+- 3.5: sync per-mapa vs solo el activo → **per-mapa** (`<mapId>.json` + índice `_mapas.json`).
+- 3.6: multi-raíz vs promover 1 hijo → **ninguna**: borrar la raíz solo cuando es el último globo.
+- 3.1: degradado vs scroll interno → **degradado + pill "ver más"**.
+
+## Falta de fase 3
+
+- Cerebras como 5º proveedor (por el proxy `ia-proxy`).
+- Publicar la pantalla de consentimiento de Google (config del usuario).
+- 2.5b (embeddings) si el matching por palabras clave se queda corto.
+- Probar el sync per-mapa con login real (2 dispositivos).

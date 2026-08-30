@@ -30,6 +30,7 @@ export default function MessageNode({
   isConnectable,
 }: NodeProps) {
   const isRoot = Boolean(data.isRoot);
+  const sinHijos = Boolean(data.sinHijos);
   const pregunta = String(data.pregunta ?? "");
   const respuesta = data.respuesta ? String(data.respuesta) : null;
   const pending = Boolean(data.pending);
@@ -77,9 +78,10 @@ export default function MessageNode({
               {expandido ? "⌃ Colapsar" : "⌄ Expandir"}
             </button>
           )}
-          {/* El nodo raíz no se puede eliminar: borrarlo dejaría todo huérfano.
-              En un árbol compartido (readOnly) tampoco. */}
-          {!isRoot && !readOnly && (
+          {/* La raíz solo se puede borrar si ya no le cuelga nada (fase 3.6):
+              borrarla con hijos dejaría todo huérfano. En árbol compartido
+              (readOnly) no se borra nada. */}
+          {!readOnly && (!isRoot || sinHijos) && (
             <button
               type="button"
               onClick={() => deleteNode(id)}
