@@ -37,8 +37,10 @@ export function useSync(opts: {
   const [estado, setEstado] = useState<EstadoSync>("ok");
 
   const arbolRef = useRef(arbol);
+  const uidRef = useRef<string | null>(null);
   useEffect(() => {
     arbolRef.current = arbol;
+    uidRef.current = usuario?.id ?? null;
   });
 
   // La instancia de `Arbol` que consideramos "ya en la nube". Si `arbol` sigue
@@ -51,9 +53,11 @@ export function useSync(opts: {
 
   const subirYa = useCallback(async () => {
     pendiente.current = false;
+    const uid = uidRef.current;
+    if (!uid) return;
     const snap = arbolRef.current;
     setEstado("sincronizando");
-    const at = await subirArbolNube(snap);
+    const at = await subirArbolNube(snap, uid);
     if (at) sincronizado.current = snap;
     setEstado(at ? "ok" : "error");
   }, []);
@@ -70,26 +74,36 @@ export function useSync(opts: {
     if (syncInicialDe.current === usuario.id) return;
     syncInicialDe.current = usuario.id;
 
+    const uid = usuario.id;
     let vivo = true;
     const run = async () => {
       setEstado("sincronizando");
-      const nube = await bajarArbolNube();
+      const nube = await bajarArbolNube(uid);
       if (!vivo) return;
+      const baseline = ultimoSyncAt();
       if (!nube) {
-        const at = await subirArbolNube(arbolRef.current);
+        console.info("[3maps sync] inicial: no hay nube → subo la local");
+        const at = await subirArbolNube(arbolRef.current, uid);
         if (at) sincronizado.current = arbolRef.current;
         if (vivo) setEstado(at ? "ok" : "error");
         return;
       }
-      if (nube.updatedAt > ultimoSyncAt()) {
-        // Editado en otro dispositivo después de nuestro último sync → gana la nube.
+      if (nube.updatedAt > baseline) {
+        console.info("[3maps sync] inicial: nube más nueva → traigo", {
+          nube: nube.updatedAt,
+          baseline,
+        });
         setArbol(nube.arbol);
         guardarArbol(nube.arbol);
         marcarSincronizado(nube.updatedAt);
         sincronizado.current = nube.arbol;
         if (vivo) setEstado("ok");
       } else {
-        const at = await subirArbolNube(arbolRef.current);
+        console.info("[3maps sync] inicial: local al día o adelante → subo", {
+          nube: nube.updatedAt,
+          baseline,
+        });
+        const at = await subirArbolNube(arbolRef.current, uid);
         if (at) sincronizado.current = arbolRef.current;
         if (vivo) setEstado(at ? "ok" : "error");
       }

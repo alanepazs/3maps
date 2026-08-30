@@ -55,51 +55,66 @@ export function ultimoSyncAt(): string {
   return leerEstado().at;
 }
 
-async function uidActual(): Promise<string | null> {
-  const sb = getSupabase();
-  if (!sb) return null;
-  const { data } = await sb.auth.getUser();
-  return data.user?.id ?? null;
-}
+const LOG = "[3maps sync]";
 
 // Baja el árbol de la nube. `null` si no hay (primer uso), sin sesión, o error.
-export async function bajarArbolNube(): Promise<
-  { arbol: Arbol; updatedAt: string } | null
-> {
+// `uid` viene de la sesión (useSync lo pasa) — no se re-consulta a Supabase.
+export async function bajarArbolNube(
+  uid: string,
+): Promise<{ arbol: Arbol; updatedAt: string } | null> {
   const sb = getSupabase();
-  const uid = await uidActual();
-  if (!sb || !uid) return null;
+  if (!sb || !uid) {
+    console.warn(LOG, "bajar: sin cliente o sin uid", { hasSb: !!sb, uid });
+    return null;
+  }
 
   const { data, error } = await sb.storage
     .from(BUCKET)
     .download(`${uid}/${ARCHIVO}`);
-  if (error || !data) return null;
+  if (error || !data) {
+    // "Object not found" en el primer uso es normal.
+    const notFound = /not.?found|no such|404/i.test(error?.message ?? "");
+    if (!notFound) console.warn(LOG, "bajar: error", error?.message ?? "sin data");
+    else console.info(LOG, "bajar: todavía no hay árbol en la nube");
+    return null;
+  }
 
   try {
     const sobre = JSON.parse(await data.text()) as Partial<SobreSync>;
-    if (!sobre || typeof sobre.files !== "object" || !sobre.files) return null;
+    if (!sobre || typeof sobre.files !== "object" || !sobre.files) {
+      console.warn(LOG, "bajar: JSON sin `files`");
+      return null;
+    }
     const intercambios = Object.values(sobre.files)
       .map(parseMarkdown)
       .filter((ic): ic is NonNullable<typeof ic> => ic !== null);
-    if (intercambios.length === 0) return null;
-    return {
-      arbol: { intercambios },
-      updatedAt:
-        typeof sobre.updated_at === "string"
-          ? sobre.updated_at
-          : new Date(0).toISOString(),
-    };
-  } catch {
+    if (intercambios.length === 0) {
+      console.warn(LOG, "bajar: 0 intercambios tras parsear");
+      return null;
+    }
+    const updatedAt =
+      typeof sobre.updated_at === "string"
+        ? sobre.updated_at
+        : new Date(0).toISOString();
+    console.info(LOG, "bajar: OK", { intercambios: intercambios.length, updatedAt });
+    return { arbol: { intercambios }, updatedAt };
+  } catch (e) {
+    console.warn(LOG, "bajar: JSON inválido", e);
     return null;
   }
 }
 
 // Sube el árbol a la nube. Devuelve el `updated_at` que quedó (o `null` si no
 // se pudo). Actualiza el estado local de sync.
-export async function subirArbolNube(a: Arbol): Promise<string | null> {
+export async function subirArbolNube(
+  a: Arbol,
+  uid: string,
+): Promise<string | null> {
   const sb = getSupabase();
-  const uid = await uidActual();
-  if (!sb || !uid) return null;
+  if (!sb || !uid) {
+    console.warn(LOG, "subir: sin cliente o sin uid", { hasSb: !!sb, uid });
+    return null;
+  }
 
   const sobre: SobreSync = {
     v: VERSION,
@@ -115,9 +130,16 @@ export async function subirArbolNube(a: Arbol): Promise<string | null> {
       contentType: "application/json",
       upsert: true,
     });
-  if (error) return null;
+  if (error) {
+    console.warn(LOG, "subir: error", error.message);
+    return null;
+  }
 
   escribirEstado(sobre.updated_at);
+  console.info(LOG, "subir: OK", {
+    intercambios: a.intercambios.length,
+    updatedAt: sobre.updated_at,
+  });
   return sobre.updated_at;
 }
 
