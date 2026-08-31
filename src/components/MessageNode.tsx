@@ -1,14 +1,33 @@
-import { useContext, useState } from "react";
+import {
+  useCallback,
+  useContext,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import {
   Handle,
   NodeToolbar,
   Position,
+  useReactFlow,
   type NodeProps,
 } from "@xyflow/react";
 
 import Markdown from "./Markdown";
 import { NodeActionsContext } from "./nodeActions";
-import { ALTO_COLAPSADO, LIMITE_COLAPSO, guardarExpandido, leerExpandido } from "./vista";
+import {
+  ALTO_COLAPSADO,
+  ANCHO_POR_DEFECTO,
+  LIMITE_COLAPSO,
+  TAMANO_MAX,
+  TAMANO_MIN,
+  borrarTamano,
+  guardarExpandido,
+  guardarTamano,
+  leerExpandido,
+  leerTamano,
+  type Tamano,
+} from "./vista";
 
 // Un globo = un intercambio completo: la pregunta (encabezado) + la respuesta
 // de la IA (cuerpo).
@@ -23,6 +42,11 @@ import { ALTO_COLAPSADO, LIMITE_COLAPSO, guardarExpandido, leerExpandido } from 
 //   - target (arriba)              : de dónde viene (el nodo raíz no lo tiene)
 //   - source "main" (abajo)        : continuar el hilo principal, siempre vertical
 //   - source "branch-right/-left"  : ramificar por un costado (se elige al arrastrar)
+//
+// Tamaño (fase 3.10): manija ◢ abajo a la derecha para redimensionar; el tamaño
+// se guarda por globo en `vista.ts` (no va al `.md`). Redimensionar a mano
+// desactiva el colapso automático de 3.1 para ese globo (doble clic en la manija
+// o botón "↔ Auto" para volver al tamaño automático).
 export default function MessageNode({
   id,
   data,
@@ -37,6 +61,7 @@ export default function MessageNode({
   const error = data.error ? String(data.error) : null;
   const { deleteNode, retryNode, openNode, readOnly } =
     useContext(NodeActionsContext);
+  const { getZoom } = useReactFlow();
 
   // Vista colapsada / expandida (fase 3.1). Preferencia por globo, no va al `.md`.
   // Mientras streamea se muestra completo; el tope aplica recién con la respuesta
@@ -47,16 +72,63 @@ export default function MessageNode({
     leerExpandido(id),
   );
   const expandido = override ?? !colapsable;
-  const mostrarColapsado = colapsable && !expandido;
+
+  // Tamaño manual (fase 3.10).
+  const [tamano, setTamano] = useState<Tamano | undefined>(() => leerTamano(id));
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  const mostrarColapsado = colapsable && !expandido && !tamano;
   const alternarExpandido = () => {
     const nuevo = !expandido;
     setOverride(nuevo);
     guardarExpandido(id, nuevo);
   };
 
+  const onResizeStart = useCallback(
+    (e: ReactPointerEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const rect = rootRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const zoom = getZoom() || 1;
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const startW = rect.width / zoom;
+      const startH = rect.height / zoom;
+      let ultimo: Tamano | undefined;
+      const onMove = (ev: PointerEvent) => {
+        const w = Math.min(
+          TAMANO_MAX.w,
+          Math.max(TAMANO_MIN.w, startW + (ev.clientX - startX) / zoom),
+        );
+        const h = Math.min(
+          TAMANO_MAX.h,
+          Math.max(TAMANO_MIN.h, startH + (ev.clientY - startY) / zoom),
+        );
+        ultimo = { w: Math.round(w), h: Math.round(h) };
+        setTamano(ultimo);
+      };
+      const onUp = () => {
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", onUp);
+        if (ultimo) guardarTamano(id, ultimo);
+      };
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", onUp);
+    },
+    [getZoom, id],
+  );
+
+  const resetTamano = useCallback(() => {
+    setTamano(undefined);
+    borrarTamano(id);
+  }, [id]);
+
   return (
     <div
-      className={`w-[260px] overflow-hidden rounded-md border bg-neutral-900 text-sm ${
+      ref={rootRef}
+      style={{ width: tamano?.w ?? ANCHO_POR_DEFECTO, height: tamano?.h }}
+      className={`relative flex flex-col overflow-hidden rounded-md border bg-neutral-900 text-sm ${
         selected ? "border-sky-400 ring-2 ring-sky-400/40" : "border-white/20"
       }`}
     >
@@ -81,13 +153,23 @@ export default function MessageNode({
               ↻ Rehacer
             </button>
           )}
-          {colapsable && (
+          {colapsable && !tamano && (
             <button
               type="button"
               onClick={alternarExpandido}
               className="rounded border border-white/20 bg-neutral-900 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
             >
               {expandido ? "⌃ Colapsar" : "⌄ Expandir"}
+            </button>
+          )}
+          {tamano && (
+            <button
+              type="button"
+              onClick={resetTamano}
+              className="rounded border border-white/20 bg-neutral-900 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
+              title="Volver al tamaño automático"
+            >
+              ↔ Auto
             </button>
           )}
           {/* La raíz solo se puede borrar si ya no le cuelga nada (fase 3.6):
@@ -110,60 +192,79 @@ export default function MessageNode({
       )}
 
       {pregunta && (
-        <div className="border-b border-white/10 px-3 py-1.5 text-left font-medium text-white">
+        <div className="shrink-0 border-b border-white/10 px-3 py-1.5 text-left font-medium text-white">
           {pregunta}
         </div>
       )}
 
-      {error ? (
-        <div className="px-3 py-2 text-left">
-          <p className="whitespace-pre-wrap text-xs text-red-300">⚠ {error}</p>
-          {respuesta && (
-            <div className="mt-1.5 text-white/70">
-              <Markdown>{respuesta}</Markdown>
-            </div>
-          )}
-          {!readOnly && (
-            <button
-              type="button"
-              onClick={() => retryNode(id)}
-              className="mt-2 rounded border border-white/20 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
-            >
-              ↻ Reintentar
-            </button>
-          )}
-        </div>
-      ) : (
-        <div
-          className={`relative px-3 py-2 text-left ${
-            respuesta || pending ? "text-white/90" : "italic text-white/40"
-          }`}
-        >
-          <div
-            className={mostrarColapsado ? "overflow-hidden" : undefined}
-            style={
-              mostrarColapsado ? { maxHeight: ALTO_COLAPSADO } : undefined
-            }
-          >
-            {respuesta != null && <Markdown>{respuesta}</Markdown>}
-            {pending &&
-              (respuesta ? (
-                <span className="italic text-white/40"> ▍</span>
-              ) : (
-                <span className="italic text-white/40">escribiendo…</span>
-              ))}
-            {respuesta == null && !pending && "Respuesta pendiente"}
+      <div className={tamano ? "min-h-0 flex-1 overflow-auto" : "min-h-0"}>
+        {error ? (
+          <div className="px-3 py-2 text-left">
+            <p className="whitespace-pre-wrap text-xs text-red-300">⚠ {error}</p>
+            {respuesta && (
+              <div className="mt-1.5 text-white/70">
+                <Markdown>{respuesta}</Markdown>
+              </div>
+            )}
+            {!readOnly && (
+              <button
+                type="button"
+                onClick={() => retryNode(id)}
+                className="mt-2 rounded border border-white/20 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
+              >
+                ↻ Reintentar
+              </button>
+            )}
           </div>
-          {mostrarColapsado && (
-            <button
-              type="button"
-              onClick={alternarExpandido}
-              className="nodrag absolute inset-x-0 bottom-0 flex items-end justify-center bg-gradient-to-t from-neutral-900 via-neutral-900/85 to-transparent pb-1 pt-10 text-xs text-sky-300 hover:text-sky-200"
+        ) : (
+          <div
+            className={`relative px-3 py-2 text-left ${
+              respuesta || pending ? "text-white/90" : "italic text-white/40"
+            }`}
+          >
+            <div
+              className={mostrarColapsado ? "overflow-hidden" : undefined}
+              style={
+                mostrarColapsado ? { maxHeight: ALTO_COLAPSADO } : undefined
+              }
             >
-              ⌄ ver más
-            </button>
-          )}
-        </div>
+              {respuesta != null && <Markdown>{respuesta}</Markdown>}
+              {pending &&
+                (respuesta ? (
+                  <span className="italic text-white/40"> ▍</span>
+                ) : (
+                  <span className="italic text-white/40">escribiendo…</span>
+                ))}
+              {respuesta == null && !pending && "Respuesta pendiente"}
+            </div>
+            {mostrarColapsado && (
+              <button
+                type="button"
+                onClick={alternarExpandido}
+                className="nodrag absolute inset-x-0 bottom-0 flex items-end justify-center bg-gradient-to-t from-neutral-900 via-neutral-900/85 to-transparent pb-1 pt-10 text-xs text-sky-300 hover:text-sky-200"
+              >
+                ⌄ ver más
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {!readOnly && (
+        <div
+          onPointerDown={onResizeStart}
+          onDoubleClick={resetTamano}
+          title={
+            tamano
+              ? "Arrastrá para redimensionar · doble clic para volver al tamaño automático"
+              : "Arrastrá para redimensionar"
+          }
+          className="nodrag nowheel absolute bottom-0 right-0 z-10 h-4 w-4 cursor-se-resize opacity-40 hover:opacity-90"
+          style={{
+            background:
+              "linear-gradient(135deg, transparent 0 45%, rgba(255,255,255,0.6) 45% 55%, transparent 55% 68%, rgba(255,255,255,0.6) 68% 78%, transparent 78%)",
+          }}
+        />
       )}
 
       <Handle

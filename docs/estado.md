@@ -185,8 +185,10 @@ superposición de globos, ramas siempre a la derecha, botón "Rehacer").
   (`Composer` + mini-composer de `BranchTranscript`). El panel ganó un botón "⑂ Ramificar".
   Verificado en el preview pane (botones); el atajo lo prueba el usuario (los eventos de teclado
   sintéticos no disparan en el pane).
-- **3.10 — ⬜ pendiente.** Globo redimensionable desde el borde (`NodeResizer`), tamaño por globo
-  en `vista.ts`, el resize manual desactiva el colapso auto de 3.1.
+- **3.10 — ✅ hecho.** Globo redimensionable con manija ◢ abajo a la derecha. Tamaño por globo en
+  `localStorage["3maps:vista"]` (`tamanos`), no va al `.md`. Doble clic en la manija o botón
+  "↔ Auto" vuelve al tamaño automático. Tamaño manual desactiva el colapso auto de 3.1. Cuerpo
+  con scroll interno si la caja queda chica. Verificado en el preview pane.
 - **3.11 — ⬜ pendiente.** Panel lateral redimensionable hasta 75vw (ancho por dispositivo) +
   botón "🗺 Mapa" para alternar mapa/panel en móvil.
 

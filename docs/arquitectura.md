@@ -92,9 +92,15 @@ src/
                         error (recuadro rojo + "↻ Reintentar"), respuesta (markdown), o vacío.
                         Respuesta > 400 chars → cuerpo colapsado a 220px con degradado + pill
                         "⌄ ver más" y toggle Expandir/Colapsar en el toolbar (fase 3.1, ver vista.ts).
-    vista.ts            Preferencias de VISTA por globo (colapsado/expandido). NO van al `.md`:
-                        localStorage["3maps:vista"] = {expandidos:{[id]:bool}}. LIMITE_COLAPSO=400,
-                        ALTO_COLAPSADO=220. leerExpandido / guardarExpandido.
+                        Manija ◢ abajo-derecha para redimensionar (fase 3.10): pointermove/up en
+                        window, deltas / getZoom(); tamaño manual desactiva el colapso auto y
+                        muestra "↔ Auto" (doble clic en la manija hace lo mismo). Cuerpo en
+                        `flex-1 overflow-auto` → scrollea si la caja queda chica.
+    vista.ts            Preferencias de VISTA por globo (colapsado/expandido + tamaño manual). NO
+                        van al `.md`: localStorage["3maps:vista"] = {expandidos:{[id]:bool},
+                        tamanos:{[id]:{w,h}}}. LIMITE_COLAPSO=400, ALTO_COLAPSADO=220,
+                        TAMANO_MIN 200×80, TAMANO_MAX 900×1200, ANCHO_POR_DEFECTO 260.
+                        leer/guardarExpandido, leer/guardar/borrarTamano.
     Markdown.tsx        <Markdown>{texto}</Markdown> — react-markdown + remark-gfm con estilos
                         compactos para el globo (código y tablas con scroll horizontal propio;
                         links con target=_blank). Sin HTML crudo → seguro.

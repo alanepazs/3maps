@@ -116,16 +116,28 @@ Auto-scroll al último intercambio. `BranchTranscript` recibe `onSubmit?`; `Flow
 (`responderDesdePanel`) lo cablea a `handleSubmit(text, "main", transcriptNodeId)` — que ahora
 acepta un `parentId` opcional y devuelve el id del globo nuevo. No se muestra en modo compartido.
 
-### 3.10 — Globo redimensionable desde el borde  ⬜ (pedido 31-08-2026)
+### 3.10 — Globo redimensionable desde el borde  ✅ (31-08-2026)
 
-`<NodeResizer>` de `@xyflow/react` en `MessageNode` (visible solo con el globo
-seleccionado), mínimo ~200×100. El texto adentro reflowa con el ancho; si la caja
-queda más chica que el contenido, el cuerpo scrollea. Tamaño **por globo** en
-`vista.ts` (`tamaños: { [id]: {w,h} }`, al lado de `expandidos`). Se saca el
-`w-[260px]` fijo → ancho desde el tamaño guardado (default 260).
-**Decisión**: si el usuario redimensiona un globo, se **desactiva el colapso
-automático** de 3.1 para ese globo (el resize manual gana). El toggle
-Expandir/Colapsar del toolbar sigue disponible.
+Manija ◢ abajo a la derecha en `MessageNode` (`onPointerDown` + listeners
+`pointermove`/`pointerup` en `window`, deltas divididos por `getZoom()` de
+`useReactFlow`). Mínimo 200×80, máximo 900×1200 (`TAMANO_MIN`/`TAMANO_MAX` en
+`vista.ts`). El texto reflowa con el ancho; el cuerpo va en un contenedor
+`flex-1 overflow-auto` → si la caja queda más chica que el contenido, scrollea.
+Tamaño **por globo** en `localStorage["3maps:vista"]` (`tamanos: { [id]: {w,h} }`,
+al lado de `expandidos`; no va al `.md`). El `w-[260px]` fijo pasó a
+`style={{ width: tamano?.w ?? 260, height: tamano?.h }}`.
+
+**Decisión aplicada**: si el globo tiene tamaño manual, se **desactiva el colapso
+automático** de 3.1 (`mostrarColapsado = colapsable && !expandido && !tamano`) y
+el toggle Expandir/Colapsar se oculta. Para volver al tamaño automático: doble
+clic en la manija o botón "↔ Auto" del toolbar (borra la entrada de `tamanos`).
+
+No se usó `<NodeResizer>` de React Flow: querría escribir `width`/`height` en el
+nodo de RF, y la vista se reconstruye desde `arbolAVista` (que a propósito no
+lleva dimensiones) → habría que inyectarlas en cada rebuild. La manija propia con
+el tamaño en `vista.ts` es autocontenida y sobrevive al reload sola. Verificado
+en el preview pane (resize en vivo, persistencia, reload, reset, scroll interno,
+colapso desactivado).
 
 ### 3.11 — Panel lateral redimensionable + volver al mapa  ⬜ (pedido 31-08-2026)
 
@@ -186,7 +198,6 @@ conocido) → lo prueba el usuario.
 
 ## Falta de fase 3
 
-- **3.10** — globo redimensionable desde el borde (`NodeResizer` + tamaño en `vista.ts`).
 - **3.11** — panel lateral redimensionable (hasta 75vw, ancho por dispositivo) + botón "🗺 Mapa" en móvil.
 - Redeployar `ia-proxy` (suma Groq/Cerebras/OpenRouter/Mistral/HuggingFace) + probar con key real.
 - 2.5b (embeddings) si el matching por palabras clave se queda corto.
