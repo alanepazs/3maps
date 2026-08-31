@@ -180,6 +180,16 @@ Ver **`docs/fase-3.md`**.
 **Fase 3: todos los bloques del pedido hechos + varios fixes post-uso** (llamada estática,
 superposición de globos, ramas siempre a la derecha, botón "Rehacer").
 
+**Pedido nuevo (31-08-2026)** — 3 bloques más:
+- **3.12 — ✅ hecho.** Ctrl/Cmd+Enter ramifica, Enter continúa, en los dos cuadros de texto
+  (`Composer` + mini-composer de `BranchTranscript`). El panel ganó un botón "⑂ Ramificar".
+  Verificado en el preview pane (botones); el atajo lo prueba el usuario (los eventos de teclado
+  sintéticos no disparan en el pane).
+- **3.10 — ⬜ pendiente.** Globo redimensionable desde el borde (`NodeResizer`), tamaño por globo
+  en `vista.ts`, el resize manual desactiva el colapso auto de 3.1.
+- **3.11 — ⬜ pendiente.** Panel lateral redimensionable hasta 75vw (ancho por dispositivo) +
+  botón "🗺 Mapa" para alternar mapa/panel en móvil.
+
 **Pantalla de consentimiento de Google — PUBLICADA (30-08-2026, "En producción").** Cualquiera
 puede loguear con Google, no solo test-users. Faltaba: cargar los 3 permisos no sensibles
 (email/profile/openid) en "Acceso a los datos" + URLs de privacidad y términos. Se agregaron

@@ -787,12 +787,13 @@ function Flow() {
     [arbol, transcriptNodeId],
   );
 
-  // Composer del panel lateral (fase 3.9): crea un hijo "main" del globo abierto
-  // y mueve el panel a ese hijo, así se ve su respuesta sin cerrar el panel.
+  // Composer del panel lateral (fase 3.9): crea un hijo del globo abierto y mueve
+  // el panel a ese hijo, así se ve su respuesta sin cerrar el panel. Enter =
+  // continúa el hilo ("main"), Ctrl/Cmd+Enter o botón = ramifica (fase 3.12).
   const responderDesdePanel = useCallback(
-    (text: string) => {
+    (text: string, kind: BranchKind) => {
       if (!transcriptNodeId) return;
-      const id = handleSubmit(text, "main", transcriptNodeId);
+      const id = handleSubmit(text, kind, transcriptNodeId);
       if (id) setTranscriptNodeId(id);
     },
     [handleSubmit, transcriptNodeId],

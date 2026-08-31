@@ -116,6 +116,38 @@ Auto-scroll al último intercambio. `BranchTranscript` recibe `onSubmit?`; `Flow
 (`responderDesdePanel`) lo cablea a `handleSubmit(text, "main", transcriptNodeId)` — que ahora
 acepta un `parentId` opcional y devuelve el id del globo nuevo. No se muestra en modo compartido.
 
+### 3.10 — Globo redimensionable desde el borde  ⬜ (pedido 31-08-2026)
+
+`<NodeResizer>` de `@xyflow/react` en `MessageNode` (visible solo con el globo
+seleccionado), mínimo ~200×100. El texto adentro reflowa con el ancho; si la caja
+queda más chica que el contenido, el cuerpo scrollea. Tamaño **por globo** en
+`vista.ts` (`tamaños: { [id]: {w,h} }`, al lado de `expandidos`). Se saca el
+`w-[260px]` fijo → ancho desde el tamaño guardado (default 260).
+**Decisión**: si el usuario redimensiona un globo, se **desactiva el colapso
+automático** de 3.1 para ese globo (el resize manual gana). El toggle
+Expandir/Colapsar del toolbar sigue disponible.
+
+### 3.11 — Panel lateral redimensionable + volver al mapa  ⬜ (pedido 31-08-2026)
+
+Manija de arrastre en el borde interno de `BranchTranscript`, ancho clampeado a
+`[~360px, 75vw]`. **Decisión**: ancho persistido **por dispositivo** (bucket por
+ancho de viewport: `mobile` < 768 / `desktop`), en `settings.transcriptWidth`.
+Móvil: panel a pantalla completa + botón "🗺 Mapa" en el header que alterna
+mapa/panel (hoy solo ✕ cierra).
+
+### 3.12 — Ctrl+Enter ramifica, Enter continúa  ✅ (31-08-2026)
+
+En los dos cuadros de texto (barra inferior `Composer` + mini-composer de
+`BranchTranscript`): **Enter** = continúa el hilo (`"main"`), **Ctrl/Cmd+Enter** =
+abre una rama (`"branch"`), Shift+Enter = salto de línea. `handleSubmit` ya
+aceptaba `"branch"`; se agregó el `kind` al `onSubmit` del panel
+(`responderDesdePanel`) y la lectura de `e.ctrlKey || e.metaKey` en ambos
+`onKeyDown`. El panel ganó además un botón "⑂ Ramificar" al lado de "↓ Enviar"
+(discoverability). Textos de ayuda actualizados. Verificado en el preview pane:
+los botones "⑂ Ramificar" / "↓ Continuar hilo" crean `branch-right` / `main` OK;
+el atajo de teclado no se puede disparar sintéticamente en el pane (gotcha
+conocido) → lo prueba el usuario.
+
 ---
 
 ## Sueltos que quedaron de fase 2
@@ -154,6 +186,9 @@ acepta un `parentId` opcional y devuelve el id del globo nuevo. No se muestra en
 
 ## Falta de fase 3
 
+- **3.10** — globo redimensionable desde el borde (`NodeResizer` + tamaño en `vista.ts`).
+- **3.11** — panel lateral redimensionable (hasta 75vw, ancho por dispositivo) + botón "🗺 Mapa" en móvil.
 - Redeployar `ia-proxy` (suma Groq/Cerebras/OpenRouter/Mistral/HuggingFace) + probar con key real.
 - 2.5b (embeddings) si el matching por palabras clave se queda corto.
 - Probar el sync per-mapa con login real (2 dispositivos).
+- Probar el atajo Ctrl+Enter (ramifica) en Chrome real (3.12).

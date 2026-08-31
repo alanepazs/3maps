@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import type { BranchKind } from "./Composer";
 import Markdown from "./Markdown";
 import type { Intercambio } from "@/model/intercambio";
 
@@ -12,7 +13,8 @@ import type { Intercambio } from "@/model/intercambio";
 //
 // Si recibe `onSubmit` (no en modo compartido), muestra un mini-composer al pie
 // para seguir la conversación sin cerrar el panel (fase 3.9): crea un hijo del
-// último globo del camino y el panel se mueve a ese hijo.
+// último globo del camino y el panel se mueve a ese hijo. Enter continúa el
+// hilo, Ctrl/Cmd+Enter abre una rama (fase 3.12).
 export default function BranchTranscript({
   intercambios,
   side,
@@ -24,7 +26,7 @@ export default function BranchTranscript({
   side: "left" | "right";
   onFlipSide: () => void;
   onClose: () => void;
-  onSubmit?: (text: string) => void;
+  onSubmit?: (text: string, kind: BranchKind) => void;
 }) {
   const [borrador, setBorrador] = useState("");
   const finRef = useRef<HTMLDivElement>(null);
@@ -42,10 +44,10 @@ export default function BranchTranscript({
     finRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [intercambios.length]);
 
-  const enviar = () => {
+  const enviar = (kind: BranchKind) => {
     const t = borrador.trim();
     if (!t || !onSubmit) return;
-    onSubmit(t);
+    onSubmit(t, kind);
     setBorrador("");
   };
 
@@ -124,25 +126,36 @@ export default function BranchTranscript({
               value={borrador}
               onChange={(e) => setBorrador(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  enviar();
-                }
+                if (e.key !== "Enter" || e.shiftKey) return;
+                e.preventDefault();
+                enviar(e.ctrlKey || e.metaKey ? "branch" : "main");
               }}
               rows={2}
               placeholder="Seguí la conversación desde este globo…"
               className="w-full resize-none rounded-md border border-white/15 bg-neutral-950 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-sky-400 focus:outline-none"
             />
-            <div className="mt-2 flex items-center justify-between">
-              <span className="text-[11px] text-white/30">Enter para enviar</span>
-              <button
-                type="button"
-                onClick={enviar}
-                disabled={borrador.trim() === ""}
-                className="rounded-md bg-sky-500 px-3 py-1.5 text-sm font-medium text-white enabled:hover:bg-sky-400 disabled:opacity-40"
-              >
-                ↓ Enviar
-              </button>
+            <div className="mt-2 flex items-center justify-between gap-2">
+              <span className="text-[11px] text-white/30">
+                Enter continúa · Ctrl+Enter ramifica
+              </span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => enviar("branch")}
+                  disabled={borrador.trim() === ""}
+                  className="rounded-md border border-white/15 px-3 py-1.5 text-sm text-white/90 enabled:hover:bg-white/10 disabled:opacity-40"
+                >
+                  ⑂ Ramificar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => enviar("main")}
+                  disabled={borrador.trim() === ""}
+                  className="rounded-md bg-sky-500 px-3 py-1.5 text-sm font-medium text-white enabled:hover:bg-sky-400 disabled:opacity-40"
+                >
+                  ↓ Enviar
+                </button>
+              </div>
             </div>
           </div>
         )}

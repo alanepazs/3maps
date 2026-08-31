@@ -31,11 +31,10 @@ export default function Composer({
   };
 
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    // Enter envía (continúa el hilo). Shift+Enter = salto de línea.
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      submit("main");
-    }
+    if (e.key !== "Enter" || e.shiftKey) return;
+    // Ctrl/Cmd+Enter = ramifica. Enter solo = continúa el hilo.
+    e.preventDefault();
+    submit(e.ctrlKey || e.metaKey ? "branch" : "main");
   };
 
   return (
@@ -58,7 +57,7 @@ export default function Composer({
         />
         <div className="mt-2 flex items-center justify-between">
           <span className="text-[11px] text-white/30">
-            Enter para enviar · Shift+Enter para salto de línea
+            Enter continúa · Ctrl+Enter ramifica · Shift+Enter salto de línea
           </span>
           <div className="flex gap-2">
             {!arbolVacio && (
