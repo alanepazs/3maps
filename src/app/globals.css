@@ -47,8 +47,13 @@ body {
    los controles de React Flow abajo a la izquierda — sobre todo el botón
    "Ordenar". Levantarlos por encima del composer. */
 @media (max-width: 640px) {
-  .react-flow__controls {
+  /* Con la barra de escribir visible, sube los controles para que no queden
+     tapados. Escondida (`data-chat="oculto"`) no hace falta. */
+  [data-chat="visible"] .react-flow__controls {
     margin-bottom: 14rem !important;
+  }
+  [data-chat="oculto"] .react-flow__controls {
+    margin-bottom: 4rem !important;
   }
   /* El minimapa ocupa demasiado en pantallas chicas: ocultarlo. */
   .react-flow__minimap {

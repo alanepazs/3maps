@@ -991,7 +991,10 @@ function Flow() {
 
   return (
     <NodeActionsContext.Provider value={nodeActions}>
-      <div className="relative h-full w-full">
+      <div
+        className="relative h-full w-full"
+        data-chat={settings.composerOculto ? "oculto" : "visible"}
+      >
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -1082,6 +1085,10 @@ function Flow() {
             activeNodeLabel={activeNodeLabel}
             arbolVacio={arbol.intercambios.length === 0}
             onSubmit={handleSubmit}
+            oculto={settings.composerOculto}
+            onToggleOculto={() =>
+              updateSettings({ composerOculto: !settings.composerOculto })
+            }
           />
         )}
         {transcripcion && transcripcion.length > 0 && (

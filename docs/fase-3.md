@@ -190,7 +190,21 @@ los botones "⑂ Ramificar" / "↓ Continuar hilo" crean `branch-right` / `main`
 el atajo de teclado no se puede disparar sintéticamente en el pane (gotcha
 conocido) → lo prueba el usuario.
 
-### 3.13 — Ajustes móvil (celu)  ✅ (31-08-2026)
+### 3.13 — Esconder la barra de chat + ajustes móvil (celu)  ✅ (31-08-2026)
+
+**Esconder el composer** (PC y celu): botón `⌄` en el header de la barra la
+esconde (baja + se desvanece con `translate: 0 1.5rem` + `opacity-0`,
+`transition-[opacity,translate]`); queda un botón grande "✎ Escribir"
+(`rounded-full px-6 py-3`, ~46px de alto — a propósito NO un ícono chico) para
+traerla de vuelta. Estado en `settings.composerOculto` (persiste). El `<div>`
+raíz de `FlowCanvas` lleva `data-chat="oculto"|"visible"` → `globals.css` baja el
+`margin-bottom` de los controles de React Flow a 4rem cuando está escondida (no
+hace falta subirlos si no hay barra). Nota: la barra escondida deja el `<div>`
+interno en `pointer-events-none` para no comerse los clicks del botón. Las
+transiciones CSS no corren en el preview pane (reloj congelado) → verificado el
+estado final (fade, pointer-events, tamaño del botón, persistencia, `data-chat`).
+
+### Ajustes móvil (celu)  ✅ (31-08-2026)
 
 Reportado probando en el celu:
 - El panel de ⚙️ quedaba tapado por el `Composer` (barra de escribir, abajo a lo

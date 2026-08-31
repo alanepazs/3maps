@@ -23,6 +23,9 @@ export type Settings = {
   // El usuario aceptó que su API key de DeepSeek / GPT transite el proxy de
   // 3maps (esas APIs no se pueden llamar directo desde el navegador). Opt-in.
   usarProxyIA: boolean;
+  // El usuario escondió la barra de escribir (se desliza hacia abajo; queda un
+  // botón "✎ Escribir" para traerla). Fase 3.13.
+  composerOculto: boolean;
 };
 
 export const ANCHO_PANEL_DEFECTO = 460;
@@ -37,6 +40,7 @@ export const DEFAULT_SETTINGS: Settings = {
   transcriptSide: "right",
   transcriptWidth: { mobile: ANCHO_PANEL_DEFECTO, desktop: ANCHO_PANEL_DEFECTO },
   usarProxyIA: false,
+  composerOculto: false,
 };
 
 export const SETTINGS_STORAGE_KEY = "3maps:settings";
