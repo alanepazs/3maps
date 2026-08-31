@@ -19,6 +19,12 @@
   Moonshot/Kimi, SiliconFlow) vía el edge function `ia-proxy` (opt-in "usar proxy" en ⚙️). Una
   key/modelo por proveedor. `⚙️` trae mini-guía de API key por proveedor (`GUIA_API_KEY`) y aclara
   cuáles son open-source. **Probados e2e: Gemini + Groq.**
+- **Modelos Groq probados vía proxy (31-08)**: andan `allam-2-7b`, `groq/compound`,
+  `qwen3.6-27b`, `qwen3.8-27b`, `openai/gpt-oss-20b` / `-120b` / `-safeguard-20b`. NO son de
+  chat (fallan esperado): `whisper-large-v3` / `-turbo` (STT), `llama-prompt-guard-2-22m` /
+  `-86m` (`max_tokens` ≤512), `canopylabs/orpheus-*` (piden aceptar términos). `compound-mini`
+  cortó por rate-limit del tier free, no por el modelo. Los "errores de compaginación" de
+  gpt-oss / qwen3 eran el bug de render → arreglado en F3-12; falta revalidar en vivo.
 - **Respuestas** (`Markdown.tsx`): matemática con KaTeX (`$…$`, `$$…$$`, `\[ \]`, `\( \)`), HTML
   del modelo saneado (`<br>` en tablas), y `ia.ts` saca el `<think>…</think>` de los modelos
   reasoning. Decisiones F3-12.
@@ -37,7 +43,8 @@
 
 ### Prueba real pendiente (la hace el usuario, con key/login)
 - Los otros 9 proveedores vía proxy con key real (Cerebras / GLM-flash / SiliconFlow = gratis).
-- Strip de `<think>` en vivo con gpt-oss / qwen3 (verificado en local con `.md` inyectado).
+- Revalidar en vivo gpt-oss / qwen3 con el bundle F3-12: strip de `<think>` + fin de los
+  "errores de compaginación" (LaTeX crudo, `<br>` literal). Verificado en local con `.md` inyectado.
 - Panel lateral redimensionable (3.11) + fixes de móvil (3.13) en Chrome real / celu.
 - Que el watchdog de 45s no corte un stream lento-pero-vivo.
 - ⚠️ LWW de títulos usa el reloj del navegador: relojes MUY desfasados podrían elegir mal.
