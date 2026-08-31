@@ -1,8 +1,8 @@
 # Estado — 3maps
 
-> Snapshot para retomar. Solo **dónde estamos + qué falta + gotchas**. El historial va en git
-> (`git log`) y en `docs/historia.md`; el "qué hace cada archivo" en `docs/arquitectura.md`.
-> Última actualización: 31-08-2026.
+> Snapshot para retomar. Solo **dónde estamos + qué falta + gotchas**. Historial → git +
+> `docs/historia.md`. "Qué hace cada archivo" → `docs/arquitectura.md`. Por qué el código es así →
+> `docs/decisiones.md`. Última actualización: 01-09-2026.
 
 ## Dónde estamos
 
@@ -10,82 +10,57 @@
 (deploy automático en cada push a `main`). Repo `github.com/alanepazs/3maps`, local `D:\IA\3maps`.
 
 - **Canvas** (React Flow): árbol de globos, tronco vertical + ramas al costado, envión al soltar,
-  2 modos (manito / selección con barra espaciadora), redimensionar globo y panel, auto-layout
-  ("▤ Ordenar"), varios mapas, esconder la barra de chat. El `arbol` de `Intercambio`s es la
-  fuente de la verdad; la vista de React Flow se deriva.
-- **Respuestas**: `Markdown.tsx` renderiza matemática (KaTeX: `$…$`, `$$…$$`, `\[ \]`, `\( \)`),
-  HTML crudo del modelo saneado (`<br>` en tablas), y `ia.ts` saca el `<think>…</think>` de los
-  modelos reasoning. Decisiones F3-12.
+  2 modos (manito / selección con espacio), redimensionar globo y panel, auto-layout ("▤ Ordenar"),
+  varios mapas, esconder la barra de chat. El `arbol` de `Intercambio`s es la fuente de la verdad;
+  la vista de React Flow se deriva.
 - **IA** (`model/ia.ts`, wired en `FlowCanvas.responder`): streaming, contexto = solo el camino
-  raíz→globo con ventana + resumen. **13 proveedores**: Gemini + Claude directos del navegador;
-  DeepSeek, GPT, Groq, Cerebras, OpenRouter, Mistral, HuggingFace, **Zhipu/GLM, Qwen, Moonshot/Kimi,
-  SiliconFlow** vía el edge function `ia-proxy` (opt-in "usar proxy" en ⚙️). Una key/modelo por
-  proveedor, sincronizan entre dispositivos. `⚙️` tiene una mini-guía "cómo conseguir tu API key"
-  por proveedor (`GUIA_API_KEY`); en Groq/Cerebras/OpenRouter/HF/SiliconFlow aclara que son
-  **modelos open-source** (Llama, Qwen, DeepSeek, GLM) y `MODELOS_SUGERIDOS` los lista.
-  **Probados end-to-end: Gemini + Groq** (varios modelos: llama-3.3, gpt-oss, qwen3, compound).
-  Faltan los otros 9 vía proxy.
+  raíz→globo con ventana + resumen. **13 proveedores**: Gemini + Claude directos del navegador; el
+  resto (DeepSeek, GPT, Groq, Cerebras, OpenRouter, Mistral, HuggingFace, Zhipu/GLM, Qwen,
+  Moonshot/Kimi, SiliconFlow) vía el edge function `ia-proxy` (opt-in "usar proxy" en ⚙️). Una
+  key/modelo por proveedor. `⚙️` trae mini-guía de API key por proveedor (`GUIA_API_KEY`) y aclara
+  cuáles son open-source. **Probados e2e: Gemini + Groq.**
+- **Respuestas** (`Markdown.tsx`): matemática con KaTeX (`$…$`, `$$…$$`, `\[ \]`, `\( \)`), HTML
+  del modelo saneado (`<br>` en tablas), y `ia.ts` saca el `<think>…</think>` de los modelos
+  reasoning. Decisiones F3-12.
 - **Backend opcional** (Supabase, `ref` ejecjjpdjoxgrbqrhwwd): login Google/magic-link, compartir
-  árbol por link (`?compartir=<slug>`), "mis árboles" + despublicar, sync entre dispositivos.
-  Sin las env `NEXT_PUBLIC_SUPABASE_*` la app es 100% local.
-- **Persistencia**: `localStorage["3maps:arbol:<mapId>"]` = un string `.md` por intercambio.
-  Prefs de vista en `"3maps:vista"`, ajustes en `"3maps:settings"`, IA en `"3maps:ia"`.
+  por link (`?compartir=<slug>`), "mis árboles" + despublicar, **sync entre dispositivos**. Sin
+  las env `NEXT_PUBLIC_SUPABASE_*` la app es 100% local.
+- **Sync entre dispositivos** (con sesión, LWW): árboles per-mapa (`sync/<uid>/<mapId>.json`),
+  lista de mapas (`_mapas.json` = `{mapas, borrados, epoch}`), keys/modelos (`config.json`).
+  **NO es push**: poll cada 15s + al volver a foco. Latencia ≤15s. "🧹 Empezar de cero" / borrar
+  el último mapa suben un `epoch` → reset duro en el otro dispositivo. **Probado OK 01-09 con PWA
+  + PC**: crear / borrar / renombrar / reset / tamaño del globo convergen. Detalle: decisiones F3-4.
+- **Persistencia local**: `localStorage["3maps:arbol:<mapId>"]` = un string `.md` por intercambio.
+  Vista en `"3maps:vista"`, ajustes en `"3maps:settings"`, IA en `"3maps:ia"`.
 
 ## Qué falta
 
-### Sync entre dispositivos — lista de mapas reescrita 31-08 / 01-09-2026
-- **Lista de mapas**: índice `_mapas.json` = `{ mapas, borrados, epoch? }`. Unión de mapas +
-  tombstones al subir (**los borrados SÍ se propagan**); título con LWW por `cuandoMeta`
-  (`renombrado ?? creado`, reloj del navegador). Signed URL + `no-store` al bajar. Re-sync al
-  volver a foco. Decisiones F3-4.
-- **`epoch` de reset**: "🧹 Empezar de cero" (y borrar el ÚLTIMO mapa) tombstonea TODO lo de la
-  nube + sube un `epoch` nuevo. El otro dispositivo, al ver `epoch > epochAplicado`, hace **reset
-  duro** (adopta `indice.mapas` tal cual, no depende de que los tombstones estén completos).
-  Mató el bug del "Mi mapa (2)" que se auto-regeneraba. Decisiones F3-4.
-- **Probado 01-09-2026 con 2 dispositivos (PWA + PC, misma cuenta): FUNCIONA** — crear, borrar
-  (incl. el último), "Empezar de cero" y **renombrar** propagan en ≤15s. ⚠️ si los relojes de los
-  dos navegadores están MUY desfasados, el LWW de títulos puede elegir mal (poco probable
-  renombrando de a uno).
-- **Keys/modelos ahora SÍ sincronizan** (`sync/<uid>/config.json`, bucket privado del usuario,
-  RLS por cuenta). Relaja la invariante de CLAUDE.md — decisión del usuario. Decisiones §9.
-- **El sync NO es push en tiempo real**: se trae del otro dispositivo con un poll cada 15s + al
-  volver a foco la pestaña (`revisarNube` en `useSync` para el mapa abierto, `sincronizarListaMapas`
-  para la lista). Latencia ≤15s. Decisiones F3-4.
-- **El tamaño manual del globo AHORA sincroniza** (pasó de `"3maps:vista"` al `.md`,
-  `Intercambio.ancho/alto` — F3-8). El colapsado/expandido sigue per-navegador (a propósito).
-
 ### Prueba real pendiente (la hace el usuario, con key/login)
-- ✅ `ia-proxy` redeployado con los 4 nuevos (31-08-2026).
-- ✅ Groq probado (01-09) — varios modelos OK. Reveló el fix de render (F3-12).
-- Los otros 9 proveedores vía proxy con key real (Cerebras/GLM-flash/SiliconFlow = free).
-- Panel lateral redimensionable (3.11) + fixes de móvil (3.13) en Chrome y celu.
+- Los otros 9 proveedores vía proxy con key real (Cerebras / GLM-flash / SiliconFlow = gratis).
+- Strip de `<think>` en vivo con gpt-oss / qwen3 (verificado en local con `.md` inyectado).
+- Panel lateral redimensionable (3.11) + fixes de móvil (3.13) en Chrome real / celu.
 - Que el watchdog de 45s no corte un stream lento-pero-vivo.
-- Que el strip de `<think>` (F3-12) ande en vivo con gpt-oss / qwen3 (verificado en local con
-  `.md` inyectado; falta con stream real).
-- ✅ Ctrl+Enter (ramifica) — OK en Chrome.
-- ✅ Sync entre 2 dispositivos (mapas, árboles, renombrar, tamaño del globo) — OK.
-- ✅ Render de matemática / `<br>` / sanitización — OK (local, `.md` inyectado + build estático).
+- ⚠️ LWW de títulos usa el reloj del navegador: relojes MUY desfasados podrían elegir mal.
 
 ### Opcionales (no bloquean)
-- **Auto-switch de proveedor** al pegar una key de otro (hoy `avisoFormatoKey` solo avisa en ámbar).
-- **Export/import** `.zip` de la carpeta de `.md` + File System Access API (spec §7). Hoy solo hay
-  persistencia local automática.
-- **2.5b — embeddings** (`transformers.js`) si el match por palabras clave (`intercambiosRelevantes`)
-  se queda corto. Misma firma → drop-in.
-- Modelos locales tipo Ollama para tareas internas (spec §10).
+- **Auto-switch de proveedor** al pegar una key de otro (hoy `avisoFormatoKey` solo avisa).
+- **Export/import** `.zip` de la carpeta de `.md` + File System Access API (spec §7).
+- **2.5b — embeddings** (`transformers.js`) si `intercambiosRelevantes` (match por palabras) se
+  queda corto. Misma firma → drop-in.
+- Modelos locales tipo Ollama (spec §10) — descartado por ahora (mixed-content/CORS + el celu no
+  llega a `localhost`); los modelos abiertos ya se sirven online vía Groq/Cerebras/etc.
 
 ## Issues conocidos / gotchas
 
-- **Preview pane** (`mcp__Claude_Browser__*`): congela `requestAnimationFrame`/`ResizeObserver`,
-  throttlea `setTimeout`, **no corre transiciones CSS** y a veces reporta viewport 0. Los nodos de
-  React Flow quedan sin medir → no se dibujan edges ni animaciones; los gestos sintéticos de
-  teclado/drag no disparan. **No es un bug de la app.** En el pane se verifica **lógica/datos**;
-  el **render, la inercia y las animaciones** los prueba el usuario en Chrome real. (napkin §2-3.)
-- **CDN de GitHub Pages cachea `index.html` ~10 min.** Para ver un deploy nuevo enseguida:
-  `?v=<algo>` (cache-buster).
-- **Darkreader** activo en `localhost` rompe la hidratación y los colores.
-- **Llamada IA que queda "estática"**: cubierto por el watchdog + `pendiente: 1` persistido +
-  botón "↻ Rehacer" (decisiones F3-6). Un globo estático de ANTES de ese fix se recupera con "Rehacer".
+- **Preview pane** (`mcp__Claude_Browser__*`): congela rAF/ResizeObserver, throttlea `setTimeout`,
+  **no corre transiciones CSS**, a veces reporta viewport 0; los gestos sintéticos de teclado/drag
+  no disparan. **No es bug de la app.** En el pane se verifica **lógica/datos**; render, inercia y
+  animaciones los prueba el usuario en Chrome real. (napkin §2-3.)
+- **CDN de GitHub Pages cachea `index.html` ~10 min.** Deploy nuevo ya: `?v=<algo>`. La **PWA**
+  cachea más fuerte → limpiar datos del sitio para forzar update.
+- **Darkreader** en `localhost` rompe la hidratación y los colores.
+- **Un dispositivo con bundle viejo rompe el sync** (sube el índice sin `epoch` → lo borra). Ver arriba.
+- **Llamada IA "estática"**: watchdog + `pendiente: 1` persistido + botón "↻ Rehacer" (F3-6).
 
 ## Cómo correr / verificar / publicar
 
@@ -98,8 +73,8 @@ npm run build                       # out/ estático; con NEXT_PUBLIC_PAGES=1 �
 ```
 
 - **`.env.local`** (gitignoreado): `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
-  Sin eso, `npm run dev` corre igual pero sin la parte de Supabase. En prod van como repo secrets.
+  Sin eso `npm run dev` corre igual, sin la parte de Supabase. En prod van como repo secrets.
 - **Lógica pura sin runner**: `npx --yes tsx _scratch.mts`, y borrar el scratch (napkin §13).
 - **Publicar**: `git push` desde `D:\IA\3maps` (credencial en Windows Credential Manager).
-  `gh` NO está autenticado. Deploy a Pages = push a `main` (Pages ya habilitado a mano).
+  `gh` NO está autenticado. Deploy a Pages = push a `main`.
 - **Al cerrar sesión**: `tsc` + `lint` en verde · `git push` · actualizar este archivo.

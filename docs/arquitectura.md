@@ -1,13 +1,14 @@
 # Arquitectura del código
 
 > Mapa de `src/` para no leer todo. Para una dependencia puntual: `graphify query "..."`
-> (napkin §6b). Actualizar cuando cambie la estructura.
-> Última actualización: 31-08-2026.
+> (napkin §6b). El árbol de abajo es el índice; las secciones `##` que siguen son deep-dives —
+> leelas solo si tocás ese archivo. Actualizar cuando cambie la estructura.
+> Última actualización: 01-09-2026.
 
-**Tamaños** (líneas): `FlowCanvas.tsx` 1130 · `ia.ts` 860 · `SettingsPanel.tsx` 735 ·
-`intercambio.ts` 347 · `MessageNode.tsx` ~300 · `sync.ts` 287 · `BranchTranscript.tsx` ~270 ·
+**Tamaños** (líneas): `FlowCanvas.tsx` ~1150 · `ia.ts` ~890 · `SettingsPanel.tsx` ~745 ·
+`intercambio.ts` ~350 · `MessageNode.tsx` ~300 · `sync.ts` ~330 · `BranchTranscript.tsx` ~270 ·
 `compartir.ts` 237 · `contexto.ts` 227 · `configIA.ts` 183 · `useSync.ts` 166 · `layout.ts` 148 ·
-`mapas.ts` 142 · `Composer.tsx` 138 · el resto < 110.
+`mapas.ts` ~150 · `Composer.tsx` 138 · el resto < 110.
 
 ## Stack real (lo que está instalado)
 
@@ -21,8 +22,8 @@
   (`components/Markdown.tsx`). `katex/dist/katex.min.css` se importa ahí.
 - **`@supabase/supabase-js`** — backend **opcional** (fase 2). Sin las env `NEXT_PUBLIC_SUPABASE_*`,
   `getSupabase()` → null y la app sigue 100% local. Sin `transformers.js` todavía.
-- **Edge function** `supabase/functions/ia-proxy` (Deno) — proxy stateless para DeepSeek/GPT
-  (no habilitan CORS). Se deploya aparte con la CLI de Supabase, no por el workflow de Pages.
+- **Edge function** `supabase/functions/ia-proxy` (Deno) — proxy stateless para los 11 proveedores
+  OpenAI-compat (no habilitan CORS). Se deploya aparte con la CLI de Supabase, no por el workflow.
 - Deploy de la web: **GitHub Pages** (`output: "export"`).
 
 ## Árbol de archivos
@@ -48,13 +49,14 @@ src/
     persistencia.ts      guardarArbol(arbol, mapId) / cargarArbol(mapId) en localStorage
                          ("3maps:arbol:<mapId>"), un string .md por intercambio. Cae a
                          arbolInicial() si no hay nada.
-    mapas.ts             Registro de mapas (fase 3.5). "3maps:mapas" = {[id]:{titulo,creado}},
-                         "3maps:mapaActivo", árbol en "3maps:arbol:<id>". leerMapas() migra el
-                         formato viejo SOLO si "3maps:mapas" nunca se escribió (si es `{}` NO
-                         re-crea "principal"). asegurarUnMapa() garantiza ≥1 mapa. crear/renombrar/
-                         borrarMapa, nombreMapaLibre, nuevoMapaId, fusionarMapasNube (agrega los
-                         que faltan + dedup de títulos), podarMapasBorrados(borrados, excepto)
-                         (aplica tombstones de la nube).
+    mapas.ts             Registro de mapas (fase 3.5). "3maps:mapas" = {[id]:{titulo,creado,
+                         renombrado?}}, "3maps:mapaActivo", árbol en "3maps:arbol:<id>". leerMapas()
+                         migra el formato viejo SOLO si "3maps:mapas" nunca se escribió (si es `{}`
+                         NO re-crea "principal"). asegurarUnMapa() garantiza ≥1 mapa.
+                         crear/renombrar/borrarMapa (renombrar sella `renombrado`), nombreMapaLibre,
+                         nuevoMapaId, cuandoMeta (= renombrado ?? creado, para LWW de títulos),
+                         fusionarMapasNube (agrega los que faltan + adopta títulos más nuevos + dedup),
+                         podarMapasBorrados(borrados, excepto) (aplica tombstones).
     layout.ts            calcularLayout(arbol, alturaDe) → Map<id,{x,y}>. Auto-layout recursivo
                          para el botón "Ordenar" (fase 3.4): tronco `main` vertical, ramas
                          `branch-*` en columnas al costado con su propio tronco. Puro.
@@ -81,8 +83,9 @@ src/
                          los demás via proxy GET /models). PROVEEDORES_DISPONIBLES = 13 (Gemini,
                          Claude + 11 vía proxy: deepseek, gpt, groq, cerebras, openrouter, mistral,
                          huggingface, zhipu, qwen, moonshot, siliconflow). upstreamDe(prov) → clave
-                         del mapa PROVEEDORES del proxy. `GUIA_API_KEY[prov]` = {url, gratis, pasos}
-                         (mini-guía en ⚙️). ErrorIA con mensajes legibles.
+                         del mapa PROVEEDORES del proxy. `GUIA_API_KEY[prov]` = {url, gratis,
+                         abierto?, pasos} (mini-guía en ⚙️). `sinRazonamiento()` saca <think> del
+                         stream (F3-12). ErrorIA con mensajes legibles.
     configIA.ts          localStorage "3maps:ia" = { activo, keys: {[prov]:{apiKey,modelo}}, dueño }
                          — UNA key por proveedor. cargarConfigIA() (default gemini), guardarConfigIA,
                          cambiarProveedorActivo, borrarKeyProveedor, configGuardadaDe.
@@ -97,12 +100,15 @@ src/
                          Bucket privado. `sync/<uid>/<mapId>.json` = árbol (.md-por-intercambio +
                          `titulo`). planInicial(arbolLocal, uid, mapId) → subir/traer/vaciar/nada,
                          LWW por hora del SERVIDOR (`metaNube` lee updated_at via storage.list).
-                         localStorage "3maps:sync:<mapId>" = {at, hash, uid}. El mapa "principal"
-                         cae al viejo `arbol.json`. `_mapas.json` = `{mapas, borrados}` (índice +
-                         tombstones; unión al subir, los borrados SÍ se propagan). `config.json` =
-                         keys/modelos (bajar/subirConfigNube, §9). Todo se baja por signed URL +
-                         `{cache:"no-store"}` (`descargarTexto`); se sube con `cacheControl: "0"`
-                         (decisiones F2-8, F2-4, F3-4).
+                         localStorage "3maps:sync:<mapId>" = {at, hash, uid}, y
+                         "3maps:sync:epoch:<uid>" = último epoch de reset aplicado. El mapa
+                         "principal" cae al viejo `arbol.json`. `_mapas.json` = `{mapas, borrados,
+                         epoch?}` (índice + tombstones + epoch de "Empezar de cero"; unión al subir,
+                         borrados SÍ se propagan, título con LWW por `cuandoMeta`). `empezarDeCeroNube`
+                         tombstonea todo + epoch nuevo → `sincronizarListaMapas` en el otro
+                         dispositivo hace reset duro. `config.json` = keys/modelos
+                         (bajar/subirConfigNube, §9). Todo baja por signed URL + `{cache:"no-store"}`
+                         (`descargarTexto`), sube con `cacheControl: "0"` (decisiones F2-8, F2-4, F3-4).
     compartir.ts         compartirArbol(arbol, titulo) → sube arboles/<slug>.json a Storage (mismo
                          formato que persistencia.ts), devuelve {slug, url}, y si hay sesión hace
                          insert en shared_trees (soft-fail). cargarArbolCompartido(slug) lo baja y
@@ -159,9 +165,10 @@ src/
                         local está limpio (`arbolRef === sincronizado`), pre-chequea `metaNube`.
                         Devuelve EstadoSync. No corre en modo compartido.
     MapaSwitcher.tsx    Selector de mapas (fase 3.5): chip arriba a la izquierda al lado de ⚙️.
-                        Lista + ＋ Nuevo mapa + ✎ Renombrar (window.prompt) + 🗑 Borrar (confirm;
-                        deshabilitado si es el único). Cierra al clickear afuera. Props:
-                        {mapas, activoId, onCambiar, onNuevo, onBorrar, onRenombrar}.
+                        Lista + ＋ Nuevo + ✎ Renombrar (prompt) + 🗑 Borrar (se permite el último →
+                        crea uno vacío) + 🧹 Empezar de cero (borra todo local+nube, epoch). Cierra
+                        al clickear afuera. Props: {mapas, activoId, onCambiar, onNuevo, onBorrar,
+                        onRenombrar, onEmpezarDeCero}.
     Composer.tsx        Barra inferior fija para escribir. Props: {activeNodeLabel, arbolVacio,
                         onSubmit(text, "main"|"branch"), oculto, onToggleOculto}. Enter continúa /
                         Ctrl+Enter ramifica / Shift+Enter salto (F3-10). Botón `⌄` la esconde
@@ -175,8 +182,9 @@ src/
                         "✓ Aplicado" (2s tras guardar) / "Borrar key". Aviso ámbar bajo el input
                         si el formato de la key no pinta del proveedor (avisoFormatoKey, local).
                         Botón "verificar key y ver sus modelos" → listarModelos() (gratis, no gasta
-                        tokens; 401 si la key es inválida) → chips clickeables + datalist. Aplica a
-                        Claude y Gemini; commit() lo dispara al guardar.
+                        tokens; 401 si la key es inválida) → chips clickeables + datalist. Los 13
+                        proveedores; commit() lo dispara al guardar. `<details>` con la mini-guía
+                        de API key (`GUIA_API_KEY`, F3-12 aclara open-source).
                         Textarea "instrucción de sistema" → onChange({systemPrompt}) directo.
     settings.ts         Settings = {inertia, ventanaContexto, systemPrompt, transcriptSide,
                         transcriptWidth, usarProxyIA}. DEFAULT_SETTINGS, storage key. systemPrompt
@@ -200,12 +208,12 @@ supabase/
   schema.sql                    bucket `arboles` + RLS (incl. delete dueño-solo) + tabla
                                `shared_trees` + bucket privado `sync` (RLS por carpeta `<uid>/`,
                                fase 2.4). Lo corre el usuario.
-  functions/ia-proxy/index.ts   Edge function Deno. Proxy stateless para los proveedores
+  functions/ia-proxy/index.ts   Edge function Deno. Proxy stateless para los 11 proveedores
                                OpenAI-compatibles (openai, deepseek, groq, cerebras, openrouter,
-                               mistral, huggingface — mapa PROVEEDORES): reenvía a la base fija de
-                               cada uno con x-ia-key, agrega CORS, pipe del stream. Sin logs, sin
-                               storage. Redeploy obligatorio al sumar un proveedor: `supabase
-                               functions deploy ia-proxy` o el editor del panel.
+                               mistral, huggingface, zhipu, qwen, moonshot, siliconflow — mapa
+                               PROVEEDORES): reenvía a la base fija de cada uno con x-ia-key, agrega
+                               CORS, pipe del stream. Sin logs, sin storage. Redeploy obligatorio al
+                               sumar un proveedor: `supabase functions deploy ia-proxy` o el editor.
 ```
 
 ## FlowCanvas.tsx — el corazón
@@ -327,7 +335,7 @@ Props de `<ReactFlow>` que importan:
 - `llamarIA(config, mensajes, opts)` → `switch(config.proveedor)`. Sumar proveedor = un `case`
   nuevo + entradas en los `Record<Proveedor,…>` + (si es OpenAI-compat) redeploy del `ia-proxy`.
   Cero cambios en el árbol (spec §6). `resumir()` usa el mismo proveedor (le pasa `usarProxy`).
-- La key de Claude/Gemini va **directo del navegador al proveedor**. Las de los otros 7
+- La key de Claude/Gemini va **directo del navegador al proveedor**. Las de los otros 11
   **transitan** el proxy stateless (opt-in `opts.usarProxy` / `settings.usarProxyIA`), nunca se
   almacenan. Ver §7a.
 - **Adaptador OpenAI-compat** (`llamarOpenAICompat` / `listarModelosOpenAICompat`): `fetch` a
@@ -400,13 +408,6 @@ pending, error }` (`ancho`/`alto` = null → auto; tamaño manual del globo, F3-
   `## Pregunta` / `## Respuesta`. `padre_id` / `proveedor` vacíos → `null`. `pendiente: 1` (una
   llamada a medias) → al parsear se convierte en un `error` reintentable (`pending` nunca se
   restaura como tal).
-
-## model/persistencia.ts
-
-`localStorage["3maps:arbol:<mapId>"]` = `{ [id]: "<string .md>" }` (un archivo por intercambio,
-igual que va a ser el export a disco — spec §7). `guardarArbol(a, mapId)` serializa todo;
-`cargarArbol(mapId)` parsea y cae a `arbolInicial()` si no hay nada o falla el parseo. La clave
-por mapa y el registro de mapas están en `mapas.ts` (fase 3.5). `.zip` / carpetas reales pendiente.
 
 ## model/contexto.ts (armado del contexto para la IA)
 
