@@ -50,6 +50,11 @@
 - ⚠️ LWW de títulos usa el reloj del navegador: relojes MUY desfasados podrían elegir mal.
 
 ### Opcionales (no bloquean)
+- **Panel lateral expandido — rediseño** (el usuario tiene mejoras en mente). Junto con esto:
+  heurística en `normalizarMath` para envolver LaTeX crudo sin delimitadores (`\frac{`,
+  `\sqrt{`, `\text{`, `\sum` sueltos, sin `$` en la línea) → `$…$`. Falla típica de los modelos
+  open-source chicos (gpt-oss-120b lo hace seguido: escribe `\frac{...}` entre paréntesis
+  normales). El fix F3-12 solo cubre `\[ \]` y `\( \)`, no el LaTeX sin marcar.
 - **Auto-switch de proveedor** al pegar una key de otro (hoy `avisoFormatoKey` solo avisa).
 - **Export/import** `.zip` de la carpeta de `.md` + File System Access API (spec §7).
 - **2.5b — embeddings** (`transformers.js`) si `intercambiosRelevantes` (match por palabras) se
