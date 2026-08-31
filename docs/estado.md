@@ -30,8 +30,9 @@
   `gemini-3.6-flash`, `gemini-3.7-flash`. Deprecados (no dan a usuarios nuevos): `gemini-2.5-flash-lite`
   (→ 3.5-flash-lite), `gemini-2.5-pro` (→ 3.1-pro-preview). Rate-limit (no fallo real): `gemini-3.1-pro-preview`
   (+`-customtools`), `gemini-pro-latest`. `gemini-flash-lite-latest` → "invalid argument".
-  **`gemini-flash-latest`**: el alias se re-fija a `gemini-3.7-flash` al guardar/rehacer/recargar —
-  el modelo `*-latest` no persiste (bug, ver "Qué falta"). Los `$` sin renderizar que vio el
+  **Aliases `gemini-*-latest`** (`flash` / `pro` / `flash-lite`): no andan en free tier →
+  ahora se esconden del datalist y, si los tipeás, avisan en ámbar que se usa `gemini-3.7-flash`
+  (antes swappeaba en silencio). Ver decisiones §7b. Los `$` sin renderizar que vio el
   usuario NO son bug de código: F3-12 renderiza esa salida de Gemini bien (verificado local, 4
   spans katex, `$$`/`$x=1$` desaparecen) y el bundle está en prod (katex CSS presente) → **el
   dispositivo del usuario sirve el bundle viejo cacheado por la PWA**. Limpiar datos del sitio.
@@ -57,9 +58,6 @@
   Ojo: gpt-oss escribe `\frac{...}` sin `$` → eso NO lo arregla F3-12 (ver heurística en Opcionales).
   El render de `$…$`/`$$…$$` (Gemini) ya está verificado en local; falta que el usuario limpie la
   caché de la PWA para dejar de ver el bundle viejo.
-- **`gemini-flash-latest` (y aliases `*-latest`) no persisten**: al guardar, el modelo queda
-  fijado a la versión concreta anterior (`gemini-3.7-flash`). Revisar dónde se resuelve/guarda
-  el nombre del modelo en `model/ia.ts` / `SettingsPanel`.
 - Panel lateral redimensionable (3.11) + fixes de móvil (3.13) en Chrome real / celu.
 - Que el watchdog de 45s no corte un stream lento-pero-vivo.
 - ⚠️ LWW de títulos usa el reloj del navegador: relojes MUY desfasados podrían elegir mal.

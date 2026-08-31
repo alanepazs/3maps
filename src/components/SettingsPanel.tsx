@@ -10,6 +10,7 @@ import {
 } from "@/model/compartir";
 import {
   ErrorIA,
+  GEMINI_MODELOS_MUERTOS,
   GUIA_API_KEY,
   MODELOS_SUGERIDOS,
   MODELO_POR_DEFECTO,
@@ -290,6 +291,12 @@ export default function SettingsPanel({
     modeloDraft.trim() !== "" &&
     !modelos.includes(modeloDraft.trim());
 
+  // Alias de Gemini que no anda en free tier: al guardar se usa el default. Lo
+  // avisamos en vez de swappear en silencio (antes confundía: "por qué me lo
+  // cambió"). Ver `GEMINI_MODELOS_MUERTOS` / decisiones §7b.
+  const modeloMuerto =
+    proveedor === "gemini" && GEMINI_MODELOS_MUERTOS.has(modeloDraft.trim());
+
   return (
     <div ref={contenedorRef} className="absolute left-4 top-4 z-10">
       <button
@@ -505,10 +512,17 @@ export default function SettingsPanel({
             <p className="mt-1.5 text-[11px] text-red-400">{errorModelos}</p>
           )}
 
-          {modeloFueraDeLista && (
+          {modeloMuerto ? (
             <p className="mt-1.5 text-[11px] text-amber-400">
-              Tu key no incluye “{modeloDraft.trim()}”. Elegí uno de abajo.
+              “{modeloDraft.trim()}” no anda en el free tier de Gemini; se va a
+              usar {MODELO_POR_DEFECTO.gemini}.
             </p>
+          ) : (
+            modeloFueraDeLista && (
+              <p className="mt-1.5 text-[11px] text-amber-400">
+                Tu key no incluye “{modeloDraft.trim()}”. Elegí uno de abajo.
+              </p>
+            )
           )}
 
           {modelos && modelos.length > 0 && (

@@ -121,6 +121,21 @@ export const MODELO_POR_DEFECTO: Record<Proveedor, string> = {
   siliconflow: "deepseek-ai/DeepSeek-V3",
 };
 
+// Modelos de Gemini que ya no sirven para una key free tier nueva y hay que
+// migrar al default (`configIA.ts`) + esconder de la lista (`listarModelosGemini`,
+// datalist de ⚙️). Ver decisiones §7b.
+//  - retirados por Google → 404 "no existe el modelo"
+//  - alias `*-latest` → resuelven a un flash paid / "invalid argument" en free tier
+// Los `gemini-2.5-*` NO van acá a propósito: una cuenta vieja / con billing los usa.
+export const GEMINI_MODELOS_MUERTOS = new Set([
+  "gemini-2.0-flash",
+  "gemini-1.5-flash",
+  "gemini-pro",
+  "gemini-flash-latest",
+  "gemini-pro-latest",
+  "gemini-flash-lite-latest",
+]);
+
 export const NOMBRE_PROVEEDOR: Record<Proveedor, string> = {
   claude: "Claude (Anthropic)",
   deepseek: "DeepSeek",
@@ -1007,6 +1022,7 @@ async function listarModelosGemini(config: ConfigIA): Promise<string[]> {
     .filter(
       (name) =>
         name.startsWith("gemini-") &&
+        !GEMINI_MODELOS_MUERTOS.has(name) &&
         !/(image|tts|embedding|robotics|computer-use|transcribe|omni)/.test(name),
     )
     .sort();

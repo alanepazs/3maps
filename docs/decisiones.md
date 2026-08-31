@@ -124,9 +124,14 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
    (Claude). **No gasta tokens**; 401 si la key es inválida (§8c). Se dispara solo al Guardar una
    key. Modelo guardado fuera de la lista → aviso ámbar. **Es la única fuente de verdad de qué
    modelos puede usar esa key.**
-4. **`MODELOS_MUERTOS`** (`configIA.ts`) migra al default, al cargar, SOLO lo retirado para todos
-   (`gemini-2.0-flash`, `-1.5-flash`, `-pro`) + alias paid (`*-latest`). Los `2.5-*` **NO** se
-   migran (una cuenta vieja/con billing sí los llama).
+4. **`GEMINI_MODELOS_MUERTOS`** (`ia.ts`, `configIA.ts` lo re-exporta como `MODELOS_MUERTOS`):
+   `gemini-2.0-flash` / `-1.5-flash` / `-pro` (retirados) + alias `*-latest`
+   (`gemini-flash-latest`, `-pro-latest`, `-flash-lite-latest` → paid / "invalid argument" en
+   free tier). Efecto triple: (a) `configIA` los migra al default al cargar; (b)
+   `listarModelosGemini` los esconde del datalist / "ver modelos"; (c) si el usuario igual
+   tipea uno, `SettingsPanel` avisa en ámbar ("no anda en free tier, se usa `gemini-3.7-flash`")
+   en vez de swappear en silencio (antes: "¿por qué me cambió el modelo?"). Los `2.5-*` **NO**
+   van acá (una cuenta vieja/con billing sí los llama; Google devuelve su propio mensaje claro).
 5. **`mensajeErrorGemini(res, modelo?)`** — helper único de errores para todos los endpoints. 404
    con modelo → sugiere el botón; 503 → texto de Google; **401 `ACCESS_TOKEN_TYPE_UNSUPPORTED`** →
    la cuenta emite keys `AQ.…` que en algunas cuentas todavía no andan en la REST API (bug de Google).

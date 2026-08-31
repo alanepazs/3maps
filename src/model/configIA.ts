@@ -1,6 +1,6 @@
 "use client";
 
-import { MODELO_POR_DEFECTO, type ConfigIA } from "./ia";
+import { GEMINI_MODELOS_MUERTOS, MODELO_POR_DEFECTO, type ConfigIA } from "./ia";
 import { PROVEEDORES, type Proveedor } from "./intercambio";
 
 // La configuración de IA vive en el navegador (`localStorage["3maps:ia"]`, clave
@@ -16,19 +16,11 @@ const CONFIG_IA_STORAGE_KEY = "3maps:ia";
 
 const PROVEEDOR_POR_DEFECTO: Proveedor = "gemini";
 
-// Modelos guardados en configs viejas que ya no existen para NADIE y se migran
-// al default al cargar:
-//  - retirados por Google → 404 "no existe el modelo"
-//  - alias "-latest" que hoy resuelven a un flash paid-tier → 503 "high demand"
-// Los 2.5-* NO están acá a propósito: siguen existiendo y una key con billing
-// (o una cuenta vieja) los puede usar. Ver decisiones §7b.
-const MODELOS_MUERTOS = new Set([
-  "gemini-2.0-flash",
-  "gemini-1.5-flash",
-  "gemini-pro",
-  "gemini-flash-latest",
-  "gemini-pro-latest",
-]);
+// Modelos guardados en configs viejas que ya no sirven para una key free tier
+// nueva y se migran al default al cargar. La lista vive en `ia.ts`
+// (`GEMINI_MODELOS_MUERTOS`) porque también la usa `listarModelosGemini` para
+// esconderlos del datalist. Ver decisiones §7b.
+const MODELOS_MUERTOS = GEMINI_MODELOS_MUERTOS;
 
 type Entrada = { apiKey: string; modelo: string };
 type Almacen = {
