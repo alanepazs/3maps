@@ -41,14 +41,15 @@
 - **El sync NO es push en tiempo real**: se trae del otro dispositivo con un poll cada 15s + al
   volver a foco la pestaña (`revisarNube` en `useSync` para el mapa abierto, `sincronizarListaMapas`
   para la lista). Latencia ≤15s. Decisiones F3-4.
-- **Falta probar con 2 dispositivos logueados con la misma cuenta.** Prefs de vista
+- **Probado por el usuario con 2 dispositivos (misma cuenta Google): FUNCIONA** — lista de
+  mapas, árboles, "Empezar de cero", "escribiendo…" en vez de error rojo. Prefs de vista
   (`"3maps:vista"`) siguen sin sincronizar (a propósito).
 
-### Prueba real (la hace el usuario, con key/login)
+### Prueba real pendiente (la hace el usuario, con key/login)
 - Los 7 proveedores vía proxy con una key real (Groq/Cerebras = mejores free tier).
-- El atajo Ctrl+Enter (ramifica) en Chrome real.
 - Resize de globo (3.10) y de panel (3.11) + fixes de móvil (3.13) en Chrome y celu.
 - Que el watchdog de 45s no corte un stream lento-pero-vivo.
+- ✅ Ctrl+Enter (ramifica) — OK en Chrome.
 
 ### Opcionales (no bloquean)
 - **Auto-switch de proveedor** al pegar una key de otro (hoy `avisoFormatoKey` solo avisa en ámbar).
