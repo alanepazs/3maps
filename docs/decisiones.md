@@ -365,6 +365,15 @@ con free tier: **probar con una key nueva de verdad** — los blogs y hasta `Lis
 - **Free tier**: Supabase manda ~2-4 mails/hora sin SMTP propio. Si molesta, configurar SMTP o
   sumar un provider OAuth.
 - **Revertir** (volver a `persistSession: false`): rompe que la sesión sobreviva al reload.
+- **Pantalla de consentimiento PUBLICADA** ("En producción", 30-08-2026 → cualquiera loguea con
+  Google, no solo test-users). Para pasar de "Prueba" a "Producción", Google Cloud pide (consola
+  nueva "Google Auth Platform"): (1) los 3 permisos **no sensibles** cargados explícitamente en
+  "Acceso a los datos" (`.../auth/userinfo.email`, `.../auth/userinfo.profile`, `openid`) — sin
+  esto la config figura "incompleta" y el botón "Publicar app" queda gris; (2) URLs de Política
+  de Privacidad y Términos → `public/privacy.html` + `public/terms.html` (estáticos, se deployan
+  a `alanepazs.github.io/3maps/{privacy,terms}.html`); (3) el dominio de esas URLs como "dominio
+  autorizado" (`alanepazs.github.io`) + homepage. **Sin revisión de Google** porque los permisos
+  son no sensibles → queda en producción para siempre, no hay pantalla de "app no verificada".
 
 ### F2-8. Sync del árbol de trabajo = **last-write-wins por hora del SERVIDOR**, sin prompt
 - **Decidido con el usuario**: "gana el último que guardó". Un `<uid>/arbol.json` en el bucket

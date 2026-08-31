@@ -173,9 +173,17 @@ Ver **`docs/fase-3.md`**.
   `arbolAVista` → 🗑 en `MessageNode` si `!isRoot || sinHijos`; `deleteNode` confirma).
 
 **Fase 3: todos los bloques del pedido hechos + varios fixes post-uso** (llamada estática,
-superposición de globos, ramas siempre a la derecha, botón "Rehacer"). Falta: Cerebras (5º
-proveedor), publicar la pantalla de consentimiento de Google, probar el sync per-mapa con login
-real, 2.5b si hace falta. Decisiones en `docs/decisiones.md` (F3-1..F3-7).
+superposición de globos, ramas siempre a la derecha, botón "Rehacer").
+
+**Pantalla de consentimiento de Google — PUBLICADA (30-08-2026, "En producción").** Cualquiera
+puede loguear con Google, no solo test-users. Faltaba: cargar los 3 permisos no sensibles
+(email/profile/openid) en "Acceso a los datos" + URLs de privacidad y términos. Se agregaron
+`public/privacy.html` y `public/terms.html` (deployan a `alanepazs.github.io/3maps/{privacy,terms}.html`),
+con dominio autorizado `alanepazs.github.io` + homepage en la marca. Sin revisión de Google
+(permisos no sensibles).
+
+Falta: Cerebras (5º proveedor), probar el sync per-mapa con login real, 2.5b si hace falta.
+Decisiones en `docs/decisiones.md` (F3-1..F3-7).
 
 **UX — API key por proveedor** (`0e56112`, 30-08-2026): `configIA.ts` ahora guarda una key por
 proveedor. Cambiás de proveedor en ⚙️ y volvés → la key reaparece sola (antes se borraba).

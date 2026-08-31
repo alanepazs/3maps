@@ -126,8 +126,10 @@ acepta un `parentId` opcional y devuelve el id del globo nuevo. No se muestra en
 - ~~**Renombrar "Generar link" → "Compartir este árbol"** en `SettingsPanel`.~~ ✅ (30-08-2026)
 - **2.5b — embeddings de verdad** (`transformers.js`, worker, IndexedDB) si el matching por
   palabras clave se queda corto. Misma firma que `intercambiosRelevantes` → drop-in.
-- **Publicar la pantalla de consentimiento de Google** (config del usuario, no código): Google
-  Cloud → Pantalla de consentimiento → "Publicar app". Hasta entonces solo los test-users entran.
+- ~~**Publicar la pantalla de consentimiento de Google**.~~ ✅ (30-08-2026) — "En producción".
+  Requería: 3 permisos no sensibles (email/profile/openid) en "Acceso a los datos" + URLs de
+  privacidad y términos (`public/privacy.html` + `public/terms.html`, ver commit `df4441a`) +
+  dominio autorizado `alanepazs.github.io`. Sin revisión de Google (permisos no sensibles).
 
 ---
 
@@ -152,6 +154,5 @@ acepta un `parentId` opcional y devuelve el id del globo nuevo. No se muestra en
 ## Falta de fase 3
 
 - Cerebras como 5º proveedor (por el proxy `ia-proxy`).
-- Publicar la pantalla de consentimiento de Google (config del usuario).
 - 2.5b (embeddings) si el matching por palabras clave se queda corto.
 - Probar el sync per-mapa con login real (2 dispositivos).
