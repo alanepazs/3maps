@@ -56,7 +56,7 @@
 - **Sync entre dispositivos** (con sesión, LWW): árboles per-mapa (`sync/<uid>/<mapId>.json`),
   lista de mapas (`_mapas.json` = `{mapas, borrados, epoch}`), keys/modelos (`config.json`).
   **NO es push**: poll cada 15s + al volver a foco. Latencia ≤15s. "🧹 Empezar de cero" / borrar
-  el último mapa suben un `epoch` → reset duro en el otro dispositivo. **Probado OK con PWA
+  el último mapa suben un `epoch` → reset duro en el otro dispositivo. **Probado OK con celu
   + PC**: crear / borrar / renombrar / reset / tamaño del globo convergen. Detalle: decisiones F3-4.
 - **Persistencia local**: `localStorage["3maps:arbol:<mapId>"]` = un string `.md` por intercambio.
   Vista en `"3maps:vista"`, ajustes en `"3maps:settings"`, IA en `"3maps:ia"`.
@@ -66,7 +66,7 @@
 ### Prueba real pendiente (la hace el usuario, con key/login)
 - Los otros 9 proveedores vía proxy con key real (Cerebras / GLM-flash / SiliconFlow = gratis).
 - Revalidar en vivo gpt-oss / qwen3 con el bundle F3-12: strip de `<think>` + `<br>` literal
-  (el render `$…$` de Gemini ya está OK en local; primero limpiar la caché de la PWA).
+  (el render `$…$` de Gemini ya está OK en local; primero forzar bundle nuevo con `?v=<algo>`).
 - Panel lateral redimensionable (3.11) + fixes de móvil (3.13) en Chrome real / celu.
 - Que el watchdog de 45s no corte un stream lento-pero-vivo.
 - ⚠️ LWW de títulos usa el reloj del navegador: relojes MUY desfasados podrían elegir mal.
@@ -96,8 +96,9 @@
   **no corre transiciones CSS**, a veces reporta viewport 0; los gestos sintéticos de teclado/drag
   no disparan. **No es bug de la app.** En el pane se verifica **lógica/datos**; render, inercia y
   animaciones los prueba el usuario en Chrome real. (napkin §2-3.)
-- **CDN de GitHub Pages cachea `index.html` ~10 min.** Deploy nuevo ya: `?v=<algo>`. La **PWA**
-  cachea más fuerte → limpiar datos del sitio para forzar update.
+- **CDN de GitHub Pages cachea `index.html` ~10 min.** Deploy nuevo ya: `?v=<algo>`. (3maps NO
+  es una PWA — no hay `manifest.json` ni service worker; "agregar a pantalla de inicio" es solo
+  un atajo con el caché normal del navegador. El `?v=` alcanza.)
 - **Darkreader** en `localhost` rompe la hidratación y los colores.
 - **Un dispositivo con bundle viejo rompe el sync** (sube el índice sin `epoch` → lo borra). Ver arriba.
 - **Llamada IA "estática"**: watchdog + `pendiente: 1` persistido + botón "↻ Rehacer" (F3-6).
