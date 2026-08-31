@@ -25,6 +25,16 @@
   `-86m` (`max_tokens` ≤512), `canopylabs/orpheus-*` (piden aceptar términos). `compound-mini`
   cortó por rate-limit del tier free, no por el modelo. Los "errores de compaginación" de
   gpt-oss / qwen3 eran el bug de render → arreglado en F3-12; falta revalidar en vivo.
+- **Modelos Gemini probados directos (31-08)**: andan `gemini-2.5-flash`, `gemini-3-flash-preview`,
+  `gemini-3.1-flash-lite` (+`-preview`), `gemini-3.5-flash` (lento), `gemini-3.5-flash-lite`,
+  `gemini-3.6-flash`, `gemini-3.7-flash`. Deprecados (no dan a usuarios nuevos): `gemini-2.5-flash-lite`
+  (→ 3.5-flash-lite), `gemini-2.5-pro` (→ 3.1-pro-preview). Rate-limit (no fallo real): `gemini-3.1-pro-preview`
+  (+`-customtools`), `gemini-pro-latest`. `gemini-flash-lite-latest` → "invalid argument".
+  **`gemini-flash-latest`**: el alias se re-fija a `gemini-3.7-flash` al guardar/rehacer/recargar —
+  el modelo `*-latest` no persiste (bug, ver "Qué falta"). Los `$` sin renderizar que vio el
+  usuario NO son bug de código: F3-12 renderiza esa salida de Gemini bien (verificado local, 4
+  spans katex, `$$`/`$x=1$` desaparecen) y el bundle está en prod (katex CSS presente) → **el
+  dispositivo del usuario sirve el bundle viejo cacheado por la PWA**. Limpiar datos del sitio.
 - **Respuestas** (`Markdown.tsx`): matemática con KaTeX (`$…$`, `$$…$$`, `\[ \]`, `\( \)`), HTML
   del modelo saneado (`<br>` en tablas), y `ia.ts` saca el `<think>…</think>` de los modelos
   reasoning. Decisiones F3-12.
@@ -43,8 +53,13 @@
 
 ### Prueba real pendiente (la hace el usuario, con key/login)
 - Los otros 9 proveedores vía proxy con key real (Cerebras / GLM-flash / SiliconFlow = gratis).
-- Revalidar en vivo gpt-oss / qwen3 con el bundle F3-12: strip de `<think>` + fin de los
-  "errores de compaginación" (LaTeX crudo, `<br>` literal). Verificado en local con `.md` inyectado.
+- Revalidar en vivo gpt-oss / qwen3 con el bundle F3-12: strip de `<think>` + `<br>` literal.
+  Ojo: gpt-oss escribe `\frac{...}` sin `$` → eso NO lo arregla F3-12 (ver heurística en Opcionales).
+  El render de `$…$`/`$$…$$` (Gemini) ya está verificado en local; falta que el usuario limpie la
+  caché de la PWA para dejar de ver el bundle viejo.
+- **`gemini-flash-latest` (y aliases `*-latest`) no persisten**: al guardar, el modelo queda
+  fijado a la versión concreta anterior (`gemini-3.7-flash`). Revisar dónde se resuelve/guarda
+  el nombre del modelo en `model/ia.ts` / `SettingsPanel`.
 - Panel lateral redimensionable (3.11) + fixes de móvil (3.13) en Chrome real / celu.
 - Que el watchdog de 45s no corte un stream lento-pero-vivo.
 - ⚠️ LWW de títulos usa el reloj del navegador: relojes MUY desfasados podrían elegir mal.
