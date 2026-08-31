@@ -489,8 +489,14 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
   derecha), filas hacia abajo si está lleno.
 - **Las ramas alternan izq/der** (antes: siempre `branch-right`) → árbol parejo, tipo mapa de
   árbol real. El lado también decide el `sourceHandle` de la flecha.
-- El alto del globo nuevo no se conoce al crearlo (aún no se midió) → estimado. El botón
-  "Ordenar" (F3-3) reacomoda todo prolijo después.
+- El alto del globo nuevo no se conoce al crearlo (aún no se midió) → estimado (`H_NUEVO=150`).
+- **`resolverSuperposiciones`** (31-08-2026, pedido del usuario: "que NUNCA se pisen"): como el
+  estimado casi siempre queda corto (respuestas largas) y las posiciones sincronizadas vienen de
+  otra pantalla, `FlowCanvas` corre esta pasada (debounce 500ms) al terminar cada respuesta y al
+  traer un árbol de la nube. Empuja hacia ABAJO **solo** los globos solapados, mínimamente
+  (`y = quieto.y + quieto.h + 24`), hasta 8 pasadas. No re-acomoda el árbol como "Ordenar" — un
+  globo que ubicaste a mano y no pisa a nadie no se toca. **Decisión del usuario** (vs. auto-
+  Ordenar completo, que perdía el arreglo manual).
 
 ### F3-6. La llamada a la IA tiene watchdog + `pending` se persiste
 - **Por qué**: al ramificar varias ramas en paralelo, si el stream de un proveedor se queda

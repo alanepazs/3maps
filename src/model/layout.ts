@@ -146,3 +146,58 @@ export function ubicarNuevoGlobo(
   }
   return { x: parent.x + pm.w + GAP_X, y: parent.y, rama: "branch-right" };
 }
+
+// ── Empujar los globos que se PISAN, mínimamente (fase 3) ──────────────────
+//
+// Cuando una respuesta larga termina de llegar el globo crece más que el
+// estimado y puede pisar a un hermano; al traer un árbol de otro dispositivo las
+// posiciones son de otra pantalla. Esto empuja hacia abajo SOLO los que quedaron
+// solapados (respeta la posición manual del resto). No re-acomoda el árbol como
+// "Ordenar" — solo saca el solape. Pura.
+
+const MARGEN_SOLAPE = 24;
+
+export function resolverSuperposiciones(
+  a: Arbol,
+  medir: (id: string) => Medida,
+): Map<string, { x: number; y: number }> | null {
+  if (a.intercambios.length < 2) return null;
+  const raiz = new Set(raices(a).map((r) => r.id));
+  const pos = new Map(
+    a.intercambios.map((i) => [i.id, { x: i.x, y: i.y }] as const),
+  );
+  const dim = new Map(a.intercambios.map((i) => [i.id, medir(i.id)] as const));
+  const M = MARGEN_SOLAPE;
+  let cambio = false;
+
+  for (let pasada = 0; pasada < 8; pasada++) {
+    const ids = [...pos.keys()].sort((x, y) => pos.get(x)!.y - pos.get(y)!.y);
+    let movio = false;
+    for (let i = 0; i < ids.length; i++) {
+      for (let j = i + 1; j < ids.length; j++) {
+        const idA = ids[i];
+        const idB = ids[j];
+        const pa = pos.get(idA)!;
+        const pb = pos.get(idB)!;
+        const da = dim.get(idA)!;
+        const db = dim.get(idB)!;
+        const solapan =
+          pa.x < pb.x + db.w + M &&
+          pa.x + da.w + M > pb.x &&
+          pa.y < pb.y + db.h + M &&
+          pa.y + da.h + M > pb.y;
+        if (!solapan) continue;
+        // Mover el de más abajo (idB por el sort); si es raíz y idA no, mover idA.
+        const [quieto, mueve] =
+          raiz.has(idB) && !raiz.has(idA) ? [idB, idA] : [idA, idB];
+        const q = pos.get(quieto)!;
+        const qd = dim.get(quieto)!;
+        pos.set(mueve, { x: pos.get(mueve)!.x, y: q.y + qd.h + M });
+        movio = true;
+        cambio = true;
+      }
+    }
+    if (!movio) break;
+  }
+  return cambio ? new Map(pos) : null;
+}

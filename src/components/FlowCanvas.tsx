@@ -59,7 +59,11 @@ import {
   type Rama,
 } from "@/model/intercambio";
 import { cargarArbol, guardarArbol } from "@/model/persistencia";
-import { calcularLayout, ubicarNuevoGlobo } from "@/model/layout";
+import {
+  calcularLayout,
+  resolverSuperposiciones,
+  ubicarNuevoGlobo,
+} from "@/model/layout";
 import {
   borrarMapa,
   crearMapa,
@@ -465,6 +469,33 @@ function Flow() {
     [],
   );
 
+  // Empuja hacia abajo SOLO los globos que quedaron pisando a otro (respuesta más
+  // alta que el estimado, o posiciones traídas de otra pantalla). Debounce 500ms
+  // para no thrashear si llegan varias respuestas juntas. Ver layout.ts.
+  const solapesTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const resolverSolapes = useCallback(() => {
+    if (solapesTimer.current) clearTimeout(solapesTimer.current);
+    solapesTimer.current = setTimeout(() => {
+      const pos = resolverSuperposiciones(arbolRef.current, (id) => {
+        const n = getNode(id);
+        return { w: n?.measured?.width ?? 260, h: n?.measured?.height ?? 150 };
+      });
+      if (!pos) return;
+      setNodes((nds) =>
+        nds.map((n) => {
+          const p = pos.get(n.id);
+          return p ? { ...n, position: { x: p.x, y: p.y } } : n;
+        }),
+      );
+      setArbol((a) => ({
+        intercambios: a.intercambios.map((i) => {
+          const p = pos.get(i.id);
+          return p && (p.x !== i.x || p.y !== i.y) ? { ...i, x: p.x, y: p.y } : i;
+        }),
+      }));
+    }, 500);
+  }, [getNode, setNodes]);
+
   // Pide la respuesta a la IA para `nodeId` y la va escribiendo en el árbol
   // (streaming). `arbolBase` tiene que contener ya el nodo con su pregunta.
   const responder = useCallback(
@@ -575,6 +606,9 @@ function Flow() {
             proveedor: configIA.proveedor,
           }),
         );
+        // La respuesta final puede ser más alta que el estimado → si el globo
+        // quedó pisando a otro, empujarlo (solo el solapado, ver layout.ts).
+        resolverSolapes();
       } catch (e) {
         if (e instanceof Error && e.name === "AbortError") {
           // Timeout del watchdog → error reintentable (deja la respuesta parcial
@@ -605,6 +639,7 @@ function Flow() {
       settings.ventanaContexto,
       settings.systemPrompt,
       settings.usarProxyIA,
+      resolverSolapes,
     ],
   );
 
@@ -1106,14 +1141,20 @@ function Flow() {
 
   // ── Sync entre dispositivos (fase 2.4, per-mapa desde 3.5) ────────────────
   // Solo con sesión y fuera del modo compartido. Last-write-wins.
-  const aplicarArbolNube = useCallback((a: Arbol) => {
-    const ultimo = a.intercambios.at(-1)?.id ?? null;
-    seleccionarLuegoRef.current = ultimo;
-    setArbol(a);
-    setActiveNodeId((cur) =>
-      a.intercambios.some((i) => i.id === cur) ? cur : ultimo,
-    );
-  }, []);
+  const aplicarArbolNube = useCallback(
+    (a: Arbol) => {
+      const ultimo = a.intercambios.at(-1)?.id ?? null;
+      seleccionarLuegoRef.current = ultimo;
+      setArbol(a);
+      setActiveNodeId((cur) =>
+        a.intercambios.some((i) => i.id === cur) ? cur : ultimo,
+      );
+      // Las posiciones son de otra pantalla → si algo quedó pisado, empujarlo
+      // (tras un tick, cuando React Flow midió los nodos nuevos).
+      resolverSolapes();
+    },
+    [resolverSolapes],
+  );
   const onTituloNube = useCallback(
     (titulo: string) => setMapas(renombrarMapa(mapaId, titulo)),
     [mapaId],

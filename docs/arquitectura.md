@@ -59,6 +59,11 @@ src/
                          ubicarNuevoGlobo(arbol, parentId, kind, medir) → {x, y, rama}: al crear
                          un hijo, busca un lugar libre cerca del padre (no pisa a NINGÚN globo,
                          usa rects reales) y alterna el lado de las ramas (fase 3.2).
+                         resolverSuperposiciones(arbol, medir) → Map<id,{x,y}> | null: empuja
+                         hacia ABAJO solo los globos que quedaron pisando a otro (respuesta más
+                         alta que el estimado, o posiciones de otra pantalla). Respeta lo que no
+                         se pisa. Lo llama `FlowCanvas` (debounce 500ms) al terminar una respuesta
+                         y al traer un árbol de la nube.
     contexto.ts          armarContexto(arbol, nodoId, opts, resumenViejo, relevantes) → Mensaje[]:
                          SOLO el camino raíz→nodo, aplanado a user/assistant, con ventana (últimos
                          N completos + resumen del tramo viejo). `relevantes` = intercambios viejos
