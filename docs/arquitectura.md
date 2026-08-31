@@ -16,7 +16,9 @@
 - **React Flow** `@xyflow/react` ^12.11.5 (con `@xyflow/system` 0.0.81 pinneado)
 - **`@anthropic-ai/sdk`** — se importa **dinámicamente** dentro de `model/ia.ts` (solo se baja
   cuando el usuario dispara una llamada; no pesa en la carga inicial).
-- **`react-markdown` + `remark-gfm`** — render de las respuestas de la IA (`components/Markdown.tsx`).
+- **`react-markdown`** + `remark-gfm` + `remark-math` + `rehype-katex` (matemática) + `rehype-raw`
+  + `rehype-sanitize` (HTML crudo del modelo, saneado) — render de las respuestas de la IA
+  (`components/Markdown.tsx`). `katex/dist/katex.min.css` se importa ahí.
 - **`@supabase/supabase-js`** — backend **opcional** (fase 2). Sin las env `NEXT_PUBLIC_SUPABASE_*`,
   `getSupabase()` → null y la app sigue 100% local. Sin `transformers.js` todavía.
 - **Edge function** `supabase/functions/ia-proxy` (Deno) — proxy stateless para DeepSeek/GPT
@@ -122,9 +124,13 @@ src/
                         localStorage["3maps:vista"], per-navegador, NO sincroniza). LIMITE_COLAPSO
                         =400, ALTO_COLAPSADO=220. leer/guardarExpandido. (El tamaño manual pasó al
                         `.md` — F3-8.)
-    Markdown.tsx        <Markdown>{texto}</Markdown> — react-markdown + remark-gfm con estilos
-                        compactos para el globo (código y tablas con scroll horizontal propio;
-                        links con target=_blank). Sin HTML crudo → seguro.
+    Markdown.tsx        <Markdown>{texto}</Markdown> — react-markdown con estilos compactos para el
+                        globo. remark-gfm + remark-math + rehype-katex (matemática: `$…$`, `$$…$$`,
+                        y `\[ \]`/`\( \)` normalizados a `$` antes de parsear). rehype-raw +
+                        rehype-sanitize: el HTML del modelo (sobre todo `<br>` en tablas) se
+                        interpreta pero saneado (un árbol compartido es de otro → no `<script>`).
+                        Código/tablas con scroll horizontal propio; links target=_blank.
+                        Decisiones F3-12.
     BranchTranscript.tsx  Panel lateral: el camino raíz→globo (`caminoRaizA`) aplanado a Q/A tipo
                         chat. Vista derivada. Se abre con doble-click en un globo o el botón ⤢;
                         cierra con Esc / ✕ / click en el fondo. Botón ⇄ en el header cambia el

@@ -755,9 +755,25 @@ function upstreamDe(proveedor: Proveedor): string {
 }
 
 type OpenAIChunk = {
-  choices?: Array<{ delta?: { content?: string }; finish_reason?: string | null }>;
+  choices?: Array<{
+    delta?: { content?: string; reasoning?: string; reasoning_content?: string };
+    finish_reason?: string | null;
+  }>;
   error?: { message?: string };
 };
+
+// Los modelos "reasoning" (gpt-oss, qwen3, Kimi, DeepSeek-R1…) mandan su cadena
+// de pensamiento antes de la respuesta: a veces en un campo aparte (`reasoning`
+// / `reasoning_content`, que ignoramos), a veces inline entre `<think>…</think>`
+// (Kimi usa `◁think▷…◁/think▷`). No es la respuesta → se saca. Durante el
+// stream, un `<think>` sin cerrar todavía oculta todo lo que viene después.
+function sinRazonamiento(s: string): string {
+  return s
+    .replace(/<think>[\s\S]*?<\/think>\s*/gi, "")
+    .replace(/◁think▷[\s\S]*?◁\/think▷\s*/gi, "")
+    .replace(/<think>[\s\S]*$/i, "")
+    .replace(/◁think▷[\s\S]*$/i, "");
+}
 
 async function llamarOpenAICompat(
   config: ConfigIA,
@@ -817,7 +833,8 @@ async function llamarOpenAICompat(
     throw new ErrorIA(await mensajeErrorOpenAICompat(res, nombre));
   }
 
-  let acumulado = "";
+  let crudo = ""; // contenido tal cual llega (puede traer <think>…)
+  let acumulado = ""; // lo mismo pero ya sin la cadena de pensamiento
   let errorEnStream: string | null = null;
   const reader = res.body.getReader();
   const dec = new TextDecoder();
@@ -838,11 +855,16 @@ async function llamarOpenAICompat(
       errorEnStream = chunk.error.message;
       return;
     }
-    const delta = chunk.choices?.[0]?.delta?.content;
-    if (delta) {
-      acumulado += delta;
-      opts.onTexto?.(delta, acumulado);
-    }
+    const trozo = chunk.choices?.[0]?.delta?.content;
+    if (!trozo) return; // `reasoning` / `reasoning_content` se ignoran
+    crudo += trozo;
+    const limpio = sinRazonamiento(crudo);
+    if (limpio === acumulado) return;
+    const delta = limpio.startsWith(acumulado)
+      ? limpio.slice(acumulado.length)
+      : limpio;
+    acumulado = limpio;
+    opts.onTexto?.(delta, acumulado);
   };
 
   try {
@@ -863,6 +885,14 @@ async function llamarOpenAICompat(
 
   if (acumulado) return acumulado;
   if (errorEnStream) throw new ErrorIA(`${nombre}: ${errorEnStream}`);
+  // Llegó contenido pero era TODO cadena de pensamiento (nunca cerró el
+  // `<think>` o gastó el presupuesto razonando).
+  if (crudo.trim()) {
+    throw new ErrorIA(
+      `El modelo se quedó razonando y no llegó a responder. ` +
+        `Probá subir "max tokens", otro modelo, o uno sin "reasoning".`,
+    );
+  }
   throw new ErrorIA(`${nombre} no devolvió texto. Probá de nuevo o cambiá de modelo.`);
 }
 

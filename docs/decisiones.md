@@ -600,6 +600,28 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
   El `<div>` interno pasa a `pointer-events-none` cuando está escondida para no tapar el botón.
   Las transiciones CSS no corren en el preview pane → se verifica el estado final.
 
+### F3-12. Render de respuestas: matemática (KaTeX) + HTML crudo saneado + strip de `<think>`
+- **Contexto**: probando proveedores (Groq), las respuestas de temas de estudio salían rotas —
+  el LaTeX (`$…$`, `\frac`, `\lim`) como texto crudo, `<br>` literal en las tablas, y el
+  razonamiento de los modelos "reasoning" (`gpt-oss`, `qwen3`, Kimi) filtrándose en la respuesta
+  con un `</think>` suelto. Nada de eso era el proxy ni la key — era el render.
+- **`Markdown.tsx`**: `remark-math` + `rehype-katex` (con `katex/dist/katex.min.css` importado).
+  `normalizarMath()` convierte `\[ \]`→`$$` y `\( \)`→`$` antes de parsear (remark-math solo
+  entiende `$`). El `[ … ]` a pelo (sin backslash) que usan algunos modelos NO se toca — es
+  ambiguo con un link/lista; se ataja con la instrucción de sistema.
+- **`rehype-raw` + `rehype-sanitize`**: el modelo mete `<br>` en celdas de tabla (única forma de
+  multilínea en markdown-tables). Antes `react-markdown` no interpretaba HTML → salía el texto
+  `<br>`. Ahora se interpreta pero **saneado** (un árbol compartido `?compartir=` es de otra
+  persona → no puede inyectar `<script>`). `sanitize` corre ANTES de `katex` (sanea el TeX como
+  texto plano; katex después genera markup confiable). El schema agrega la clase
+  `math math-inline|display` al allowlist (si no, katex no encuentra los nodos).
+- **`ia.ts` `sinRazonamiento()`**: saca `<think>…</think>` y `◁think▷…◁/think▷` (Kimi) del
+  stream; un `<think>` sin cerrar oculta todo lo que sigue (así no parpadea mientras razona).
+  `delta.reasoning` / `delta.reasoning_content` se ignoran. Si la respuesta fue 100% razonamiento
+  → error claro ("se quedó razonando, subí max tokens / cambiá de modelo").
+- **`.katex-compacto`** en `globals.css`: la matemática en bloque scrollea sola (los globos son
+  ~260px), no rompe el layout.
+
 ---
 
 ## Build / deploy

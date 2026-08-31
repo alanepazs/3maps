@@ -13,6 +13,9 @@
   2 modos (manito / selección con barra espaciadora), redimensionar globo y panel, auto-layout
   ("▤ Ordenar"), varios mapas, esconder la barra de chat. El `arbol` de `Intercambio`s es la
   fuente de la verdad; la vista de React Flow se deriva.
+- **Respuestas**: `Markdown.tsx` renderiza matemática (KaTeX: `$…$`, `$$…$$`, `\[ \]`, `\( \)`),
+  HTML crudo del modelo saneado (`<br>` en tablas), y `ia.ts` saca el `<think>…</think>` de los
+  modelos reasoning. Decisiones F3-12.
 - **IA** (`model/ia.ts`, wired en `FlowCanvas.responder`): streaming, contexto = solo el camino
   raíz→globo con ventana + resumen. **13 proveedores**: Gemini + Claude directos del navegador;
   DeepSeek, GPT, Groq, Cerebras, OpenRouter, Mistral, HuggingFace, **Zhipu/GLM, Qwen, Moonshot/Kimi,
@@ -20,7 +23,8 @@
   proveedor, sincronizan entre dispositivos. `⚙️` tiene una mini-guía "cómo conseguir tu API key"
   por proveedor (`GUIA_API_KEY`); en Groq/Cerebras/OpenRouter/HF/SiliconFlow aclara que son
   **modelos open-source** (Llama, Qwen, DeepSeek, GLM) y `MODELOS_SUGERIDOS` los lista.
-  **Solo Gemini probado end-to-end.**
+  **Probados end-to-end: Gemini + Groq** (varios modelos: llama-3.3, gpt-oss, qwen3, compound).
+  Faltan los otros 9 vía proxy.
 - **Backend opcional** (Supabase, `ref` ejecjjpdjoxgrbqrhwwd): login Google/magic-link, compartir
   árbol por link (`?compartir=<slug>`), "mis árboles" + despublicar, sync entre dispositivos.
   Sin las env `NEXT_PUBLIC_SUPABASE_*` la app es 100% local.
@@ -52,11 +56,15 @@
 
 ### Prueba real pendiente (la hace el usuario, con key/login)
 - ✅ `ia-proxy` redeployado con los 4 nuevos (31-08-2026).
-- Los 11 proveedores vía proxy con una key real (Groq/Cerebras/GLM-flash/SiliconFlow = free).
+- ✅ Groq probado (01-09) — varios modelos OK. Reveló el fix de render (F3-12).
+- Los otros 9 proveedores vía proxy con key real (Cerebras/GLM-flash/SiliconFlow = free).
 - Panel lateral redimensionable (3.11) + fixes de móvil (3.13) en Chrome y celu.
 - Que el watchdog de 45s no corte un stream lento-pero-vivo.
+- Que el strip de `<think>` (F3-12) ande en vivo con gpt-oss / qwen3 (verificado en local con
+  `.md` inyectado; falta con stream real).
 - ✅ Ctrl+Enter (ramifica) — OK en Chrome.
-- ✅ Sync entre 2 dispositivos (mapas, árboles, tamaño del globo, "escribiendo…") — OK.
+- ✅ Sync entre 2 dispositivos (mapas, árboles, renombrar, tamaño del globo) — OK.
+- ✅ Render de matemática / `<br>` / sanitización — OK (local, `.md` inyectado + build estático).
 
 ### Opcionales (no bloquean)
 - **Auto-switch de proveedor** al pegar una key de otro (hoy `avisoFormatoKey` solo avisa en ámbar).

@@ -1,9 +1,48 @@
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeRaw from "rehype-raw";
+import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 
 // Render de markdown para las respuestas de la IA. Compacto (los globos son
-// angostos, ~260px) y en tema oscuro. react-markdown NO renderiza HTML crudo →
-// seguro por defecto ante lo que devuelva el modelo.
+// angostos, ~260px) y en tema oscuro.
+//
+// Pipeline:
+//   remark-gfm    tablas / listas / tachado
+//   remark-math   $…$  y  $$…$$  → nodos de math
+//   rehype-raw    interpreta el HTML crudo del modelo (sobre todo <br> en tablas)
+//   rehype-sanitize  limpia ese HTML (un árbol compartido es de otra persona →
+//                    no puede meter <script>). Corre ANTES de katex: sanea el
+//                    TeX como texto plano; katex después genera markup confiable.
+//   rehype-katex  renderiza la matemática (necesita katex.min.css, importado arriba)
+
+// Los modelos usan varios delimitadores para la matemática. remark-math solo
+// entiende `$`/`$$`; normalizamos `\[ \]` → `$$` y `\( \)` → `$` antes de parsear.
+function normalizarMath(texto: string): string {
+  return texto
+    .replace(/\\\[\s*([\s\S]+?)\s*\\\]/g, (_, m) => `\n\n$$\n${m}\n$$\n\n`)
+    .replace(/\\\(\s*([\s\S]+?)\s*\\\)/g, (_, m) => `$${m}$`);
+}
+
+// Schema de sanitización = el default + lo que necesita remark-math/katex:
+// la clase `math math-inline|display` en el <span>/<div> que envuelve el TeX
+// (si se borra, katex no lo encuentra y queda el TeX crudo).
+const schema = {
+  ...defaultSchema,
+  attributes: {
+    ...defaultSchema.attributes,
+    span: [
+      ...(defaultSchema.attributes?.span ?? []),
+      ["className", "math", "math-inline"],
+    ],
+    div: [
+      ...(defaultSchema.attributes?.div ?? []),
+      ["className", "math", "math-display"],
+    ],
+  },
+};
 
 const components: Components = {
   a: ({ children, href }) => (
@@ -78,15 +117,19 @@ const components: Components = {
     </th>
   ),
   td: ({ children }) => (
-    <td className="border border-white/15 px-1.5 py-0.5">{children}</td>
+    <td className="border border-white/15 px-1.5 py-0.5 align-top">{children}</td>
   ),
 };
 
 export default function Markdown({ children }: { children: string }) {
   return (
-    <div className="break-words text-left [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
-        {children}
+    <div className="katex-compacto break-words text-left [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm, remarkMath]}
+        rehypePlugins={[rehypeRaw, [rehypeSanitize, schema], rehypeKatex]}
+        components={components}
+      >
+        {normalizarMath(children)}
       </ReactMarkdown>
     </div>
   );

@@ -43,6 +43,22 @@ body {
   background: transparent;
 }
 
+/* KaTeX dentro de un globo (angosto, ~260px). La matemática en bloque puede ser
+   más ancha que el globo: que scrollee sola en vez de romper el layout. Y un
+   pelín más chica para que entre. */
+.katex-compacto .katex {
+  font-size: 1.02em;
+}
+.katex-compacto .katex-display {
+  margin: 0.5em 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 2px;
+}
+.katex-compacto .katex-display > .katex {
+  white-space: nowrap;
+}
+
 /* En pantallas chicas el composer (barra de escribir, abajo y a lo ancho) tapa
    los controles de React Flow abajo a la izquierda — sobre todo el botón
    "Ordenar". Levantarlos por encima del composer. */
