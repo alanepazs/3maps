@@ -32,6 +32,10 @@ type Entrada = { apiKey: string; modelo: string };
 type Almacen = {
   activo: Proveedor;
   keys: Partial<Record<Proveedor, Entrada>>;
+  // uid de la cuenta que guardó estas keys. "" = nunca se logueó nadie con
+  // estas keys (pegadas sin cuenta). Si otra cuenta se loguea en este navegador,
+  // las keys se borran — son lo más sensible (facturación). Ver `scopeConfigIA`.
+  dueño: string;
 };
 
 function esProveedor(x: unknown): x is Proveedor {
@@ -39,7 +43,7 @@ function esProveedor(x: unknown): x is Proveedor {
 }
 
 function leer(): Almacen {
-  const vacio: Almacen = { activo: PROVEEDOR_POR_DEFECTO, keys: {} };
+  const vacio: Almacen = { activo: PROVEEDOR_POR_DEFECTO, keys: {}, dueño: "" };
   try {
     const raw =
       typeof window !== "undefined"
@@ -59,6 +63,7 @@ function leer(): Almacen {
             modelo: typeof o.modelo === "string" ? o.modelo : "",
           },
         },
+        dueño: "",
       };
     }
 
@@ -76,7 +81,7 @@ function leer(): Almacen {
         };
       }
     }
-    return { activo, keys };
+    return { activo, keys, dueño: typeof o.dueño === "string" ? o.dueño : "" };
   } catch {
     return vacio;
   }
@@ -90,7 +95,7 @@ function escribir(a: Almacen): void {
     }
     localStorage.setItem(
       CONFIG_IA_STORAGE_KEY,
-      JSON.stringify({ activo: a.activo, keys }),
+      JSON.stringify({ activo: a.activo, keys, dueño: a.dueño }),
     );
   } catch {
     // ignorar: no se pudo persistir
@@ -149,4 +154,30 @@ export function borrarKeyProveedor(p: Proveedor): ConfigIA {
 // La key/modelo guardados de un proveedor cualquiera (para prellenar la tuerca).
 export function configGuardadaDe(p: Proveedor): Entrada | null {
   return leer().keys[p] ?? null;
+}
+
+// Ata las keys de API a la cuenta logueada. Si otra cuenta se loguea en el mismo
+// navegador, BORRA las keys guardadas (son lo más sensible — facturación; cada
+// cuenta pone la suya). Casos:
+//   - `uid` == dueño, o dueño "" (keys pegadas sin login) → adoptar, no borrar.
+//   - `uid` != dueño (otra cuenta)                         → borrar todo.
+//   - `uid` null (logout)                                  → no se toca nada.
+// Devuelve la config activa resultante. Llamar en cada cambio de sesión.
+export function scopeConfigIA(uid: string | null): ConfigIA {
+  const a = leer();
+  if (uid && a.dueño !== "" && a.dueño !== uid) {
+    const limpio: Almacen = {
+      activo: PROVEEDOR_POR_DEFECTO,
+      keys: {},
+      dueño: uid,
+    };
+    escribir(limpio);
+    return aConfig(limpio);
+  }
+  const nuevoDueño = uid ?? a.dueño;
+  if (a.dueño !== nuevoDueño) {
+    a.dueño = nuevoDueño;
+    escribir(a);
+  }
+  return aConfig(a);
 }

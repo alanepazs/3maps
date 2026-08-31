@@ -84,6 +84,7 @@ import {
   cambiarProveedorActivo,
   cargarConfigIA,
   guardarConfigIA,
+  scopeConfigIA,
 } from "@/model/configIA";
 import { haySupabase } from "@/model/supabase";
 import {
@@ -279,6 +280,14 @@ function Flow() {
   const borrarKeyIA = useCallback(() => {
     setConfigIA((cur) => borrarKeyProveedor(cur.proveedor));
   }, []);
+
+  // Atar las keys de API a la cuenta: si en este navegador se loguea OTRA cuenta,
+  // las keys guardadas se borran (son lo más sensible — facturación). Corre en
+  // cada cambio de sesión. La cuenta "sin dueño" (keys pegadas sin login) las
+  // adopta al primer login; el logout no toca nada.
+  useEffect(() => {
+    setConfigIA(scopeConfigIA(usuario?.id ?? null));
+  }, [usuario]);
 
   // Llamadas a la IA en curso, por id de nodo (para poder cancelarlas).
   const enVueloRef = useRef<Map<string, AbortController>>(new Map());

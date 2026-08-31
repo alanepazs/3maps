@@ -72,6 +72,8 @@ Carpeta local: `D:\IA\3maps`.
   Se eligen en ⚙️; **cada proveedor tiene su propia key guardada** (cambiás y volvés, no la
   perdés — `configIA.ts`, decisiones §9). **La key de Claude/Gemini va directo del navegador al
   proveedor**; las de los proveedores vía proxy transitan el proxy (nunca se guardan).
+  **Atadas a la cuenta** (`scopeConfigIA`, §9): si en el mismo navegador se loguea otra cuenta,
+  las keys se borran (cada cuenta pone la suya). Bug reportado por el usuario, arreglado 30-08.
   Default de Gemini = `gemini-3.7-flash` (Flash estable más nuevo, free tier), con **thinking al
   mínimo** por generación (`thinkingLevel: "low"` en 3.x, `thinkingBudget: 0` en 2.x — si no,
   devolvía respuesta vacía). Los modelos **varían por key** → botón **"verificar key y ver sus

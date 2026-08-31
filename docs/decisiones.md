@@ -209,8 +209,14 @@ con free tier: **probar con una key nueva de verdad** — los blogs y hasta `Lis
   vieja queda bajo su proveedor).
 - **"Borrar key"** borra solo la del proveedor activo (`borrarKeyProveedor`), no las otras.
 - Separado de `"3maps:settings"` porque es más sensible (varias API keys). **Invariante
-  CLAUDE.md**: las keys van **directo del navegador al proveedor** (salvo DeepSeek/GPT que
-  transitan el proxy, §7a), nunca se guardan en un server de 3maps.
+  CLAUDE.md**: las keys van **directo del navegador al proveedor** (salvo los OpenAI-compatibles
+  que transitan el proxy, §7a), nunca se guardan en un server de 3maps.
+- **Atadas a la cuenta (30-08-2026)**: el almacén tiene un campo `dueño` (uid). Si en el mismo
+  navegador se loguea OTRA cuenta, `scopeConfigIA(uid)` **borra todas las keys** — son lo más
+  sensible (facturación), cada cuenta pone la suya. Casos: keys pegadas sin login (`dueño: ""`)
+  → la primera cuenta que loguea las **adopta**; misma cuenta → no toca nada; **logout → tampoco
+  toca nada** (tu navegador, tu key). Bug encontrado por el usuario: logueó una cuenta nueva y
+  heredó la key de la anterior. `FlowCanvas` llama `scopeConfigIA` en cada cambio de `usuario`.
 
 ### 10. Contexto = **solo el camino raíz→nodo**, aplanado, ventana + resumen
 - **Por qué** (invariante CLAUDE.md / spec §5): mandar el árbol entero explota el costo.

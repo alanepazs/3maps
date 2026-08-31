@@ -62,11 +62,13 @@ src/
                          PROVEEDORES_VIA_PROXY = [deepseek, gpt, groq, cerebras, openrouter,
                          mistral, huggingface]. upstreamDe(prov) → clave del mapa PROVEEDORES del
                          proxy. ErrorIA con mensajes legibles.
-    configIA.ts          localStorage "3maps:ia" = { activo, keys: {[proveedor]:{apiKey,modelo}} } —
-                         UNA key por proveedor (cambiar y volver no la pierde). cargarConfigIA()
+    configIA.ts          localStorage "3maps:ia" = { activo, keys: {[prov]:{apiKey,modelo}}, dueño }
+                         — UNA key por proveedor (cambiar y volver no la pierde). cargarConfigIA()
                          (siempre devuelve ConfigIA, default gemini), guardarConfigIA(c),
-                         cambiarProveedorActivo(p), borrarKeyProveedor(p), configGuardadaDe(p).
-                         Migra el formato viejo. Aparte de "3maps:settings" porque es sensible.
+                         cambiarProveedorActivo(p), borrarKeyProveedor(p), configGuardadaDe(p),
+                         scopeConfigIA(uid) — ata las keys a la cuenta: si loguea OTRA cuenta en el
+                         navegador, las borra (decisiones §9). Migra el formato viejo. Aparte de
+                         "3maps:settings" porque es sensible.
     supabase.ts          getSupabase() → SupabaseClient | null (null si no hay env). haySupabase()
                          para mostrar/ocultar UI. proxyIAUrl() = <supabaseUrl>/functions/v1/ia-proxy.
                          auth con persistSession/detectSessionInUrl true (fase 2.2, magic link).
