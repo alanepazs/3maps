@@ -201,7 +201,7 @@ export async function cargarArbolCompartido(
     const sobre = JSON.parse(texto) as Partial<Sobre>;
     if (!sobre || typeof sobre.files !== "object" || !sobre.files) return null;
     const intercambios = Object.values(sobre.files)
-      .map(parseMarkdown)
+      .map((md) => parseMarkdown(md))
       .filter((ic): ic is NonNullable<typeof ic> => ic !== null);
     if (intercambios.length === 0) return null;
     return {

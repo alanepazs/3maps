@@ -281,7 +281,10 @@ export function toMarkdown(ic: Intercambio): string {
   );
 }
 
-export function parseMarkdown(texto: string): Intercambio | null {
+export function parseMarkdown(
+  texto: string,
+  opts?: { deOtroDispositivo?: boolean },
+): Intercambio | null {
   const m = texto.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
   if (!m) return null;
 
@@ -311,11 +314,19 @@ export function parseMarkdown(texto: string): Intercambio | null {
     }
   }
 
-  // Una llamada que quedó `pendiente` al recargar (o al bajar de la nube) ya no
-  // está en vuelo → se marca como error reintentable, sin pisar un error real.
+  // Una llamada `pendiente:` que no terminó.
+  //  - al recargar / árbol compartido: no hay llamada en vuelo → error reintentable.
+  //  - bajando de la nube (`deOtroDispositivo`): el OTRO dispositivo probablemente
+  //    la está streameando ahora → mostrarla como "escribiendo…", no como error.
+  //    El poll de `useSync` la actualiza cuando el otro termina.
+  let pending = false;
   if (!error && meta.pendiente === "1") {
-    error =
-      "La respuesta quedó a medias (se cerró la app o se cortó la llamada). Reintentá.";
+    if (opts?.deOtroDispositivo) {
+      pending = true;
+    } else {
+      error =
+        "La respuesta quedó a medias (se cerró la app o se cortó la llamada). Reintentá.";
+    }
   }
 
   return {
@@ -332,8 +343,7 @@ export function parseMarkdown(texto: string): Intercambio | null {
     fecha: meta.fecha || new Date().toISOString(),
     pregunta: (preg?.[1] ?? "").trim(),
     respuesta: respuestaTxt === "" ? null : respuestaTxt,
-    // `pending` nunca se restaura como tal: al recargar no hay llamada en vuelo.
-    pending: false,
+    pending,
     error,
   };
 }

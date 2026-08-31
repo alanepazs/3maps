@@ -34,7 +34,7 @@ export function cargarArbol(mapId: string): Arbol {
     if (raw) {
       const files = JSON.parse(raw) as Record<string, string>;
       const intercambios = Object.values(files)
-        .map(parseMarkdown)
+        .map((md) => parseMarkdown(md))
         .filter((ic): ic is NonNullable<typeof ic> => ic !== null);
       if (intercambios.length > 0) return { intercambios };
     }

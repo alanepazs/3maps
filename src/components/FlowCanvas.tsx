@@ -1141,20 +1141,18 @@ function Flow() {
 
   // ── Sync entre dispositivos (fase 2.4, per-mapa desde 3.5) ────────────────
   // Solo con sesión y fuera del modo compartido. Last-write-wins.
-  const aplicarArbolNube = useCallback(
-    (a: Arbol) => {
-      const ultimo = a.intercambios.at(-1)?.id ?? null;
-      seleccionarLuegoRef.current = ultimo;
-      setArbol(a);
-      setActiveNodeId((cur) =>
-        a.intercambios.some((i) => i.id === cur) ? cur : ultimo,
-      );
-      // Las posiciones son de otra pantalla → si algo quedó pisado, empujarlo
-      // (tras un tick, cuando React Flow midió los nodos nuevos).
-      resolverSolapes();
-    },
-    [resolverSolapes],
-  );
+  const aplicarArbolNube = useCallback((a: Arbol) => {
+    const ultimo = a.intercambios.at(-1)?.id ?? null;
+    seleccionarLuegoRef.current = ultimo;
+    setArbol(a);
+    setActiveNodeId((cur) =>
+      a.intercambios.some((i) => i.id === cur) ? cur : ultimo,
+    );
+    // No se resuelven solapes acá: reposicionar marcaría el árbol como "con
+    // cambios" → lo re-subiría y frenaría el poll de `revisarNube`, con posible
+    // ping-pong de posiciones entre dispositivos. Si un árbol traído se pisa en
+    // esta pantalla, el usuario tiene "▤ Ordenar".
+  }, []);
   const onTituloNube = useCallback(
     (titulo: string) => setMapas(renombrarMapa(mapaId, titulo)),
     [mapaId],

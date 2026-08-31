@@ -121,18 +121,37 @@ export function useSync(opts: {
 
   useEffect(() => {
     if (!usuario || !activo) return;
-    const tick = () => {
-      if (document.visibilityState === "visible") void revisarNube();
+    let cancelado = false;
+    let t: ReturnType<typeof setTimeout>;
+    // Poll adaptivo: 4s mientras un globo traído de la nube sigue `pending` (el
+    // otro dispositivo lo está streameando) → el rojo se limpia rápido; 15s si no.
+    const loop = () => {
+      if (cancelado) return;
+      const rapido =
+        arbolRef.current === sincronizado.current &&
+        arbolRef.current.intercambios.some((i) => i.pending);
+      t = setTimeout(async () => {
+        if (document.visibilityState === "visible") await revisarNube();
+        loop();
+      }, rapido ? 4000 : POLL_MS);
     };
-    const id = window.setInterval(tick, POLL_MS);
-    window.addEventListener("focus", tick);
-    document.addEventListener("visibilitychange", tick);
+    loop();
+    const alVolver = () => {
+      if (document.visibilityState !== "visible") return;
+      // Al volver a este dispositivo: subir lo que quedó pendiente (si estaba
+      // streameando en background, ahora sube la respuesta completa) y traer.
+      if (pendiente.current) void subirYa();
+      void revisarNube();
+    };
+    window.addEventListener("focus", alVolver);
+    document.addEventListener("visibilitychange", alVolver);
     return () => {
-      window.clearInterval(id);
-      window.removeEventListener("focus", tick);
-      document.removeEventListener("visibilitychange", tick);
+      cancelado = true;
+      clearTimeout(t);
+      window.removeEventListener("focus", alVolver);
+      document.removeEventListener("visibilitychange", alVolver);
     };
-  }, [usuario, activo, revisarNube]);
+  }, [usuario, activo, revisarNube, subirYa]);
 
   // ── Sync inicial al loguear / cambiar de mapa (una vez por uid+mapa) ───────
   useEffect(() => {

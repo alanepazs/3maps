@@ -436,10 +436,16 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
   LISTA de mapas. `revisarNube` sólo trae si local está limpio (no pisa cambios sin subir) y
   pre-chequea `metaNube` (hora del servidor) antes de bajar el árbol. Latencia típica: ≤15s o al
   cambiar de app y volver.
-- **No se sube el árbol mientras hay un globo `pending`** (`subirYa` corta si algún intercambio
-  está `pending`). Antes el debounce lo subía a mitad del streaming → el otro dispositivo parseaba
-  `pendiente: 1` como error ("la respuesta quedó a medias"). Ahora la respuesta llega recién
-  completa. Cada avance del streaming cambia `arbol` → el effect re-arma el debounce.
+- **La "respuesta quedó a medias" en rojo en el otro dispositivo** — 3 causas, todas atacadas:
+  1. `subirYa` corta si algún intercambio está `pending` → no sube el árbol a mitad del streaming.
+  2. **`parseMarkdown(md, { deOtroDispositivo: true })`** (lo usa `bajarArbolNube`): un `pendiente:1`
+     traído de la nube = "el otro dispositivo lo está streameando AHORA" → se muestra como
+     `pending` ("escribiendo…" + texto parcial), NO como error rojo. Un `pendiente:1` de un
+     RELOAD local (o de un árbol compartido) sí es error (no hay llamada en vuelo).
+  3. **Poll adaptivo** en `useSync`: mientras un globo traído sigue `pending`, chequea la nube
+     cada 4s (no 15s) → cuando el otro termina, se completa rápido. Y al volver a foco este
+     dispositivo, si estaba streameando en background, flush del push (sube la respuesta completa).
+  El caso "app cerrada de verdad a mitad de la llamada" sigue con la "↻ Rehacer" del toolbar.
 - `mapas.ts`: `3maps:mapas` + `3maps:mapaActivo` + `3maps:arbol:<mapId>`. **Migración**: al leer
   por primera vez se crea el mapa `principal` y se mueve el viejo `3maps:arbol`. En la nube, el
   mapa `principal` cae al viejo `arbol.json` si todavía no hay `principal.json`.
@@ -491,12 +497,14 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
   árbol real. El lado también decide el `sourceHandle` de la flecha.
 - El alto del globo nuevo no se conoce al crearlo (aún no se midió) → estimado (`H_NUEVO=150`).
 - **`resolverSuperposiciones`** (31-08-2026, pedido del usuario: "que NUNCA se pisen"): como el
-  estimado casi siempre queda corto (respuestas largas) y las posiciones sincronizadas vienen de
-  otra pantalla, `FlowCanvas` corre esta pasada (debounce 500ms) al terminar cada respuesta y al
-  traer un árbol de la nube. Empuja hacia ABAJO **solo** los globos solapados, mínimamente
-  (`y = quieto.y + quieto.h + 24`), hasta 8 pasadas. No re-acomoda el árbol como "Ordenar" — un
-  globo que ubicaste a mano y no pisa a nadie no se toca. **Decisión del usuario** (vs. auto-
-  Ordenar completo, que perdía el arreglo manual).
+  estimado casi siempre queda corto (respuestas largas), `FlowCanvas` corre esta pasada (debounce
+  500ms, `resolverSolapes`) **al terminar cada respuesta** (`responder`). Empuja hacia ABAJO
+  **solo** los globos solapados, mínimamente (`y = quieto.y + quieto.h + 24`), hasta 8 pasadas.
+  No re-acomoda el árbol como "Ordenar" — un globo que ubicaste a mano y no pisa a nadie no se
+  toca. **NO se llama al traer un árbol de la nube**: reposicionar marcaría el árbol como "con
+  cambios" → lo re-subiría y frenaría el poll, con ping-pong de posiciones entre dispositivos. Si
+  un árbol traído se pisa en tu pantalla → "▤ Ordenar" a mano. **Decisión del usuario** (vs.
+  auto-Ordenar completo, que perdía el arreglo manual).
 
 ### F3-6. La llamada a la IA tiene watchdog + `pending` se persiste
 - **Por qué**: al ramificar varias ramas en paralelo, si el stream de un proveedor se queda

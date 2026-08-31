@@ -168,7 +168,7 @@ export async function bajarArbolNube(
       return null;
     }
     const intercambios = Object.values(sobre.files)
-      .map(parseMarkdown)
+      .map((md) => parseMarkdown(md, { deOtroDispositivo: true }))
       .filter((ic): ic is NonNullable<typeof ic> => ic !== null);
     if (intercambios.length === 0) {
       console.warn(LOG, "bajar: 0 intercambios tras parsear");
