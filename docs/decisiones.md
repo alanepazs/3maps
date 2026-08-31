@@ -360,6 +360,12 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
   `autoRefreshToken` en true (antes false, cuando 2.3 no usaba login).
 - **Sin sesión, la app es igual**: `useSesion` devuelve `usuario: null`; nada del canvas ni de
   compartir-anónimo depende de estar logueado. El login solo suma "mis árboles" (2.2b) y sync (2.4).
+- **Login NO es obligatorio** (decisión del usuario, 31-08-2026 — se planteó forzarlo "para
+  evitar problemas de sync" y se descartó: rompe el local-first / el pitch de "probá sin cuenta",
+  y los bugs de sync eran bugs, ya arreglados). En cambio: `<LoginNudge>` (pill descartable para
+  el deslogueado) + al fusionar la lista, `fusionarMapasNube` renombra `"X" → "X (2)"` si el
+  título choca con otro id (dos dispositivos que generaron "Mapa 2" a la vez), y `nombreMapaLibre`
+  usa el primer "Mapa N" libre (no `count + 1`).
 - **Free tier**: Supabase manda ~2-4 mails/hora sin SMTP propio. Si molesta, configurar SMTP o
   sumar un provider OAuth.
 - **Revertir** (volver a `persistSession: false`): rompe que la sesión sobreviva al reload.

@@ -132,6 +132,9 @@ src/
                         resizable?, onResize?}.
     SharedBanner.tsx    Cartel arriba cuando se ve un árbol compartido (`?compartir=`). Props:
                         {titulo, onGuardar, onSalir}. "Guardar en mi 3maps" = pasa a local editable.
+    LoginNudge.tsx      Pill arriba-centro para el usuario DESLOGUEADO (solo si `haySupabase()`):
+                        "sin cuenta anda igual, con cuenta sincroniza". "Iniciar sesión" (Google) +
+                        ✕ (descarta, `localStorage["3maps:nudge-login"]`). Fase 2 opcional-login.
     useSesion.ts        Hook de auth (fase 2.2): {usuario, cargando, signInWithGoogle,
                         enviarMagicLink, cerrarSesion}. onAuthStateChange + getUser. Google OAuth
                         (principal) o magic link. Sin Supabase → usuario null, cargando false.

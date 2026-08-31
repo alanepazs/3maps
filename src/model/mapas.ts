@@ -104,6 +104,15 @@ export function crearMapa(titulo: string): string {
   return id;
 }
 
+// Primer "Mapa N" que no esté usado localmente (no `count + 1` — así no genera
+// "Mapa 2" cuando ya tenés un "Mapa 2" traído de otro dispositivo).
+export function nombreMapaLibre(): string {
+  const usados = new Set(Object.values(leerMapas()).map((x) => x.titulo));
+  let n = 1;
+  while (usados.has(`Mapa ${n}`)) n++;
+  return `Mapa ${n}`;
+}
+
 export function renombrarMapa(mapId: string, titulo: string): Mapas {
   const m = leerMapas();
   if (m[mapId]) {
@@ -127,15 +136,24 @@ export function borrarMapa(mapId: string): Mapas {
 }
 
 // Registra un mapa que existe en la nube pero todavía no localmente (sync de la
-// lista de mapas entre dispositivos, fase 3.5). No pisa uno existente.
+// lista de mapas entre dispositivos, fase 3.5). No pisa uno existente. Si el
+// título choca con otro mapa (distinto id) le agrega " (2)" — p. ej. dos
+// dispositivos que generaron "Mapa 2" a la vez.
 export function fusionarMapasNube(nube: Mapas): Mapas {
   const m = leerMapas();
+  const titulos = new Set(Object.values(m).map((x) => x.titulo));
   let cambio = false;
   for (const [id, meta] of Object.entries(nube)) {
-    if (!m[id]) {
-      m[id] = meta;
-      cambio = true;
+    if (m[id]) continue;
+    let titulo = meta.titulo;
+    if (titulos.has(titulo)) {
+      let i = 2;
+      while (titulos.has(`${meta.titulo} (${i})`)) i++;
+      titulo = `${meta.titulo} (${i})`;
     }
+    m[id] = { ...meta, titulo };
+    titulos.add(titulo);
+    cambio = true;
   }
   if (cambio) guardarMapas(m);
   return m;

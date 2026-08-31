@@ -26,6 +26,7 @@ import Composer, { type BranchKind } from "./Composer";
 import SettingsPanel from "./SettingsPanel";
 import { useSync } from "./useSync";
 import BranchTranscript from "./BranchTranscript";
+import LoginNudge from "./LoginNudge";
 import SharedBanner from "./SharedBanner";
 import { NodeActionsContext } from "./nodeActions";
 import {
@@ -66,6 +67,7 @@ import {
   guardarMapas,
   leerMapas,
   mapaActivoId,
+  nombreMapaLibre,
   nuevoMapaId,
   podarMapasBorrados,
   renombrarMapa,
@@ -939,8 +941,7 @@ function Flow() {
   const nuevoMapa = useCallback(() => {
     cancelInertia();
     cancelPanInertia();
-    const n = Object.keys(leerMapas()).length + 1;
-    const id = crearMapa(`Mapa ${n}`);
+    const id = crearMapa(nombreMapaLibre());
     const m = leerMapas();
     setMapas(m);
     const vacio: Arbol = { intercambios: [] };
@@ -1141,6 +1142,7 @@ function Flow() {
             onSalir={salirDeCompartido}
           />
         )}
+        {listo && <LoginNudge readOnly={readOnly} />}
         <SettingsPanel
           settings={settings}
           onChange={updateSettings}
