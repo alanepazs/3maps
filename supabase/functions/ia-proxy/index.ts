@@ -1,6 +1,7 @@
 // ia-proxy — proxy stateless para los proveedores de IA OpenAI-compatibles que
 // NO habilitan CORS desde el navegador (OpenAI, DeepSeek, Groq, Cerebras,
-// OpenRouter, Mistral, Hugging Face). Ver docs/decisiones.md §7a, F2-6.
+// OpenRouter, Mistral, Hugging Face, Zhipu/GLM, Qwen, Moonshot, SiliconFlow).
+// Ver docs/decisiones.md §7a, F2-6.
 //
 // Qué hace: recibe la request del navegador, la reenvía al proveedor con la API
 // key del usuario (que viene en el header `x-ia-key`), y devuelve la respuesta
@@ -24,6 +25,10 @@ const PROVEEDORES: Record<string, string> = {
   openrouter: "https://openrouter.ai/api/v1",
   mistral: "https://api.mistral.ai/v1",
   huggingface: "https://router.huggingface.co/v1",
+  zhipu: "https://open.bigmodel.cn/api/paas/v4",
+  qwen: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+  moonshot: "https://api.moonshot.cn/v1",
+  siliconflow: "https://api.siliconflow.cn/v1",
 };
 
 const RUTAS_OK = new Set(["/chat/completions", "/models"]);

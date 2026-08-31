@@ -14,10 +14,11 @@
   ("▤ Ordenar"), varios mapas, esconder la barra de chat. El `arbol` de `Intercambio`s es la
   fuente de la verdad; la vista de React Flow se deriva.
 - **IA** (`model/ia.ts`, wired en `FlowCanvas.responder`): streaming, contexto = solo el camino
-  raíz→globo con ventana + resumen. **9 proveedores**: Gemini + Claude directos del navegador;
-  DeepSeek, GPT, Groq, Cerebras, OpenRouter, Mistral, HuggingFace vía el edge function `ia-proxy`
-  (opt-in "usar proxy" en ⚙️). Una key/modelo por proveedor, atadas a la cuenta.
-  **Solo Gemini tiene free tier real probado end-to-end.**
+  raíz→globo con ventana + resumen. **13 proveedores**: Gemini + Claude directos del navegador;
+  DeepSeek, GPT, Groq, Cerebras, OpenRouter, Mistral, HuggingFace, **Zhipu/GLM, Qwen, Moonshot/Kimi,
+  SiliconFlow** vía el edge function `ia-proxy` (opt-in "usar proxy" en ⚙️). Una key/modelo por
+  proveedor, sincronizan entre dispositivos. `⚙️` tiene una mini-guía "cómo conseguir tu API key"
+  por proveedor (`GUIA_API_KEY`). **Solo Gemini probado end-to-end.**
 - **Backend opcional** (Supabase, `ref` ejecjjpdjoxgrbqrhwwd): login Google/magic-link, compartir
   árbol por link (`?compartir=<slug>`), "mis árboles" + despublicar, sync entre dispositivos.
   Sin las env `NEXT_PUBLIC_SUPABASE_*` la app es 100% local.
@@ -47,7 +48,9 @@
   `Intercambio.ancho/alto` — F3-8). El colapsado/expandido sigue per-navegador (a propósito).
 
 ### Prueba real pendiente (la hace el usuario, con key/login)
-- Los 7 proveedores vía proxy con una key real (Groq/Cerebras = mejores free tier).
+- **Redeployar `ia-proxy`** (suma zhipu/qwen/moonshot/siliconflow) — `supabase functions deploy
+  ia-proxy` o el editor del panel.
+- Los 11 proveedores vía proxy con una key real (Groq/Cerebras/GLM-flash/SiliconFlow = free).
 - Panel lateral redimensionable (3.11) + fixes de móvil (3.13) en Chrome y celu.
 - Que el watchdog de 45s no corte un stream lento-pero-vivo.
 - ✅ Ctrl+Enter (ramifica) — OK en Chrome.

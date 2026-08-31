@@ -23,6 +23,10 @@ export const PROVEEDORES_DISPONIBLES: Proveedor[] = [
   "groq",
   "cerebras",
   "openrouter",
+  "siliconflow",
+  "zhipu",
+  "qwen",
+  "moonshot",
   "mistral",
   "huggingface",
   "deepseek",
@@ -39,6 +43,10 @@ export const PROVEEDORES_VIA_PROXY: Proveedor[] = [
   "openrouter",
   "mistral",
   "huggingface",
+  "zhipu",
+  "qwen",
+  "moonshot",
+  "siliconflow",
 ];
 
 export const MODELOS_SUGERIDOS: Record<Proveedor, string[]> = {
@@ -74,6 +82,14 @@ export const MODELOS_SUGERIDOS: Record<Proveedor, string[]> = {
     "meta-llama/Llama-3.3-70B-Instruct",
     "microsoft/phi-4",
   ],
+  zhipu: ["glm-4-flash", "glm-4-plus", "glm-4-air"],
+  qwen: ["qwen-flash", "qwen-turbo", "qwen-plus", "qwen-max"],
+  moonshot: ["moonshot-v1-8k", "moonshot-v1-32k", "kimi-k2-0711-preview"],
+  siliconflow: [
+    "deepseek-ai/DeepSeek-V3",
+    "Qwen/Qwen2.5-72B-Instruct",
+    "THUDM/glm-4-9b-chat",
+  ],
 };
 
 export const MODELO_POR_DEFECTO: Record<Proveedor, string> = {
@@ -86,6 +102,10 @@ export const MODELO_POR_DEFECTO: Record<Proveedor, string> = {
   openrouter: "meta-llama/llama-3.3-70b-instruct:free",
   mistral: "mistral-small-latest",
   huggingface: "Qwen/Qwen2.5-72B-Instruct",
+  zhipu: "glm-4-flash",
+  qwen: "qwen-flash",
+  moonshot: "moonshot-v1-8k",
+  siliconflow: "deepseek-ai/DeepSeek-V3",
 };
 
 export const NOMBRE_PROVEEDOR: Record<Proveedor, string> = {
@@ -98,6 +118,10 @@ export const NOMBRE_PROVEEDOR: Record<Proveedor, string> = {
   openrouter: "OpenRouter",
   mistral: "Mistral",
   huggingface: "Hugging Face",
+  zhipu: "Zhipu / GLM",
+  qwen: "Qwen (Alibaba)",
+  moonshot: "Moonshot / Kimi",
+  siliconflow: "SiliconFlow",
 };
 
 // Pista de formato de la API key, por proveedor (para el placeholder del input).
@@ -111,6 +135,135 @@ export const PISTA_API_KEY: Record<Proveedor, string> = {
   openrouter: "sk-or-…",
   mistral: "tu API key de Mistral",
   huggingface: "hf_…",
+  zhipu: "tu API key de Zhipu",
+  qwen: "sk-…",
+  moonshot: "sk-…",
+  siliconflow: "sk-…",
+};
+
+// Mini-guía "cómo consigo mi API key", por proveedor — para gente que nunca usó
+// una. `url` se abre en otra pestaña; `pasos` es una lista corta y llana.
+export const GUIA_API_KEY: Record<
+  Proveedor,
+  { url: string; gratis: boolean; pasos: string[] }
+> = {
+  gemini: {
+    url: "https://aistudio.google.com/apikey",
+    gratis: true,
+    pasos: [
+      "Abrí el link y entrá con tu cuenta de Google.",
+      'Clic en "Crear clave de API" (o "Create API key").',
+      "Copiá la clave que aparece y pegala acá abajo.",
+    ],
+  },
+  claude: {
+    url: "https://console.anthropic.com/settings/keys",
+    gratis: false,
+    pasos: [
+      "Abrí el link y creá una cuenta (o iniciá sesión).",
+      "Necesita saldo: cargá unos dólares en Billing.",
+      'En "API Keys" → "Create Key", copiá y pegá acá.',
+    ],
+  },
+  groq: {
+    url: "https://console.groq.com/keys",
+    gratis: true,
+    pasos: [
+      "Abrí el link y registrate (con Google o mail).",
+      'Clic en "Create API Key", ponele un nombre.',
+      "Copiá la clave (empieza con gsk_) y pegala acá.",
+    ],
+  },
+  cerebras: {
+    url: "https://cloud.cerebras.ai/",
+    gratis: true,
+    pasos: [
+      "Abrí el link y creá una cuenta.",
+      'En el menú, entrá a "API Keys" y creá una.',
+      "Copiá la clave (empieza con csk-) y pegala acá.",
+    ],
+  },
+  openrouter: {
+    url: "https://openrouter.ai/keys",
+    gratis: true,
+    pasos: [
+      "Abrí el link y entrá con Google o GitHub.",
+      'Clic en "Create Key".',
+      "Copiá la clave (empieza con sk-or-) y pegala acá. Elegí modelos que terminan en \":free\".",
+    ],
+  },
+  mistral: {
+    url: "https://console.mistral.ai/api-keys",
+    gratis: true,
+    pasos: [
+      "Abrí el link y creá una cuenta.",
+      'Clic en "Create new key".',
+      "Copiá la clave y pegala acá. (El plan gratis es 1 pedido por minuto.)",
+    ],
+  },
+  huggingface: {
+    url: "https://huggingface.co/settings/tokens",
+    gratis: true,
+    pasos: [
+      "Abrí el link y creá una cuenta.",
+      'Clic en "New token", tipo "Read".',
+      "Copiá el token (empieza con hf_) y pegalo acá.",
+    ],
+  },
+  zhipu: {
+    url: "https://open.bigmodel.cn/usercenter/apikeys",
+    gratis: true,
+    pasos: [
+      "Abrí el link y registrate (la web está en chino — usá el traductor del navegador).",
+      "En el panel de API Keys, creá una nueva.",
+      'Copiá la clave y pegala acá. Modelo gratis: "glm-4-flash".',
+    ],
+  },
+  qwen: {
+    url: "https://bailian.console.aliyun.com/?apiKey=1",
+    gratis: true,
+    pasos: [
+      "Abrí el link y creá una cuenta de Alibaba Cloud.",
+      'Buscá "API-KEY" y creá una.',
+      "Copiá la clave (empieza con sk-) y pegala acá.",
+    ],
+  },
+  moonshot: {
+    url: "https://platform.moonshot.cn/console/api-keys",
+    gratis: true,
+    pasos: [
+      "Abrí el link y registrate (pide número de teléfono).",
+      "En API Keys, creá una nueva.",
+      "Copiá la clave (empieza con sk-) y pegala acá.",
+    ],
+  },
+  siliconflow: {
+    url: "https://cloud.siliconflow.cn/account/ak",
+    gratis: true,
+    pasos: [
+      "Abrí el link y registrate con mail o GitHub.",
+      'En "API Keys" → "Create Access Token".',
+      "Copiá la clave (empieza con sk-) y pegala acá. Trae créditos gratis y da acceso a DeepSeek, Qwen, GLM, etc.",
+    ],
+  },
+  deepseek: {
+    url: "https://platform.deepseek.com/api_keys",
+    gratis: false,
+    pasos: [
+      "Abrí el link y creá una cuenta.",
+      "Necesita saldo (es barato): cargá unos dólares.",
+      'Clic en "Create API key", copiá y pegá acá.',
+    ],
+  },
+  gpt: {
+    url: "https://platform.openai.com/api-keys",
+    gratis: false,
+    pasos: [
+      "Abrí el link y creá una cuenta de OpenAI.",
+      "Necesita saldo: cargá crédito en Billing.",
+      'Clic en "Create new secret key", copiá y pegá acá.',
+    ],
+  },
 };
 
 // Chequeo de formato local (gratis, sin red). No confirma que la key funcione
@@ -134,6 +287,9 @@ export function avisoFormatoKey(
         : "No parece una key de Gemini (empiezan con \"AQ.\" o \"AIza\").";
     case "deepseek":
     case "gpt":
+    case "qwen":
+    case "moonshot":
+    case "siliconflow":
       return /^sk-/.test(k) ? null : "No parece una key válida (empiezan con \"sk-\").";
     case "groq":
       return /^gsk_/.test(k) ? null : "No parece una key de Groq (empiezan con \"gsk_\").";
@@ -146,7 +302,7 @@ export function avisoFormatoKey(
     case "huggingface":
       return /^hf_/.test(k) ? null : "No parece un token de Hugging Face (empiezan con \"hf_\").";
     default:
-      return null; // mistral no tiene prefijo fijo
+      return null; // mistral / zhipu no tienen prefijo fijo
   }
 }
 
@@ -194,6 +350,10 @@ export async function llamarIA(
     case "openrouter":
     case "mistral":
     case "huggingface":
+    case "zhipu":
+    case "qwen":
+    case "moonshot":
+    case "siliconflow":
       return llamarOpenAICompat(config, mensajes, opts);
     default:
       throw new ErrorIA(
@@ -565,6 +725,10 @@ const UPSTREAM: Partial<Record<Proveedor, string>> = {
   openrouter: "openrouter",
   mistral: "mistral",
   huggingface: "huggingface",
+  zhipu: "zhipu",
+  qwen: "qwen",
+  moonshot: "moonshot",
+  siliconflow: "siliconflow",
 };
 function upstreamDe(proveedor: Proveedor): string {
   return UPSTREAM[proveedor] ?? proveedor;
@@ -727,6 +891,10 @@ export async function listarModelos(config: ConfigIA): Promise<string[]> {
     case "openrouter":
     case "mistral":
     case "huggingface":
+    case "zhipu":
+    case "qwen":
+    case "moonshot":
+    case "siliconflow":
       return listarModelosOpenAICompat(config);
     default:
       throw new ErrorIA(

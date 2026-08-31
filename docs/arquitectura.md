@@ -76,10 +76,11 @@ src/
                          ia-proxy; SSE estilo OpenAI). Streaming vía opts.onTexto. opts.usarProxy
                          los gatea (si false → ErrorIA explicativo); resumir() lo recibe también.
                          listarModelos (Claude client.models.list(), Gemini GET /v1beta/models,
-                         los demás via proxy GET /models). PROVEEDORES_DISPONIBLES = 9;
-                         PROVEEDORES_VIA_PROXY = [deepseek, gpt, groq, cerebras, openrouter,
-                         mistral, huggingface]. upstreamDe(prov) → clave del mapa PROVEEDORES del
-                         proxy. ErrorIA con mensajes legibles.
+                         los demás via proxy GET /models). PROVEEDORES_DISPONIBLES = 13 (Gemini,
+                         Claude + 11 vía proxy: deepseek, gpt, groq, cerebras, openrouter, mistral,
+                         huggingface, zhipu, qwen, moonshot, siliconflow). upstreamDe(prov) → clave
+                         del mapa PROVEEDORES del proxy. `GUIA_API_KEY[prov]` = {url, gratis, pasos}
+                         (mini-guía en ⚙️). ErrorIA con mensajes legibles.
     configIA.ts          localStorage "3maps:ia" = { activo, keys: {[prov]:{apiKey,modelo}}, dueño }
                          — UNA key por proveedor. cargarConfigIA() (default gemini), guardarConfigIA,
                          cambiarProveedorActivo, borrarKeyProveedor, configGuardadaDe.
@@ -312,11 +313,11 @@ Props de `<ReactFlow>` que importan:
 
 ## IA (model/ia.ts)
 
-- `ConfigIA = { proveedor, apiKey, modelo }`. `PROVEEDORES_DISPONIBLES` = **9**
-  (`gemini, claude, groq, cerebras, openrouter, mistral, huggingface, deepseek, gpt`).
-  `PROVEEDORES_VIA_PROXY` = **7** (todos menos gemini/claude — no habilitan CORS → van por el edge
-  function `ia-proxy`, decisiones §7a). `MODELO_POR_DEFECTO`, `MODELOS_SUGERIDOS`, `NOMBRE_PROVEEDOR`,
-  `PISTA_API_KEY` por proveedor.
+- `ConfigIA = { proveedor, apiKey, modelo }`. `PROVEEDORES_DISPONIBLES` = **13**
+  (`gemini, claude` + 11 vía proxy: `groq, cerebras, openrouter, siliconflow, zhipu, qwen, moonshot,
+  mistral, huggingface, deepseek, gpt`). `PROVEEDORES_VIA_PROXY` = **11** (todos menos gemini/claude
+  — no habilitan CORS → van por `ia-proxy`, decisiones §7a). `MODELO_POR_DEFECTO`,
+  `MODELOS_SUGERIDOS`, `NOMBRE_PROVEEDOR`, `PISTA_API_KEY`, `GUIA_API_KEY` por proveedor.
 - `llamarIA(config, mensajes, opts)` → `switch(config.proveedor)`. Sumar proveedor = un `case`
   nuevo + entradas en los `Record<Proveedor,…>` + (si es OpenAI-compat) redeploy del `ia-proxy`.
   Cero cambios en el árbol (spec §6). `resumir()` usa el mismo proveedor (le pasa `usarProxy`).

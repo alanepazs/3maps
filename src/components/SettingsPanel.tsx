@@ -10,6 +10,7 @@ import {
 } from "@/model/compartir";
 import {
   ErrorIA,
+  GUIA_API_KEY,
   MODELOS_SUGERIDOS,
   MODELO_POR_DEFECTO,
   NOMBRE_PROVEEDOR,
@@ -408,6 +409,50 @@ export default function SettingsPanel({
               </span>
             )}
           </label>
+
+          {/* Mini-guía para gente que nunca sacó una API key. */}
+          <details className="group mt-1.5 rounded border border-white/10 bg-white/5 text-xs">
+            <summary className="cursor-pointer list-none px-2 py-1.5 text-white/70 marker:content-none hover:text-white">
+              <span className="mr-1 inline-block transition-transform group-open:rotate-90">
+                ▸
+              </span>
+              ¿No sabés cómo conseguir tu API key?
+            </summary>
+            <div className="space-y-1.5 px-2 pb-2 pt-0.5 text-white/70">
+              <p>
+                Es la contraseña que le da acceso a 3maps al proveedor que
+                elegiste ({NOMBRE_PROVEEDOR[proveedor]}). La sacás en su web, en
+                1 minuto.{" "}
+                {GUIA_API_KEY[proveedor].gratis ? (
+                  <span className="text-emerald-400">Este proveedor es gratis.</span>
+                ) : (
+                  <span className="text-amber-400">
+                    Este proveedor cobra (necesita saldo). Si querés uno 100%
+                    gratis, elegí <span className="text-white/90">Google Gemini</span>{" "}
+                    arriba.
+                  </span>
+                )}
+              </p>
+              <ol className="ml-4 list-decimal space-y-1">
+                {GUIA_API_KEY[proveedor].pasos.map((p, i) => (
+                  <li key={i}>{p}</li>
+                ))}
+              </ol>
+              <a
+                href={GUIA_API_KEY[proveedor].url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-block rounded bg-sky-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-400"
+              >
+                Abrir la web de {NOMBRE_PROVEEDOR[proveedor]} ↗
+              </a>
+              <p className="text-[11px] text-white/40">
+                La clave se guarda solo en este navegador (y, si iniciás sesión,
+                en tu cuenta para tenerla en todos tus dispositivos). Nunca la
+                compartimos.
+              </p>
+            </div>
+          </details>
 
           <label className="mt-2 block text-sm">
             <span className="text-white/70">Modelo</span>

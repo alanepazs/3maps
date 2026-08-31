@@ -91,14 +91,19 @@ Complementa a:
 - **Anti-SSRF**: el cliente manda un *nombre* de proveedor (`x-ia-provider`), no una URL; el proxy
   lo mapea a una base fija (mapa `PROVEEDORES` del edge function). Rutas limitadas a
   `/chat/completions` y `/models`.
-- **Proveedores vía proxy (30-08-2026)**: `deepseek`, `gpt` (`openai`), y sumados por sus free
-  tiers reales sin tarjeta → `groq` (`api.groq.com/openai/v1`), `cerebras` (`api.cerebras.ai/v1`),
-  `openrouter` (`openrouter.ai/api/v1`, modelos `:free`), `mistral` (`api.mistral.ai/v1`, 1 RPM),
-  `huggingface` (`router.huggingface.co/v1`). Todos OpenAI-compatibles → mismo `llamarOpenAICompat`
-  / `listarModelosOpenAICompat`. `upstreamDe` pasó de `"openai"|"deepseek"` a un mapa
-  `Proveedor → clave del proxy`. **Cloudflare Workers AI se descartó**: su endpoint mete el
-  `account_id` en la URL, no encaja con "pegá solo la key". **Redeploy del edge function
+- **Proveedores vía proxy**: `deepseek`, `gpt` (`openai`), + free tiers reales →
+  `groq`, `cerebras`, `openrouter` (`:free`), `mistral` (1 RPM), `huggingface`, y (31-08-2026, del
+  ecosistema chino) `zhipu`/GLM (`open.bigmodel.cn/api/paas/v4`, GLM-4-Flash gratis), `qwen`
+  (DashScope `dashscope-intl…/compatible-mode/v1`), `moonshot`/Kimi (`api.moonshot.cn/v1`),
+  `siliconflow` (`api.siliconflow.cn/v1`, agregador con créditos gratis). Todos OpenAI-compatibles
+  → mismo `llamarOpenAICompat` / `listarModelosOpenAICompat`. `upstreamDe` = mapa `Proveedor →
+  clave del proxy`. **Descartados**: Cloudflare (`account_id` en la URL), Doubao/ERNIE/Hunyuan
+  (verificación de empresa / OAuth), Kling/Seedance (video). **Redeploy del edge function
   obligatorio** al sumar un proveedor (`supabase functions deploy ia-proxy` o el editor del panel).
+- **`GUIA_API_KEY`** (`ia.ts`, 31-08-2026): por proveedor, `{ url, gratis, pasos[] }` — mini-guía
+  paso a paso "cómo consigo la key" para gente que nunca usó una. `SettingsPanel` la muestra en un
+  `<details>` bajo el input, con un botón que abre la web del proveedor y avisa si cobra
+  (sugiriendo Gemini).
 
 ### 7b. Modelos de Gemini: default `gemini-3.7-flash`, "thinking" mínimo por generación, botón "ver modelos"
 La API de Gemini se renovó entera en 2026 y una key **free tier** nueva de AI Studio se comporta
