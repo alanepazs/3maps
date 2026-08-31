@@ -29,28 +29,24 @@
 
 ## Qué falta
 
-### Sync entre dispositivos — reescrito 31-08-2026, FALTA PROBAR
-- **Lista de mapas**: índice `_mapas.json` = `{ mapas, borrados }` (tombstones). Unión al subir,
-  **los borrados SÍ se propagan**. Signed URL + `no-store` al bajar. Re-sync al volver a foco.
-  Decisiones F3-4.
-- **El usuario tenía mapas fantasma en loop** (causas: descubrimiento por `storage.list` —
-  descartado; `leerMapas()` recreaba "principal" sobre un registro vacío; y **"Empezar de cero"
-  no convergía** si el otro dispositivo tenía un mapa local sin subir → fusionaba y renombraba a
-  "Mi mapa (2)", auto-perpetuándose). Arreglado. **Salida definitiva: botón "🧹 Empezar de cero"**
-  en el chip de mapas — borra todo local + nube (menos las keys), deja uno vacío, y pone un
-  **`epoch` nuevo** en el índice: el otro dispositivo, al ver un epoch mayor al aplicado, hace
-  reset duro y adopta la nube tal cual (no depende de los tombstones). Decisiones F3-4.
-- **Para salir del enredo actual** (mapas "Mi mapa" + "Mi mapa (2)" en ambos): con el fix
-  deployado, tocar "🧹 Empezar de cero" UNA vez en un dispositivo logueado → el otro converge al
-  siguiente foco de pestaña (≤15s).
+### Sync entre dispositivos — lista de mapas reescrita 31-08 / 01-09-2026
+- **Lista de mapas**: índice `_mapas.json` = `{ mapas, borrados, epoch? }`. Unión de mapas +
+  tombstones al subir (**los borrados SÍ se propagan**); título con LWW por `cuandoMeta`
+  (`renombrado ?? creado`, reloj del navegador). Signed URL + `no-store` al bajar. Re-sync al
+  volver a foco. Decisiones F3-4.
+- **`epoch` de reset**: "🧹 Empezar de cero" (y borrar el ÚLTIMO mapa) tombstonea TODO lo de la
+  nube + sube un `epoch` nuevo. El otro dispositivo, al ver `epoch > epochAplicado`, hace **reset
+  duro** (adopta `indice.mapas` tal cual, no depende de que los tombstones estén completos).
+  Mató el bug del "Mi mapa (2)" que se auto-regeneraba. Decisiones F3-4.
+- **Probado 01-09-2026 con 2 dispositivos (PWA + PC, misma cuenta): FUNCIONA** — crear, borrar
+  (incl. el último), "Empezar de cero" y **renombrar** propagan en ≤15s. ⚠️ si los relojes de los
+  dos navegadores están MUY desfasados, el LWW de títulos puede elegir mal (poco probable
+  renombrando de a uno).
 - **Keys/modelos ahora SÍ sincronizan** (`sync/<uid>/config.json`, bucket privado del usuario,
   RLS por cuenta). Relaja la invariante de CLAUDE.md — decisión del usuario. Decisiones §9.
-- **Borrar el último mapa** se permite (crea uno nuevo vacío).
 - **El sync NO es push en tiempo real**: se trae del otro dispositivo con un poll cada 15s + al
   volver a foco la pestaña (`revisarNube` en `useSync` para el mapa abierto, `sincronizarListaMapas`
   para la lista). Latencia ≤15s. Decisiones F3-4.
-- **Probado por el usuario con 2 dispositivos (misma cuenta Google): FUNCIONA** — lista de
-  mapas, árboles, "Empezar de cero", "escribiendo…" en vez de error rojo.
 - **El tamaño manual del globo AHORA sincroniza** (pasó de `"3maps:vista"` al `.md`,
   `Intercambio.ancho/alto` — F3-8). El colapsado/expandido sigue per-navegador (a propósito).
 
