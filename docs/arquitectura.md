@@ -89,6 +89,7 @@ src/
     configIA.ts          localStorage "3maps:ia" = { activo, keys: {[prov]:{apiKey,modelo}}, dueño }
                          — UNA key por proveedor. cargarConfigIA() (default gemini), guardarConfigIA,
                          cambiarProveedorActivo, borrarKeyProveedor, configGuardadaDe.
+                         modeloVigente() migra los GEMINI_MODELOS_MUERTOS (def. en ia.ts) al default.
                          scopeConfigIA(uid) — si loguea OTRA cuenta, borra las keys locales.
                          exportarConfigNube / fusionarConfigNube(nube) — sync entre dispositivos con
                          sesión (a `sync/<uid>/config.json`, unión de keys, gana la nube; §9).
@@ -365,8 +366,9 @@ Props de `<ReactFlow>` que importan:
   prefijo (`sk-ant-` / `AQ.`|`AIza` / `sk-`). Devuelve aviso o null. Solo caza typos y provider
   equivocado. Lo usa `SettingsPanel` para el aviso ámbar. Ver decisiones §8c.
 - `listarModelos(config)` → `listarModelosClaude` (`client.models.list()`) / `listarModelosGemini`
-  (`GET /v1beta/models`) / `listarModelosOpenAICompat` (`GET /models` vía proxy). **No gasta
-  tokens**; 401 si la key es inválida → verificación gratis (§8c).
+  (`GET /v1beta/models`, filtra `GEMINI_MODELOS_MUERTOS` + image/tts/embedding…) /
+  `listarModelosOpenAICompat` (`GET /models` vía proxy). **No gasta tokens**; 401 si la key es
+  inválida → verificación gratis (§8c).
 
 ## Deploy (next.config.ts + .github/workflows/deploy.yml)
 
