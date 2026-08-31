@@ -34,21 +34,23 @@ function ls(): Storage | null {
   return typeof window === "undefined" ? null : window.localStorage;
 }
 
-// Lee el registro, migrando el formato viejo si hace falta.
+// Lee el registro. Migra el formato viejo SOLO la primera vez (cuando `MAPAS_KEY`
+// nunca se escribió). Si `MAPAS_KEY` ya existe — aunque sea `{}` porque borraste
+// todos los mapas — NO re-crea "principal" (eso resucitaba mapas fantasma).
 export function leerMapas(): Mapas {
   const store = ls();
   if (!store) return {};
-  try {
-    const raw = store.getItem(MAPAS_KEY);
-    if (raw) {
+  const raw = store.getItem(MAPAS_KEY);
+  if (raw !== null) {
+    try {
       const m = JSON.parse(raw) as Mapas;
-      if (m && typeof m === "object" && Object.keys(m).length > 0) return m;
+      if (m && typeof m === "object") return m;
+    } catch {
+      // corrupto → cae a la migración
     }
-  } catch {
-    // cae a la migración
   }
 
-  // Primera vez con el código nuevo: crear "principal" + mover lo viejo.
+  // Primera vez: crear "principal" + mover el árbol legacy si lo hay.
   const mapas: Mapas = {
     [ID_PRINCIPAL]: { titulo: "Mi mapa", creado: new Date().toISOString() },
   };
@@ -86,6 +88,25 @@ export function mapaActivoId(): string {
     // ignorar
   }
   return primero;
+}
+
+// Garantiza que haya AL MENOS un mapa (crea uno vacío si el registro quedó en
+// `{}` — p. ej. tras borrar todos). Devuelve el registro y el mapa activo.
+export function asegurarUnMapa(): { mapas: Mapas; activo: string } {
+  let mapas = leerMapas();
+  let activo = mapaActivoId();
+  if (!mapas[activo]) {
+    const ids = Object.keys(mapas);
+    if (ids.length > 0) {
+      activo = ids[0];
+    } else {
+      activo = nuevoMapaId();
+      mapas = { [activo]: { titulo: "Mi mapa", creado: new Date().toISOString() } };
+      guardarMapas(mapas);
+    }
+    setMapaActivo(activo);
+  }
+  return { mapas, activo };
 }
 
 export function setMapaActivo(mapId: string): void {

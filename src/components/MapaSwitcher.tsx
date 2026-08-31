@@ -13,6 +13,7 @@ export default function MapaSwitcher({
   onNuevo,
   onBorrar,
   onRenombrar,
+  onEmpezarDeCero,
 }: {
   mapas: Mapas;
   activoId: string;
@@ -20,6 +21,7 @@ export default function MapaSwitcher({
   onNuevo: () => void;
   onBorrar: () => void;
   onRenombrar: (titulo: string) => void;
+  onEmpezarDeCero: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const contenedorRef = useRef<HTMLDivElement>(null);
@@ -49,7 +51,6 @@ export default function MapaSwitcher({
     (a, b) => (a[1].creado < b[1].creado ? -1 : 1),
   );
   const activo = mapas[activoId];
-  const unico = lista.length <= 1;
 
   const renombrar = () => {
     const t = window.prompt("Nuevo nombre del mapa:", activo?.titulo ?? "");
@@ -124,7 +125,18 @@ export default function MapaSwitcher({
             }}
             className="w-full rounded px-2 py-1.5 text-left text-sm text-red-300 hover:bg-red-500/15"
           >
-            {unico ? "🗑 Borrar y empezar de cero" : "🗑 Borrar este mapa"}
+            🗑 Borrar este mapa
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              onEmpezarDeCero();
+              setOpen(false);
+            }}
+            className="w-full rounded px-2 py-1.5 text-left text-sm text-red-300 hover:bg-red-500/15"
+            title="Borra todos los mapas (acá y en la nube) y arranca con uno vacío"
+          >
+            🧹 Empezar de cero
           </button>
         </div>
       )}

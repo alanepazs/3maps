@@ -298,6 +298,48 @@ export async function subirIndiceMapasNube(
     .upload(rutaDe(uid, INDICE), JSON.stringify(sobre), OPCIONES_SUBIDA);
 }
 
+// "Empezar de cero": borra TODOS los árboles del usuario en la nube (NO la
+// config de IA) y deja un índice nuevo con un solo mapa + todos los ids viejos
+// tombstoneados → los otros dispositivos convergen al mismo estado limpio.
+export async function empezarDeCeroNube(
+  uid: string,
+  nuevo: { id: string; meta: { titulo: string; creado: string } },
+): Promise<void> {
+  const sb = getSupabase();
+  if (!sb || !uid) return;
+  const { data } = await sb.storage.from(BUCKET).list(uid, { limit: 1000 });
+  const viejos = new Set<string>([ID_PRINCIPAL]);
+  const aBorrar: string[] = [];
+  for (const f of data ?? []) {
+    if (!f.name.endsWith(".json") || f.name === CONFIG) continue;
+    aBorrar.push(rutaDe(uid, f.name));
+    if (f.name === INDICE) continue;
+    viejos.add(
+      f.name === ARCHIVO_LEGACY ? ID_PRINCIPAL : f.name.replace(/\.json$/, ""),
+    );
+  }
+  const indice = await bajarIndiceMapasNube(uid);
+  for (const id of Object.keys(indice?.mapas ?? {})) viejos.add(id);
+  for (const id of indice?.borrados ?? []) viejos.add(id);
+  viejos.delete(nuevo.id);
+  if (aBorrar.length) await sb.storage.from(BUCKET).remove(aBorrar);
+  const sobre: SobreIndice = {
+    v: VERSION,
+    mapas: { [nuevo.id]: nuevo.meta },
+    borrados: [...viejos],
+  };
+  await sb.storage
+    .from(BUCKET)
+    .upload(rutaDe(uid, INDICE), JSON.stringify(sobre), OPCIONES_SUBIDA);
+  try {
+    for (const k of Object.keys(localStorage)) {
+      if (/^3maps:sync:/.test(k)) localStorage.removeItem(k);
+    }
+  } catch {
+    // ignorar
+  }
+}
+
 // ── Config de IA (keys/modelos) entre dispositivos ──────────────────────────
 
 type SobreConfig = { v: number } & ConfigNube;

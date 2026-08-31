@@ -48,10 +48,11 @@ src/
                          arbolInicial() si no hay nada.
     mapas.ts             Registro de mapas (fase 3.5). "3maps:mapas" = {[id]:{titulo,creado}},
                          "3maps:mapaActivo", árbol en "3maps:arbol:<id>". leerMapas() migra el
-                         formato viejo (un solo "3maps:arbol" → mapa "principal") — OJO: sobre un
-                         registro vacío dispara la migración. crear/renombrar/borrarMapa,
-                         nuevoMapaId, fusionarMapasNube (agrega los que faltan),
-                         podarMapasBorrados(borrados, excepto) (aplica tombstones de la nube).
+                         formato viejo SOLO si "3maps:mapas" nunca se escribió (si es `{}` NO
+                         re-crea "principal"). asegurarUnMapa() garantiza ≥1 mapa. crear/renombrar/
+                         borrarMapa, nombreMapaLibre, nuevoMapaId, fusionarMapasNube (agrega los
+                         que faltan + dedup de títulos), podarMapasBorrados(borrados, excepto)
+                         (aplica tombstones de la nube).
     layout.ts            calcularLayout(arbol, alturaDe) → Map<id,{x,y}>. Auto-layout recursivo
                          para el botón "Ordenar" (fase 3.4): tronco `main` vertical, ramas
                          `branch-*` en columnas al costado con su propio tronco. Puro.

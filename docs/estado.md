@@ -30,10 +30,11 @@
 - **Lista de mapas**: índice `_mapas.json` = `{ mapas, borrados }` (tombstones). Unión al subir,
   **los borrados SÍ se propagan**. Signed URL + `no-store` al bajar. Re-sync al volver a foco.
   Decisiones F3-4.
-- **El usuario tenía mapas fantasma** (venían de un intento intermedio que descubría mapas por
-  `storage.list()` → resucitaba árboles muertos). Ese approach se descartó. **Al deployar esto,
-  el usuario tiene que borrar los fantasmas UNA vez más** — recién ahí quedan tombstoneados y no
-  vuelven.
+- **El usuario tenía mapas fantasma en loop** (dos causas: descubrimiento por `storage.list` —
+  descartado; y `leerMapas()` recreaba "principal" sobre un registro vacío → se re-subía →
+  reaparecía). Arreglado. **Salida definitiva: botón "🧹 Empezar de cero"** en el chip de mapas
+  (borra todo local + nube menos las keys, deja uno vacío, tombstonea el resto → el otro
+  dispositivo converge).
 - **Keys/modelos ahora SÍ sincronizan** (`sync/<uid>/config.json`, bucket privado del usuario,
   RLS por cuenta). Relaja la invariante de CLAUDE.md — decisión del usuario. Decisiones §9.
 - **Borrar el último mapa** se permite (crea uno nuevo vacío).

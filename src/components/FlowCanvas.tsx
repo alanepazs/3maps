@@ -65,8 +65,8 @@ import {
   crearMapa,
   fusionarMapasNube,
   guardarMapas,
+  asegurarUnMapa,
   leerMapas,
-  mapaActivoId,
   nombreMapaLibre,
   nuevoMapaId,
   podarMapasBorrados,
@@ -78,6 +78,7 @@ import {
   bajarConfigNube,
   bajarIndiceMapasNube,
   borrarMapaNube,
+  empezarDeCeroNube,
   subirConfigNube,
   subirIndiceMapasNube,
 } from "@/model/sync";
@@ -216,11 +217,11 @@ function Flow() {
   // real. Si la URL trae `?compartir=<slug>`, se baja ese árbol de Supabase en
   // vez de leer localStorage (y si el link está roto, se cae al local).
   useEffect(() => {
-    // Poblar el registro de mapas (corre la migración del formato viejo) —
-    // recién acá, no en el render, para no romper la hidratación.
-    const idActivo = mapaActivoId();
+    // Poblar el registro de mapas (corre la migración del formato viejo, y
+    // garantiza ≥1 mapa si quedó vacío) — recién acá, no en el render.
+    const { mapas: mapasIni, activo: idActivo } = asegurarUnMapa();
     setMapaId(idActivo);
-    setMapas(leerMapas());
+    setMapas(mapasIni);
 
     if (slugInicial) {
       let cancelado = false;
@@ -1003,6 +1004,36 @@ function Flow() {
     [mapaId, usuario],
   );
 
+  const empezarDeCero = useCallback(() => {
+    if (
+      !window.confirm(
+        "Esto borra TODOS tus mapas — en este dispositivo Y en la nube — y arranca " +
+          "con uno vacío. Las API keys no se tocan. No se puede deshacer. ¿Seguir?",
+      )
+    ) {
+      return;
+    }
+    cancelInertia();
+    cancelPanInertia();
+    try {
+      const claves = Object.keys(localStorage).filter((k) =>
+        /^3maps:(mapas|mapaActivo|arbol|vista|sync):?/.test(k),
+      );
+      claves.forEach((k) => localStorage.removeItem(k));
+    } catch {
+      // ignorar
+    }
+    const id = nuevoMapaId();
+    const meta = { titulo: "Mi mapa", creado: new Date().toISOString() };
+    const m: Mapas = { [id]: meta };
+    guardarMapas(m);
+    guardarArbol({ intercambios: [] }, id);
+    setMapas(m);
+    cargarEnMapa(id, { intercambios: [] });
+    if (usuario) void empezarDeCeroNube(usuario.id, { id, meta });
+    window.setTimeout(() => void fitView({ ...fitOpts, duration: 300 }), 60);
+  }, [usuario, cancelInertia, cancelPanInertia, cargarEnMapa, fitView, fitOpts]);
+
   // Sync de la LISTA de mapas entre dispositivos. Fuente única: el índice
   // `_mapas.json` (`{ mapas, borrados }`). Aplica los tombstones (borra local),
   // fusiona los que falten, y re-sube si local tiene algo que el índice no.
@@ -1017,19 +1048,45 @@ function Flow() {
       if (Object.keys(local).length) void subirIndiceMapasNube(uid, local);
       return;
     }
-    // 1) Aplicar tombstones (no borrar el mapa activo por debajo).
-    podarMapasBorrados(indice.borrados, mapaIdRef.current);
-    // 2) Fusionar los mapas de la nube que falten localmente.
-    const m = fusionarMapasNube(indice.mapas);
-    setMapas(m);
-    // 3) Sanar el índice si local tiene mapas que la nube no (y no están
-    //    tombstoneados) — p. ej. un mapa creado offline.
     const borrados = new Set(indice.borrados);
+    const localIds = Object.keys(leerMapas());
+    // "Empezar de cero" desde otro dispositivo: si TODOS mis mapas están
+    // tombstoneados, limpiar local (árboles/vista) y adoptar el/los de la nube.
+    if (localIds.length > 0 && localIds.every((id) => borrados.has(id))) {
+      try {
+        for (const k of Object.keys(localStorage)) {
+          if (/^3maps:(arbol|vista|sync):/.test(k)) localStorage.removeItem(k);
+        }
+      } catch {
+        // ignorar
+      }
+      guardarMapas({});
+    } else {
+      // Tombstones normales (no borrar el mapa activo por debajo).
+      podarMapasBorrados(indice.borrados, mapaIdRef.current);
+    }
+    let m = fusionarMapasNube(indice.mapas);
+    if (Object.keys(m).length === 0) {
+      // Ni local ni nube tienen mapas → crear uno y subirlo.
+      const nid = nuevoMapaId();
+      m = { [nid]: { titulo: "Mi mapa", creado: new Date().toISOString() } };
+      guardarMapas(m);
+      guardarArbol({ intercambios: [] }, nid);
+      void subirIndiceMapasNube(uid, m);
+    }
+    setMapas(m);
+    // Si el mapa activo ya no existe (lo borró/reseteó otro dispositivo) → pasar
+    // a uno válido.
+    if (!m[mapaIdRef.current]) {
+      const sig = Object.keys(m)[0];
+      if (sig) cargarEnMapa(sig, cargarArbol(sig));
+    }
+    // Sanar el índice si local tiene mapas que la nube no (y no tombstoneados).
     const enIndice = new Set(Object.keys(indice.mapas));
     if (Object.keys(m).some((id) => !enIndice.has(id) && !borrados.has(id))) {
       void subirIndiceMapasNube(uid, m);
     }
-  }, [usuario, readOnly]);
+  }, [usuario, readOnly, cargarEnMapa]);
 
   useEffect(() => {
     void sincronizarListaMapas();
@@ -1161,6 +1218,7 @@ function Flow() {
             onNuevo={nuevoMapa}
             onBorrar={borrarMapaActual}
             onRenombrar={renombrarMapaActual}
+            onEmpezarDeCero={empezarDeCero}
           />
         )}
         {!readOnly && (

@@ -459,12 +459,21 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
   - Bug de caché: `bajar*` usaban `sb.storage.download()`, que sirve la versión cacheada por el
     navegador hasta 1h (`cache-control: max-age=3600` — igual que §F2-4). Ahora se sube con
     `cacheControl: "0"` y se baja por signed URL con `{ cache: "no-store" }` (`descargarTexto`).
-- **Borrar el ÚLTIMO mapa** (pedido del usuario): se permite. `borrarMapaActual` borra el mapa y,
-  si no queda ninguno, escribe a mano un mapa nuevo vacío ("Mi mapa") — NO usa `crearMapa`, que
-  llamaría a `leerMapas()` sobre un registro vacío y dispararía la migración (recrearía
-  "principal", quedaban 2). En la nube (en secuencia, no en paralelo — evita la race):
-  `borrarMapaNube` (borra `<id>.json` + el `arbol.json` legacy si es "principal") → luego
-  `subirIndiceMapasNube(..., { borrar: [id] })`.
+- **Borrar el ÚLTIMO mapa** se permite. `borrarMapaActual` borra el mapa y, si no queda ninguno,
+  escribe un mapa nuevo vacío. En la nube (en secuencia): `borrarMapaNube` (borra `<id>.json` +
+  `arbol.json` legacy si es "principal") → `subirIndiceMapasNube(..., { borrar: [id] })`.
+- **`leerMapas()` NO migra si `3maps:mapas` ya existe** (aunque sea `{}`). Antes: `{}` → dispara
+  la migración → recrea "principal" → como "principal" no está tombstoneado, se re-sube al índice
+  → reaparece en el otro dispositivo → **loop de mapas fantasma** que el usuario no podía cortar.
+  `asegurarUnMapa()` (en el effect de hidratación) garantiza ≥1 mapa creando un `mapa-<hex>`
+  nuevo (no "principal") si el registro quedó vacío.
+- **"🧹 Empezar de cero"** (`empezarDeCero` / `empezarDeCeroNube`): borra TODOS los mapas —
+  local + nube (menos `config.json`) — y deja UNO vacío, con todos los ids viejos + "principal"
+  tombstoneados. El otro dispositivo, al ver que TODOS sus mapas están en `borrados`, limpia
+  local y adopta el nuevo (`sincronizarListaMapas`, rama "all-tombstoned"). Es la salida cuando
+  el sync quedó enredado.
+- `sincronizarListaMapas` también: si el mapa activo desapareció (lo reseteó/borró otro
+  dispositivo) → cambia a uno válido; si local Y nube quedan sin mapas → crea uno y lo sube.
 
 ### F3-7. Al crear un globo se busca un lugar LIBRE (no offsets fijos)
 - **Por qué**: los offsets fijos (`parent.y + 240`, `hermanos * 40`, `parent.x + 400`) se
