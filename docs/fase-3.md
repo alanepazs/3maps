@@ -190,6 +190,23 @@ los botones "⑂ Ramificar" / "↓ Continuar hilo" crean `branch-right` / `main`
 el atajo de teclado no se puede disparar sintéticamente en el pane (gotcha
 conocido) → lo prueba el usuario.
 
+### 3.13 — Ajustes móvil (celu)  ✅ (31-08-2026)
+
+Reportado probando en el celu:
+- El panel de ⚙️ quedaba tapado por el `Composer` (barra de escribir, abajo a lo
+  ancho en móvil) → no se llegaba a la sección Compartir. `max-h` del panel pasó a
+  `calc(100dvh-18rem)` en < 640px (`sm:max-h-[80vh]` en pantallas grandes) +
+  `overscroll-contain`.
+- El botón "▤ Ordenar" (y parte de los controles de React Flow) quedaba tapado
+  por el `Composer`. `globals.css`: `@media (max-width:640px) .react-flow__controls
+  { margin-bottom: 14rem }` → los sube por encima de la barra.
+- El minimapa ocupaba media pantalla en el celu. `@media (max-width:640px)
+  .react-flow__minimap { display:none }`.
+
+Verificado en el preview pane a 375: panel scrolleable con la última sección
+visible sobre el composer, "▤ Ordenar" despejado, minimapa oculto. Desktop
+intacto (mismo breakpoint 640px que `sm:`).
+
 ---
 
 ## Sueltos que quedaron de fase 2

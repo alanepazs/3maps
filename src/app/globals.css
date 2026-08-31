@@ -42,3 +42,16 @@ body {
 .scroll-fino::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* En pantallas chicas el composer (barra de escribir, abajo y a lo ancho) tapa
+   los controles de React Flow abajo a la izquierda — sobre todo el botón
+   "Ordenar". Levantarlos por encima del composer. */
+@media (max-width: 640px) {
+  .react-flow__controls {
+    margin-bottom: 14rem !important;
+  }
+  /* El minimapa ocupa demasiado en pantallas chicas: ocultarlo. */
+  .react-flow__minimap {
+    display: none !important;
+  }
+}

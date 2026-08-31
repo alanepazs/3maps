@@ -302,7 +302,7 @@ export default function SettingsPanel({
       </button>
 
       {open && (
-        <div className="mt-2 max-h-[80vh] w-72 overflow-y-auto rounded-lg border border-white/15 bg-neutral-900/95 p-3 text-white shadow-xl backdrop-blur">
+        <div className="mt-2 max-h-[calc(100dvh-18rem)] w-72 overflow-y-auto overscroll-contain rounded-lg border border-white/15 bg-neutral-900/95 p-3 text-white shadow-xl backdrop-blur sm:max-h-[80vh]">
           <p className="mb-3 text-[11px] font-medium uppercase tracking-wide text-white/40">
             Lienzo
           </p>
