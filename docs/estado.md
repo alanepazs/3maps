@@ -26,15 +26,19 @@
 
 ## Qué falta
 
-### Sync entre dispositivos — arreglado 31-08-2026, falta probar
-- **La lista de mapas no sincronizaba** (bug reportado): índice `_mapas.json` se pisaba entre
-  dispositivos + `.download()` servía versión cacheada. Fix: descubrir mapas por
-  `storage.list()`, unión al subir el índice, signed URL + `no-store` al bajar, re-sync al volver
-  a foco. Decisiones F3-4.
+### Sync entre dispositivos — reescrito 31-08-2026, FALTA PROBAR
+- **Lista de mapas**: índice `_mapas.json` = `{ mapas, borrados }` (tombstones). Unión al subir,
+  **los borrados SÍ se propagan**. Signed URL + `no-store` al bajar. Re-sync al volver a foco.
+  Decisiones F3-4.
+- **El usuario tenía mapas fantasma** (venían de un intento intermedio que descubría mapas por
+  `storage.list()` → resucitaba árboles muertos). Ese approach se descartó. **Al deployar esto,
+  el usuario tiene que borrar los fantasmas UNA vez más** — recién ahí quedan tombstoneados y no
+  vuelven.
 - **Keys/modelos ahora SÍ sincronizan** (`sync/<uid>/config.json`, bucket privado del usuario,
   RLS por cuenta). Relaja la invariante de CLAUDE.md — decisión del usuario. Decisiones §9.
-- **Falta probar con 2 dispositivos logueados con la misma cuenta.** Las prefs de vista
-  (`"3maps:vista"`: colapsado/tamaño) siguen sin sincronizar (a propósito — son per-navegador).
+- **Borrar el último mapa** se permite (crea uno nuevo vacío).
+- **Falta probar con 2 dispositivos logueados con la misma cuenta.** Prefs de vista
+  (`"3maps:vista"`) siguen sin sincronizar (a propósito).
 
 ### Prueba real (la hace el usuario, con key/login)
 - Los 7 proveedores vía proxy con una key real (Groq/Cerebras = mejores free tier).

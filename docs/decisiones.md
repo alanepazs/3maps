@@ -429,26 +429,30 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
   mapa `principal` cae al viejo `arbol.json` si todavía no hay `principal.json`.
 - `useSync` re-corre el sync inicial al cambiar de `(uid, mapId)`. `3maps:sync` pasó a
   `3maps:sync:<mapId>`.
-- **Borrar el ÚLTIMO mapa** (31-08-2026, pedido del usuario): se permite. `borrarMapaActual`
-  borra el mapa y, si no queda ninguno, escribe a mano un mapa nuevo vacío ("Mi mapa") — NO usa
-  `crearMapa`, que llamaría a `leerMapas()` sobre un registro vacío y dispararía la migración
-  (recrearía "principal"). En la nube: borra el árbol (`borrarMapaNube`) **y poda el id del
-  índice** (`subirIndiceMapasNube(..., { podar: [id] })`) para que no vuelva como fantasma sin
-  árbol. (Un mapa borrado en otro dispositivo con copia local sigue sobreviviendo ahí — la
-  política de "no propagar borrados" solo aplica a esa copia local.)
-- **Descubrimiento de mapas** (arreglado 31-08-2026 — antes la lista no sincronizaba):
-  - `_mapas.json` guarda solo los **títulos**. La EXISTENCIA de un mapa se descubre de
-    `storage.list(<uid>/)` (`listarMapasNube`): todo `<id>.json` con árbol en la nube ES un mapa,
-    aunque el índice se haya pisado. El título genérico se sana al abrir el mapa (viene adentro
-    del árbol → `onTituloNube`).
-  - `subirIndiceMapasNube` hace **UNIÓN con la nube antes de subir** (antes era overwrite → cada
-    `nuevoMapa`/`renombrar`/`borrar` de un dispositivo borraba del índice los mapas ajenos).
-    **Borrados NO se propagan** (herramienta personal; propagarlos necesitaría tombstones).
-  - La lista se re-sincroniza también al **volver a foco** la pestaña, no solo al loguear.
+- **Sync de la LISTA de mapas** (reescrito 31-08-2026 — pasó por 3 iteraciones):
+  - **Fuente única = el índice `sync/<uid>/_mapas.json`** = `{ mapas: {[id]:{titulo,creado}},
+    borrados: [id,...] }`. Un intento intermedio descubría mapas de `storage.list()` (todo
+    `<id>.json` = un mapa) — pero eso **resucitaba todo árbol muerto** que hubiera quedado en
+    Storage (incluido el `arbol.json` legacy de fase 2.4). Descartado.
+  - `subirIndiceMapasNube` hace **UNIÓN de mapas + UNIÓN de tombstones**, y quita de `mapas` todo
+    lo tombstoneado. Antes era un overwrite (cada `nuevoMapa`/`renombrar`/`borrar` pisaba la
+    lista ajena — el bug que reportó el usuario: "Mapa 1" del celu no aparecía en la PC).
+  - **Los borrados SÍ se propagan ahora** (vía `borrados`). Se descartó "no propagar borrados"
+    porque en la práctica un mapa borrado volvía como fantasma en el otro dispositivo. Re-crear
+    un mapa da un `mapa-<hex>` nuevo → nunca choca con un tombstone.
+  - `sincronizarListaMapas` (FlowCanvas, al loguear + al volver a foco): baja el índice →
+    `podarMapasBorrados(borrados, mapaActivo)` (borra local + su árbol, sin tocar el mapa activo)
+    → `fusionarMapasNube(mapas)` → re-sube si local tiene algo que el índice no y no está
+    tombstoneado.
   - Bug de caché: `bajar*` usaban `sb.storage.download()`, que sirve la versión cacheada por el
     navegador hasta 1h (`cache-control: max-age=3600` — igual que §F2-4). Ahora se sube con
-    `cacheControl: "0"` y se baja por signed URL con `{ cache: "no-store" }` (`descargarTexto` en
-    `sync.ts`).
+    `cacheControl: "0"` y se baja por signed URL con `{ cache: "no-store" }` (`descargarTexto`).
+- **Borrar el ÚLTIMO mapa** (pedido del usuario): se permite. `borrarMapaActual` borra el mapa y,
+  si no queda ninguno, escribe a mano un mapa nuevo vacío ("Mi mapa") — NO usa `crearMapa`, que
+  llamaría a `leerMapas()` sobre un registro vacío y dispararía la migración (recrearía
+  "principal", quedaban 2). En la nube (en secuencia, no en paralelo — evita la race):
+  `borrarMapaNube` (borra `<id>.json` + el `arbol.json` legacy si es "principal") → luego
+  `subirIndiceMapasNube(..., { borrar: [id] })`.
 
 ### F3-7. Al crear un globo se busca un lugar LIBRE (no offsets fijos)
 - **Por qué**: los offsets fijos (`parent.y + 240`, `hermanos * 40`, `parent.x + 400`) se

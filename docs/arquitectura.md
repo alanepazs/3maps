@@ -47,8 +47,11 @@ src/
                          ("3maps:arbol:<mapId>"), un string .md por intercambio. Cae a
                          arbolInicial() si no hay nada.
     mapas.ts             Registro de mapas (fase 3.5). "3maps:mapas" = {[id]:{titulo,creado}},
-                         "3maps:mapaActivo". leerMapas() migra el formato viejo (un solo
-                         "3maps:arbol" → mapa "principal"). crear/renombrar/borrar/fusionarMapasNube.
+                         "3maps:mapaActivo", árbol en "3maps:arbol:<id>". leerMapas() migra el
+                         formato viejo (un solo "3maps:arbol" → mapa "principal") — OJO: sobre un
+                         registro vacío dispara la migración. crear/renombrar/borrarMapa,
+                         nuevoMapaId, fusionarMapasNube (agrega los que faltan),
+                         podarMapasBorrados(borrados, excepto) (aplica tombstones de la nube).
     layout.ts            calcularLayout(arbol, alturaDe) → Map<id,{x,y}>. Auto-layout recursivo
                          para el botón "Ordenar" (fase 3.4): tronco `main` vertical, ramas
                          `branch-*` en columnas al costado con su propio tronco. Puro.
@@ -86,11 +89,11 @@ src/
                          `titulo`). planInicial(arbolLocal, uid, mapId) → subir/traer/vaciar/nada,
                          LWW por hora del SERVIDOR (`metaNube` lee updated_at via storage.list).
                          localStorage "3maps:sync:<mapId>" = {at, hash, uid}. El mapa "principal"
-                         cae al viejo `arbol.json`. `_mapas.json` = títulos (unión al subir);
-                         `listarMapasNube` descubre mapas por storage.list (todo `<id>.json` = un
-                         mapa). `config.json` = keys/modelos (bajar/subirConfigNube, §9). Todo se
-                         baja por signed URL + `{cache:"no-store"}` (`descargarTexto`); se sube con
-                         `cacheControl: "0"` (decisiones F2-8, F2-4). Ver decisiones F3-4.
+                         cae al viejo `arbol.json`. `_mapas.json` = `{mapas, borrados}` (índice +
+                         tombstones; unión al subir, los borrados SÍ se propagan). `config.json` =
+                         keys/modelos (bajar/subirConfigNube, §9). Todo se baja por signed URL +
+                         `{cache:"no-store"}` (`descargarTexto`); se sube con `cacheControl: "0"`
+                         (decisiones F2-8, F2-4, F3-4).
     compartir.ts         compartirArbol(arbol, titulo) → sube arboles/<slug>.json a Storage (mismo
                          formato que persistencia.ts), devuelve {slug, url}, y si hay sesión hace
                          insert en shared_trees (soft-fail). cargarArbolCompartido(slug) lo baja y

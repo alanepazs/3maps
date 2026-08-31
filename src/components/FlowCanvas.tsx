@@ -60,7 +60,6 @@ import {
 import { cargarArbol, guardarArbol } from "@/model/persistencia";
 import { calcularLayout, ubicarNuevoGlobo } from "@/model/layout";
 import {
-  ID_PRINCIPAL,
   borrarMapa,
   crearMapa,
   fusionarMapasNube,
@@ -68,6 +67,7 @@ import {
   leerMapas,
   mapaActivoId,
   nuevoMapaId,
+  podarMapasBorrados,
   renombrarMapa,
   setMapaActivo,
   type Mapas,
@@ -76,7 +76,6 @@ import {
   bajarConfigNube,
   bajarIndiceMapasNube,
   borrarMapaNube,
-  listarMapasNube,
   subirConfigNube,
   subirIndiceMapasNube,
 } from "@/model/sync";
@@ -357,11 +356,13 @@ function Flow() {
   const enVueloRef = useRef<Map<string, AbortController>>(new Map());
   // Resúmenes del tramo viejo del contexto, cacheados por los ids del tramo.
   const resumenCacheRef = useRef<Map<string, string>>(new Map());
-  // Espejo del árbol actual para leerlo dentro de callbacks async.
+  // Espejo del árbol / mapa actual para leerlos dentro de callbacks async.
   const arbolRef = useRef(arbol);
+  const mapaIdRef = useRef(mapaId);
   useEffect(() => {
     arbolRef.current = arbol;
-  }, [arbol]);
+    mapaIdRef.current = mapaId;
+  }, [arbol, mapaId]);
 
   // Persistir el árbol del mapa activo en cada cambio (recién después de cargar
   // lo guardado). En modo compartido no se toca localStorage — el árbol es de otro.
@@ -971,8 +972,13 @@ function Flow() {
     }
     setMapas(m);
     if (usuario) {
-      void borrarMapaNube(usuario.id, borradoId);
-      void subirIndiceMapasNube(usuario.id, m, { podar: [borradoId] });
+      const uid = usuario.id;
+      // En secuencia: primero borrar el árbol, después el índice con el tombstone
+      // (si van en paralelo, el índice puede releerse antes de borrar y re-añadir).
+      void (async () => {
+        await borrarMapaNube(uid, borradoId);
+        await subirIndiceMapasNube(uid, m, { borrar: [borradoId] });
+      })();
     }
     cargarEnMapa(siguiente, cargarArbol(siguiente));
     window.setTimeout(() => void fitView({ ...fitOpts, duration: 300 }), 60);
@@ -996,33 +1002,30 @@ function Flow() {
     [mapaId, usuario],
   );
 
-  // Sync de la LISTA de mapas entre dispositivos (unión, sin propagar borrados).
-  // Descubre mapas de dos fuentes: `_mapas.json` (títulos) y `storage.list()`
-  // (todo `<id>.json` con árbol en la nube = un mapa, aunque el índice se haya
-  // pisado). Corre al loguear y al volver a foco la pestaña.
+  // Sync de la LISTA de mapas entre dispositivos. Fuente única: el índice
+  // `_mapas.json` (`{ mapas, borrados }`). Aplica los tombstones (borra local),
+  // fusiona los que falten, y re-sube si local tiene algo que el índice no.
+  // Corre al loguear y al volver a foco la pestaña.
   const sincronizarListaMapas = useCallback(async () => {
     if (!usuario || readOnly) return;
     const uid = usuario.id;
-    const [indice, idsNube] = await Promise.all([
-      bajarIndiceMapasNube(uid),
-      listarMapasNube(uid),
-    ]);
-    const desdeNube: Mapas = { ...(indice ?? {}) };
-    for (const id of idsNube) {
-      if (!desdeNube[id]) {
-        desdeNube[id] = {
-          titulo: id === ID_PRINCIPAL ? "Mi mapa" : "Mapa",
-          creado: new Date().toISOString(),
-        };
-      }
+    const indice = await bajarIndiceMapasNube(uid);
+    if (!indice) {
+      // Todavía no hay índice en la nube → subir lo local como estado inicial.
+      const local = leerMapas();
+      if (Object.keys(local).length) void subirIndiceMapasNube(uid, local);
+      return;
     }
-    if (Object.keys(desdeNube).length === 0) return;
-    const m = fusionarMapasNube(desdeNube);
+    // 1) Aplicar tombstones (no borrar el mapa activo por debajo).
+    podarMapasBorrados(indice.borrados, mapaIdRef.current);
+    // 2) Fusionar los mapas de la nube que falten localmente.
+    const m = fusionarMapasNube(indice.mapas);
     setMapas(m);
-    // Re-subir solo si el local tiene mapas que el índice de la nube no → sana el
-    // índice si algún dispositivo lo había pisado, sin escribir en cada foco.
-    const enIndice = new Set(Object.keys(indice ?? {}));
-    if (Object.keys(m).some((id) => !enIndice.has(id))) {
+    // 3) Sanar el índice si local tiene mapas que la nube no (y no están
+    //    tombstoneados) — p. ej. un mapa creado offline.
+    const borrados = new Set(indice.borrados);
+    const enIndice = new Set(Object.keys(indice.mapas));
+    if (Object.keys(m).some((id) => !enIndice.has(id) && !borrados.has(id))) {
       void subirIndiceMapasNube(uid, m);
     }
   }, [usuario, readOnly]);

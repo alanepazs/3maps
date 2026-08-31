@@ -140,3 +140,22 @@ export function fusionarMapasNube(nube: Mapas): Mapas {
   if (cambio) guardarMapas(m);
   return m;
 }
+
+// Quita del registro local los mapas tombstoneados en la nube (+ sus árboles).
+// `excepto` = el mapa activo (no borrárselo al usuario debajo de los pies).
+export function podarMapasBorrados(borrados: string[], excepto?: string): Mapas {
+  const m = leerMapas();
+  let cambio = false;
+  for (const id of borrados) {
+    if (id === excepto || !m[id]) continue;
+    delete m[id];
+    cambio = true;
+    try {
+      ls()?.removeItem(arbolKey(id));
+    } catch {
+      // ignorar
+    }
+  }
+  if (cambio) guardarMapas(m);
+  return m;
+}

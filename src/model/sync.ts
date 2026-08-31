@@ -64,7 +64,10 @@ async function descargarTexto(
 }
 
 type SobreSync = { v: number; titulo?: string; files: Record<string, string> };
-type SobreIndice = { v: number; mapas: Mapas };
+// `borrados` = tombstones: ids que se borraron en algún dispositivo. El borrado
+// SÍ se propaga (por acá). Re-crear un mapa da un id nuevo → nunca choca.
+type SobreIndice = { v: number; mapas: Mapas; borrados?: string[] };
+export type IndiceNube = { mapas: Mapas; borrados: string[] };
 type EstadoLocal = { at: string; hash: string; uid: string };
 
 function leerEstado(mapId: string): EstadoLocal {
@@ -224,11 +227,16 @@ export function marcarSincronizado(
   });
 }
 
-// Borra el archivo del mapa en la nube (al borrar el mapa localmente).
+// Borra el árbol del mapa en la nube (al borrarlo localmente). Para "principal"
+// también saca el `arbol.json` legacy (mismo mapa, nombre viejo de fase 2.4).
 export async function borrarMapaNube(uid: string, mapId: string): Promise<void> {
   const sb = getSupabase();
   if (!sb || !uid) return;
-  await sb.storage.from(BUCKET).remove([rutaDe(uid, archivoDe(mapId))]);
+  const archivos =
+    mapId === ID_PRINCIPAL
+      ? [archivoDe(mapId), ARCHIVO_LEGACY]
+      : [archivoDe(mapId)];
+  await sb.storage.from(BUCKET).remove(archivos.map((a) => rutaDe(uid, a)));
   try {
     localStorage.removeItem(SYNC_STATE_KEY(mapId));
   } catch {
@@ -236,63 +244,55 @@ export async function borrarMapaNube(uid: string, mapId: string): Promise<void> 
   }
 }
 
-// ── Índice de mapas (para que la lista aparezca en todos los dispositivos) ───
-//
-// `_mapas.json` guarda solo los TÍTULOS. La existencia de un mapa se descubre de
-// `storage.list(<uid>/)`: todo `<mapId>.json` que tenga árbol en la nube ES un
-// mapa (así un mapa no se puede "perder" aunque el índice se pise entre
-// dispositivos).
+// ── Índice de mapas (`sync/<uid>/_mapas.json`) ──────────────────────────────
+// `{ mapas: {[id]:{titulo,creado}}, borrados: [id,...] }`. La LISTA de mapas se
+// deriva SOLO del índice (no de `storage.list` — resucitaba árboles muertos).
+// Los borrados se propagan vía `borrados` (tombstones).
 
-export async function bajarIndiceMapasNube(uid: string): Promise<Mapas | null> {
+export async function bajarIndiceMapasNube(
+  uid: string,
+): Promise<IndiceNube | null> {
   const sb = getSupabase();
   if (!sb || !uid) return null;
   const texto = await descargarTexto(sb, rutaDe(uid, INDICE));
   if (texto === null) return null;
   try {
     const sobre = JSON.parse(texto) as Partial<SobreIndice>;
-    return sobre && sobre.mapas && typeof sobre.mapas === "object"
-      ? sobre.mapas
-      : null;
+    if (!sobre || typeof sobre.mapas !== "object" || !sobre.mapas) return null;
+    return {
+      mapas: sobre.mapas,
+      borrados: Array.isArray(sobre.borrados)
+        ? sobre.borrados.filter((x): x is string => typeof x === "string")
+        : [],
+    };
   } catch {
     return null;
   }
 }
 
-// Los mapIds que tienen árbol en la nube (todo `<id>.json` salvo los especiales;
-// `arbol.json` legacy cuenta como el mapa "principal").
-export async function listarMapasNube(uid: string): Promise<string[]> {
-  const sb = getSupabase();
-  if (!sb || !uid) return [];
-  const { data, error } = await sb.storage
-    .from(BUCKET)
-    .list(uid, { limit: 1000 });
-  if (error || !data) return [];
-  const ids = new Set<string>();
-  for (const f of data) {
-    if (!f.name.endsWith(".json")) continue;
-    if (f.name === INDICE) continue;
-    if (f.name === ARCHIVO_LEGACY) ids.add(ID_PRINCIPAL);
-    else ids.add(f.name.replace(/\.json$/, ""));
-  }
-  return [...ids];
-}
-
-// Sube el índice haciendo UNIÓN con lo que ya hay en la nube — así un dispositivo
-// nunca borra del índice los mapas que solo existen en otro (bug 31-08-2026: era
-// un overwrite → cada `nuevoMapa`/`renombrar`/`borrar` pisaba la lista ajena).
-// `podar` saca esos ids del resultado (para el mapa que se acaba de borrar acá —
-// si no, se re-descubre como fantasma sin árbol).
+// Sube el índice: UNIÓN de mapas (nube + local), UNIÓN de tombstones (nube +
+// `opts.borrar`), y se quitan de `mapas` todos los tombstoneados. Así un mapa
+// que alguien borró no vuelve, aunque otro dispositivo lo tenga local todavía
+// (ese re-sube y `subirIndiceMapasNube` lo vuelve a podar).
 export async function subirIndiceMapasNube(
   uid: string,
   mapas: Mapas,
-  opts?: { podar?: string[] },
+  opts?: { borrar?: string[] },
 ): Promise<void> {
   const sb = getSupabase();
   if (!sb || !uid) return;
-  const nube = (await bajarIndiceMapasNube(uid)) ?? {};
-  const merged: Mapas = { ...nube, ...mapas };
-  for (const id of opts?.podar ?? []) delete merged[id];
-  const sobre: SobreIndice = { v: VERSION, mapas: merged };
+  const nube = await bajarIndiceMapasNube(uid);
+  const borrados = new Set([
+    ...(nube?.borrados ?? []),
+    ...(opts?.borrar ?? []),
+  ]);
+  const merged: Mapas = { ...(nube?.mapas ?? {}), ...mapas };
+  for (const id of borrados) delete merged[id];
+  const sobre: SobreIndice = {
+    v: VERSION,
+    mapas: merged,
+    borrados: [...borrados],
+  };
   await sb.storage
     .from(BUCKET)
     .upload(rutaDe(uid, INDICE), JSON.stringify(sobre), OPCIONES_SUBIDA);
