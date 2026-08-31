@@ -48,8 +48,7 @@
   `Intercambio.ancho/alto` — F3-8). El colapsado/expandido sigue per-navegador (a propósito).
 
 ### Prueba real pendiente (la hace el usuario, con key/login)
-- **Redeployar `ia-proxy`** (suma zhipu/qwen/moonshot/siliconflow) — `supabase functions deploy
-  ia-proxy` o el editor del panel.
+- ✅ `ia-proxy` redeployado con los 4 nuevos (31-08-2026).
 - Los 11 proveedores vía proxy con una key real (Groq/Cerebras/GLM-flash/SiliconFlow = free).
 - Panel lateral redimensionable (3.11) + fixes de móvil (3.13) en Chrome y celu.
 - Que el watchdog de 45s no corte un stream lento-pero-vivo.
