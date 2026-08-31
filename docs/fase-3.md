@@ -148,13 +148,27 @@ el tamaño en `vista.ts` es autocontenida y sobrevive al reload sola. Verificado
 en el preview pane (resize en vivo, persistencia, reload, reset, scroll interno,
 colapso desactivado).
 
-### 3.11 — Panel lateral redimensionable + volver al mapa  ⬜ (pedido 31-08-2026)
+### 3.11 — Panel lateral redimensionable + volver al mapa  ✅ (31-08-2026)
 
-Manija de arrastre en el borde interno de `BranchTranscript`, ancho clampeado a
-`[~360px, 75vw]`. **Decisión**: ancho persistido **por dispositivo** (bucket por
-ancho de viewport: `mobile` < 768 / `desktop`), en `settings.transcriptWidth`.
-Móvil: panel a pantalla completa + botón "🗺 Mapa" en el header que alterna
-mapa/panel (hoy solo ✕ cierra).
+Manija de arrastre (`w-1.5`, `cursor-ew-resize`) en el borde interno de
+`BranchTranscript` — a la izquierda si el panel está a la derecha y viceversa.
+El arrastre mueve `panelRef.current.style.width` directo (fluido, sin re-render);
+al soltar persiste vía `onResize`. Ancho clampeado a `[320, 75% del viewport]`
+(`ANCHO_PANEL_MIN`, `ANCHO_PANEL_MAX_FRAC` en `settings.ts`); el padre
+(`FlowCanvas`) reclampa al viewport en cada render.
+
+**Decisión aplicada**: ancho persistido **por dispositivo** en
+`settings.transcriptWidth = { mobile, desktop }`; bucket por `window.innerWidth`
+(< 768 = `mobile`). `FlowCanvas` trackea el ancho de ventana con un listener
+`resize`.
+
+Móvil (`< 768`): el panel va a pantalla completa (`w-full`, sin manija) y el
+header muestra un botón "🗺 Ver mapa" que cierra el panel (el ✕ sigue estando; el
+⇄ de cambiar de lado se oculta, no aplica a pantalla completa).
+
+Verificado en el preview pane (1280 y 375): manija del lado correcto, arrastre en
+vivo, clamp a 75vw, persistencia al bucket `desktop`, restore al recargar, modo
+móvil a pantalla completa con "🗺 Ver mapa" que cierra.
 
 ### 3.12 — Ctrl+Enter ramifica, Enter continúa  ✅ (31-08-2026)
 
@@ -207,8 +221,8 @@ conocido) → lo prueba el usuario.
 
 ## Falta de fase 3
 
-- **3.11** — panel lateral redimensionable (hasta 75vw, ancho por dispositivo) + botón "🗺 Mapa" en móvil.
 - Redeployar `ia-proxy` (suma Groq/Cerebras/OpenRouter/Mistral/HuggingFace) + probar con key real.
 - 2.5b (embeddings) si el matching por palabras clave se queda corto.
 - Probar el sync per-mapa con login real (2 dispositivos).
 - Probar el atajo Ctrl+Enter (ramifica) en Chrome real (3.12).
+- Probar el resize del globo (3.10) y del panel (3.11) en Chrome real / celu.

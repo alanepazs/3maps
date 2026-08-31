@@ -189,8 +189,10 @@ superposición de globos, ramas siempre a la derecha, botón "Rehacer").
   `localStorage["3maps:vista"]` (`tamanos`), no va al `.md`. Doble clic en la manija o botón
   "↔ Auto" vuelve al tamaño automático. Tamaño manual desactiva el colapso auto de 3.1. Cuerpo
   con scroll interno si la caja queda chica. Verificado en el preview pane.
-- **3.11 — ⬜ pendiente.** Panel lateral redimensionable hasta 75vw (ancho por dispositivo) +
-  botón "🗺 Mapa" para alternar mapa/panel en móvil.
+- **3.11 — ✅ hecho.** Panel lateral (`BranchTranscript`) redimensionable: manija en el borde
+  interno, clamp `[320, 75vw]`, ancho persistido en `settings.transcriptWidth = {mobile, desktop}`
+  (bucket por `window.innerWidth < 768`). Móvil: panel a pantalla completa + botón "🗺 Ver mapa"
+  en el header. Verificado en el preview pane a 1280 y 375.
 
 **Pantalla de consentimiento de Google — PUBLICADA (30-08-2026, "En producción").** Cualquiera
 puede loguear con Google, no solo test-users. Faltaba: cargar los 3 permisos no sensibles

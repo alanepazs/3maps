@@ -29,6 +29,9 @@ import BranchTranscript from "./BranchTranscript";
 import SharedBanner from "./SharedBanner";
 import { NodeActionsContext } from "./nodeActions";
 import {
+  ANCHO_PANEL_DEFECTO,
+  ANCHO_PANEL_MAX_FRAC,
+  ANCHO_PANEL_MIN,
   DEFAULT_SETTINGS,
   SETTINGS_STORAGE_KEY,
   type Settings,
@@ -804,6 +807,39 @@ function Flow() {
     [deleteNode, retryNode, openNode, readOnly],
   );
 
+  // Ancho del panel lateral (fase 3.11): bucket por ancho de viewport. En móvil
+  // (< 768) el panel va a pantalla completa y no se redimensiona.
+  const [anchoVentana, setAnchoVentana] = useState(1280);
+  useEffect(() => {
+    const upd = () => setAnchoVentana(window.innerWidth);
+    upd();
+    window.addEventListener("resize", upd);
+    return () => window.removeEventListener("resize", upd);
+  }, []);
+  const panelBucket: "mobile" | "desktop" =
+    anchoVentana < 768 ? "mobile" : "desktop";
+  const panelResizable = panelBucket === "desktop";
+  const panelAncho = panelResizable
+    ? Math.min(
+        Math.round(anchoVentana * ANCHO_PANEL_MAX_FRAC),
+        Math.max(
+          ANCHO_PANEL_MIN,
+          settings.transcriptWidth?.[panelBucket] ?? ANCHO_PANEL_DEFECTO,
+        ),
+      )
+    : undefined;
+  const guardarAnchoPanel = useCallback(
+    (px: number) => {
+      updateSettings({
+        transcriptWidth: {
+          ...(settings.transcriptWidth ?? DEFAULT_SETTINGS.transcriptWidth),
+          [panelBucket]: px,
+        },
+      });
+    },
+    [updateSettings, settings.transcriptWidth, panelBucket],
+  );
+
   // ── Compartir (fase 2.3) ─────────────────────────────────────────────────
   // "Compartir" sube el árbol actual a Supabase y devuelve el link. Solo si el
   // backend está configurado y no estamos ya viendo un árbol de otro.
@@ -1042,6 +1078,9 @@ function Flow() {
             }
             onClose={() => setTranscriptNodeId(null)}
             onSubmit={readOnly ? undefined : responderDesdePanel}
+            width={panelAncho}
+            resizable={panelResizable}
+            onResize={guardarAnchoPanel}
           />
         )}
       </div>

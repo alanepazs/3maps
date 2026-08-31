@@ -15,16 +15,27 @@ export type Settings = {
   // De qué lado del canvas se abre el panel de transcripción de la rama.
   // Se cambia con el botón ⇄ del propio panel.
   transcriptSide: "left" | "right";
+  // Ancho del panel de transcripción, por tipo de dispositivo (fase 3.11).
+  // Bucket por ancho de viewport: < 768 = "mobile" (ahí el panel va a pantalla
+  // completa y no se redimensiona). En "desktop" se ajusta arrastrando el borde
+  // interno del panel; se clampa a [320, 75% del viewport].
+  transcriptWidth: { mobile: number; desktop: number };
   // El usuario aceptó que su API key de DeepSeek / GPT transite el proxy de
   // 3maps (esas APIs no se pueden llamar directo desde el navegador). Opt-in.
   usarProxyIA: boolean;
 };
+
+export const ANCHO_PANEL_DEFECTO = 460;
+export const ANCHO_PANEL_MIN = 320;
+// Fracción máxima del viewport que puede ocupar el panel en desktop.
+export const ANCHO_PANEL_MAX_FRAC = 0.75;
 
 export const DEFAULT_SETTINGS: Settings = {
   inertia: 1,
   ventanaContexto: 6,
   systemPrompt: "",
   transcriptSide: "right",
+  transcriptWidth: { mobile: ANCHO_PANEL_DEFECTO, desktop: ANCHO_PANEL_DEFECTO },
   usarProxyIA: false,
 };
 

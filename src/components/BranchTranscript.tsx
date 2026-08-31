@@ -1,9 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 
 import type { BranchKind } from "./Composer";
 import Markdown from "./Markdown";
+import { ANCHO_PANEL_MAX_FRAC, ANCHO_PANEL_MIN } from "./settings";
 import type { Intercambio } from "@/model/intercambio";
 
 // Panel lateral read-only: el camino raíz→globo aplanado a preguntas y
@@ -15,21 +21,59 @@ import type { Intercambio } from "@/model/intercambio";
 // para seguir la conversación sin cerrar el panel (fase 3.9): crea un hijo del
 // último globo del camino y el panel se mueve a ese hijo. Enter continúa el
 // hilo, Ctrl/Cmd+Enter abre una rama (fase 3.12).
+//
+// Ancho (fase 3.11): en desktop se arrastra el borde interno (`onResize` con el
+// ancho ya clampeado por el padre en `width`). En móvil (`resizable === false`)
+// va a pantalla completa y el header muestra un botón "🗺 Mapa" para volver.
 export default function BranchTranscript({
   intercambios,
   side,
   onFlipSide,
   onClose,
   onSubmit,
+  width,
+  resizable = false,
+  onResize,
 }: {
   intercambios: Intercambio[];
   side: "left" | "right";
   onFlipSide: () => void;
   onClose: () => void;
   onSubmit?: (text: string, kind: BranchKind) => void;
+  width?: number;
+  resizable?: boolean;
+  onResize?: (px: number) => void;
 }) {
   const [borrador, setBorrador] = useState("");
   const finRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // El arrastre del borde mueve el ancho por el DOM directamente (fluido, sin
+  // re-render); al soltar se persiste vía `onResize` y el padre vuelve con
+  // `width` reclampeado al viewport.
+  const onResizeStart = (e: ReactPointerEvent) => {
+    if (!resizable) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const max = Math.round(window.innerWidth * ANCHO_PANEL_MAX_FRAC);
+    const calc = (ev: PointerEvent) => {
+      const crudo =
+        side === "right" ? window.innerWidth - ev.clientX : ev.clientX;
+      return Math.min(max, Math.max(ANCHO_PANEL_MIN, Math.round(crudo)));
+    };
+    let ultimo = width ?? ANCHO_PANEL_MIN;
+    const onMove = (ev: PointerEvent) => {
+      ultimo = calc(ev);
+      if (panelRef.current) panelRef.current.style.width = `${ultimo}px`;
+    };
+    const onUp = () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      onResize?.(ultimo);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -59,11 +103,24 @@ export default function BranchTranscript({
       onClick={onClose}
     >
       <div
-        className={`flex h-full w-full max-w-[460px] flex-col bg-neutral-950 text-sm shadow-2xl ${
+        ref={panelRef}
+        style={width ? { width } : undefined}
+        className={`relative flex h-full max-w-full flex-col bg-neutral-950 text-sm shadow-2xl ${
+          width ? "" : "w-full"
+        } ${
           side === "left" ? "border-r border-white/15" : "border-l border-white/15"
         }`}
         onClick={(e) => e.stopPropagation()}
       >
+        {resizable && onResize && (
+          <div
+            onPointerDown={onResizeStart}
+            title="Arrastrá para cambiar el ancho"
+            className={`absolute inset-y-0 z-10 w-1.5 cursor-ew-resize hover:bg-sky-400/40 ${
+              side === "right" ? "left-0" : "right-0"
+            }`}
+          />
+        )}
         <div className="flex items-center justify-between border-b border-white/10 px-4 py-2.5">
           <span className="font-medium text-white">
             Conversación hasta este globo
@@ -72,15 +129,30 @@ export default function BranchTranscript({
             </span>
           </span>
           <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={onFlipSide}
-              className="rounded px-2 py-1 text-white/60 hover:bg-white/10 hover:text-white"
-              aria-label={side === "left" ? "Mover a la derecha" : "Mover a la izquierda"}
-              title={side === "left" ? "Mover a la derecha" : "Mover a la izquierda"}
-            >
-              ⇄
-            </button>
+            {!resizable && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="whitespace-nowrap rounded border border-white/15 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
+              >
+                🗺 Ver mapa
+              </button>
+            )}
+            {resizable && (
+              <button
+                type="button"
+                onClick={onFlipSide}
+                className="rounded px-2 py-1 text-white/60 hover:bg-white/10 hover:text-white"
+                aria-label={
+                  side === "left" ? "Mover a la derecha" : "Mover a la izquierda"
+                }
+                title={
+                  side === "left" ? "Mover a la derecha" : "Mover a la izquierda"
+                }
+              >
+                ⇄
+              </button>
+            )}
             <button
               type="button"
               onClick={onClose}

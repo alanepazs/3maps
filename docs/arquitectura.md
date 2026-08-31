@@ -109,8 +109,13 @@ src/
                         cierra con Esc / ✕ / click en el fondo. Botón ⇄ en el header cambia el
                         lado (izq/der) → `settings.transcriptSide`. Si recibe `onSubmit` (no en
                         modo compartido): mini-composer al pie que crea un hijo del globo abierto
-                        y mueve el panel a ese hijo (fase 3.9). Auto-scroll al último.
-                        Props: {intercambios, side, onFlipSide, onClose, onSubmit?}.
+                        y mueve el panel a ese hijo (fase 3.9; Enter continúa / Ctrl+Enter ramifica,
+                        fase 3.12). Auto-scroll al último.
+                        Ancho (fase 3.11): si `resizable`, manija en el borde interno (arrastra
+                        style.width por DOM, persiste al soltar vía `onResize`). Si no (móvil),
+                        pantalla completa + botón "🗺 Ver mapa" en el header.
+                        Props: {intercambios, side, onFlipSide, onClose, onSubmit?, width?,
+                        resizable?, onResize?}.
     SharedBanner.tsx    Cartel arriba cuando se ve un árbol compartido (`?compartir=`). Props:
                         {titulo, onGuardar, onSalir}. "Guardar en mi 3maps" = pasa a local editable.
     useSesion.ts        Hook de auth (fase 2.2): {usuario, cargando, signInWithGoogle,
@@ -138,9 +143,12 @@ src/
                         Claude y Gemini; commit() lo dispara al guardar.
                         Textarea "instrucción de sistema" → onChange({systemPrompt}) directo.
     settings.ts         Settings = {inertia, ventanaContexto, systemPrompt, transcriptSide,
-                        usarProxyIA}. DEFAULT_SETTINGS, storage key. systemPrompt "" = ninguna;
-                        se antepone a la respuesta, no al resumen. transcriptSide "left"|"right"
-                        (default "right"). usarProxyIA = opt-in para DeepSeek/GPT (default false).
+                        transcriptWidth, usarProxyIA}. DEFAULT_SETTINGS, storage key. systemPrompt
+                        "" = ninguna; se antepone a la respuesta, no al resumen. transcriptSide
+                        "left"|"right" (default "right"). transcriptWidth = {mobile, desktop} px
+                        del panel lateral por bucket de viewport (fase 3.11; ANCHO_PANEL_MIN 320,
+                        ANCHO_PANEL_MAX_FRAC 0.75, ANCHO_PANEL_DEFECTO 460). usarProxyIA = opt-in
+                        para los proveedores vía proxy (default false).
     nodeActions.ts       NodeActionsContext: deleteNode + retryNode + openNode + readOnly (hacia
                          FlowCanvas). readOnly=true (árbol compartido) esconde Eliminar/Reintentar.
     inertia.ts           Física compartida del "envión": constantes + sampleVelocity / launchVelocity / runGlide.
