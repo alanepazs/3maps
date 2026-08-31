@@ -48,9 +48,10 @@
 
 ### Prueba real pendiente (la hace el usuario, con key/login)
 - Los 7 proveedores vía proxy con una key real (Groq/Cerebras = mejores free tier).
-- Resize de globo (3.10) y de panel (3.11) + fixes de móvil (3.13) en Chrome y celu.
+- Panel lateral redimensionable (3.11) + fixes de móvil (3.13) en Chrome y celu.
 - Que el watchdog de 45s no corte un stream lento-pero-vivo.
 - ✅ Ctrl+Enter (ramifica) — OK en Chrome.
+- ✅ Sync entre 2 dispositivos (mapas, árboles, tamaño del globo, "escribiendo…") — OK.
 
 ### Opcionales (no bloquean)
 - **Auto-switch de proveedor** al pegar una key de otro (hoy `avisoFormatoKey` solo avisa en ámbar).
