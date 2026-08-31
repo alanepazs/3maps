@@ -207,6 +207,14 @@ Verificado en el preview pane a 375: panel scrolleable con la última sección
 visible sobre el composer, "▤ Ordenar" despejado, minimapa oculto. Desktop
 intacto (mismo breakpoint 640px que `sm:`).
 
+Fix (31-08-2026): en el celu `fitView` quedaba muy adentro (se veía 1 globo).
+`fitOpts` en `FlowCanvas` (memo, según `esMobile = anchoVentana < 768`):
+`{ padding: 0.18, minZoom: 0.15, maxZoom: esMobile ? 0.7 : 1.2 }`, pasado a
+`<ReactFlow fitViewOptions>` y a los 4 `fitView(...)` manuales (inicial, Ordenar,
+cambiar de mapa, borrar mapa). `<ReactFlow minZoom={0.15}>` para poder alejarse
+más a mano. Verificado a 390px: árbol con ramas a los dos lados → los 5 globos
+entran (zoom ~0.35); árbol de 2 globos → tope 0.7 (no se sobre-acerca).
+
 Fix (31-08-2026): en el celu había que scrollear la página para ver el composer.
 Causa: `<main className="h-screen">` = `100vh` = viewport GRANDE (barra de URL
 oculta) → con la barra visible, el fondo del layout quedaba abajo del área

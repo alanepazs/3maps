@@ -166,6 +166,29 @@ function Flow() {
   const { getNode, getViewport, setViewport, setCenter, fitView } =
     useReactFlow();
 
+  // Ancho de la ventana (para el bucket móvil/desktop del panel lateral — fase
+  // 3.11 — y el encuadre del mapa — fase 3.13).
+  const [anchoVentana, setAnchoVentana] = useState(1280);
+  useEffect(() => {
+    const upd = () => setAnchoVentana(window.innerWidth);
+    upd();
+    window.addEventListener("resize", upd);
+    return () => window.removeEventListener("resize", upd);
+  }, []);
+  const esMobile = anchoVentana < 768;
+
+  // Encuadre del mapa (fase 3.13): en el celu `fitView` quedaba muy adentro (se
+  // veía 1 globo). Más padding y un tope de zoom bajo → se ven varios globos a
+  // los costados. `minZoom` bajo deja alejarse más a mano con un árbol grande.
+  const fitOpts = useMemo(
+    () => ({
+      padding: 0.18,
+      minZoom: 0.15,
+      maxZoom: esMobile ? 0.7 : 1.2,
+    }),
+    [esMobile],
+  );
+
   // Centrar la cámara en un globo recién creado — la cámara "sigue" al hijo
   // hacia abajo aunque estuvieras leyendo el principio de un padre largo.
   // Punto ≈ centro del globo (ancho fijo 260, alto aprox. 120). Mantiene el zoom.
@@ -231,9 +254,9 @@ function Flow() {
   // Con 0 nodos, `fitView` es un no-op de React Flow.
   useEffect(() => {
     if (!listo) return;
-    const t = setTimeout(() => void fitView({ duration: 200 }), 0);
+    const t = setTimeout(() => void fitView({ ...fitOpts, duration: 200 }), 0);
     return () => clearTimeout(t);
-  }, [listo, fitView]);
+  }, [listo, fitView, fitOpts]);
 
   // Ajustes configurables (tuerquita). En el server no hay localStorage, así
   // que se usan los defaults; en el cliente se leen los guardados. No hay
@@ -711,8 +734,8 @@ function Flow() {
         return p && (p.x !== i.x || p.y !== i.y) ? { ...i, x: p.x, y: p.y } : i;
       }),
     }));
-    window.setTimeout(() => void fitView({ duration: 400 }), 50);
-  }, [cancelInertia, cancelPanInertia, getNode, setNodes, fitView]);
+    window.setTimeout(() => void fitView({ ...fitOpts, duration: 400 }), 50);
+  }, [cancelInertia, cancelPanInertia, getNode, setNodes, fitView, fitOpts]);
 
   // Modo de interacción:
   //   - por defecto: manito → arrastrar el fondo hace pan (con envión).
@@ -809,15 +832,7 @@ function Flow() {
 
   // Ancho del panel lateral (fase 3.11): bucket por ancho de viewport. En móvil
   // (< 768) el panel va a pantalla completa y no se redimensiona.
-  const [anchoVentana, setAnchoVentana] = useState(1280);
-  useEffect(() => {
-    const upd = () => setAnchoVentana(window.innerWidth);
-    upd();
-    window.addEventListener("resize", upd);
-    return () => window.removeEventListener("resize", upd);
-  }, []);
-  const panelBucket: "mobile" | "desktop" =
-    anchoVentana < 768 ? "mobile" : "desktop";
+  const panelBucket: "mobile" | "desktop" = esMobile ? "mobile" : "desktop";
   const panelResizable = panelBucket === "desktop";
   const panelAncho = panelResizable
     ? Math.min(
@@ -877,9 +892,9 @@ function Flow() {
       cancelInertia();
       cancelPanInertia();
       cargarEnMapa(id, cargarArbol(id));
-      window.setTimeout(() => void fitView({ duration: 300 }), 60);
+      window.setTimeout(() => void fitView({ ...fitOpts, duration: 300 }), 60);
     },
-    [mapaId, cancelInertia, cancelPanInertia, cargarEnMapa, fitView],
+    [mapaId, cancelInertia, cancelPanInertia, cargarEnMapa, fitView, fitOpts],
   );
 
   const nuevoMapa = useCallback(() => {
@@ -916,7 +931,7 @@ function Flow() {
     }
     const siguiente = Object.keys(m)[0];
     cargarEnMapa(siguiente, cargarArbol(siguiente));
-    window.setTimeout(() => void fitView({ duration: 300 }), 60);
+    window.setTimeout(() => void fitView({ ...fitOpts, duration: 300 }), 60);
   }, [
     mapas,
     mapaId,
@@ -925,6 +940,7 @@ function Flow() {
     cancelPanInertia,
     cargarEnMapa,
     fitView,
+    fitOpts,
   ]);
 
   const renombrarMapaActual = useCallback(
@@ -1006,7 +1022,9 @@ function Flow() {
           deleteKeyCode={null}
           nodeDragThreshold={3}
           colorMode="dark"
+          minZoom={0.15}
           fitView
+          fitViewOptions={fitOpts}
           // El doble-click abre la transcripción de la rama (`onNodeDoubleClick`);
           // si no, React Flow lo usa para hacer zoom.
           zoomOnDoubleClick={false}
