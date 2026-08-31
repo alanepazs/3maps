@@ -43,6 +43,10 @@ export type Intercambio = {
   // Posición manual en el canvas. Solo se sugiere una al crear el nodo.
   x: number;
   y: number;
+  // Tamaño manual del globo (fase 3.10). `null` = automático. Va al `.md` como
+  // `x`/`y` → sincroniza entre dispositivos.
+  ancho: number | null;
+  alto: number | null;
   // null hasta que una IA responde de verdad.
   proveedor: Proveedor | null;
   fecha: string; // ISO
@@ -91,6 +95,8 @@ export function crearIntercambio(campos: {
     rama: campos.rama,
     x: campos.x,
     y: campos.y,
+    ancho: null,
+    alto: null,
     proveedor: campos.proveedor ?? null,
     fecha: campos.fecha ?? new Date().toISOString(),
     pregunta: campos.pregunta,
@@ -182,6 +188,18 @@ export function conPosicion(a: Arbol, id: string, x: number, y: number): Arbol {
   return mapear(a, id, (i) => (i.x === x && i.y === y ? i : { ...i, x, y }));
 }
 
+// Tamaño manual del globo. `null`/`null` = volver al automático.
+export function conTamano(
+  a: Arbol,
+  id: string,
+  ancho: number | null,
+  alto: number | null,
+): Arbol {
+  return mapear(a, id, (i) =>
+    i.ancho === ancho && i.alto === alto ? i : { ...i, ancho, alto },
+  );
+}
+
 export function conRama(a: Arbol, id: string, rama: Rama): Arbol {
   return mapear(a, id, (i) => (i.rama === rama ? i : { ...i, rama }));
 }
@@ -242,6 +260,8 @@ export function arbolAVista(a: Arbol): { nodes: Node[]; edges: Edge[] } {
       // Sin hijos → se puede borrar aunque sea la raíz (fase 3.6): borrar la
       // raíz solo cuando ya no queda nada colgando de ella.
       sinHijos: !conPadre.has(ic.id),
+      ancho: ic.ancho,
+      alto: ic.alto,
     },
   }));
   const edges: Edge[] = a.intercambios
@@ -265,6 +285,8 @@ export function toMarkdown(ic: Intercambio): string {
     `rama: ${ic.rama}`,
     `x: ${ic.x}`,
     `y: ${ic.y}`,
+    `ancho: ${ic.ancho ?? ""}`,
+    `alto: ${ic.alto ?? ""}`,
     `proveedor: ${ic.proveedor ?? ""}`,
     `fecha: ${ic.fecha}`,
     // El error va en el frontmatter (JSON en una línea) y no como sección del
@@ -337,6 +359,8 @@ export function parseMarkdown(
       : "main",
     x: Number(meta.x) || 0,
     y: Number(meta.y) || 0,
+    ancho: Number(meta.ancho) || null,
+    alto: Number(meta.alto) || null,
     proveedor: (PROVEEDORES as string[]).includes(meta.proveedor)
       ? (meta.proveedor as Proveedor)
       : null,

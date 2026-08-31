@@ -42,8 +42,9 @@
   volver a foco la pestaña (`revisarNube` en `useSync` para el mapa abierto, `sincronizarListaMapas`
   para la lista). Latencia ≤15s. Decisiones F3-4.
 - **Probado por el usuario con 2 dispositivos (misma cuenta Google): FUNCIONA** — lista de
-  mapas, árboles, "Empezar de cero", "escribiendo…" en vez de error rojo. Prefs de vista
-  (`"3maps:vista"`) siguen sin sincronizar (a propósito).
+  mapas, árboles, "Empezar de cero", "escribiendo…" en vez de error rojo.
+- **El tamaño manual del globo AHORA sincroniza** (pasó de `"3maps:vista"` al `.md`,
+  `Intercambio.ancho/alto` — F3-8). El colapsado/expandido sigue per-navegador (a propósito).
 
 ### Prueba real pendiente (la hace el usuario, con key/login)
 - Los 7 proveedores vía proxy con una key real (Groq/Cerebras = mejores free tier).

@@ -17,17 +17,16 @@ import Markdown from "./Markdown";
 import { NodeActionsContext } from "./nodeActions";
 import {
   ALTO_COLAPSADO,
-  ANCHO_POR_DEFECTO,
   LIMITE_COLAPSO,
-  TAMANO_MAX,
-  TAMANO_MIN,
-  borrarTamano,
   guardarExpandido,
-  guardarTamano,
   leerExpandido,
-  leerTamano,
-  type Tamano,
 } from "./vista";
+
+// Límites y default del redimensionado manual (px, coords del lienzo).
+type Tamano = { w: number; h: number };
+const TAMANO_MIN: Tamano = { w: 200, h: 80 };
+const TAMANO_MAX: Tamano = { w: 900, h: 1200 };
+const ANCHO_POR_DEFECTO = 260;
 
 // Un globo = un intercambio completo: la pregunta (encabezado) + la respuesta
 // de la IA (cuerpo).
@@ -44,9 +43,9 @@ import {
 //   - source "branch-right/-left"  : ramificar por un costado (se elige al arrastrar)
 //
 // Tamaño (fase 3.10): manija ◢ abajo a la derecha para redimensionar; el tamaño
-// se guarda por globo en `vista.ts` (no va al `.md`). Redimensionar a mano
-// desactiva el colapso automático de 3.1 para ese globo (doble clic en la manija
-// o botón "↔ Auto" para volver al tamaño automático).
+// (`data.ancho/alto`) va al `.md` → sincroniza entre dispositivos. Redimensionar
+// a mano desactiva el colapso automático de 3.1 para ese globo (doble clic en la
+// manija o botón "↔ Auto" para volver al tamaño automático).
 export default function MessageNode({
   id,
   data,
@@ -59,7 +58,7 @@ export default function MessageNode({
   const respuesta = data.respuesta ? String(data.respuesta) : null;
   const pending = Boolean(data.pending);
   const error = data.error ? String(data.error) : null;
-  const { deleteNode, retryNode, openNode, readOnly } =
+  const { deleteNode, retryNode, openNode, resizeNode, readOnly } =
     useContext(NodeActionsContext);
   const { getZoom } = useReactFlow();
 
@@ -73,8 +72,13 @@ export default function MessageNode({
   );
   const expandido = override ?? !colapsable;
 
-  // Tamaño manual (fase 3.10).
-  const [tamano, setTamano] = useState<Tamano | undefined>(() => leerTamano(id));
+  // Tamaño manual (fase 3.10). Guardado en `data.ancho/alto` (va al `.md`). Durante
+  // el arrastre se usa `drag` (estado local, fluido); al soltar → `resizeNode`.
+  const anchoData = typeof data.ancho === "number" ? data.ancho : null;
+  const altoData = typeof data.alto === "number" ? data.alto : null;
+  const [drag, setDrag] = useState<Tamano | null>(null);
+  const tamano: Tamano | undefined =
+    drag ?? (anchoData && altoData ? { w: anchoData, h: altoData } : undefined);
   const rootRef = useRef<HTMLDivElement>(null);
 
   const mostrarColapsado = colapsable && !expandido && !tamano;
@@ -106,12 +110,13 @@ export default function MessageNode({
           Math.max(TAMANO_MIN.h, startH + (ev.clientY - startY) / zoom),
         );
         ultimo = { w: Math.round(w), h: Math.round(h) };
-        setTamano(ultimo);
+        setDrag(ultimo);
       };
       const onUp = () => {
         window.removeEventListener("pointermove", onMove);
         window.removeEventListener("pointerup", onUp);
-        if (ultimo) guardarTamano(id, ultimo);
+        if (ultimo) resizeNode(id, ultimo.w, ultimo.h);
+        setDrag(null);
         // Tragarse el `click` sintético post-drag (si no, deselecciona el globo).
         window.addEventListener(
           "click",
@@ -125,13 +130,13 @@ export default function MessageNode({
       window.addEventListener("pointermove", onMove);
       window.addEventListener("pointerup", onUp);
     },
-    [getZoom, id],
+    [getZoom, id, resizeNode],
   );
 
   const resetTamano = useCallback(() => {
-    setTamano(undefined);
-    borrarTamano(id);
-  }, [id]);
+    setDrag(null);
+    resizeNode(id, null, null);
+  }, [id, resizeNode]);
 
   return (
     <div

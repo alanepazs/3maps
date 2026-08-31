@@ -12,6 +12,8 @@ export type NodeActions = {
   retryNode: (id: string) => void;
   // Abre el panel de transcripción de la rama (raíz→este nodo).
   openNode: (id: string) => void;
+  // Guarda el tamaño manual del globo (va al `.md` → sincroniza). null = auto.
+  resizeNode: (id: string, ancho: number | null, alto: number | null) => void;
   // `true` cuando se ve un árbol compartido: se esconden eliminar / reintentar.
   readOnly: boolean;
 };
@@ -20,5 +22,6 @@ export const NodeActionsContext = createContext<NodeActions>({
   deleteNode: () => {},
   retryNode: () => {},
   openNode: () => {},
+  resizeNode: () => {},
   readOnly: false,
 });

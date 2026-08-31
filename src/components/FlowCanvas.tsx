@@ -49,6 +49,7 @@ import {
   conPosicion,
   conRama,
   conRespuesta,
+  conTamano,
   crearIntercambio,
   descendientes,
   nuevoId,
@@ -393,6 +394,8 @@ function Flow() {
           i.respuesta,
           i.pending,
           i.error,
+          i.ancho,
+          i.alto,
         ]),
       ),
     [arbol],
@@ -885,6 +888,14 @@ function Flow() {
   // Panel de transcripción de la rama (doble-click en un globo o botón ⤢).
   const [transcriptNodeId, setTranscriptNodeId] = useState<string | null>(null);
   const openNode = useCallback((id: string) => setTranscriptNodeId(id), []);
+
+  // Tamaño manual del globo → al árbol (`.md` → sincroniza). null = automático.
+  const resizeNode = useCallback(
+    (id: string, ancho: number | null, alto: number | null) => {
+      setArbol((a) => conTamano(a, id, ancho, alto));
+    },
+    [],
+  );
   const transcripcion = useMemo(
     () => (transcriptNodeId ? caminoRaizA(arbol, transcriptNodeId) : null),
     [arbol, transcriptNodeId],
@@ -903,8 +914,8 @@ function Flow() {
   );
 
   const nodeActions = useMemo(
-    () => ({ deleteNode, retryNode, openNode, readOnly }),
-    [deleteNode, retryNode, openNode, readOnly],
+    () => ({ deleteNode, retryNode, openNode, resizeNode, readOnly }),
+    [deleteNode, retryNode, openNode, resizeNode, readOnly],
   );
 
   // Ancho del panel lateral (fase 3.11): bucket por ancho de viewport. En móvil

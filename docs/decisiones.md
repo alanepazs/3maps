@@ -530,12 +530,18 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
   si es el último globo → el mapa queda vacío (con confirm). `arbolAVista` expone `data.sinHijos`;
   `MessageNode` muestra 🗑 si `!isRoot || sinHijos`.
 
-### F3-8. Redimensionar el globo: manija propia + tamaño en `"3maps:vista"`, NO `<NodeResizer>`
-- **Por qué no `<NodeResizer>` de React Flow**: escribiría `width`/`height` en el nodo de RF, y la
-  vista se reconstruye desde `arbolAVista` (que a propósito NO lleva dimensiones — decisión §2) →
-  habría que reinyectarlas en cada rebuild. La manija propia (`onPointerDown` + listeners
-  `pointermove`/`pointerup` en `window`, deltas `/ getZoom()`) con el tamaño en
-  `localStorage["3maps:vista"].tamanos[id]` es autocontenida y sobrevive al reload sola.
+### F3-8. Redimensionar el globo: manija propia; tamaño en el `.md` (`Intercambio.ancho/alto`)
+- **Por qué no `<NodeResizer>` de React Flow**: escribiría `width`/`height` en el nodo de RF y
+  habría que reinyectarlas en cada rebuild de la vista. La manija propia (`onPointerDown` +
+  listeners `pointermove`/`pointerup` en `window`, deltas `/ getZoom()`) es autocontenida.
+- **El tamaño va al `.md`** (`ancho:` / `alto:` en el frontmatter, `null` = auto), como `x`/`y`.
+  Antes vivía en `localStorage["3maps:vista"].tamanos` (per-navegador, no sincronizaba) — el
+  usuario lo redimensionaba en un dispositivo y no aparecía en el otro (31-08-2026). Ahora
+  sincroniza gratis con el árbol. `MessageNode` lee `data.ancho/alto`; durante el arrastre usa
+  estado local (`drag`), al soltar → `resizeNode` (NodeActionsContext) → `conTamano` → `setArbol`.
+  `ancho`/`alto` SÍ están en la `firma` de la vista (resize es infrecuente, un commit por
+  arrastre) → un resize traído de la nube re-renderiza el globo. El colapso (`expandidos`) SÍ
+  sigue local en `vista.ts` (es cómo mirás esta pantalla, no contenido).
 - **Tamaño manual gana sobre el colapso de F3-1**: `mostrarColapsado = colapsable && !expandido && !tamano`.
   Doble clic en la manija o botón "↔ Auto" borra la entrada.
 - El `pointerup` fuera de la manija dispara un `click` que caía en el fondo → se registra un

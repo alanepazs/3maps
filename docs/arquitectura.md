@@ -113,14 +113,14 @@ src/
                         Respuesta > 400 chars → cuerpo colapsado a 220px con degradado + pill
                         "⌄ ver más" y toggle Expandir/Colapsar en el toolbar (fase 3.1, ver vista.ts).
                         Manija ◢ abajo-derecha para redimensionar (fase 3.10): pointermove/up en
-                        window, deltas / getZoom(); tamaño manual desactiva el colapso auto y
-                        muestra "↔ Auto" (doble clic en la manija hace lo mismo). Cuerpo en
-                        `flex-1 overflow-auto` → scrollea si la caja queda chica.
-    vista.ts            Preferencias de VISTA por globo (colapsado/expandido + tamaño manual). NO
-                        van al `.md`: localStorage["3maps:vista"] = {expandidos:{[id]:bool},
-                        tamanos:{[id]:{w,h}}}. LIMITE_COLAPSO=400, ALTO_COLAPSADO=220,
-                        TAMANO_MIN 200×80, TAMANO_MAX 900×1200, ANCHO_POR_DEFECTO 260.
-                        leer/guardarExpandido, leer/guardar/borrarTamano.
+                        window, deltas / getZoom(); durante el arrastre estado local `drag`, al
+                        soltar → `resizeNode` (NodeActionsContext) → `conTamano` → `.md`
+                        (`data.ancho/alto`, sincroniza). Tamaño manual desactiva el colapso auto y
+                        muestra "↔ Auto". Cuerpo `flex-1 overflow-auto` → scrollea si queda chico.
+    vista.ts            SOLO el colapsado/expandido por globo (`expandidos:{[id]:bool}` en
+                        localStorage["3maps:vista"], per-navegador, NO sincroniza). LIMITE_COLAPSO
+                        =400, ALTO_COLAPSADO=220. leer/guardarExpandido. (El tamaño manual pasó al
+                        `.md` — F3-8.)
     Markdown.tsx        <Markdown>{texto}</Markdown> — react-markdown + remark-gfm con estilos
                         compactos para el globo (código y tablas con scroll horizontal propio;
                         links con target=_blank). Sin HTML crudo → seguro.
@@ -366,9 +366,9 @@ Props de `<ReactFlow>` que importan:
 
 ## MessageNode.tsx
 
-`data`: `{ pregunta, respuesta, pending?, error?, isRoot?, sinHijos? }` (`sinHijos` = F3-5).
+`data`: `{ pregunta, respuesta, pending?, error?, isRoot?, sinHijos?, ancho, alto }`.
 - Ancho por defecto 260px; **redimensionable** con la manija ◢ abajo-derecha (F3-8): tamaño en
-  `localStorage["3maps:vista"].tamanos[id]`, cuerpo en `flex-1 overflow-auto nowheel scroll-fino`.
+  `data.ancho/alto` (va al `.md`, sincroniza), cuerpo `flex-1 overflow-auto nowheel scroll-fino`.
 - Cuerpo: `pending` ("escribiendo…" + texto + ▍) · `error` (recuadro rojo + "↻ Reintentar") ·
   respuesta (`<Markdown>`) · "Respuesta pendiente". Respuesta > 400 chars y sin tamaño manual →
   colapsado a 220px + degradado + "⌄ ver más" (F3-1, `vista.ts`).
@@ -380,7 +380,8 @@ Props de `<ReactFlow>` que importan:
 
 ## model/intercambio.ts (modelo de datos)
 
-`Intercambio` = `{ id, padreId, rama, x, y, proveedor, fecha, pregunta, respuesta, pending }`.
+`Intercambio` = `{ id, padreId, rama, x, y, ancho, alto, proveedor, fecha, pregunta, respuesta,
+pending, error }` (`ancho`/`alto` = null → auto; tamaño manual del globo, F3-8).
 `Arbol` = `{ intercambios: Intercambio[] }`. Coincide con el frontmatter del `.md` (spec §3).
 - `rama`: `"main"` (tronco, por abajo) | `"branch-left"` | `"branch-right"` (costado). Los ids de
   los handles del `MessageNode` se llaman igual → `arbolAVista` hace `sourceHandle: ic.rama`.
