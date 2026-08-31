@@ -16,7 +16,7 @@ export type ConfigIA = {
 
 // Claude y Gemini andan directo desde el navegador. DeepSeek y GPT necesitan el
 // proxy de 3maps (no habilitan CORS) — aparecen en la lista pero solo funcionan
-// con el toggle "usar proxy" activado en ⚙️. Ver decisiones §7a y fase-2.md §2.1.
+// con el toggle "usar proxy" activado en ⚙️. Ver decisiones §7a.
 export const PROVEEDORES_DISPONIBLES: Proveedor[] = [
   "gemini",
   "claude",
@@ -553,7 +553,7 @@ async function mensajeErrorGemini(res: Response, modelo?: string): Promise<strin
 // OpenAI-compatibles que NO habilitan CORS → no se pueden llamar desde el
 // navegador. El edge function `ia-proxy` reenvía y agrega el CORS. La key del
 // usuario TRANSITA por el proxy (stateless, no se guarda) — se habilita con el
-// toggle "usar proxy" en ⚙️. Ver decisiones §7a / fase-2.md.
+// toggle "usar proxy" en ⚙️. Ver decisiones §7a.
 
 // El proveedor tal como lo espera el proxy (header `x-ia-provider`) → una clave
 // del mapa `PROVEEDORES` del edge function `ia-proxy`.

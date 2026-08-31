@@ -1,6 +1,6 @@
 // ia-proxy — proxy stateless para los proveedores de IA OpenAI-compatibles que
 // NO habilitan CORS desde el navegador (OpenAI, DeepSeek, Groq, Cerebras,
-// OpenRouter, Mistral, Hugging Face). Ver docs/decisiones.md §7a y docs/fase-2.md.
+// OpenRouter, Mistral, Hugging Face). Ver docs/decisiones.md §7a, F2-6.
 //
 // Qué hace: recibe la request del navegador, la reenvía al proveedor con la API
 // key del usuario (que viene en el header `x-ia-key`), y devuelve la respuesta

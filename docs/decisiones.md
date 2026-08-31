@@ -2,12 +2,16 @@
 
 > Por qué el código es como es. Cada entrada: **qué se decidió**, **por qué**, y **qué romperías
 > si lo revertís sin pensar**. Si vas a ir en contra de una de estas, que sea a propósito.
-> Última actualización: 29-08-2026 (fase 2.0/2.3 — ver sección "Fase 2").
+> Última actualización: 31-08-2026.
 
 Complementa a:
 - `docs/spec-proyecto.md` — el diseño y las decisiones de producto (modelo de datos, UX, roadmap).
 - `docs/arquitectura.md` — qué hace cada archivo.
+- `docs/historia.md` — qué shippeó cada fase.
 - Este archivo — decisiones de implementación que no son obvias mirando el código.
+
+Índice: **§1-5** datos/`.md` · **§6-11** IA · **§12-16** canvas · **F2-1..F2-8** fase 2 ·
+**F3-1..F3-11** fase 3 · **§21-23** build · **§24-25** proceso.
 
 ---
 
@@ -96,46 +100,32 @@ Complementa a:
   `account_id` en la URL, no encaja con "pegá solo la key". **Redeploy del edge function
   obligatorio** al sumar un proveedor (`supabase functions deploy ia-proxy` o el editor del panel).
 
-### 7b. Modelos de Gemini: default `gemini-3.7-flash`, "thinking" por generación, + botón "ver modelos"
-Historia de dolor real con una key **free tier** recién sacada de AI Studio:
-- `gemini-2.0-flash` → 404: Google lo **retiró** (para todos). Un modelo pinneado se pudre.
-- `gemini-flash-latest` → 503 "high demand": el alias resuelve a un flash **paid-tier**
-  (`gemini-3.7-flash`); una key gratis no lo puede usar.
-- `gemini-2.5-flash-lite` → 404 "no longer available to new users".
-- `gemini-flash-latest` cuando **sí** respondía (200) → **respuesta vacía** ("Gemini no devolvió
-  texto"): los flash 2.5/3.x **"piensan" por defecto** y se comían todo el `maxOutputTokens` en
-  thoughts.
+### 7b. Modelos de Gemini: default `gemini-3.7-flash`, "thinking" mínimo por generación, botón "ver modelos"
+La API de Gemini se renovó entera en 2026 y una key **free tier** nueva de AI Studio se comporta
+distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el código:
 
-**Decisiones tomadas:**
-1. **Default = `gemini-3.7-flash`** (era `3.6`; `3.7` es el Flash estable más nuevo). Una key free
-   tier NUEVA da **404** en TODOS los `2.5-*` ("no longer available to new users, use gemini-3.x").
-   Google empuja a la generación 3.x. Sugeridos = `3.7 / 3.6 / 3.5-flash / 3.5-flash-lite`.
-2. **`thinkingConfig` con la forma correcta por generación** + `maxOutputTokens: 8192`:
-   - **3.x** → `{ thinkingLevel: "low" }` (mandar `thinkingBudget` acá = **400 "invalid argument"**).
-   - **2.x/1.x** → `{ thinkingBudget: 0 }`.
-   Los flash "piensan" y el thinking cuenta contra `maxOutputTokens`; con 4096 la respuesta salía
-   vacía. El parser descarta `parts` con `thought: true`; si no hay texto, el error dice cuántos
-   eventos SSE llegaron y el `finishReason` (dejamos de adivinar). El parser también procesa el
-   último bloque aunque no termine en `\n\n` (se perdían respuestas de un solo evento).
-3. **`listarModelos(config)`** (`ia.ts`) + botón **"↻ ver modelos que tu key puede usar"** en
-   `SettingsPanel`: GET `…/v1beta/models` con la key del usuario → chips clickeables con lo que
-   **esa key** puede usar (única fuente de verdad, varía por key). Claude usa `client.models.list()`.
-   **Se dispara solo al Guardar una key de Gemini** (`commit()`) — el usuario ve las opciones sin
-   tener que buscar el botón. Si el modelo guardado no está en la lista → aviso ámbar.
-4. **`MODELOS_MUERTOS`** en `configIA.ts` migra al default, al cargar, SOLO lo que ya no existe
-   para nadie: retirados (`gemini-2.0-flash`, `gemini-1.5-flash`, `gemini-pro`) + alias paid
-   (`gemini-flash-latest`, `gemini-pro-latest`). **Los `2.5-*` NO se migran** (26-08 correção): una
-   key con billing o cuenta vieja sí los puede llamar (corrección 29-08-2026); para la key free
-   nueva que les da 404 ya está el aviso ámbar + "ver modelos" + Reintentar con el error real.
-5. **`mensajeErrorGemini(res, modelo?)`**: helper único de errores para todos los endpoints de
-   Gemini (`llamarGemini` + `listarModelosGemini`). 404 con modelo → sugiere el botón; 503 → texto
-   de Google; **401 / `ACCESS_TOKEN_TYPE_UNSUPPORTED`** → explica que la cuenta emite keys `AQ.…`
-   que todavía no andan en la REST API (problema de Google, reportado en su foro).
+1. **Default = `gemini-3.7-flash`** (Flash estable más nuevo). Una key free NUEVA da **404** en
+   TODOS los `2.5-*` ("use gemini-3.x") y los alias `*-latest` resuelven a modelos paid. Sugeridos:
+   `3.7 / 3.6 / 3.5-flash / 3.5-flash-lite`.
+2. **`thinkingConfig` mínimo, forma por generación** + `maxOutputTokens: 8192`: `3.x` →
+   `{ thinkingLevel: "low" }` (mandar `thinkingBudget` acá = **400**); `2.x/1.x` →
+   `{ thinkingBudget: 0 }`. Sin esto los flash "piensan" y se comen todo el `maxOutputTokens` →
+   respuesta vacía. El parser descarta `parts` con `thought: true` y procesa el último bloque
+   aunque no termine en `\n\n`.
+3. **`listarModelos(config)`** (`ia.ts`) — GET `…/v1beta/models` (Gemini) / `client.models.list()`
+   (Claude). **No gasta tokens**; 401 si la key es inválida (§8c). Se dispara solo al Guardar una
+   key. Modelo guardado fuera de la lista → aviso ámbar. **Es la única fuente de verdad de qué
+   modelos puede usar esa key.**
+4. **`MODELOS_MUERTOS`** (`configIA.ts`) migra al default, al cargar, SOLO lo retirado para todos
+   (`gemini-2.0-flash`, `-1.5-flash`, `-pro`) + alias paid (`*-latest`). Los `2.5-*` **NO** se
+   migran (una cuenta vieja/con billing sí los llama).
+5. **`mensajeErrorGemini(res, modelo?)`** — helper único de errores para todos los endpoints. 404
+   con modelo → sugiere el botón; 503 → texto de Google; **401 `ACCESS_TOKEN_TYPE_UNSUPPORTED`** →
+   la cuenta emite keys `AQ.…` que en algunas cuentas todavía no andan en la REST API (bug de Google).
 
-**Resultado (29-08-2026)**: con `gemini-3.6-flash` la IA anda end-to-end con una key free real
-(respuesta + streaming + markdown). Google 503ea los flash 3.x de a ratos → si ya hubo streaming,
-el parser devuelve el texto parcial; si no llegó nada, `llamarGemini` reintenta **una** vez con
-1s de pausa (ver §7c) antes de mostrar el error.
+**Lección**: para el default de un servicio con free tier, probar con una key nueva de verdad —
+`ListModels` lista modelos que la key ve pero no puede llamar. El botón "ver modelos" + el
+`mensajeErrorGemini` transparente destrabaron el diagnóstico.
 
 ### 7c. `llamarGemini` = wrapper con 1 reintento; `intentarGemini` hace el trabajo
 - **Por qué**: el 503 de Google es transitorio y pasa seguido con los flash 3.x. Reintentar 1 vez
@@ -149,21 +139,6 @@ el parser devuelve el texto parcial; si no llegó nada, `llamarGemini` reintenta
 - **Backoff abortable** (`esperar(ms, signal)`): si se cancela la llamada durante la pausa,
   rechaza con `AbortError` — lo trata `FlowCanvas.responder` como cancelación normal.
 - **Revertir** (sacar el wrapper): vuelve a hacer falta apretar "Reintentar" ante cada 503.
-
-**Lección**: la API de Gemini se renovó entera (keys `AQ.…`, solo modelos 3.x para keys nuevas,
-`thinkingLevel` en vez de `thinkingBudget`, 503s intermitentes). Para el default de un servicio
-con free tier: **probar con una key nueva de verdad** — los blogs y hasta `ListModels` mienten
-(lista modelos que la key ve pero no puede llamar). El botón "ver modelos disponibles" + el
-`mensajeErrorGemini` transparente fueron lo que destrabó el diagnóstico.
-
-**Revisión 29-08-2026** (contra la doc oficial actual de Google, no solo la key de prueba):
-- `gemini-3.7-flash` existe y es el Flash estable más nuevo → nuevo default.
-- Free tier desde 01-abr-2026 = solo Flash / Flash-Lite; los Pro son pago. Coincide con lo visto.
-- `thinkingLevel` (3.x) / `thinkingBudget` (2.5), no los dos → 400. Confirmado, es lo que hace el código.
-- Keys `AIza…` viejas: Google las rechaza del todo desde septiembre 2026. Placeholder de la key
-  pasó a `"AQ.…"`.
-- Reportes en el foro de Google: keys `AQ.…` que dan `401 ACCESS_TOKEN_TYPE_UNSUPPORTED` contra
-  `generativelanguage` en algunas cuentas (la de prueba no). Mapeado en `mensajeErrorGemini`.
 
 ### 8. La API key es un **borrador** en `SettingsPanel`; se persiste con el botón "Guardar" (o Enter)
 - **Por qué**: no persistir keys a medio tipear, y dejar explícito cuándo la key "entra en
@@ -295,8 +270,7 @@ con free tier: **probar con una key nueva de verdad** — los blogs y hasta `Lis
 
 ## Fase 2 — backend opcional (Supabase)
 
-> El plan completo está en `docs/fase-2.md`. Acá van las decisiones de implementación de lo que
-> ya se codeó (2.0 fundaciones + 2.3 compartir por link).
+> Qué shippeó cada bloque: `docs/historia.md`. Acá el **por qué** de la implementación.
 
 ### F2-1. Supabase es **opcional**: `getSupabase()` devuelve `null` si no hay env
 - **Por qué**: la invariante de fase 1 ("todo client-side, sin backend") no se rompe — se vuelve
@@ -338,7 +312,7 @@ con free tier: **probar con una key nueva de verdad** — los blogs y hasta `Lis
   son <1 MB y se bajan on-demand, así que re-descargar no duele. Commit `e9b5c0c`.
 - **Límite conocido**: un anónimo puede spamear archivos chicos y llenar el free tier. Mitigado
   con tope de 2 MB (bucket) + tope cliente (50 globos / ~1 MB). El rate-limit real necesita un
-  edge function — anotado en `docs/fase-2.md`.
+  edge function con estado (KV) — pendiente.
 
 ### F2-5. Ver un árbol compartido = **modo lectura efímero**, no se persiste
 - **Qué**: con `?compartir=<slug>` en la URL, el árbol se carga en estado pero el effect de
@@ -358,7 +332,7 @@ con free tier: **probar con una key nueva de verdad** — los blogs y hasta `Lis
   API key (el costo de abuso para nosotros = invocaciones del edge function, free tier 500K/mes).
 - **No toca ningún secreto**: la key del proveedor viene en el header `x-ia-key` de cada request.
   El function no tiene env propias (salvo `PROXY_ALLOWED_ORIGINS`, opcional).
-- **Rate-limit**: no hay todavía. Anotado en `docs/fase-2.md` — necesita estado (KV) en el function.
+- **Rate-limit**: no hay todavía — necesita estado (KV) en el function. Pendiente.
 - **Revertir** (poner la key del proveedor como secreto del function): serían llamadas con NUESTRA
   cuenta, no la del usuario — rompe el modelo "cada uno paga la suya".
 
@@ -487,34 +461,76 @@ con free tier: **probar con una key nueva de verdad** — los blogs y hasta `Lis
   si es el último globo → el mapa queda vacío (con confirm). `arbolAVista` expone `data.sinHijos`;
   `MessageNode` muestra 🗑 si `!isRoot || sinHijos`.
 
+### F3-8. Redimensionar el globo: manija propia + tamaño en `"3maps:vista"`, NO `<NodeResizer>`
+- **Por qué no `<NodeResizer>` de React Flow**: escribiría `width`/`height` en el nodo de RF, y la
+  vista se reconstruye desde `arbolAVista` (que a propósito NO lleva dimensiones — decisión §2) →
+  habría que reinyectarlas en cada rebuild. La manija propia (`onPointerDown` + listeners
+  `pointermove`/`pointerup` en `window`, deltas `/ getZoom()`) con el tamaño en
+  `localStorage["3maps:vista"].tamanos[id]` es autocontenida y sobrevive al reload sola.
+- **Tamaño manual gana sobre el colapso de F3-1**: `mostrarColapsado = colapsable && !expandido && !tamano`.
+  Doble clic en la manija o botón "↔ Auto" borra la entrada.
+- El `pointerup` fuera de la manija dispara un `click` que caía en el fondo → se registra un
+  listener `click` de captura `{once:true}` que se lo traga (mismo patrón en la manija del panel).
+
+### F3-9. Ancho del panel lateral: **por dispositivo**, arrastre por DOM
+- `settings.transcriptWidth = { mobile, desktop }`, bucket por `window.innerWidth < 768`. El
+  arrastre mueve `panelRef.style.width` directo (fluido, sin re-render); al soltar persiste vía
+  `onResize` y el padre reclampa a `[320, 75vw]`.
+- **Móvil (`< 768`)**: sin manija, panel a pantalla completa, botón "🗺 Ver mapa" para cerrar.
+
+### F3-10. Ctrl/Cmd+Enter ramifica, Enter continúa
+- En `Composer` y en el mini-composer de `BranchTranscript`. `handleSubmit` ya aceptaba `"branch"`;
+  se agregó leer `e.ctrlKey || e.metaKey` en ambos `onKeyDown` y el `kind` en el `onSubmit` del panel.
+
+### F3-11. Móvil: `h-dvh` (no `vh`), tope de zoom bajo, controles despejados
+- **`<main className="h-dvh">`** (era `h-screen` = `100vh`): `100vh` en móvil es el viewport
+  GRANDE (barra de URL oculta) → con la barra visible el composer quedaba abajo del área visible y
+  había que scrollear. `100dvh` sigue el chrome del navegador. + `overflow-hidden` en `<main>` y
+  `<body>` (era `min-h-full`, dejaba crecer).
+- **`fitOpts`** (memo según `esMobile`): `{ padding: 0.18, minZoom: 0.15, maxZoom: esMobile ? 0.7 : 1.2 }`
+  a `<ReactFlow fitViewOptions>` y a los 4 `fitView()` manuales. Sin esto, `fitView` usaba el
+  `maxZoom: 2` de RF y en el celu se veía 1 globo.
+- **`globals.css` `@media (max-width:640px)`**: sube `.react-flow__controls` con `margin-bottom`
+  (los tapaba el composer; `data-chat="oculto"` en el `<div>` raíz de FlowCanvas lo baja de nuevo
+  cuando la barra está escondida) y oculta `.react-flow__minimap` (ocupaba media pantalla).
+- **Panel de ⚙️**: `max-h-[calc(100dvh-18rem)]` en `< 640px` (`sm:max-h-[80vh]` arriba) para que
+  la última sección se lea sobre el composer.
+- **Esconder la barra de chat** (`settings.composerOculto`): botón `⌄` la baja/desvanece; queda un
+  botón grande "✎ Escribir" (`rounded-full px-6 py-3`, ~46px — a propósito no un ícono chico).
+  El `<div>` interno pasa a `pointer-events-none` cuando está escondida para no tapar el botón.
+  Las transiciones CSS no corren en el preview pane → se verifica el estado final.
+
 ---
 
 ## Build / deploy
 
-### 16. `output: "export"` + `basePath: "/3maps"` **condicional a `NEXT_PUBLIC_PAGES === "1"`**
+### 21. `output: "export"` + `basePath: "/3maps"` **condicional a `NEXT_PUBLIC_PAGES === "1"`**
 - **Por qué**: `next dev` local queda en la raíz (`localhost:3000`), y solo el build del workflow
   de Pages lleva el prefijo `/3maps`. Un `basePath` fijo rompería el dev local.
 - El deploy es automático en cada push a `main` (`.github/workflows/deploy.yml`).
 
-### 17. Se sacó `enablement: true` de `actions/configure-pages`
+### 22. Se sacó `enablement: true` de `actions/configure-pages`
 - **Por qué**: el `GITHUB_TOKEN` del workflow **no puede crear el Pages site** ("Resource not
   accessible by integration"). Pages se habilitó **a mano una vez** (Settings → Pages → Source:
   GitHub Actions). Commits `5ac0922` (lo agregó) → `e54cdc1` (lo sacó) → `11adc6f` (re-trigger ok).
 - **No volver a agregarlo**: ya está habilitado, y falla el run si lo ponés.
 
-### 18. `agentRules: false` en `next.config.ts`
+### 23. `agentRules: false` en `next.config.ts`
 - Para que `next dev` de Next 16 **no escriba reglas en `CLAUDE.md`**. Commit `d805723`.
 
 ---
 
 ## Proceso / herramientas
 
-### 19. Sin test runner. Lógica pura → `npx --yes tsx _scratch.mts`, y borrar el scratch
+### 24. Sin test runner. Lógica pura → `npx --yes tsx _scratch.mts`, y borrar el scratch
 - **Por qué**: fase 1, no se justifica Jest/Vitest. `tsx` resuelve imports `.ts` sin extensión
   (`node --strip-types` no). Node local es v24.
 - El armado del contexto (`contexto.ts`) se validó así con 22 asserts antes de commitear.
 
-### 20. Verificación en browser: pane integrado para **lógica/datos**, Chrome real para **render/inercia**
-- El preview pane congela `requestAnimationFrame`/`ResizeObserver` y throttlea `setTimeout` → los
-  nodos de React Flow quedan sin medir y los gestos sintéticos miden ~70× lento. **No es un bug
-  de la app** (confirmado idéntico en commits pre-refactor). Detalle en `.claude/napkin.md`.
+### 25. Verificación en browser: pane integrado para **lógica/datos**, Chrome real para **render/inercia/animaciones**
+- El preview pane congela `requestAnimationFrame`/`ResizeObserver`, throttlea `setTimeout`, **no
+  progresa transiciones CSS** (reloj congelado) y a veces reporta `window.innerHeight`/`innerWidth`
+  = 0 → los nodos de React Flow quedan sin medir, `100dvh` colapsa, los gestos sintéticos de
+  teclado/drag no disparan. **No es un bug de la app** (confirmado idéntico en commits
+  pre-refactor). Verificá el **estado final** (clases aplicadas, `pointer-events`, `localStorage`,
+  `.textContent`); la animación en sí y el render los prueba el usuario. Detalle en `.claude/napkin.md`.

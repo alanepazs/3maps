@@ -1,305 +1,79 @@
-# Estado del proyecto
+# Estado — 3maps
 
-> Snapshot para retomar rápido. Actualizar al final de cada sesión.
-> Última actualización: 30-08-2026 (fase 2 COMPLETA y en prod. Fase 3: TODOS los bloques del
-> pedido HECHOS — quick wins, canvas, composer en el panel, varios mapas, borrar raíz — + fixes
-> post-uso: llamada IA que quedaba estática, superposición de globos nuevos, ramas alternando
-> izq/der, botón "Rehacer". Falta: probar sync per-mapa con login real + Cerebras + consentimiento
-> Google).
-
-## Mapa de docs
-
-- `CLAUDE.md` — invariantes y convenciones que no se rompen.
-- **este archivo** (`docs/estado.md`) — snapshot: dónde estamos, qué anda, pendientes, gotchas.
-- `docs/arquitectura.md` — mapa de `src/` (qué hace cada archivo).
-- `docs/decisiones.md` — por qué el código es así (decisiones de implementación + qué rompés si
-  las revertís).
-- `docs/spec-proyecto.md` — diseño de producto (modelo de datos, UX, roadmap, pseudocódigo).
-- `docs/fase-2.md` — plan de fase 2 (Supabase, compartir, sync, proxy IA, embeddings). COMPLETA.
-- `docs/fase-3.md` — plan de fase 3 (pulido de UX: canvas, varios mapas, panel). Borrador.
-- `.claude/napkin.md` — gotchas del entorno (preview pane, git/gh, CDN de Pages).
+> Snapshot para retomar. Solo **dónde estamos + qué falta + gotchas**. El historial va en git
+> (`git log`) y en `docs/historia.md`; el "qué hace cada archivo" en `docs/arquitectura.md`.
+> Última actualización: 31-08-2026.
 
 ## Dónde estamos
 
-**Fase 1 — MVP cerrado y en producción.** Canvas de nodos + modelo de datos + **llamada real a
-la IA** (Gemini free tier o Claude con billing, API key del usuario, streaming, respuestas en
-markdown) + panel de transcripción de la rama + deploy estático automático a GitHub Pages. Todo
-client-side, sin backend. El árbol de intercambios es la fuente de la verdad y se persiste en
-`localStorage` como `.md`.
+**Fase 1 + 2 + 3 shippeadas y en producción.** `https://alanepazs.github.io/3maps/`
+(deploy automático en cada push a `main`). Repo `github.com/alanepazs/3maps`, local `D:\IA\3maps`.
 
-**Proveedor recomendado: Gemini** (free tier real). Claude anda pero necesita saldo. DeepSeek/GPT
-esperan a fase 2 (no habilitan CORS → necesitan proxy).
+- **Canvas** (React Flow): árbol de globos, tronco vertical + ramas al costado, envión al soltar,
+  2 modos (manito / selección con barra espaciadora), redimensionar globo y panel, auto-layout
+  ("▤ Ordenar"), varios mapas, esconder la barra de chat. El `arbol` de `Intercambio`s es la
+  fuente de la verdad; la vista de React Flow se deriva.
+- **IA** (`model/ia.ts`, wired en `FlowCanvas.responder`): streaming, contexto = solo el camino
+  raíz→globo con ventana + resumen. **9 proveedores**: Gemini + Claude directos del navegador;
+  DeepSeek, GPT, Groq, Cerebras, OpenRouter, Mistral, HuggingFace vía el edge function `ia-proxy`
+  (opt-in "usar proxy" en ⚙️). Una key/modelo por proveedor, atadas a la cuenta.
+  **Solo Gemini tiene free tier real probado end-to-end.**
+- **Backend opcional** (Supabase, `ref` ejecjjpdjoxgrbqrhwwd): login Google/magic-link, compartir
+  árbol por link (`?compartir=<slug>`), "mis árboles" + despublicar, sync entre dispositivos.
+  Sin las env `NEXT_PUBLIC_SUPABASE_*` la app es 100% local.
+- **Persistencia**: `localStorage["3maps:arbol:<mapId>"]` = un string `.md` por intercambio.
+  Prefs de vista en `"3maps:vista"`, ajustes en `"3maps:settings"`, IA en `"3maps:ia"`.
 
-Repo: https://github.com/alanepazs/3maps · rama `main`.
-Carpeta local: `D:\IA\3maps`.
-**App en producción: https://alanepazs.github.io/3maps/** — deploy automático en cada push a `main`.
+## Qué falta
 
-## Qué anda
+### Bug abierto — sync entre dispositivos
+- **El usuario reporta que NO sincroniza** (31-08-2026). A revisar en `sync.ts` + `useSync.ts`.
+- **Además faltan por diseño**: hoy solo sincroniza el **árbol de cada mapa** (`sync/<uid>/<mapId>.json`)
+  + el **índice de mapas** (`_mapas.json`, unión al loguear). **NO** sincroniza las **keys/modelos**
+  (`configIA` es local + `dueño`, ver decisiones §9) ni las prefs de vista. El usuario quiere que
+  mapas y keys/modelos también viajen entre dispositivos.
 
-### Canvas / interacción (verificado en Chrome real)
-- Canvas React Flow full-screen, tema oscuro, minimapa (arriba der.) + controles (abajo izq.).
-- **Un globo = un intercambio**: pregunta (encabezado) + respuesta (cuerpo). Se busca la menor
-  cantidad de globos.
-- **Tronco vertical, ramas al costado.** Las ramas nacen a la derecha; arrastrando el globo
-  ramificado a la izquierda del padre, la flecha se reconecta sola a ese lado (`asentar`).
-- **Barra inferior**: Enter envía, Shift+Enter salto de línea. "↓ Continuar hilo" y "⑂ Ramificar"
-  crean UN globo colgando del activo y le piden la respuesta a la IA.
-- **Eliminar**: botón 🗑 en el globo seleccionado (no en el raíz). Borra el subárbol completo con
-  confirmación si hay descendientes; corta las llamadas a la IA en vuelo de lo que se borra.
-- **Nodo activo**: click en un globo → se resalta y la barra apunta a él.
-- **Envión al soltar un globo** (o un grupo): flick → sigue de largo y frena. "Quedó bien".
-- **Envión al panear con la manito**: flick del fondo → el lienzo sigue de largo y frena
-  (`usePanInertia`, arreglado esta sesión — ver commit `ff595e3`).
-- **Modos del lienzo**: sin teclas → manito (pan) · barra espaciadora → puntero (recuadro de
-  selección múltiple; después se arrastra la selección para moverla en grupo).
-- **Tuerquita ⚙️**: panel de ajustes (lienzo + IA). Persiste en `localStorage`
-  (`"3maps:settings"` y `"3maps:ia"`).
+### Prueba real (la hace el usuario, con key/login)
+- Los 7 proveedores vía proxy con una key real (Groq/Cerebras = mejores free tier).
+- El atajo Ctrl+Enter (ramifica) en Chrome real.
+- Resize de globo (3.10) y de panel (3.11) + fixes de móvil (3.13) en Chrome y celu.
+- Que el watchdog de 45s no corte un stream lento-pero-vivo.
 
-### IA (✅ Gemini free tier probado end-to-end; Claude requiere billing)
-- **Llamada real** (`src/model/ia.ts`, wired en `FlowCanvas.responder`): al enviar, el globo queda
-  `pending` y la respuesta **se escribe en vivo (streaming)** con cursor ▍.
-- **Contexto** = solo el camino raíz→globo (`armarContexto`), aplanado a user/assistant, con
-  ventana (últimos N completos + resumen del tramo viejo vía `resumir`, cacheado por sesión).
-- **Proveedores** (9 en el dropdown):
-  - **Gemini (Google, `fetch` directo + SSE)**: free tier, probado end-to-end, default `gemini-3.7-flash`.
-  - **Claude (Anthropic, `@anthropic-ai/sdk` dinámico)**: requiere billing (Pro o créditos en console.anthropic.com).
-  - **Vía proxy `ia-proxy`** (no habilitan CORS): **DeepSeek**, **OpenAI/GPT** (con billing), y
-    con **free tier real sin tarjeta**: **Groq**, **Cerebras**, **OpenRouter** (modelos `:free`),
-    **Mistral** (1 RPM), **Hugging Face**. Todos OpenAI-compatibles → mismo `llamarOpenAICompat`.
-    Opt-in (`settings.usarProxyIA`): caja en ⚙️ que avisa que la key transita el proxy stateless.
-    **Falta redeployar el edge function** (suma los 5 nuevos) + probar con key real.
-
-  Se eligen en ⚙️; **cada proveedor tiene su propia key guardada** (cambiás y volvés, no la
-  perdés — `configIA.ts`, decisiones §9). **La key de Claude/Gemini va directo del navegador al
-  proveedor**; las de los proveedores vía proxy transitan el proxy (nunca se guardan).
-  **Atadas a la cuenta** (`scopeConfigIA`, §9): si en el mismo navegador se loguea otra cuenta,
-  las keys se borran (cada cuenta pone la suya). Bug reportado por el usuario, arreglado 30-08.
-  Default de Gemini = `gemini-3.7-flash` (Flash estable más nuevo, free tier), con **thinking al
-  mínimo** por generación (`thinkingLevel: "low"` en 3.x, `thinkingBudget: 0` en 2.x — si no,
-  devolvía respuesta vacía). Los modelos **varían por key** → botón **"verificar key y ver sus
-  modelos"** en ⚙️ (`listarModelos`, Claude + Gemini; **no gasta tokens**, 401 si es inválida).
-  `configIA.ts` migra al cargar solo lo retirado-para-todos + alias paid (los `2.5-*` ya NO se
-  migran). Ver decisiones §7b, §8c.
-- **Chequeo de formato de key** (`avisoFormatoKey`, local, gratis): aviso ámbar bajo el input si
-  la key no pinta del proveedor elegido (`sk-ant-` / `AQ.`|`AIza` / `sk-` / `gsk_` / `csk-` /
-  `sk-or-` / `hf_`; Mistral no tiene prefijo). No bloquea Guardar.
-- **Respuesta en markdown** (`src/components/Markdown.tsx`): títulos, listas, código (inline y
-  bloque con scroll propio), links (pestaña nueva), citas, tablas GFM. Sin HTML crudo → seguro.
-- **Errores**: recuadro rojo + "↻ Reintentar" (descarta la parcial vieja). El error se persiste
-  en el frontmatter del `.md` y sobrevive al reload.
-- **Config en ⚙️**: proveedor (aplica al toque, trae su key guardada), API key + modelo (borradores → botón "Guardar" o
-  Enter; "✓ Guardado" / "Cambios sin guardar" / "✓ Aplicado" 2s / "Borrar key"; aviso de formato),
-  "verificar key y ver sus modelos" (chips; gratis), ventana de contexto (2–20),
-  **instrucción de sistema** (textarea opcional; se antepone a cada pregunta, no al resumen).
-
-### Datos / persistencia (verificado a nivel de datos)
-- El `arbol` de `Intercambio`s es la fuente de la verdad; los nodos/edges de React Flow se
-  derivan (`arbolAVista`). Crear/ramificar/borrar/mover escriben al árbol.
-- `localStorage["3maps:arbol:<mapId>"]` = un string `.md` por intercambio, por mapa (fase 3.5).
-  Sobrevive al reload (se reconstruye parseando los `.md`). Sin mismatch de hidratación (primer
-  render = semilla determinística + mapas vacíos, se carga lo guardado en un effect de montaje).
-- Registro de mapas: `3maps:mapas` = `{[mapId]:{titulo,creado}}` + `3maps:mapaActivo` (`mapas.ts`,
-  migra el viejo `3maps:arbol` → `3maps:arbol:principal`).
-
-### Deploy (LIVE)
-- `output: "export"` + `basePath: /3maps` (solo si `NEXT_PUBLIC_PAGES=1`) + workflow
-  `.github/workflows/deploy.yml`. Cada push a `main` deploya. Verificado en producción: la app
-  carga entera sin 404 (incluye el chunk dinámico del SDK y react-markdown).
-
-## Pendientes (próximos pasos)
-
-### Checklist MVP fase 1 — ✅ completo
-
-Todo lo "cerca / arranque rápido" quedó hecho (ver "Hecho el 29-08-2026" con los hashes).
-Resumen de lo cerrado esta sesión: metadata de modelos + paid keys, system prompt configurable,
-transcripción de la rama con toggle de lado, auto-retry de Gemini ante 503, `lang="es"`,
-verificación de key gratis (`avisoFormatoKey` + `listarModelos` para Claude), prueba real de
-ambos proveedores, DeepSeek/GPT diferidos a fase 2 por CORS.
-
-### Fase 2 — 2.0 + 2.3 en prod; 2.1 codeado
-Ver **`docs/fase-2.md`**. Proyecto Supabase `ref` ejecjjpdjoxgrbqrhwwd.
-- **2.0 + 2.3 (compartir por link)**: ✅ verificado end-to-end en producción.
-- **2.1 (proxy DeepSeek/GPT)**: edge function `ia-proxy` **deployado y verificado** (30-08-2026).
-  CORS OK, reenvío OK, allow-list de orígenes OK. El usuario ya tiene key de DeepSeek → falta
-  probar el happy path (respuesta streameada).
-- **2.2 (login + mis árboles + despublicar)**: ✅ **verificado end-to-end en prod** (30-08-2026).
-  Login por magic link con Gmail real; compartir logueado → aparece en "Mis árboles compartidos";
-  despublicar → el link muere al instante (`cargarArbolCompartido` baja sin caché, ver §F2-4).
-  `schema.sql` corrido (tabla `shared_trees`), Redirect URLs configuradas.
-
-**2.4 (sync entre dispositivos)**: ✅ **andando y verificado** (login Google, compu↔celu).
-Bucket privado `sync`, `useSync` hook, LWW **por hora del servidor**. 3 bugs encontrados al
-probar y arreglados: (1) reloj del navegador → ping-pong (`d4fd33a`); (2) `onAuthStateChange`
-mataba el sync inicial → el debounce borró un árbol (`e76abaf`); (3) al cambiar de cuenta, el
-árbol de la anterior se subía a la nueva (`9b51912`).
-
-**2.5 (contexto viejo relevante — versión liviana)**: codeado (`b94f7e9`). `intercambiosRelevantes`
-en `contexto.ts` (match por raíz de palabra + peso por rareza, sin modelo). Rescata textuales los
-≤3 intercambios viejos más relacionados con la pregunta cuando el tramo viejo se resumió. 2.5b
-(embeddings) queda para si la liviana no alcanza.
-
-### Fase 3 — pulido de UX (arrancada)
-Ver **`docs/fase-3.md`**.
-
-**Bloque 1 (quick wins) — ✅ hecho (30-08-2026), verificado en el preview pane:**
-- **3.7** — la tuerquita ⚙️ cierra al clickear afuera o con Escape. Listener `pointerdown` en
-  captura (React Flow frena los eventos del lienzo en burbuja). `SettingsPanel.tsx`.
-- **3.8** — el panel lateral ya no dice "Transcripción de la rama" → "Conversación hasta este
-  globo". `BranchTranscript.tsx`.
-- Botón de compartir renombrado "Generar link" → "Compartir este árbol". `SettingsPanel.tsx`.
-
-**Bloque canvas — ✅ 3.1 / 3.2 / 3.2b / 3.3 hechos (30-08-2026), verificados en el preview pane:**
-- **3.1** — tope de alto del globo (220px) cuando la respuesta pasa 400 chars: se corta con
-  degradado + pill "⌄ ver más", toggle Expandir/Colapsar en el `NodeToolbar`. Preferencia por
-  globo en `localStorage["3maps:vista"]` (no toca el `.md`). Módulo nuevo `src/components/vista.ts`.
-- **3.2** — al crear un globo, `ubicarNuevoGlobo` (`layout.ts`) busca un lugar libre cerca del
-  padre que **no pise a NINGÚN otro globo** (escanea candidatos con los rects reales medidos) y
-  devuelve el lado de la rama, **alternando izq/der** (antes: siempre a la derecha) para un árbol
-  parejo. Reemplaza los offsets fijos que se pisaban (2 "continuar hilo" del mismo padre, ramas
-  de respuesta larga). 3 iteraciones sobre este bug (30-08-2026), 8 asserts en scratch.
-- **3.2b** (pedido del usuario) — al crear un globo, la cámara se centra en él
-  (`setCenter`, mantiene zoom): si estabas leyendo el principio de un padre largo, baja al hijo.
-- **3.3** — la flecha rama↔tronco salta de lado DURANTE el drag (en `onNodeDrag`, actualiza el
-  `sourceHandle` del edge en vivo), no al soltar. `asentar` sigue fijando `rama` al soltar.
-- **3.4** — botón "▤ Ordenar" en `<Controls>`: auto-layout a la forma canónica (tronco vertical +
-  ramas al costado con su propio tronco). Layout propio recursivo en `src/model/layout.ts`.
-  **Bloque canvas COMPLETO.**
-- **3.9** — mini-composer al pie de `BranchTranscript` (Enter envía): crea un hijo `main` del
-  globo abierto y el panel se mueve a ese hijo (chat-style, se ve la respuesta sin cerrar).
-  `handleSubmit` ahora acepta `parentId` opcional y devuelve el id nuevo.
-
-**Bloque mapas — ✅ 3.5 / 3.6 hechos (30-08-2026), verificados en el preview pane:**
-- **3.5** — varios mapas. `src/model/mapas.ts` (registro + migración `3maps:arbol` →
-  `3maps:arbol:principal`). `MapaSwitcher.tsx` = chip al lado de ⚙️: cambiar / ＋ Nuevo (arranca
-  vacío) / renombrar / borrar (no el único). `persistencia.ts` y `useSync` toman `mapId`. Sync
-  per-mapa: `sync/<uid>/<mapId>.json` (+ índice `_mapas.json` para la lista entre dispositivos;
-  `principal` cae a `arbol.json` viejo si hace falta). **Falta probar el sync con login real.**
-- **3.6** — la raíz se puede borrar solo cuando es el último globo (`data.sinHijos` en
-  `arbolAVista` → 🗑 en `MessageNode` si `!isRoot || sinHijos`; `deleteNode` confirma).
-
-**Fase 3: todos los bloques del pedido hechos + varios fixes post-uso** (llamada estática,
-superposición de globos, ramas siempre a la derecha, botón "Rehacer").
-
-**Pedido nuevo (31-08-2026)** — 3 bloques más:
-- **3.12 — ✅ hecho.** Ctrl/Cmd+Enter ramifica, Enter continúa, en los dos cuadros de texto
-  (`Composer` + mini-composer de `BranchTranscript`). El panel ganó un botón "⑂ Ramificar".
-  Verificado en el preview pane (botones); el atajo lo prueba el usuario (los eventos de teclado
-  sintéticos no disparan en el pane).
-- **3.10 — ✅ hecho.** Globo redimensionable con manija ◢ abajo a la derecha. Tamaño por globo en
-  `localStorage["3maps:vista"]` (`tamanos`), no va al `.md`. Doble clic en la manija o botón
-  "↔ Auto" vuelve al tamaño automático. Tamaño manual desactiva el colapso auto de 3.1. Cuerpo
-  con scroll interno si la caja queda chica. Verificado en el preview pane.
-- **3.11 — ✅ hecho.** Panel lateral (`BranchTranscript`) redimensionable: manija en el borde
-  interno, clamp `[320, 75vw]`, ancho persistido en `settings.transcriptWidth = {mobile, desktop}`
-  (bucket por `window.innerWidth < 768`). Móvil: panel a pantalla completa + botón "🗺 Ver mapa"
-  en el header. Verificado en el preview pane a 1280 y 375.
-
-**Pantalla de consentimiento de Google — PUBLICADA (30-08-2026, "En producción").** Cualquiera
-puede loguear con Google, no solo test-users. Faltaba: cargar los 3 permisos no sensibles
-(email/profile/openid) en "Acceso a los datos" + URLs de privacidad y términos. Se agregaron
-`public/privacy.html` y `public/terms.html` (deployan a `alanepazs.github.io/3maps/{privacy,terms}.html`),
-con dominio autorizado `alanepazs.github.io` + homepage en la marca. Sin revisión de Google
-(permisos no sensibles).
-
-**Proveedores de IA (30-08-2026)**: se sumaron Groq, Cerebras, OpenRouter, Mistral y Hugging Face
-(free tiers reales sin tarjeta, OpenAI-compatibles, vía el proxy `ia-proxy` como DeepSeek/GPT).
-UI verificada en el preview pane (dropdown, placeholders, avisos de formato, toggle del proxy).
-**Falta**: redeployar el edge function `ia-proxy` (suma los 5) + probar con una key real.
-
-Falta: redeploy de `ia-proxy`, probar el sync per-mapa con login real, 2.5b si hace falta.
-Decisiones en `docs/decisiones.md` (F3-1..F3-7, §7a).
-
-**UX — API key por proveedor** (`0e56112`, 30-08-2026): `configIA.ts` ahora guarda una key por
-proveedor. Cambiás de proveedor en ⚙️ y volvés → la key reaparece sola (antes se borraba).
-Default de proveedor = gemini. Ver decisiones §9.
-
-### Más adelante (fuera de fase 2)
-- [ ] Export/import: `.zip` de la carpeta de `.md` + carpetas reales con File System Access API,
-      UI de guardar/abrir (§7). Hoy solo hay persistencia local automática.
-- [ ] Estado `expandido`/colapsado por globo para rendimiento con muchos nodos (§8).
-- [ ] **Auto-SWITCH de proveedor por formato de key** (UX): hoy `avisoFormatoKey` solo avisa en
-      ámbar. Falta: al pegar una key que pinta de otro proveedor, ofrecer/cambiar el proveedor solo.
-- [ ] Modelos locales tipo Ollama para tareas internas (§10) — fase 3.
-
-### Hecho el 29-08-2026
-- [x] Fix del envión al panear (`usePanInertia`) — `ff595e3`.
-- [x] Modelo de datos: árbol de intercambios + `.md` + persistencia — `46f36c5`.
-- [x] Armado del contexto (`src/model/contexto.ts`, 22 asserts) — `c9415a1`.
-- [x] Llamada real a la IA con streaming — `26bc339`.
-- [x] Deploy a GitHub Pages — `2c68326` (+ fixes); LIVE tras habilitar Pages a mano.
-- [x] Markdown renderizado en las respuestas — `07f28ef`.
-- [x] Gemini como 2º proveedor (`fetch` + SSE, sin SDK) + saga API renovada — `6cc38e6`.
-- [x] Metadata de modelos al día + desbloquear paid keys de Gemini — `44bd8fb`.
-- [x] System prompt configurable (`Settings.systemPrompt`) — `43ed0bf`.
-- [x] Auto-retry de `llamarGemini` ante 503 (1 reintento, 1s) — `780e5fb`.
-- [x] Abrir un globo -> panel de transcripcion de la rama (`BranchTranscript`) — `da7a339`.
-- [x] `lang="es"` en `layout.tsx` — `25fbbf0`.
-- [x] DeepSeek/GPT diferidos a fase 2 (CORS, sin proxy no se puede) — `a44f1dc`.
-- [x] Prueba real Claude: conecta OK, requiere billing. Gemini = proveedor free — `42254f5`.
-- [x] Toggle de lado del panel de transcripción + verificación de key gratis
-      (`avisoFormatoKey` + `listarModelos` para Claude) — `4b0dc55`.
-- [x] Plan de fase 2 (`docs/fase-2.md`) + decisiones — `1152d81`.
-- [x] Fase 2.0: fundaciones Supabase (cliente opcional + schema + workflow) — `76758d3`.
-- [x] Fase 2.3: compartir un árbol por link — `51dc403` (verificado en prod, deploy #35).
-- [x] Fase 2.1: proxy stateless para DeepSeek/GPT (`ia-proxy` + `llamarOpenAICompat`) — `9a2eecc`.
-      Function deployada + verificada 30-08-2026 (falta key real para el happy path).
-- [x] Fase 2.2a: login opcional por magic link (`useSesion` + sección Cuenta) — `c873f95`.
-- [x] Fase 2.2b: mis árboles compartidos + despublicar (`shared_trees`) — `d666f8d`.
-- [x] Fix: cargar árbol compartido sin caché → despublicar instantáneo — `e9b5c0c`.
-- [x] Fase 2.2 verificada end-to-end en prod (login Gmail + compartir + despublicar) — 30-08-2026.
-- [x] UX: una API key por proveedor (`configIA.ts` multi-key) — `0e56112`. Probado + verificado.
-- [x] Fase 2.4: sync del árbol entre dispositivos (`sync.ts` + `useSync`, LWW) — `a7eb13c`.
-- [x] Fase 2.5 (liviana): rescate de contexto viejo por palabras clave (`intercambiosRelevantes`) — `b94f7e9`. 24 asserts.
-- [x] Sync: hora del servidor + fix del sync inicial que borraba árboles — `d4fd33a`, `e76abaf`.
-- [x] Árbol nuevo arranca vacío (sin globos de ejemplo) — `86bb0ef`.
-- [x] Login con Google — `7fc343b`. Config hecha (OAuth client + provider en Supabase). **Anda**:
-      login + sync compu↔celu verificados por el usuario.
-- [x] Sync: cada cuenta su propio árbol (fix leak al cambiar de login) — `9b51912`.
+### Opcionales (no bloquean)
+- **Auto-switch de proveedor** al pegar una key de otro (hoy `avisoFormatoKey` solo avisa en ámbar).
+- **Export/import** `.zip` de la carpeta de `.md` + File System Access API (spec §7). Hoy solo hay
+  persistencia local automática.
+- **2.5b — embeddings** (`transformers.js`) si el match por palabras clave (`intercambiosRelevantes`)
+  se queda corto. Misma firma → drop-in.
+- Modelos locales tipo Ollama para tareas internas (spec §10).
+- Botón "vaciar este mapa" en ⚙️.
 
 ## Issues conocidos / gotchas
 
-- **Llamada a la IA que se queda "estática"** (30-08-2026, reportado por el usuario al ramificar
-  4 ramas en paralelo — una quedó `pending` para siempre con la respuesta a medias). Causas:
-  el stream se abre pero el server deja la conexión colgada, o el proveedor está saturado. **Fix**:
-  (1) watchdog en `responder` — si no llega nada en 45s (o el total pasa 180s) aborta y deja un
-  error reintentable con la respuesta parcial a la vista; (2) `pending` se persiste en el `.md`
-  (`pendiente: 1`) → al recargar / bajar de la nube, una llamada a medias pasa a error reintentable;
-  (3) botón **"↻ Rehacer"** en el `NodeToolbar` de todo globo → vuelve a pedir la respuesta
-  (regenerar, o recuperar un globo que quedó estático de ANTES del fix, sin `pendiente:` en su `.md`).
-- **Preview pane de Claude (`mcp__Claude_Browser__*`)**: `requestAnimationFrame` y `ResizeObserver`
-  quedan **congelados cuando el pane está quieto**, y `setTimeout` throttlea a ~1s. Efecto: los
-  nodos de React Flow quedan `visibility:hidden` (no se los mide) → sin nodos medidos no se dibujan
-  edges ni se ven las animaciones; gestos sintéticos de drag/flick miden velocidad ~70× lenta.
-  **No es un bug de la app.** En el pane verificar solo **lógica/datos** (localStorage,
-  `.textContent`, estado interno, stub de red). El **render y la inercia** se verifican en Chrome
-  real. Confirmado idéntico en commits pre-refactor.
-- **Consola del preview pane = log viejo acumulado** (HMR roto arrastra errores con nros de línea
-  que ya no matchean). Errores frescos: `preview_logs` del `next dev` reiniciado, o el overlay de
-  Next (`nextjs-portal` shadow DOM → `div[role=dialog]`).
-- **CDN de GitHub Pages cachea `index.html`** ~10 min. Para verificar un deploy nuevo enseguida:
-  navegar con `?v=<algo>` (cache-buster).
-- **Next 16 `agentRules`**: desactivado en `next.config.ts` (que `next dev` no escriba en CLAUDE.md).
-- **Darkreader**: si está activo en `localhost` rompe la hidratación y los colores. Desactivarlo
-  para localhost.
+- **Preview pane** (`mcp__Claude_Browser__*`): congela `requestAnimationFrame`/`ResizeObserver`,
+  throttlea `setTimeout`, **no corre transiciones CSS** y a veces reporta viewport 0. Los nodos de
+  React Flow quedan sin medir → no se dibujan edges ni animaciones; los gestos sintéticos de
+  teclado/drag no disparan. **No es un bug de la app.** En el pane se verifica **lógica/datos**;
+  el **render, la inercia y las animaciones** los prueba el usuario en Chrome real. (napkin §2-3.)
+- **CDN de GitHub Pages cachea `index.html` ~10 min.** Para ver un deploy nuevo enseguida:
+  `?v=<algo>` (cache-buster).
+- **Darkreader** activo en `localhost` rompe la hidratación y los colores.
+- **Llamada IA que queda "estática"**: cubierto por el watchdog + `pendiente: 1` persistido +
+  botón "↻ Rehacer" (decisiones F3-6). Un globo estático de ANTES de ese fix se recupera con "Rehacer".
 
 ## Cómo correr / verificar / publicar
 
 ```bash
 cd D:\IA\3maps
-npm run dev            # http://localhost:3000  (sin basePath)
-npx tsc --noEmit -p tsconfig.json    # typecheck
+npm run dev                         # http://localhost:3000 (sin basePath)
+npx tsc --noEmit -p tsconfig.json   # typecheck
 npm run lint
-npm run build          # genera out/ (estático). Con NEXT_PUBLIC_PAGES=1 → basePath /3maps
+npm run build                       # out/ estático; con NEXT_PUBLIC_PAGES=1 → basePath /3maps
 ```
 
-- **`.env.local`** (gitignoreado) tiene `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-  para el backend de fase 2. Sin ese archivo, `npm run dev` corre igual pero sin la parte de
-  compartir. En prod las mismas van como repo secrets de GitHub Actions.
-
-- **Verificar en el navegador**: navegador integrado (`mcp__Claude_Browser__*`), NO la extensión
-  de Chrome. El login a GitHub del integrado es **intermitente** — para CI usar la API pública
-  (`api.github.com/repos/alanepazs/3maps/...`).
-- **Probar lógica pura (sin runner)**: `npx --yes tsx _scratch.mts`, y borrar el scratch.
-- **Publicar código**: `git push` desde `D:\IA\3maps` (credencial en Windows Credential Manager).
-  `gh` CLI NO está autenticado — no usarlo.
-- **Deploy a Pages**: automático en cada push a `main`. Pages ya está habilitado en el repo.
+- **`.env.local`** (gitignoreado): `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+  Sin eso, `npm run dev` corre igual pero sin la parte de Supabase. En prod van como repo secrets.
+- **Lógica pura sin runner**: `npx --yes tsx _scratch.mts`, y borrar el scratch (napkin §13).
+- **Publicar**: `git push` desde `D:\IA\3maps` (credencial en Windows Credential Manager).
+  `gh` NO está autenticado. Deploy a Pages = push a `main` (Pages ya habilitado a mano).
+- **Al cerrar sesión**: `tsc` + `lint` en verde · `git push` · actualizar este archivo.

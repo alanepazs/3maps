@@ -156,7 +156,7 @@ function Flow() {
 
   // Modo "árbol compartido": si la URL trae `?compartir=<slug>` se carga ese
   // árbol y NO se toca `localStorage` hasta que el usuario guarde una copia.
-  // Ver docs/fase-2.md (2.3).
+  // Ver decisiones §F2-5.
   const slugInicial = useMemo(() => slugDeLaUrl(), []);
   const [compartido, setCompartido] = useState<{ titulo: string } | null>(null);
   const readOnly = compartido !== null;

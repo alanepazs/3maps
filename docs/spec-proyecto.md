@@ -1,8 +1,10 @@
 # 3maps — Documento de proyecto
 
 > Nombre: **3maps** ("3" = three = *tree* / árbol; suena a "maps").
-> Estado: fase 1 (MVP) en desarrollo — esqueleto visual del canvas armado, sin IA ni guardado todavía.
-> Última actualización: 29-08-2026.
+> **Diseño de producto** (modelo de datos, UX, roadmap). Lo que **está construido** va en
+> `docs/estado.md` / `docs/historia.md` — este doc es el "qué queremos" original, casi todo ya
+> implementado. Fase 1 + 2 + 3 shippeadas.
+> Última actualización del diseño: 29-08-2026.
 
 ## 1. Resumen del proyecto
 

@@ -1,7 +1,13 @@
 # Arquitectura del código
 
-> Mapa de `src/` para no tener que leer todo. Actualizar cuando cambie la estructura.
-> Última actualización: 29-08-2026 (fase 2.0/2.3: Supabase opcional + compartir por link).
+> Mapa de `src/` para no leer todo. Para una dependencia puntual: `graphify query "..."`
+> (napkin §6b). Actualizar cuando cambie la estructura.
+> Última actualización: 31-08-2026.
+
+**Tamaños** (líneas): `FlowCanvas.tsx` 1130 · `ia.ts` 860 · `SettingsPanel.tsx` 735 ·
+`intercambio.ts` 347 · `MessageNode.tsx` ~300 · `sync.ts` 287 · `BranchTranscript.tsx` ~270 ·
+`compartir.ts` 237 · `contexto.ts` 227 · `configIA.ts` 183 · `useSync.ts` 166 · `layout.ts` 148 ·
+`mapas.ts` 142 · `Composer.tsx` 138 · el resto < 110.
 
 ## Stack real (lo que está instalado)
 
@@ -133,7 +139,11 @@ src/
                         Lista + ＋ Nuevo mapa + ✎ Renombrar (window.prompt) + 🗑 Borrar (confirm;
                         deshabilitado si es el único). Cierra al clickear afuera. Props:
                         {mapas, activoId, onCambiar, onNuevo, onBorrar, onRenombrar}.
-    Composer.tsx        Barra inferior fija para escribir.
+    Composer.tsx        Barra inferior fija para escribir. Props: {activeNodeLabel, arbolVacio,
+                        onSubmit(text, "main"|"branch"), oculto, onToggleOculto}. Enter continúa /
+                        Ctrl+Enter ramifica / Shift+Enter salto (F3-10). Botón `⌄` la esconde
+                        (`settings.composerOculto`) → queda un botón grande "✎ Escribir" (F3-11).
+                        `arbolVacio` → hint + botón "Empezar" (sin "Ramificar").
     SettingsPanel.tsx   Tuerquita ⚙️: ajustes del lienzo (envión, ventana de contexto) +
                         config de IA. API key y modelo son BORRADORES (estado local) que se
                         persisten con el botón "Guardar" (o Enter); el proveedor aplica al toque y
@@ -258,6 +268,12 @@ Handlers (todos operan sobre `arbol` vía `setArbol`):
 - Mapas (fase 3.5): `cambiarMapa` / `nuevoMapa` / `borrarMapaActual` / `renombrarMapaActual` →
   `<MapaSwitcher>`. `mapaId` + `mapas` (estado, poblado al hidratar). El efecto de persistir y
   `useSync` toman `mapId`. Al loguear, `bajarIndiceMapasNube` + `fusionarMapasNube` (unión).
+- Viewport / móvil (F3-11): `anchoVentana` (useState + listener `resize`) → `esMobile = < 768`.
+  `fitOpts` (memo) = `{ padding: 0.18, minZoom: 0.15, maxZoom: esMobile ? 0.7 : 1.2 }` va a
+  `<ReactFlow fitViewOptions>` y a los 4 `fitView()`. `panelBucket` / `panelResizable` /
+  `panelAncho` / `guardarAnchoPanel` → `<BranchTranscript>` (F3-9). El `<div>` raíz lleva
+  `data-chat={settings.composerOculto ? "oculto" : "visible"}` (lo lee `globals.css`).
+  `<Composer oculto onToggleOculto>` → `settings.composerOculto`.
 
 Config de IA: `configIA` (useState `ConfigIA`, lazy init desde `cargarConfigIA()`).
 `guardarKeyIA` (guarda la del proveedor activo), `cambiarProveedorIA` (trae la guardada de otro),
@@ -280,20 +296,23 @@ Props de `<ReactFlow>` que importan:
 
 ## IA (model/ia.ts)
 
-- `ConfigIA = { proveedor, apiKey, modelo }`. `PROVEEDORES_DISPONIBLES` = los 4.
-  `PROVEEDORES_VIA_PROXY = ["deepseek", "gpt"]` (no habilitan CORS → van por el edge function
-  `ia-proxy`, ver decisiones §7a). `MODELO_POR_DEFECTO`, `MODELOS_SUGERIDOS`, `NOMBRE_PROVEEDOR`,
+- `ConfigIA = { proveedor, apiKey, modelo }`. `PROVEEDORES_DISPONIBLES` = **9**
+  (`gemini, claude, groq, cerebras, openrouter, mistral, huggingface, deepseek, gpt`).
+  `PROVEEDORES_VIA_PROXY` = **7** (todos menos gemini/claude — no habilitan CORS → van por el edge
+  function `ia-proxy`, decisiones §7a). `MODELO_POR_DEFECTO`, `MODELOS_SUGERIDOS`, `NOMBRE_PROVEEDOR`,
   `PISTA_API_KEY` por proveedor.
 - `llamarIA(config, mensajes, opts)` → `switch(config.proveedor)`. Sumar proveedor = un `case`
-  nuevo, sin tocar nada del árbol (spec §6). `resumir()` usa el mismo proveedor configurado.
-- La API key de Claude/Gemini va **directo del navegador al proveedor**. La de DeepSeek/GPT
-  **transita** el proxy stateless (opt-in `opts.usarProxy` / `settings.usarProxyIA`) — nunca se
-  almacena. Ver §7a.
-- **Adaptador OpenAI-compat** (`llamarOpenAICompat`): `fetch` a `proxyIAUrl()` con headers
-  `x-ia-provider` (openai|deepseek), `x-ia-path`, `x-ia-key`. SSE `data: {json}` →
-  `choices[0].delta.content`. `max_tokens` (deepseek) / `max_completion_tokens` (gpt).
-  Sin `usarProxy` o sin proxy configurado → `ErrorIA` explicativo. `mensajeErrorOpenAICompat`
-  para 401/402/403/404/429/5xx.
+  nuevo + entradas en los `Record<Proveedor,…>` + (si es OpenAI-compat) redeploy del `ia-proxy`.
+  Cero cambios en el árbol (spec §6). `resumir()` usa el mismo proveedor (le pasa `usarProxy`).
+- La key de Claude/Gemini va **directo del navegador al proveedor**. Las de los otros 7
+  **transitan** el proxy stateless (opt-in `opts.usarProxy` / `settings.usarProxyIA`), nunca se
+  almacenan. Ver §7a.
+- **Adaptador OpenAI-compat** (`llamarOpenAICompat` / `listarModelosOpenAICompat`): `fetch` a
+  `proxyIAUrl()` con headers `x-ia-provider` (nombre, no URL — anti-SSRF), `x-ia-path`, `x-ia-key`.
+  SSE `data: {json}` → `choices[0].delta.content`. `max_completion_tokens` solo para `gpt`, el
+  resto `max_tokens`. `upstreamDe(prov)` mapea el `Proveedor` a la clave del mapa `PROVEEDORES` del
+  proxy. Sin `usarProxy` / sin proxy → `ErrorIA` explicativo. `mensajeErrorOpenAICompat` para
+  401/402/403/404/429/5xx.
 - **Adaptador Claude** (`llamarClaude`): `await import("@anthropic-ai/sdk")` (dinámico),
   `new Anthropic({ apiKey, dangerouslyAllowBrowser: true })`, `client.messages.stream(...)` con
   `signal`. CORS habilitado por el header `anthropic-dangerous-direct-browser-access` del SDK.
@@ -315,8 +334,8 @@ Props de `<ReactFlow>` que importan:
   prefijo (`sk-ant-` / `AQ.`|`AIza` / `sk-`). Devuelve aviso o null. Solo caza typos y provider
   equivocado. Lo usa `SettingsPanel` para el aviso ámbar. Ver decisiones §8c.
 - `listarModelos(config)` → `listarModelosClaude` (`client.models.list()`) / `listarModelosGemini`
-  (`GET /v1beta/models`). **No gasta tokens** en ninguno; 401 si la key es inválida → sirve de
-  verificación gratis de la key. Filtra a modelos que soportan `generateContent`.
+  (`GET /v1beta/models`) / `listarModelosOpenAICompat` (`GET /models` vía proxy). **No gasta
+  tokens**; 401 si la key es inválida → verificación gratis (§8c).
 
 ## Deploy (next.config.ts + .github/workflows/deploy.yml)
 
@@ -329,30 +348,19 @@ Props de `<ReactFlow>` que importan:
 - URL: `https://alanepazs.github.io/3maps/`. Requiere una vez: repo → Settings → Pages → Source =
   "GitHub Actions".
 
-Semilla (`arbolInicial()` en `model/intercambio.ts`): 3 intercambios de ejemplo con ids fijos
-`nodo-ejemplo-*` (Raíz + hilo + una rama a la derecha).
-
 ## MessageNode.tsx
 
-`data`: `{ pregunta, respuesta, pending?, error?, isRoot?, sinHijos? }` (`sinHijos` = fase 3.6).
-- Render: encabezado con la pregunta (si hay) + cuerpo con la respuesta (o "Respuesta pendiente
-  (IA no conectada)" en gris itálica si `respuesta` es null). Ancho fijo `w-[260px]`.
+`data`: `{ pregunta, respuesta, pending?, error?, isRoot?, sinHijos? }` (`sinHijos` = F3-5).
+- Ancho por defecto 260px; **redimensionable** con la manija ◢ abajo-derecha (F3-8): tamaño en
+  `localStorage["3maps:vista"].tamanos[id]`, cuerpo en `flex-1 overflow-auto nowheel scroll-fino`.
+- Cuerpo: `pending` ("escribiendo…" + texto + ▍) · `error` (recuadro rojo + "↻ Reintentar") ·
+  respuesta (`<Markdown>`) · "Respuesta pendiente". Respuesta > 400 chars y sin tamaño manual →
+  colapsado a 220px + degradado + "⌄ ver más" (F3-1, `vista.ts`).
 - Handles: `target` arriba (el raíz NO lo tiene) · `source id="main"` abajo ·
-  `source id="branch-right"` derecha · `source id="branch-left"` izquierda.
-- `<NodeToolbar>` visible cuando `selected`: "⤢ Abrir" (`openNode(id)`) siempre, "↻ Rehacer"
-  (`retryNode(id)` — regenerar / recuperar un globo estático) si `!readOnly`, "⌄ Expandir/⌃
-  Colapsar" si la respuesta es larga (fase 3.1), "🗑 Eliminar" (`deleteNode(id)`) si
-  `!isRoot || sinHijos` (fase 3.6). Todos del
-  `NodeActionsContext`.
-- Anillo celeste (`ring-sky-400`) cuando `selected`.
-
-## Composer.tsx
-
-Barra `absolute inset-x-0 bottom-0`. Props: `activeNodeLabel`, `arbolVacio`,
-`onSubmit(text, "main"|"branch")`.
-- `Enter` → submit("main"). `Shift+Enter` → salto de línea.
-- `arbolVacio` → hint "Escribí tu primera pregunta", botón "Empezar" (sin "Ramificar"). Si no,
-  "⑂ Ramificar" + "↓ Continuar hilo", deshabilitados sin activo o con texto vacío.
+  `source id="branch-right"` derecha · `source id="branch-left"` izquierda (= los valores de `rama`).
+- `<NodeToolbar>` cuando `selected`: "⤢ Abrir" siempre · "↻ Rehacer" (`retryNode`) si `!readOnly` ·
+  "⌄ Expandir/⌃ Colapsar" si colapsable y sin tamaño manual · "↔ Auto" si hay tamaño manual ·
+  "🗑 Eliminar" (`deleteNode`) si `!isRoot || sinHijos`. Todos del `NodeActionsContext`.
 
 ## model/intercambio.ts (modelo de datos)
 
@@ -360,8 +368,8 @@ Barra `absolute inset-x-0 bottom-0`. Props: `activeNodeLabel`, `arbolVacio`,
 `Arbol` = `{ intercambios: Intercambio[] }`. Coincide con el frontmatter del `.md` (spec §3).
 - `rama`: `"main"` (tronco, por abajo) | `"branch-left"` | `"branch-right"` (costado). Los ids de
   los handles del `MessageNode` se llaman igual → `arbolAVista` hace `sourceHandle: ic.rama`.
-- `nuevoId()` → `"nodo-" + 8 hex` (crypto). `crearIntercambio` acepta `id`/`fecha` opcionales
-  (la semilla los pasa fijos → determinística para SSR).
+- `nuevoId()` → `"nodo-" + 8 hex` (crypto). `arbolInicial()` = `{ intercambios: [] }` (vacío,
+  determinístico → SSR-safe; el 1er submit del `Composer` crea la raíz).
 - Todas las funciones son **puras**: las mutaciones devuelven un `Arbol` nuevo.
 - `caminoRaizA(arbol, id)` → intercambios de la raíz al nodo. Con guarda anti-ciclo.
 - `toMarkdown` / `parseMarkdown` — `---` frontmatter (`key: value`, parser mínimo sin YAML) +
@@ -383,20 +391,19 @@ por mapa y el registro de mapas están en `mapas.ts` (fase 3.5). `.zip` / carpet
 `armarContexto(arbol, nodoId, opts?, resumenViejo?)` → `Mensaje[]`:
 - **Solo el camino raíz→`nodoId`** (`caminoRaizA`), nunca el árbol entero (invariante CLAUDE.md).
 - Cada intercambio se aplana: pregunta no vacía → `user`, respuesta no vacía → `assistant`.
-- **Ventana** (`opts.ventana`, default 6): los últimos N intercambios van completos; el tramo
-  anterior se reemplaza por `resumenViejo` (un `user` con el resumen + un `assistant` "Listo…").
-  Si `resumenViejo` es `null` (fase 1, sin IA que resuma), ese tramo va completo igual.
-- `normalizar`: arranca en `user` (si la raíz tiene pregunta vacía, mete un `user` placeholder) y
-  concatena mensajes seguidos del mismo rol → secuencia siempre válida para la API.
-- Si `nodoId` es un intercambio **pendiente**, su pregunta queda de último `user` → listo para
-  mandar sin agregar nada.
-- **Determinístico** para un `(camino, opts, resumen)` dado, y el prefijo solo crece al final →
-  aprovecha el prompt caching del proveedor (spec §5).
+- **Ventana** (`opts.ventana`, default 6): los últimos N completos; el tramo anterior se reemplaza
+  por `resumenViejo` (un `user` con el resumen + un `assistant` "Listo…"). `null` → ese tramo va
+  completo.
+- `relevantes` (fase 2.5): `intercambiosRelevantes(viejos, pregunta)` rescata ≤3 intercambios
+  viejos **textuales justo antes de la pregunta actual** cuando el tramo viejo se resumió — match
+  por raíz de palabra + peso por rareza, sin modelo (§10b). No parte el prefijo estable.
+- `normalizar`: arranca en `user`, concatena mensajes seguidos del mismo rol → secuencia válida
+  para la API. Si `nodoId` es **pendiente**, su pregunta queda de último `user`.
+- **Determinístico** para `(camino, opts, resumen)` y el prefijo solo crece al final → prompt
+  caching (spec §5, decisiones §10).
 
-`tramoAResumir(arbol, nodoId, opts?)` → los `Intercambio[]` fuera de la ventana (lo que habría
-que resumir). Lo usará la lógica de resumen de #3.
-
-Verificado con 22 asserts (script scratch, borrado). Todavía **sin usar** — lo llama #3.
+`tramoAResumir(arbol, nodoId, opts?)` → los `Intercambio[]` fuera de la ventana. Lo llama
+`FlowCanvas.responder` → `resumir()` (cacheado por sesión en `resumenCacheRef`).
 
 ## inertia.ts (física del envión)
 

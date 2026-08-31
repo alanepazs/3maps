@@ -2,7 +2,7 @@
 
 // Cartel fijo arriba cuando se está viendo un árbol compartido (`?compartir=`).
 // El árbol se ve pero NO se guarda en este navegador hasta que el usuario
-// aprieta "Guardar en mi 3maps". Ver docs/fase-2.md (2.3).
+// aprieta "Guardar en mi 3maps". Ver decisiones §F2-5.
 export default function SharedBanner({
   titulo,
   onGuardar,

@@ -5,13 +5,17 @@
 ## Al arrancar una sesión, leé (en este orden)
 
 1. Este archivo (invariantes + convenciones que no se rompen).
-2. `docs/estado.md` — dónde estamos, qué anda, qué falta, issues conocidos, cómo correr/publicar.
-3. `docs/arquitectura.md` — mapa de `src/` para no leer todo el código.
-4. `.claude/napkin.md` — gotchas del entorno (preview pane, git/gh, etc).
-5. `docs/decisiones.md` — por qué el código es como es (decisiones de implementación que no se
-   revierten sin pensar). Leer antes de tocar `ia.ts`, `FlowCanvas`, persistencia o el `.md`.
-6. `docs/spec-proyecto.md` — diseño detallado (modelo de datos, pseudocódigo, decisiones de
-   producto). Solo si vas a tocar la parte de datos / IA / contexto.
+2. `docs/estado.md` — dónde estamos, qué falta, gotchas, cómo correr/publicar. **Corto.**
+3. `docs/arquitectura.md` — mapa de `src/` (qué hace cada archivo + `file:línea`).
+4. `.claude/napkin.md` — gotchas del entorno (preview pane, git/gh, graphify).
+5. `docs/decisiones.md` — por qué el código es como es (no revertir sin pensar). Antes de tocar
+   `ia.ts`, `FlowCanvas`, persistencia, sync o el `.md`.
+6. `docs/historia.md` — qué shippeó cada fase. Solo si necesitás el contexto histórico.
+7. `docs/spec-proyecto.md` — diseño de producto (modelo de datos, pseudocódigo). Solo si tocás
+   datos / IA / contexto.
+
+**Para navegar el código sin leer archivos enteros**: `graphify query "<pregunta>"` desde
+`D:\IA\3maps` (napkin §6b) — devuelve el subgrafo con `archivo:línea`.
 
 ## Qué es
 
@@ -25,10 +29,11 @@ freelance. Repo público: https://github.com/alanepazs/3maps
 
 ## Stack
 
-- Next.js 16 (App Router, Turbopack) + TypeScript + Tailwind CSS 4
+- Next.js 16 (App Router, Turbopack) + React 19 + TypeScript + Tailwind CSS 4
 - Canvas de nodos: React Flow (`@xyflow/react` v12)
-- Fase 2 (más adelante): `transformers.js` para embeddings locales; Supabase para compartir/sync.
-- **Fase 1 (MVP): sin backend, sin login.** Todo client-side. Deploy pensado para GitHub Pages.
+- Supabase (backend **opcional**): login, compartir por link, sync, proxy de IA (`ia-proxy`).
+- Deploy: **GitHub Pages** (`output: "export"`, estático). Todo el canvas + la IA corren client-side.
+- Fase 1 + 2 + 3 shippeadas y en prod. Estado y pendientes: `docs/estado.md`.
 
 ## Invariantes — NO romper
 
@@ -47,8 +52,13 @@ freelance. Repo público: https://github.com/alanepazs/3maps
 4. Mantener el prefijo del contexto consistente entre llamadas para aprovechar el prompt caching.
 
 ### Convenciones
-- `.md` es la fuente de la verdad en fase 1, no una DB.
-- Sin login ni backend propio en fase 1.
-- La clave de API del usuario vive solo en su navegador. Nunca a un servidor propio.
-- Nunca commitear claves ni `.env` (el repo es público).
+- **El `.md` es la fuente de la verdad, no una DB.** Supabase Storage guarda los `.md` tal cual
+  (el server solo los aloja); Postgres solo guarda metadata (slugs, dueños, títulos).
+- **Login y backend (Supabase) son opcionales.** Sin las env `NEXT_PUBLIC_SUPABASE_*` la app es
+  100% local, idéntica a fase 1. El modo local es el default.
+- **La clave de API del usuario vive solo en su navegador. Nunca se *almacena* en un servidor
+  propio.** Excepción acordada (decisiones §7a): las keys de proveedores OpenAI-compatibles
+  *transitan* el proxy stateless `ia-proxy` (opt-in explícito en ⚙️) — el proxy no loguea ni guarda.
+- Nunca commitear claves ni `.env` (el repo es público). La `service_role` de Supabase **nunca**
+  al repo ni al cliente.
 - Al terminar una sesión: `tsc` + `lint` en verde, `git push`, y actualizar `docs/estado.md`.

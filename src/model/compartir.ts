@@ -24,7 +24,7 @@ const BUCKET = "arboles";
 const VERSION = 1;
 
 // Topes del lado del cliente para no quemar el free tier (la política del bucket
-// además corta cualquier archivo > 2 MB). Ver docs/fase-2.md.
+// además corta cualquier archivo > 2 MB). Ver decisiones §F2-3.
 export const MAX_INTERCAMBIOS_COMPARTIR = 50;
 export const MAX_BYTES_COMPARTIR = 1_000_000;
 

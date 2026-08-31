@@ -30,17 +30,16 @@ Runbook corto. Cosas que muerden si no las sabés. Leer antes de tocar.
 ## Proyecto
 
 5. Carpeta local `D:\IA\3maps`. Repo `github.com/alanepazs/3maps`. Rama `main`.
-6. **Antes de codear leé**: `CLAUDE.md`, `docs/estado.md`, `docs/arquitectura.md`,
-   `docs/decisiones.md` (por qué el código es así — no revertir a ciegas), `docs/spec-proyecto.md`.
-   No hace falta leer todo `src/`.
+6. **Antes de codear leé** (orden en `CLAUDE.md`): `docs/estado.md`, `docs/arquitectura.md`,
+   este archivo, `docs/decisiones.md`. `docs/historia.md` (qué shippeó cada fase) y
+   `docs/spec-proyecto.md` solo si hace falta. No leas todo `src/`.
 6b. **Grafo de conocimiento (`graphify-out/`, gitignoreado, local)**: antes de abrir varios
-   archivos de `src/` para entender una dependencia, probá
-   `graphify query "<pregunta>"` desde `D:\IA\3maps` — devuelve el subgrafo con `archivo:línea`
-   de qué llama a qué (ahorra tokens vs. leer los archivos enteros). El intérprete está en
-   `graphify-out\.graphify_python`. Regenerar tras cambios grandes de estructura:
-   `graphify --update` (o `/graphify` full). `graph.html` y `obsidian/` (bóveda + `graph.canvas`)
-   son para mirar a ojo. Ojo: el corpus es chico (~18k palabras) — para un dato puntual a veces
-   conviene leer el archivo directo; el grafo gana cuando la pregunta cruza varios módulos.
+   archivos de `src/` para entender una dependencia, probá `graphify query "<pregunta>"` desde
+   `D:\IA\3maps` — devuelve el subgrafo con `archivo:línea` de qué llama a qué. El intérprete está
+   en `graphify-out\.graphify_python`. Regenerar tras cambios de estructura: `graphify --update`.
+   `graph.html` y `obsidian/` son para mirar a ojo. El corpus es chico (~6k líneas de `src/`) →
+   para un dato puntual conviene leer el archivo directo; el grafo gana cuando la pregunta cruza
+   varios módulos.
 7. `next.config.ts`: `agentRules: false` (que Next no escriba en CLAUDE.md), `devIndicators`
    abajo-derecha, `output: "export"`, y `basePath: /3maps` **solo si `NEXT_PUBLIC_PAGES=1`**
    (el workflow de Pages lo setea; `next dev` local queda en la raíz). Deploy = push a `main`.
@@ -56,9 +55,11 @@ Runbook corto. Cosas que muerden si no las sabés. Leer antes de tocar.
     React Flow se DERIVAN (`arbolAVista`) — nunca guardar estado propio en `data` de un nodo ni
     tratar a React Flow como el store. Toda mutación pasa por `setArbol` con funciones puras del
     modelo. Posiciones vuelven al árbol en `asentar` (al soltar), no en cada frame.
-11. **SSR / hidratación**: `FlowCanvas` arranca con la **semilla** (determinística) y carga
-    `localStorage` en un `useEffect` de montaje. NO leer `localStorage` durante el render
-    (rompe la hidratación). El `.md` de ejemplo usa ids `nodo-ejemplo-*` y fechas fijas.
+11. **SSR / hidratación**: `FlowCanvas` arranca con la **semilla** (`arbolInicial()` = `{ intercambios: [] }`,
+    árbol vacío, determinística) y carga `localStorage` en un `useEffect` de montaje. NO leer
+    `localStorage` ni `window.*` durante el render (rompe la hidratación). El primer submit del
+    `Composer` crea la raíz. `mapas`/`settings`/`configIA` arrancan en valores neutros y se
+    pueblan en effects de montaje por la misma razón.
 12. **Formato `.md`** (`toMarkdown`/`parseMarkdown`): el `error` va en el **frontmatter** como
     JSON en una línea, NO como sección del cuerpo — así la respuesta (markdown de la IA) puede
     tener sus propios `## títulos` sin romper el parseo. La respuesta es todo lo que hay después

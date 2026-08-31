@@ -101,7 +101,7 @@ create policy "3maps: sync propio"
   );
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- Límite conocido (ver docs/fase-2.md): un anónimo puede subir muchos archivos
+-- Límite conocido (ver decisiones §F2-4): un anónimo puede subir muchos archivos
 -- chicos y llenar el free tier. La defensa real (rate-limit) necesita un edge
 -- function. Por ahora: tope de 2 MB por archivo + límite del lado del cliente
 -- (50 intercambios / ~1 MB). Y los árboles compartidos SIN login no se pueden
