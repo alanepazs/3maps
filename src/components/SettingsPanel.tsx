@@ -593,7 +593,7 @@ export default function SettingsPanel({
               value={settings.systemPrompt}
               onChange={(e) => onChange({ systemPrompt: e.target.value })}
               rows={3}
-              placeholder="Ej: Respondé en español, conciso y con ejemplos."
+              placeholder="Ej: Respondé en español, conciso. Ecuaciones entre $$ … $$."
               className="mt-1.5 w-full resize-y rounded border border-white/15 bg-white/5 px-2 py-1 text-xs text-white/90 placeholder:text-white/30 focus:border-sky-500 focus:outline-none"
             />
             <span className="mt-1 block text-[11px] text-white/40">
