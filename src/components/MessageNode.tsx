@@ -192,12 +192,18 @@ export default function MessageNode({
       )}
 
       {pregunta && (
-        <div className="shrink-0 border-b border-white/10 px-3 py-1.5 text-left font-medium text-white">
+        <div className="relative z-10 shrink-0 border-b border-white/10 bg-neutral-900 px-3 py-1.5 text-left font-medium text-white">
           {pregunta}
         </div>
       )}
 
-      <div className={tamano ? "min-h-0 flex-1 overflow-auto" : "min-h-0"}>
+      <div
+        className={
+          tamano
+            ? "scroll-fino min-h-0 flex-1 overflow-auto pb-3"
+            : "min-h-0"
+        }
+      >
         {error ? (
           <div className="px-3 py-2 text-left">
             <p className="whitespace-pre-wrap text-xs text-red-300">⚠ {error}</p>
@@ -259,10 +265,10 @@ export default function MessageNode({
               ? "Arrastrá para redimensionar · doble clic para volver al tamaño automático"
               : "Arrastrá para redimensionar"
           }
-          className="nodrag nowheel absolute bottom-0 right-0 z-10 h-4 w-4 cursor-se-resize opacity-40 hover:opacity-90"
+          className="nodrag nowheel absolute bottom-0 right-0 z-20 h-4 w-4 cursor-se-resize rounded-tl bg-neutral-900"
           style={{
-            background:
-              "linear-gradient(135deg, transparent 0 45%, rgba(255,255,255,0.6) 45% 55%, transparent 55% 68%, rgba(255,255,255,0.6) 68% 78%, transparent 78%)",
+            backgroundImage:
+              "linear-gradient(135deg, transparent 0 45%, rgba(255,255,255,0.65) 45% 55%, transparent 55% 68%, rgba(255,255,255,0.65) 68% 78%, transparent 78%)",
           }}
         />
       )}

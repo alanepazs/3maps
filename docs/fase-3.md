@@ -132,6 +132,11 @@ automático** de 3.1 (`mostrarColapsado = colapsable && !expandido && !tamano`) 
 el toggle Expandir/Colapsar se oculta. Para volver al tamaño automático: doble
 clic en la manija o botón "↔ Auto" del toolbar (borra la entrada de `tamanos`).
 
+Fix (31-08-2026): la barra de scroll del cuerpo pisaba la manija. Se agregó
+`.scroll-fino` en `globals.css` (scrollbar de 8px) al contenedor scrolleable, el
+encabezado ganó `bg-neutral-900` opaco + `z-10` (no lo tapa el texto al scrollear)
+y la manija `bg-neutral-900` + `z-20` (queda arriba de la barra).
+
 No se usó `<NodeResizer>` de React Flow: querría escribir `width`/`height` en el
 nodo de RF, y la vista se reconstruye desde `arbolAVista` (que a propósito no
 lleva dimensiones) → habría que inyectarlas en cada rebuild. La manija propia con
