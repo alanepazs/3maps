@@ -60,6 +60,7 @@ import {
 import { cargarArbol, guardarArbol } from "@/model/persistencia";
 import { calcularLayout, ubicarNuevoGlobo } from "@/model/layout";
 import {
+  ID_PRINCIPAL,
   borrarMapa,
   crearMapa,
   fusionarMapasNube,
@@ -72,6 +73,7 @@ import {
 import {
   bajarIndiceMapasNube,
   borrarMapaNube,
+  listarMapasNube,
   subirIndiceMapasNube,
 } from "@/model/sync";
 import { useSesion } from "./useSesion";
@@ -952,18 +954,45 @@ function Flow() {
     [mapaId, usuario],
   );
 
-  // Sync de la LISTA de mapas entre dispositivos (unión, sin propagar borrados):
-  // al loguear, traer el índice de la nube y fusionar los que falten localmente.
-  useEffect(() => {
+  // Sync de la LISTA de mapas entre dispositivos (unión, sin propagar borrados).
+  // Descubre mapas de dos fuentes: `_mapas.json` (títulos) y `storage.list()`
+  // (todo `<id>.json` con árbol en la nube = un mapa, aunque el índice se haya
+  // pisado). Corre al loguear y al volver a foco la pestaña.
+  const sincronizarListaMapas = useCallback(async () => {
     if (!usuario || readOnly) return;
-    let vivo = true;
-    void bajarIndiceMapasNube(usuario.id).then((nube) => {
-      if (vivo && nube) setMapas(fusionarMapasNube(nube));
-    });
-    return () => {
-      vivo = false;
-    };
+    const uid = usuario.id;
+    const [indice, idsNube] = await Promise.all([
+      bajarIndiceMapasNube(uid),
+      listarMapasNube(uid),
+    ]);
+    const desdeNube: Mapas = { ...(indice ?? {}) };
+    for (const id of idsNube) {
+      if (!desdeNube[id]) {
+        desdeNube[id] = {
+          titulo: id === ID_PRINCIPAL ? "Mi mapa" : "Mapa",
+          creado: new Date().toISOString(),
+        };
+      }
+    }
+    if (Object.keys(desdeNube).length === 0) return;
+    const m = fusionarMapasNube(desdeNube);
+    setMapas(m);
+    // Re-subir solo si el local tiene mapas que el índice de la nube no → sana el
+    // índice si algún dispositivo lo había pisado, sin escribir en cada foco.
+    const enIndice = new Set(Object.keys(indice ?? {}));
+    if (Object.keys(m).some((id) => !enIndice.has(id))) {
+      void subirIndiceMapasNube(uid, m);
+    }
   }, [usuario, readOnly]);
+
+  useEffect(() => {
+    void sincronizarListaMapas();
+    const onVis = () => {
+      if (document.visibilityState === "visible") void sincronizarListaMapas();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, [sincronizarListaMapas]);
 
   // ── Sync entre dispositivos (fase 2.4, per-mapa desde 3.5) ────────────────
   // Solo con sesión y fuera del modo compartido. Last-write-wins.

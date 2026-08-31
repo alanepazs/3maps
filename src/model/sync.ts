@@ -34,6 +34,33 @@ const LOG = "[3maps sync]";
 const archivoDe = (mapId: string) => `${mapId}.json`;
 const rutaDe = (uid: string, archivo: string) => `${uid}/${archivo}`;
 
+// Los objetos de Storage traen `cache-control: max-age=3600` por defecto → el
+// `.download()` del SDK servía versiones viejas hasta 1h (mismo bug que fase 2.4,
+// decisiones §F2-4). Subimos con `cacheControl: "0"` y bajamos por signed URL con
+// `{ cache: "no-store" }`.
+const OPCIONES_SUBIDA = {
+  contentType: "application/json",
+  upsert: true,
+  cacheControl: "0",
+} as const;
+
+async function descargarTexto(
+  sb: NonNullable<ReturnType<typeof getSupabase>>,
+  ruta: string,
+): Promise<string | null> {
+  const { data, error } = await sb.storage
+    .from(BUCKET)
+    .createSignedUrl(ruta, 60);
+  if (error || !data?.signedUrl) return null;
+  try {
+    const res = await fetch(data.signedUrl, { cache: "no-store" });
+    if (!res.ok) return null;
+    return await res.text();
+  } catch {
+    return null;
+  }
+}
+
 type SobreSync = { v: number; titulo?: string; files: Record<string, string> };
 type SobreIndice = { v: number; mapas: Mapas };
 type EstadoLocal = { at: string; hash: string; uid: string };
@@ -124,15 +151,13 @@ export async function bajarArbolNube(
     console.info(LOG, "bajar: todavía no hay árbol en la nube", mapId);
     return null;
   }
-  const { data, error } = await sb.storage
-    .from(BUCKET)
-    .download(rutaDe(uid, meta.archivo));
-  if (error || !data) {
-    console.warn(LOG, "bajar: error al descargar", error?.message);
+  const texto = await descargarTexto(sb, rutaDe(uid, meta.archivo));
+  if (texto === null) {
+    console.warn(LOG, "bajar: error al descargar", mapId);
     return null;
   }
   try {
-    const sobre = JSON.parse(await data.text()) as Partial<SobreSync>;
+    const sobre = JSON.parse(texto) as Partial<SobreSync>;
     if (!sobre || typeof sobre.files !== "object" || !sobre.files) {
       console.warn(LOG, "bajar: JSON sin `files`");
       return null;
@@ -170,10 +195,7 @@ export async function subirArbolNube(
 
   const { error } = await sb.storage
     .from(BUCKET)
-    .upload(rutaDe(uid, archivoDe(mapId)), JSON.stringify(sobre), {
-      contentType: "application/json",
-      upsert: true,
-    });
+    .upload(rutaDe(uid, archivoDe(mapId)), JSON.stringify(sobre), OPCIONES_SUBIDA);
   if (error) {
     console.warn(LOG, "subir: error", error.message);
     return null;
@@ -213,16 +235,19 @@ export async function borrarMapaNube(uid: string, mapId: string): Promise<void> 
 }
 
 // ── Índice de mapas (para que la lista aparezca en todos los dispositivos) ───
+//
+// `_mapas.json` guarda solo los TÍTULOS. La existencia de un mapa se descubre de
+// `storage.list(<uid>/)`: todo `<mapId>.json` que tenga árbol en la nube ES un
+// mapa (así un mapa no se puede "perder" aunque el índice se pise entre
+// dispositivos).
 
 export async function bajarIndiceMapasNube(uid: string): Promise<Mapas | null> {
   const sb = getSupabase();
   if (!sb || !uid) return null;
-  const { data, error } = await sb.storage
-    .from(BUCKET)
-    .download(rutaDe(uid, INDICE));
-  if (error || !data) return null;
+  const texto = await descargarTexto(sb, rutaDe(uid, INDICE));
+  if (texto === null) return null;
   try {
-    const sobre = JSON.parse(await data.text()) as Partial<SobreIndice>;
+    const sobre = JSON.parse(texto) as Partial<SobreIndice>;
     return sobre && sobre.mapas && typeof sobre.mapas === "object"
       ? sobre.mapas
       : null;
@@ -231,19 +256,41 @@ export async function bajarIndiceMapasNube(uid: string): Promise<Mapas | null> {
   }
 }
 
+// Los mapIds que tienen árbol en la nube (todo `<id>.json` salvo los especiales;
+// `arbol.json` legacy cuenta como el mapa "principal").
+export async function listarMapasNube(uid: string): Promise<string[]> {
+  const sb = getSupabase();
+  if (!sb || !uid) return [];
+  const { data, error } = await sb.storage
+    .from(BUCKET)
+    .list(uid, { limit: 1000 });
+  if (error || !data) return [];
+  const ids = new Set<string>();
+  for (const f of data) {
+    if (!f.name.endsWith(".json")) continue;
+    if (f.name === INDICE) continue;
+    if (f.name === ARCHIVO_LEGACY) ids.add(ID_PRINCIPAL);
+    else ids.add(f.name.replace(/\.json$/, ""));
+  }
+  return [...ids];
+}
+
+// Sube el índice haciendo UNIÓN con lo que ya hay en la nube — así un dispositivo
+// nunca borra del índice los mapas que solo existen en otro (bug 31-08-2026: era
+// un overwrite → cada `nuevoMapa`/`renombrar`/`borrar` pisaba la lista ajena).
+// Los borrados NO se propagan (política, decisiones F3-4).
 export async function subirIndiceMapasNube(
   uid: string,
   mapas: Mapas,
 ): Promise<void> {
   const sb = getSupabase();
   if (!sb || !uid) return;
-  const sobre: SobreIndice = { v: VERSION, mapas };
+  const nube = (await bajarIndiceMapasNube(uid)) ?? {};
+  const merged: Mapas = { ...nube, ...mapas };
+  const sobre: SobreIndice = { v: VERSION, mapas: merged };
   await sb.storage
     .from(BUCKET)
-    .upload(rutaDe(uid, INDICE), JSON.stringify(sobre), {
-      contentType: "application/json",
-      upsert: true,
-    });
+    .upload(rutaDe(uid, INDICE), JSON.stringify(sobre), OPCIONES_SUBIDA);
 }
 
 // Decide qué hacer al abrir un mapa (o al loguear / cambiar de mapa).
