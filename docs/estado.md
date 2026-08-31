@@ -33,11 +33,16 @@
 - **Lista de mapas**: índice `_mapas.json` = `{ mapas, borrados }` (tombstones). Unión al subir,
   **los borrados SÍ se propagan**. Signed URL + `no-store` al bajar. Re-sync al volver a foco.
   Decisiones F3-4.
-- **El usuario tenía mapas fantasma en loop** (dos causas: descubrimiento por `storage.list` —
-  descartado; y `leerMapas()` recreaba "principal" sobre un registro vacío → se re-subía →
-  reaparecía). Arreglado. **Salida definitiva: botón "🧹 Empezar de cero"** en el chip de mapas
-  (borra todo local + nube menos las keys, deja uno vacío, tombstonea el resto → el otro
-  dispositivo converge).
+- **El usuario tenía mapas fantasma en loop** (causas: descubrimiento por `storage.list` —
+  descartado; `leerMapas()` recreaba "principal" sobre un registro vacío; y **"Empezar de cero"
+  no convergía** si el otro dispositivo tenía un mapa local sin subir → fusionaba y renombraba a
+  "Mi mapa (2)", auto-perpetuándose). Arreglado. **Salida definitiva: botón "🧹 Empezar de cero"**
+  en el chip de mapas — borra todo local + nube (menos las keys), deja uno vacío, y pone un
+  **`epoch` nuevo** en el índice: el otro dispositivo, al ver un epoch mayor al aplicado, hace
+  reset duro y adopta la nube tal cual (no depende de los tombstones). Decisiones F3-4.
+- **Para salir del enredo actual** (mapas "Mi mapa" + "Mi mapa (2)" en ambos): con el fix
+  deployado, tocar "🧹 Empezar de cero" UNA vez en un dispositivo logueado → el otro converge al
+  siguiente foco de pestaña (≤15s).
 - **Keys/modelos ahora SÍ sincronizan** (`sync/<uid>/config.json`, bucket privado del usuario,
   RLS por cuenta). Relaja la invariante de CLAUDE.md — decisión del usuario. Decisiones §9.
 - **Borrar el último mapa** se permite (crea uno nuevo vacío).

@@ -487,9 +487,21 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
   nuevo (no "principal") si el registro quedó vacío.
 - **"🧹 Empezar de cero"** (`empezarDeCero` / `empezarDeCeroNube`): borra TODOS los mapas —
   local + nube (menos `config.json`) — y deja UNO vacío, con todos los ids viejos + "principal"
-  tombstoneados. El otro dispositivo, al ver que TODOS sus mapas están en `borrados`, limpia
-  local y adopta el nuevo (`sincronizarListaMapas`, rama "all-tombstoned"). Es la salida cuando
-  el sync quedó enredado.
+  tombstoneados **y un `epoch` nuevo** (`Date.now()`) en el índice. Es la salida cuando el sync
+  quedó enredado.
+- **`epoch` de reset (01-09-2026)** — antes la convergencia dependía de que el otro dispositivo
+  tuviera TODOS sus mapas locales en `borrados` (`rama "all-tombstoned"`). Fallaba si ese
+  dispositivo tenía un mapa creado local y nunca subido (otro "Empezar de cero" previo,
+  `asegurarUnMapa`): su id no estaba tombstoneado → `every(borrado)` falso → fusionaba en vez de
+  resetear → `fusionarMapasNube` renombraba el mapa entrante a **"Mi mapa (2)"** y el "sanar
+  índice" subía los dos → el bug se auto-perpetuaba en ambos. Ahora: `_mapas.json` lleva
+  `epoch?: number`; cada dispositivo guarda el último aplicado en `3maps:sync:epoch:<uid>`; si
+  `indice.epoch > epochAplicado(uid)` → **reset duro**: `sincronizarListaMapas` borra todo
+  `3maps:(arbol|vista|sync):*`, adopta `indice.mapas` tal cual, marca el epoch y corta (no toca
+  la lógica de tombstones). `subirIndiceMapasNube` arrastra el `epoch` de la nube (nunca lo
+  baja). El dispositivo que resetea marca su epoch ANTES de subir → no se auto-resetea.
+- La rama "all-tombstoned" de `sincronizarListaMapas` queda como fallback para el caso viejo (sin
+  epoch en el índice).
 - `sincronizarListaMapas` también: si el mapa activo desapareció (lo reseteó/borró otro
   dispositivo) → cambia a uno válido; si local Y nube quedan sin mapas → crea uno y lo sube.
 

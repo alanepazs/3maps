@@ -84,6 +84,8 @@ import {
   bajarIndiceMapasNube,
   borrarMapaNube,
   empezarDeCeroNube,
+  epochAplicado,
+  marcarEpoch,
   subirConfigNube,
   subirIndiceMapasNube,
 } from "@/model/sync";
@@ -1076,7 +1078,13 @@ function Flow() {
     guardarArbol({ intercambios: [] }, id);
     setMapas(m);
     cargarEnMapa(id, { intercambios: [] });
-    if (usuario) void empezarDeCeroNube(usuario.id, { id, meta });
+    if (usuario) {
+      const epoch = Date.now();
+      // Marcar local ANTES (el poll no debe auto-resetear este dispositivo) y
+      // subir con el mismo epoch.
+      marcarEpoch(usuario.id, epoch);
+      void empezarDeCeroNube(usuario.id, { id, meta }, epoch);
+    }
     window.setTimeout(() => void fitView({ ...fitOpts, duration: 300 }), 60);
   }, [usuario, cancelInertia, cancelPanInertia, cargarEnMapa, fitView, fitOpts]);
 
@@ -1092,6 +1100,28 @@ function Flow() {
       // Todavía no hay índice en la nube → subir lo local como estado inicial.
       const local = leerMapas();
       if (Object.keys(local).length) void subirIndiceMapasNube(uid, local);
+      return;
+    }
+    // Reset duro coordinado: "Empezar de cero" en otro dispositivo dejó un epoch
+    // mayor al que aplicamos → adoptar el índice de la nube TAL CUAL, sin
+    // depender de que los tombstones cubran cada mapa local (los que este
+    // dispositivo creó y nunca subió no están tombstoneados).
+    if (indice.epoch > epochAplicado(uid)) {
+      try {
+        for (const k of Object.keys(localStorage)) {
+          if (/^3maps:(arbol|vista|sync):/.test(k)) localStorage.removeItem(k);
+        }
+      } catch {
+        // ignorar
+      }
+      guardarMapas(indice.mapas);
+      marcarEpoch(uid, indice.epoch); // después del wipe (borra la clave del epoch)
+      setMapas(indice.mapas);
+      const activo = Object.keys(indice.mapas)[0];
+      if (activo) {
+        guardarArbol({ intercambios: [] }, activo);
+        cargarEnMapa(activo, cargarArbol(activo));
+      }
       return;
     }
     const borrados = new Set(indice.borrados);

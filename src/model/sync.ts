@@ -30,6 +30,9 @@ const ARCHIVO_LEGACY = "arbol.json";
 const INDICE = "_mapas.json";
 const CONFIG = "config.json";
 const SYNC_STATE_KEY = (mapId: string) => `3maps:sync:${mapId}`;
+// Último "epoch" de reset ("Empezar de cero") que este dispositivo ya aplicó,
+// por cuenta. Si el índice de la nube trae uno mayor → reset duro local.
+const EPOCH_KEY = (uid: string) => `3maps:sync:epoch:${uid}`;
 const VERSION = 1;
 const LOG = "[3maps sync]";
 
@@ -66,8 +69,16 @@ async function descargarTexto(
 type SobreSync = { v: number; titulo?: string; files: Record<string, string> };
 // `borrados` = tombstones: ids que se borraron en algún dispositivo. El borrado
 // SÍ se propaga (por acá). Re-crear un mapa da un id nuevo → nunca choca.
-type SobreIndice = { v: number; mapas: Mapas; borrados?: string[] };
-export type IndiceNube = { mapas: Mapas; borrados: string[] };
+// `epoch` = timestamp del último "Empezar de cero"; un dispositivo que ve un
+// epoch mayor al que aplicó hace reset duro (no depende de que los tombstones
+// estén completos — ver `empezarDeCeroNube`).
+type SobreIndice = {
+  v: number;
+  mapas: Mapas;
+  borrados?: string[];
+  epoch?: number;
+};
+export type IndiceNube = { mapas: Mapas; borrados: string[]; epoch: number };
 type EstadoLocal = { at: string; hash: string; uid: string };
 
 function leerEstado(mapId: string): EstadoLocal {
@@ -264,6 +275,7 @@ export async function bajarIndiceMapasNube(
       borrados: Array.isArray(sobre.borrados)
         ? sobre.borrados.filter((x): x is string => typeof x === "string")
         : [],
+      epoch: typeof sobre.epoch === "number" ? sobre.epoch : 0,
     };
   } catch {
     return null;
@@ -292,18 +304,40 @@ export async function subirIndiceMapasNube(
     v: VERSION,
     mapas: merged,
     borrados: [...borrados],
+    // El epoch de reset nunca baja: se arrastra tal cual está en la nube.
+    ...(nube?.epoch ? { epoch: nube.epoch } : {}),
   };
   await sb.storage
     .from(BUCKET)
     .upload(rutaDe(uid, INDICE), JSON.stringify(sobre), OPCIONES_SUBIDA);
 }
 
+// Epoch de reset que este dispositivo ya aplicó (0 si nunca).
+export function epochAplicado(uid: string): number {
+  try {
+    return Number(localStorage.getItem(EPOCH_KEY(uid))) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+export function marcarEpoch(uid: string, epoch: number): void {
+  try {
+    localStorage.setItem(EPOCH_KEY(uid), String(epoch));
+  } catch {
+    // ignorar
+  }
+}
+
 // "Empezar de cero": borra TODOS los árboles del usuario en la nube (NO la
 // config de IA) y deja un índice nuevo con un solo mapa + todos los ids viejos
-// tombstoneados → los otros dispositivos convergen al mismo estado limpio.
+// tombstoneados + un `epoch` nuevo → los otros dispositivos convergen al mismo
+// estado limpio (por el epoch, aunque tengan mapas locales sin subir que no
+// alcanzamos a tombstonear).
 export async function empezarDeCeroNube(
   uid: string,
   nuevo: { id: string; meta: { titulo: string; creado: string } },
+  epoch: number,
 ): Promise<void> {
   const sb = getSupabase();
   if (!sb || !uid) return;
@@ -327,6 +361,7 @@ export async function empezarDeCeroNube(
     v: VERSION,
     mapas: { [nuevo.id]: nuevo.meta },
     borrados: [...viejos],
+    epoch,
   };
   await sb.storage
     .from(BUCKET)
@@ -338,6 +373,9 @@ export async function empezarDeCeroNube(
   } catch {
     // ignorar
   }
+  // Después de limpiar las claves `3maps:sync:*` (que incluyen la del epoch):
+  // marcamos que este dispositivo ya está en este epoch → no se auto-resetea.
+  marcarEpoch(uid, epoch);
 }
 
 // ── Config de IA (keys/modelos) entre dispositivos ──────────────────────────
