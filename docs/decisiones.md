@@ -100,10 +100,13 @@ Complementa a:
   clave del proxy`. **Descartados**: Cloudflare (`account_id` en la URL), Doubao/ERNIE/Hunyuan
   (verificación de empresa / OAuth), Kling/Seedance (video). **Redeploy del edge function
   obligatorio** al sumar un proveedor (`supabase functions deploy ia-proxy` o el editor del panel).
-- **`GUIA_API_KEY`** (`ia.ts`, 31-08-2026): por proveedor, `{ url, gratis, pasos[] }` — mini-guía
-  paso a paso "cómo consigo la key" para gente que nunca usó una. `SettingsPanel` la muestra en un
-  `<details>` bajo el input, con un botón que abre la web del proveedor y avisa si cobra
-  (sugiriendo Gemini).
+- **`GUIA_API_KEY`** (`ia.ts`, 31-08-2026): por proveedor, `{ url, gratis, abierto?, pasos[] }` —
+  mini-guía paso a paso "cómo consigo la key" para gente que nunca usó una. `SettingsPanel` la
+  muestra en un `<details>` bajo el input, con un botón que abre la web del proveedor y avisa si
+  cobra (sugiriendo Gemini). `abierto: true` (groq, cerebras, openrouter, huggingface, siliconflow)
+  → agrega la línea "acá usás modelos open-source (Llama, Qwen, DeepSeek, GLM…)". No hay proveedor
+  "open-source" aparte: los modelos abiertos ya se sirven vía esos 5 (online); un modo offline
+  tipo Ollama quedó descartado por ahora (mixed-content/CORS + el celu no llega a `localhost`).
 
 ### 7b. Modelos de Gemini: default `gemini-3.7-flash`, "thinking" mínimo por generación, botón "ver modelos"
 La API de Gemini se renovó entera en 2026 y una key **free tier** nueva de AI Studio se comporta

@@ -432,6 +432,15 @@ export default function SettingsPanel({
                     arriba.
                   </span>
                 )}
+                {GUIA_API_KEY[proveedor].abierto && (
+                  <>
+                    {" "}
+                    <span className="text-white/60">
+                      Acá usás modelos open-source (Llama, Qwen, DeepSeek, GLM…),
+                      no un modelo propio cerrado.
+                    </span>
+                  </>
+                )}
               </p>
               <ol className="ml-4 list-decimal space-y-1">
                 {GUIA_API_KEY[proveedor].pasos.map((p, i) => (

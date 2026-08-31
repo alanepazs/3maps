@@ -18,7 +18,9 @@
   DeepSeek, GPT, Groq, Cerebras, OpenRouter, Mistral, HuggingFace, **Zhipu/GLM, Qwen, Moonshot/Kimi,
   SiliconFlow** vía el edge function `ia-proxy` (opt-in "usar proxy" en ⚙️). Una key/modelo por
   proveedor, sincronizan entre dispositivos. `⚙️` tiene una mini-guía "cómo conseguir tu API key"
-  por proveedor (`GUIA_API_KEY`). **Solo Gemini probado end-to-end.**
+  por proveedor (`GUIA_API_KEY`); en Groq/Cerebras/OpenRouter/HF/SiliconFlow aclara que son
+  **modelos open-source** (Llama, Qwen, DeepSeek, GLM) y `MODELOS_SUGERIDOS` los lista.
+  **Solo Gemini probado end-to-end.**
 - **Backend opcional** (Supabase, `ref` ejecjjpdjoxgrbqrhwwd): login Google/magic-link, compartir
   árbol por link (`?compartir=<slug>`), "mis árboles" + despublicar, sync entre dispositivos.
   Sin las env `NEXT_PUBLIC_SUPABASE_*` la app es 100% local.

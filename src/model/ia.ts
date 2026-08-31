@@ -63,23 +63,35 @@ export const MODELOS_SUGERIDOS: Record<Proveedor, string[]> = {
     "gemini-3.5-flash",
     "gemini-3.5-flash-lite",
   ],
-  // Free tiers reales (sin tarjeta). El botón "ver modelos" de ⚙️ lista lo que
-  // cada key puede usar — los nombres cambian seguido.
+  // Free tiers reales (sin tarjeta), todos sirviendo modelos open-weights
+  // (Llama, Qwen, DeepSeek, GLM, gpt-oss). El botón "ver modelos" de ⚙️ lista lo
+  // que cada key puede usar — los nombres cambian seguido.
   groq: [
     "llama-3.3-70b-versatile",
     "llama-3.1-8b-instant",
+    "deepseek-r1-distill-llama-70b",
     "openai/gpt-oss-120b",
+    "openai/gpt-oss-20b",
   ],
-  cerebras: ["llama-3.3-70b", "llama3.1-8b", "qwen-3-235b-a22b-instruct-2507"],
+  cerebras: [
+    "llama-3.3-70b",
+    "llama3.1-8b",
+    "qwen-3-32b",
+    "qwen-3-235b-a22b-instruct-2507",
+    "gpt-oss-120b",
+  ],
   openrouter: [
     "meta-llama/llama-3.3-70b-instruct:free",
     "deepseek/deepseek-chat-v3-0324:free",
+    "deepseek/deepseek-r1:free",
     "qwen/qwen-2.5-72b-instruct:free",
+    "google/gemma-3-27b-it:free",
   ],
   mistral: ["mistral-small-latest", "open-mistral-nemo", "codestral-latest"],
   huggingface: [
     "Qwen/Qwen2.5-72B-Instruct",
     "meta-llama/Llama-3.3-70B-Instruct",
+    "deepseek-ai/DeepSeek-R1",
     "microsoft/phi-4",
   ],
   zhipu: ["glm-4-flash", "glm-4-plus", "glm-4-air"],
@@ -87,6 +99,7 @@ export const MODELOS_SUGERIDOS: Record<Proveedor, string[]> = {
   moonshot: ["moonshot-v1-8k", "moonshot-v1-32k", "kimi-k2-0711-preview"],
   siliconflow: [
     "deepseek-ai/DeepSeek-V3",
+    "deepseek-ai/DeepSeek-R1",
     "Qwen/Qwen2.5-72B-Instruct",
     "THUDM/glm-4-9b-chat",
   ],
@@ -143,9 +156,11 @@ export const PISTA_API_KEY: Record<Proveedor, string> = {
 
 // Mini-guía "cómo consigo mi API key", por proveedor — para gente que nunca usó
 // una. `url` se abre en otra pestaña; `pasos` es una lista corta y llana.
+// `abierto`: el proveedor sirve principalmente modelos open-weights (Llama, Qwen,
+// DeepSeek, GLM…) en vez de un modelo propio cerrado.
 export const GUIA_API_KEY: Record<
   Proveedor,
-  { url: string; gratis: boolean; pasos: string[] }
+  { url: string; gratis: boolean; abierto?: boolean; pasos: string[] }
 > = {
   gemini: {
     url: "https://aistudio.google.com/apikey",
@@ -168,6 +183,7 @@ export const GUIA_API_KEY: Record<
   groq: {
     url: "https://console.groq.com/keys",
     gratis: true,
+    abierto: true,
     pasos: [
       "Abrí el link y registrate (con Google o mail).",
       'Clic en "Create API Key", ponele un nombre.',
@@ -177,6 +193,7 @@ export const GUIA_API_KEY: Record<
   cerebras: {
     url: "https://cloud.cerebras.ai/",
     gratis: true,
+    abierto: true,
     pasos: [
       "Abrí el link y creá una cuenta.",
       'En el menú, entrá a "API Keys" y creá una.',
@@ -186,6 +203,7 @@ export const GUIA_API_KEY: Record<
   openrouter: {
     url: "https://openrouter.ai/keys",
     gratis: true,
+    abierto: true,
     pasos: [
       "Abrí el link y entrá con Google o GitHub.",
       'Clic en "Create Key".',
@@ -204,6 +222,7 @@ export const GUIA_API_KEY: Record<
   huggingface: {
     url: "https://huggingface.co/settings/tokens",
     gratis: true,
+    abierto: true,
     pasos: [
       "Abrí el link y creá una cuenta.",
       'Clic en "New token", tipo "Read".',
@@ -240,6 +259,7 @@ export const GUIA_API_KEY: Record<
   siliconflow: {
     url: "https://cloud.siliconflow.cn/account/ak",
     gratis: true,
+    abierto: true,
     pasos: [
       "Abrí el link y registrate con mail o GitHub.",
       'En "API Keys" → "Create Access Token".',
