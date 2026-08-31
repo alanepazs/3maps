@@ -54,12 +54,14 @@ src/
                          pregunta) = match por raíz de palabra + peso por rareza (fase 2.5 liviana).
     ia.ts                llamarIA(config, mensajes, opts) → string. Punto único; switch(proveedor).
                          Adaptadores: Claude (@anthropic-ai/sdk dinámico), Gemini (fetch + SSE), y
-                         DeepSeek/GPT vía llamarOpenAICompat (contra el edge function ia-proxy;
-                         SSE estilo OpenAI). Streaming vía opts.onTexto. opts.usarProxy gatea
-                         deepseek/gpt (si false → ErrorIA explicativo). resumir(). listarModelos
-                         (Claude client.models.list(), Gemini GET /v1beta/models, deepseek/gpt via
-                         proxy GET /models). PROVEEDORES_DISPONIBLES = 4; PROVEEDORES_VIA_PROXY =
-                         [deepseek, gpt]. ErrorIA con mensajes legibles.
+                         los OpenAI-compatibles vía llamarOpenAICompat (contra el edge function
+                         ia-proxy; SSE estilo OpenAI). Streaming vía opts.onTexto. opts.usarProxy
+                         los gatea (si false → ErrorIA explicativo); resumir() lo recibe también.
+                         listarModelos (Claude client.models.list(), Gemini GET /v1beta/models,
+                         los demás via proxy GET /models). PROVEEDORES_DISPONIBLES = 9;
+                         PROVEEDORES_VIA_PROXY = [deepseek, gpt, groq, cerebras, openrouter,
+                         mistral, huggingface]. upstreamDe(prov) → clave del mapa PROVEEDORES del
+                         proxy. ErrorIA con mensajes legibles.
     configIA.ts          localStorage "3maps:ia" = { activo, keys: {[proveedor]:{apiKey,modelo}} } —
                          UNA key por proveedor (cambiar y volver no la pierde). cargarConfigIA()
                          (siempre devuelve ConfigIA, default gemini), guardarConfigIA(c),
@@ -146,10 +148,12 @@ supabase/
   schema.sql                    bucket `arboles` + RLS (incl. delete dueño-solo) + tabla
                                `shared_trees` + bucket privado `sync` (RLS por carpeta `<uid>/`,
                                fase 2.4). Lo corre el usuario.
-  functions/ia-proxy/index.ts   Edge function Deno. Proxy stateless para DeepSeek/GPT: reenvía a
-                               api.openai.com / api.deepseek.com con x-ia-key, agrega CORS, pipe
-                               del stream. Sin logs, sin storage. Se deploya con `supabase
-                               functions deploy ia-proxy`.
+  functions/ia-proxy/index.ts   Edge function Deno. Proxy stateless para los proveedores
+                               OpenAI-compatibles (openai, deepseek, groq, cerebras, openrouter,
+                               mistral, huggingface — mapa PROVEEDORES): reenvía a la base fija de
+                               cada uno con x-ia-key, agrega CORS, pipe del stream. Sin logs, sin
+                               storage. Redeploy obligatorio al sumar un proveedor: `supabase
+                               functions deploy ia-proxy` o el editor del panel.
 ```
 
 ## FlowCanvas.tsx — el corazón

@@ -20,12 +20,26 @@ export type ConfigIA = {
 export const PROVEEDORES_DISPONIBLES: Proveedor[] = [
   "gemini",
   "claude",
+  "groq",
+  "cerebras",
+  "openrouter",
+  "mistral",
+  "huggingface",
   "deepseek",
   "gpt",
 ];
 
-// Proveedores que van contra `api.openai.com` / `api.deepseek.com` vía el proxy.
-export const PROVEEDORES_VIA_PROXY: Proveedor[] = ["deepseek", "gpt"];
+// Proveedores OpenAI-compatibles que NO habilitan CORS desde el navegador →
+// van contra su API vía el proxy `ia-proxy` (opt-in "usar proxy" en ⚙️).
+export const PROVEEDORES_VIA_PROXY: Proveedor[] = [
+  "deepseek",
+  "gpt",
+  "groq",
+  "cerebras",
+  "openrouter",
+  "mistral",
+  "huggingface",
+];
 
 export const MODELOS_SUGERIDOS: Record<Proveedor, string[]> = {
   claude: ["claude-haiku-4-5", "claude-sonnet-5", "claude-opus-5"],
@@ -41,6 +55,25 @@ export const MODELOS_SUGERIDOS: Record<Proveedor, string[]> = {
     "gemini-3.5-flash",
     "gemini-3.5-flash-lite",
   ],
+  // Free tiers reales (sin tarjeta). El botón "ver modelos" de ⚙️ lista lo que
+  // cada key puede usar — los nombres cambian seguido.
+  groq: [
+    "llama-3.3-70b-versatile",
+    "llama-3.1-8b-instant",
+    "openai/gpt-oss-120b",
+  ],
+  cerebras: ["llama-3.3-70b", "llama3.1-8b", "qwen-3-235b-a22b-instruct-2507"],
+  openrouter: [
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "deepseek/deepseek-chat-v3-0324:free",
+    "qwen/qwen-2.5-72b-instruct:free",
+  ],
+  mistral: ["mistral-small-latest", "open-mistral-nemo", "codestral-latest"],
+  huggingface: [
+    "Qwen/Qwen2.5-72B-Instruct",
+    "meta-llama/Llama-3.3-70B-Instruct",
+    "microsoft/phi-4",
+  ],
 };
 
 export const MODELO_POR_DEFECTO: Record<Proveedor, string> = {
@@ -48,6 +81,11 @@ export const MODELO_POR_DEFECTO: Record<Proveedor, string> = {
   deepseek: "deepseek-v4-flash",
   gpt: "gpt-5.4-mini",
   gemini: "gemini-3.7-flash",
+  groq: "llama-3.3-70b-versatile",
+  cerebras: "llama-3.3-70b",
+  openrouter: "meta-llama/llama-3.3-70b-instruct:free",
+  mistral: "mistral-small-latest",
+  huggingface: "Qwen/Qwen2.5-72B-Instruct",
 };
 
 export const NOMBRE_PROVEEDOR: Record<Proveedor, string> = {
@@ -55,6 +93,11 @@ export const NOMBRE_PROVEEDOR: Record<Proveedor, string> = {
   deepseek: "DeepSeek",
   gpt: "OpenAI",
   gemini: "Google Gemini",
+  groq: "Groq",
+  cerebras: "Cerebras",
+  openrouter: "OpenRouter",
+  mistral: "Mistral",
+  huggingface: "Hugging Face",
 };
 
 // Pista de formato de la API key, por proveedor (para el placeholder del input).
@@ -63,6 +106,11 @@ export const PISTA_API_KEY: Record<Proveedor, string> = {
   deepseek: "sk-…",
   gpt: "sk-…",
   gemini: "AQ.… o AIza…",
+  groq: "gsk_…",
+  cerebras: "csk-…",
+  openrouter: "sk-or-…",
+  mistral: "tu API key de Mistral",
+  huggingface: "hf_…",
 };
 
 // Chequeo de formato local (gratis, sin red). No confirma que la key funcione
@@ -87,8 +135,18 @@ export function avisoFormatoKey(
     case "deepseek":
     case "gpt":
       return /^sk-/.test(k) ? null : "No parece una key válida (empiezan con \"sk-\").";
+    case "groq":
+      return /^gsk_/.test(k) ? null : "No parece una key de Groq (empiezan con \"gsk_\").";
+    case "cerebras":
+      return /^csk-/.test(k) ? null : "No parece una key de Cerebras (empiezan con \"csk-\").";
+    case "openrouter":
+      return /^sk-or-/.test(k)
+        ? null
+        : "No parece una key de OpenRouter (empiezan con \"sk-or-\").";
+    case "huggingface":
+      return /^hf_/.test(k) ? null : "No parece un token de Hugging Face (empiezan con \"hf_\").";
     default:
-      return null;
+      return null; // mistral no tiene prefijo fijo
   }
 }
 
@@ -98,8 +156,8 @@ export type LlamadaOpts = {
   // Se llama con cada fragmento de texto que llega (para stremear en vivo).
   onTexto?: (delta: string, acumulado: string) => void;
   signal?: AbortSignal;
-  // El usuario aceptó que su key transite el proxy de 3maps (solo aplica a
-  // DeepSeek / GPT). Sin esto, esos proveedores tiran un error explicativo.
+  // El usuario aceptó que su key transite el proxy de 3maps (aplica a los
+  // proveedores OpenAI-compatibles vía proxy). Sin esto tiran error explicativo.
   usarProxy?: boolean;
 };
 
@@ -131,6 +189,11 @@ export async function llamarIA(
       return llamarGemini(config, mensajes, opts);
     case "deepseek":
     case "gpt":
+    case "groq":
+    case "cerebras":
+    case "openrouter":
+    case "mistral":
+    case "huggingface":
       return llamarOpenAICompat(config, mensajes, opts);
     default:
       throw new ErrorIA(
@@ -140,10 +203,13 @@ export async function llamarIA(
 }
 
 // Resumen corto de un tramo de la conversación (para la ventana de contexto,
-// spec §5). Usa el mismo proveedor/modelo configurado.
+// spec §5). Usa el mismo proveedor/modelo configurado. `usarProxy` hay que
+// pasarlo para los proveedores OpenAI-compatibles (si no, tiran error y el
+// resumen se saltea → contexto completo).
 export async function resumir(
   config: ConfigIA,
   intercambios: { pregunta: string; respuesta: string | null }[],
+  opts: { usarProxy?: boolean } = {},
 ): Promise<string> {
   const texto = intercambios
     .map(
@@ -163,7 +229,7 @@ export async function resumir(
           texto,
       },
     ],
-    { maxTokens: 2048 },
+    { maxTokens: 2048, usarProxy: opts.usarProxy },
   );
 }
 
@@ -482,15 +548,26 @@ async function mensajeErrorGemini(res: Response, modelo?: string): Promise<strin
   return m ?? `Error ${res.status} de Gemini.`;
 }
 
-// ── Adaptador: OpenAI-compatible (DeepSeek / GPT) vía el proxy de 3maps ────
-// `api.openai.com` y `api.deepseek.com` NO habilitan CORS → no se puede llamar
-// desde el navegador. El edge function `ia-proxy` reenvía y agrega el CORS. La
-// key del usuario TRANSITA por el proxy (stateless, no se guarda) — el usuario
-// lo habilita con el toggle "usar proxy" en ⚙️. Ver decisiones §7a / fase-2.md.
+// ── Adaptador: OpenAI-compatible vía el proxy de 3maps ────────────────────
+// DeepSeek, GPT, Groq, Cerebras, OpenRouter, Mistral, Hugging Face: APIs
+// OpenAI-compatibles que NO habilitan CORS → no se pueden llamar desde el
+// navegador. El edge function `ia-proxy` reenvía y agrega el CORS. La key del
+// usuario TRANSITA por el proxy (stateless, no se guarda) — se habilita con el
+// toggle "usar proxy" en ⚙️. Ver decisiones §7a / fase-2.md.
 
-// El proveedor tal como lo espera el proxy (header `x-ia-provider`).
-function upstreamDe(proveedor: Proveedor): "openai" | "deepseek" {
-  return proveedor === "gpt" ? "openai" : "deepseek";
+// El proveedor tal como lo espera el proxy (header `x-ia-provider`) → una clave
+// del mapa `PROVEEDORES` del edge function `ia-proxy`.
+const UPSTREAM: Partial<Record<Proveedor, string>> = {
+  gpt: "openai",
+  deepseek: "deepseek",
+  groq: "groq",
+  cerebras: "cerebras",
+  openrouter: "openrouter",
+  mistral: "mistral",
+  huggingface: "huggingface",
+};
+function upstreamDe(proveedor: Proveedor): string {
+  return UPSTREAM[proveedor] ?? proveedor;
 }
 
 type OpenAIChunk = {
@@ -645,6 +722,11 @@ export async function listarModelos(config: ConfigIA): Promise<string[]> {
       return listarModelosGemini(config);
     case "deepseek":
     case "gpt":
+    case "groq":
+    case "cerebras":
+    case "openrouter":
+    case "mistral":
+    case "huggingface":
       return listarModelosOpenAICompat(config);
     default:
       throw new ErrorIA(

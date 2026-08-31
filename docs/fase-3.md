@@ -120,9 +120,10 @@ acepta un `parentId` opcional y devuelve el id del globo nuevo. No se muestra en
 
 ## Sueltos que quedaron de fase 2
 
-- **Cerebras como 5º proveedor**: OpenAI-compatible → entra por el proxy `ia-proxy` (un `case`
-  más + `cerebras: "https://api.cerebras.ai/v1"` en el edge function + redeploy). Tiene free tier
-  real (verificar límites al día).
+- ~~**Cerebras como 5º proveedor**.~~ ✅ (30-08-2026) — y de paso Groq, OpenRouter, Mistral y
+  Hugging Face (todos OpenAI-compatibles con free tier real sin tarjeta). Van por el proxy
+  `ia-proxy` como DeepSeek/GPT. **Falta que el usuario redeploye el edge function** y pruebe con
+  una key real. Cloudflare Workers AI se descartó (mete el `account_id` en la URL).
 - ~~**Renombrar "Generar link" → "Compartir este árbol"** en `SettingsPanel`.~~ ✅ (30-08-2026)
 - **2.5b — embeddings de verdad** (`transformers.js`, worker, IndexedDB) si el matching por
   palabras clave se queda corto. Misma firma que `intercambiosRelevantes` → drop-in.
@@ -153,6 +154,6 @@ acepta un `parentId` opcional y devuelve el id del globo nuevo. No se muestra en
 
 ## Falta de fase 3
 
-- Cerebras como 5º proveedor (por el proxy `ia-proxy`).
+- Redeployar `ia-proxy` (suma Groq/Cerebras/OpenRouter/Mistral/HuggingFace) + probar con key real.
 - 2.5b (embeddings) si el matching por palabras clave se queda corto.
 - Probar el sync per-mapa con login real (2 dispositivos).

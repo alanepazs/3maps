@@ -1,5 +1,6 @@
-// ia-proxy — proxy stateless para los proveedores de IA que NO habilitan CORS
-// desde el navegador (OpenAI, DeepSeek). Ver docs/decisiones.md §7a y docs/fase-2.md.
+// ia-proxy — proxy stateless para los proveedores de IA OpenAI-compatibles que
+// NO habilitan CORS desde el navegador (OpenAI, DeepSeek, Groq, Cerebras,
+// OpenRouter, Mistral, Hugging Face). Ver docs/decisiones.md §7a y docs/fase-2.md.
 //
 // Qué hace: recibe la request del navegador, la reenvía al proveedor con la API
 // key del usuario (que viene en el header `x-ia-key`), y devuelve la respuesta
@@ -18,6 +19,11 @@
 const PROVEEDORES: Record<string, string> = {
   openai: "https://api.openai.com/v1",
   deepseek: "https://api.deepseek.com",
+  groq: "https://api.groq.com/openai/v1",
+  cerebras: "https://api.cerebras.ai/v1",
+  openrouter: "https://openrouter.ai/api/v1",
+  mistral: "https://api.mistral.ai/v1",
+  huggingface: "https://router.huggingface.co/v1",
 };
 
 const RUTAS_OK = new Set(["/chat/completions", "/models"]);

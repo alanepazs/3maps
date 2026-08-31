@@ -9,7 +9,16 @@ import type { Edge, Node } from "@xyflow/react";
 // `## Respuesta`. Ver `toMarkdown` / `parseMarkdown`.
 
 export type Rama = "main" | "branch-left" | "branch-right";
-export type Proveedor = "claude" | "deepseek" | "gpt" | "gemini";
+export type Proveedor =
+  | "claude"
+  | "deepseek"
+  | "gpt"
+  | "gemini"
+  | "groq"
+  | "cerebras"
+  | "openrouter"
+  | "mistral"
+  | "huggingface";
 
 export const RAMAS: readonly Rama[] = ["main", "branch-left", "branch-right"];
 export const PROVEEDORES: readonly Proveedor[] = [
@@ -17,6 +26,11 @@ export const PROVEEDORES: readonly Proveedor[] = [
   "deepseek",
   "gpt",
   "gemini",
+  "groq",
+  "cerebras",
+  "openrouter",
+  "mistral",
+  "huggingface",
 ];
 
 export type Intercambio = {

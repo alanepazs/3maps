@@ -60,16 +60,18 @@ Carpeta local: `D:\IA\3maps`.
   `pending` y la respuesta **se escribe en vivo (streaming)** con cursor ▍.
 - **Contexto** = solo el camino raíz→globo (`armarContexto`), aplanado a user/assistant, con
   ventana (últimos N completos + resumen del tramo viejo vía `resumir`, cacheado por sesión).
-- **Proveedores** (4 en el dropdown):
+- **Proveedores** (9 en el dropdown):
   - **Gemini (Google, `fetch` directo + SSE)**: free tier, probado end-to-end, default `gemini-3.7-flash`.
   - **Claude (Anthropic, `@anthropic-ai/sdk` dinámico)**: requiere billing (Pro o créditos en console.anthropic.com).
-  - **DeepSeek / GPT (proxy)**: no habilitan CORS → van por el edge function `ia-proxy` (fase 2.1).
+  - **Vía proxy `ia-proxy`** (no habilitan CORS): **DeepSeek**, **OpenAI/GPT** (con billing), y
+    con **free tier real sin tarjeta**: **Groq**, **Cerebras**, **OpenRouter** (modelos `:free`),
+    **Mistral** (1 RPM), **Hugging Face**. Todos OpenAI-compatibles → mismo `llamarOpenAICompat`.
     Opt-in (`settings.usarProxyIA`): caja en ⚙️ que avisa que la key transita el proxy stateless.
-    Código listo; falta deployar el function + probar con key real.
-  
+    **Falta redeployar el edge function** (suma los 5 nuevos) + probar con key real.
+
   Se eligen en ⚙️; **cada proveedor tiene su propia key guardada** (cambiás y volvés, no la
   perdés — `configIA.ts`, decisiones §9). **La key de Claude/Gemini va directo del navegador al
-  proveedor**; la de DeepSeek/GPT transita el proxy (nunca se guarda).
+  proveedor**; las de los proveedores vía proxy transitan el proxy (nunca se guardan).
   Default de Gemini = `gemini-3.7-flash` (Flash estable más nuevo, free tier), con **thinking al
   mínimo** por generación (`thinkingLevel: "low"` en 3.x, `thinkingBudget: 0` en 2.x — si no,
   devolvía respuesta vacía). Los modelos **varían por key** → botón **"verificar key y ver sus
@@ -77,7 +79,8 @@ Carpeta local: `D:\IA\3maps`.
   `configIA.ts` migra al cargar solo lo retirado-para-todos + alias paid (los `2.5-*` ya NO se
   migran). Ver decisiones §7b, §8c.
 - **Chequeo de formato de key** (`avisoFormatoKey`, local, gratis): aviso ámbar bajo el input si
-  la key no pinta del proveedor elegido (`sk-ant-` / `AQ.`|`AIza` / `sk-`). No bloquea Guardar.
+  la key no pinta del proveedor elegido (`sk-ant-` / `AQ.`|`AIza` / `sk-` / `gsk_` / `csk-` /
+  `sk-or-` / `hf_`; Mistral no tiene prefijo). No bloquea Guardar.
 - **Respuesta en markdown** (`src/components/Markdown.tsx`): títulos, listas, código (inline y
   bloque con scroll propio), links (pestaña nueva), citas, tablas GFM. Sin HTML crudo → seguro.
 - **Errores**: recuadro rojo + "↻ Reintentar" (descarta la parcial vieja). El error se persiste
@@ -182,8 +185,13 @@ puede loguear con Google, no solo test-users. Faltaba: cargar los 3 permisos no 
 con dominio autorizado `alanepazs.github.io` + homepage en la marca. Sin revisión de Google
 (permisos no sensibles).
 
-Falta: Cerebras (5º proveedor), probar el sync per-mapa con login real, 2.5b si hace falta.
-Decisiones en `docs/decisiones.md` (F3-1..F3-7).
+**Proveedores de IA (30-08-2026)**: se sumaron Groq, Cerebras, OpenRouter, Mistral y Hugging Face
+(free tiers reales sin tarjeta, OpenAI-compatibles, vía el proxy `ia-proxy` como DeepSeek/GPT).
+UI verificada en el preview pane (dropdown, placeholders, avisos de formato, toggle del proxy).
+**Falta**: redeployar el edge function `ia-proxy` (suma los 5) + probar con una key real.
+
+Falta: redeploy de `ia-proxy`, probar el sync per-mapa con login real, 2.5b si hace falta.
+Decisiones en `docs/decisiones.md` (F3-1..F3-7, §7a).
 
 **UX — API key por proveedor** (`0e56112`, 30-08-2026): `configIA.ts` ahora guarda una key por
 proveedor. Cambiás de proveedor en ⚙️ y volvés → la key reaparece sola (antes se borraba).

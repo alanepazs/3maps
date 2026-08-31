@@ -447,7 +447,9 @@ function Flow() {
           resumen = resumenCacheRef.current.get(clave) ?? null;
           if (!resumen) {
             try {
-              resumen = await resumir(configIA, viejos);
+              resumen = await resumir(configIA, viejos, {
+                usarProxy: settings.usarProxyIA,
+              });
               resumenCacheRef.current.set(clave, resumen);
             } catch {
               resumen = null;

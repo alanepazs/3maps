@@ -69,7 +69,7 @@ Complementa a:
   que se parsea el SSE a mano (`data: {json}` → `candidates[0].content.parts[].text`).
 - **Revertir** (meter el SDK de Google, o cargar el de Anthropic estático): más peso, sin ganancia.
 
-### 7a. DeepSeek y GPT van por el **proxy de 3maps** (no habilitan CORS)
+### 7a. Los proveedores OpenAI-compatibles van por el **proxy de 3maps** (no habilitan CORS)
 - **El bloqueo** (verificado 29-08-2026): `api.openai.com` y `api.deepseek.com` **no mandan
   `Access-Control-Allow-Origin`** → el navegador bloquea la respuesta de cualquier `fetch`
   cross-origin. `dangerouslyAllowBrowser` del SDK de OpenAI **no** lo arregla: solo saca el guard
@@ -82,10 +82,19 @@ Complementa a:
   de 3maps; puede **transitar** un proxy stateless que el usuario activa a propósito"*. El toggle
   `settings.usarProxyIA` (default off) + la caja explicativa en ⚙️ hacen el opt-in explícito.
 - `llamarOpenAICompat` en `ia.ts` pega contra `${SUPABASE_URL}/functions/v1/ia-proxy`, no contra
-  el proveedor. SSE estilo OpenAI (`choices[0].delta.content`). `PROVEEDORES_DISPONIBLES` ahora
-  son los 4; sin el toggle, `deepseek`/`gpt` tiran un `ErrorIA` explicativo.
-- **Anti-SSRF**: el cliente manda un *nombre* de proveedor (`x-ia-provider: deepseek|openai`), no
-  una URL; el proxy la mapea a una base fija. Rutas limitadas a `/chat/completions` y `/models`.
+  el proveedor. SSE estilo OpenAI (`choices[0].delta.content`). Sin el toggle, esos proveedores
+  tiran un `ErrorIA` explicativo.
+- **Anti-SSRF**: el cliente manda un *nombre* de proveedor (`x-ia-provider`), no una URL; el proxy
+  lo mapea a una base fija (mapa `PROVEEDORES` del edge function). Rutas limitadas a
+  `/chat/completions` y `/models`.
+- **Proveedores vía proxy (30-08-2026)**: `deepseek`, `gpt` (`openai`), y sumados por sus free
+  tiers reales sin tarjeta → `groq` (`api.groq.com/openai/v1`), `cerebras` (`api.cerebras.ai/v1`),
+  `openrouter` (`openrouter.ai/api/v1`, modelos `:free`), `mistral` (`api.mistral.ai/v1`, 1 RPM),
+  `huggingface` (`router.huggingface.co/v1`). Todos OpenAI-compatibles → mismo `llamarOpenAICompat`
+  / `listarModelosOpenAICompat`. `upstreamDe` pasó de `"openai"|"deepseek"` a un mapa
+  `Proveedor → clave del proxy`. **Cloudflare Workers AI se descartó**: su endpoint mete el
+  `account_id` en la URL, no encaja con "pegá solo la key". **Redeploy del edge function
+  obligatorio** al sumar un proveedor (`supabase functions deploy ia-proxy` o el editor del panel).
 
 ### 7b. Modelos de Gemini: default `gemini-3.7-flash`, "thinking" por generación, + botón "ver modelos"
 Historia de dolor real con una key **free tier** recién sacada de AI Studio:

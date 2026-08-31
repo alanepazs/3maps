@@ -373,7 +373,8 @@ export default function SettingsPanel({
                     className="mt-0.5 accent-sky-500"
                   />
                   <span>
-                    Entiendo y quiero usar el proxy de 3maps para DeepSeek / GPT.
+                    Entiendo y quiero usar el proxy de 3maps para{" "}
+                    {NOMBRE_PROVEEDOR[proveedor]}.
                   </span>
                 </label>
               )}
