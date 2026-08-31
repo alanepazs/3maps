@@ -183,15 +183,24 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
 - **Migración**: al cargar, el formato viejo `{ proveedor, apiKey, modelo }` se convierte (la key
   vieja queda bajo su proveedor).
 - **"Borrar key"** borra solo la del proveedor activo (`borrarKeyProveedor`), no las otras.
-- Separado de `"3maps:settings"` porque es más sensible (varias API keys). **Invariante
-  CLAUDE.md**: las keys van **directo del navegador al proveedor** (salvo los OpenAI-compatibles
-  que transitan el proxy, §7a), nunca se guardan en un server de 3maps.
+- Separado de `"3maps:settings"` porque es más sensible (varias API keys).
 - **Atadas a la cuenta (30-08-2026)**: el almacén tiene un campo `dueño` (uid). Si en el mismo
-  navegador se loguea OTRA cuenta, `scopeConfigIA(uid)` **borra todas las keys** — son lo más
-  sensible (facturación), cada cuenta pone la suya. Casos: keys pegadas sin login (`dueño: ""`)
-  → la primera cuenta que loguea las **adopta**; misma cuenta → no toca nada; **logout → tampoco
-  toca nada** (tu navegador, tu key). Bug encontrado por el usuario: logueó una cuenta nueva y
-  heredó la key de la anterior. `FlowCanvas` llama `scopeConfigIA` en cada cambio de `usuario`.
+  navegador se loguea OTRA cuenta, `scopeConfigIA(uid)` **borra todas las keys locales** — son lo
+  más sensible (facturación). Casos: keys pegadas sin login (`dueño: ""`) → la primera cuenta que
+  loguea las **adopta**; misma cuenta → no toca nada; **logout → tampoco toca nada**. Bug
+  encontrado por el usuario: logueó una cuenta nueva y heredó la key de la anterior.
+- **Sincronizadas entre dispositivos con sesión (31-08-2026)**: además del `localStorage`, el
+  almacén viaja a `sync/<uid>/config.json` (bucket PRIVADO del propio usuario, RLS por cuenta —
+  ver `exportarConfigNube` / `fusionarConfigNube` en `configIA.ts`, `bajar/subirConfigNube` en
+  `sync.ts`). Al cambiar de sesión: `scopeConfigIA` primero (borra si es otra cuenta), después
+  `bajarConfigNube` → `fusionarConfigNube` (unión de keys, **en conflicto gana la nube** = el
+  último estado subido; adopta el `activo` de la nube si tiene key). Se re-sube tras cada
+  `guardar/cambiar/borrar` y tras la fusión inicial. `dueño` NO viaja (el path es el scoping).
+  **Esto relaja la invariante de CLAUDE.md**: las keys ahora se guardan en la infra del usuario
+  (su propio Storage de Supabase), nunca en la nuestra ni compartidas. Decisión del usuario: el
+  dolor de re-pegar la key en cada dispositivo pesaba más que el riesgo (Storage privado + RLS).
+- **Revertir** (sacar el sync de config): volvés a re-pegar la key en cada dispositivo; el bug de
+  "heredé la key" ya está cubierto por `scopeConfigIA` solo.
 
 ### 10. Contexto = **solo el camino raíz→nodo**, aplanado, ventana + resumen
 - **Por qué** (invariante CLAUDE.md / spec §5): mandar el árbol entero explota el costo.
@@ -418,11 +427,21 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
 - `mapas.ts`: `3maps:mapas` + `3maps:mapaActivo` + `3maps:arbol:<mapId>`. **Migración**: al leer
   por primera vez se crea el mapa `principal` y se mueve el viejo `3maps:arbol`. En la nube, el
   mapa `principal` cae al viejo `arbol.json` si todavía no hay `principal.json`.
-- **Índice `sync/<uid>/_mapas.json`** para que la LISTA de mapas aparezca en otros dispositivos:
-  al loguear se fusiona (UNIÓN — se agregan los que faltan localmente). **No se propagan
-  borrados** entre dispositivos: herramienta personal, y propagar borrados necesitaría tombstones.
 - `useSync` re-corre el sync inicial al cambiar de `(uid, mapId)`. `3maps:sync` pasó a
   `3maps:sync:<mapId>`.
+- **Descubrimiento de mapas** (arreglado 31-08-2026 — antes la lista no sincronizaba):
+  - `_mapas.json` guarda solo los **títulos**. La EXISTENCIA de un mapa se descubre de
+    `storage.list(<uid>/)` (`listarMapasNube`): todo `<id>.json` con árbol en la nube ES un mapa,
+    aunque el índice se haya pisado. El título genérico se sana al abrir el mapa (viene adentro
+    del árbol → `onTituloNube`).
+  - `subirIndiceMapasNube` hace **UNIÓN con la nube antes de subir** (antes era overwrite → cada
+    `nuevoMapa`/`renombrar`/`borrar` de un dispositivo borraba del índice los mapas ajenos).
+    **Borrados NO se propagan** (herramienta personal; propagarlos necesitaría tombstones).
+  - La lista se re-sincroniza también al **volver a foco** la pestaña, no solo al loguear.
+  - Bug de caché: `bajar*` usaban `sb.storage.download()`, que sirve la versión cacheada por el
+    navegador hasta 1h (`cache-control: max-age=3600` — igual que §F2-4). Ahora se sube con
+    `cacheControl: "0"` y se baja por signed URL con `{ cache: "no-store" }` (`descargarTexto` en
+    `sync.ts`).
 
 ### F3-7. Al crear un globo se busca un lugar LIBRE (no offsets fijos)
 - **Por qué**: los offsets fijos (`parent.y + 240`, `hermanos * 40`, `parent.x + 400`) se

@@ -1,5 +1,6 @@
 "use client";
 
+import type { ConfigNube } from "./configIA";
 import { parseMarkdown, toMarkdown, type Arbol } from "./intercambio";
 import { ID_PRINCIPAL, type Mapas } from "./mapas";
 import { getSupabase } from "./supabase";
@@ -27,6 +28,7 @@ import { getSupabase } from "./supabase";
 const BUCKET = "sync";
 const ARCHIVO_LEGACY = "arbol.json";
 const INDICE = "_mapas.json";
+const CONFIG = "config.json";
 const SYNC_STATE_KEY = (mapId: string) => `3maps:sync:${mapId}`;
 const VERSION = 1;
 const LOG = "[3maps sync]";
@@ -291,6 +293,38 @@ export async function subirIndiceMapasNube(
   await sb.storage
     .from(BUCKET)
     .upload(rutaDe(uid, INDICE), JSON.stringify(sobre), OPCIONES_SUBIDA);
+}
+
+// ── Config de IA (keys/modelos) entre dispositivos ──────────────────────────
+
+type SobreConfig = { v: number } & ConfigNube;
+
+export async function bajarConfigNube(uid: string): Promise<ConfigNube | null> {
+  const sb = getSupabase();
+  if (!sb || !uid) return null;
+  const texto = await descargarTexto(sb, rutaDe(uid, CONFIG));
+  if (texto === null) return null;
+  try {
+    const o = JSON.parse(texto) as Partial<SobreConfig>;
+    if (!o || typeof o !== "object" || !o.keys || typeof o.keys !== "object") {
+      return null;
+    }
+    return { activo: o.activo as ConfigNube["activo"], keys: o.keys };
+  } catch {
+    return null;
+  }
+}
+
+export async function subirConfigNube(
+  uid: string,
+  config: ConfigNube,
+): Promise<void> {
+  const sb = getSupabase();
+  if (!sb || !uid) return;
+  const sobre: SobreConfig = { v: VERSION, ...config };
+  await sb.storage
+    .from(BUCKET)
+    .upload(rutaDe(uid, CONFIG), JSON.stringify(sobre), OPCIONES_SUBIDA);
 }
 
 // Decide qué hacer al abrir un mapa (o al loguear / cambiar de mapa).

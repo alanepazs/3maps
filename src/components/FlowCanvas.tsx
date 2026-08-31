@@ -71,9 +71,11 @@ import {
   type Mapas,
 } from "@/model/mapas";
 import {
+  bajarConfigNube,
   bajarIndiceMapasNube,
   borrarMapaNube,
   listarMapasNube,
+  subirConfigNube,
   subirIndiceMapasNube,
 } from "@/model/sync";
 import { useSesion } from "./useSesion";
@@ -87,6 +89,8 @@ import { llamarIA, resumir, MODELO_POR_DEFECTO, type ConfigIA } from "@/model/ia
 import {
   borrarKeyProveedor,
   cambiarProveedorActivo,
+  exportarConfigNube,
+  fusionarConfigNube,
   cargarConfigIA,
   guardarConfigIA,
   scopeConfigIA,
@@ -295,26 +299,56 @@ function Flow() {
       ? { proveedor: "gemini", apiKey: "", modelo: MODELO_POR_DEFECTO.gemini }
       : cargarConfigIA(),
   );
+  // Con sesión, la config de IA sincroniza a `sync/<uid>/config.json`.
+  const subirConfigIA = useCallback(() => {
+    const uid = usuario?.id;
+    if (uid) void subirConfigNube(uid, exportarConfigNube());
+  }, [usuario]);
   // Guarda la key/modelo del proveedor activo.
-  const guardarKeyIA = useCallback((c: ConfigIA) => {
-    setConfigIA(c);
-    guardarConfigIA(c);
-  }, []);
+  const guardarKeyIA = useCallback(
+    (c: ConfigIA) => {
+      setConfigIA(c);
+      guardarConfigIA(c);
+      subirConfigIA();
+    },
+    [subirConfigIA],
+  );
   // Cambia el proveedor activo y trae su key guardada (si tiene).
-  const cambiarProveedorIA = useCallback((p: Proveedor) => {
-    setConfigIA(cambiarProveedorActivo(p));
-  }, []);
+  const cambiarProveedorIA = useCallback(
+    (p: Proveedor) => {
+      setConfigIA(cambiarProveedorActivo(p));
+      subirConfigIA();
+    },
+    [subirConfigIA],
+  );
   // Borra solo la key del proveedor activo.
   const borrarKeyIA = useCallback(() => {
     setConfigIA((cur) => borrarKeyProveedor(cur.proveedor));
-  }, []);
+    subirConfigIA();
+  }, [subirConfigIA]);
 
-  // Atar las keys de API a la cuenta: si en este navegador se loguea OTRA cuenta,
-  // las keys guardadas se borran (son lo más sensible — facturación). Corre en
-  // cada cambio de sesión. La cuenta "sin dueño" (keys pegadas sin login) las
-  // adopta al primer login; el logout no toca nada.
+  // Al cambiar de sesión: (1) `scopeConfigIA` — si se loguea OTRA cuenta en este
+  // navegador, borra las keys locales (facturación; cada cuenta la suya); la
+  // cuenta "sin dueño" (keys sin login) las adopta al primer login; el logout no
+  // toca nada. (2) con sesión, bajar la config de la nube y fusionar (unión de
+  // keys, gana la nube en conflicto) → las mismas keys en todos los dispositivos.
   useEffect(() => {
-    setConfigIA(scopeConfigIA(usuario?.id ?? null));
+    const uid = usuario?.id ?? null;
+    setConfigIA(scopeConfigIA(uid));
+    if (!uid) return;
+    let vivo = true;
+    void bajarConfigNube(uid).then((nube) => {
+      if (!vivo || !nube) {
+        // Nada en la nube todavía → subir lo local como estado inicial.
+        if (vivo) void subirConfigNube(uid, exportarConfigNube());
+        return;
+      }
+      setConfigIA(fusionarConfigNube(nube));
+      void subirConfigNube(uid, exportarConfigNube());
+    });
+    return () => {
+      vivo = false;
+    };
   }, [usuario]);
 
   // Llamadas a la IA en curso, por id de nodo (para poder cancelarlas).

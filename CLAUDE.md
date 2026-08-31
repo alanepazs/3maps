@@ -56,9 +56,12 @@ freelance. Repo público: https://github.com/alanepazs/3maps
   (el server solo los aloja); Postgres solo guarda metadata (slugs, dueños, títulos).
 - **Login y backend (Supabase) son opcionales.** Sin las env `NEXT_PUBLIC_SUPABASE_*` la app es
   100% local, idéntica a fase 1. El modo local es el default.
-- **La clave de API del usuario vive solo en su navegador. Nunca se *almacena* en un servidor
-  propio.** Excepción acordada (decisiones §7a): las keys de proveedores OpenAI-compatibles
-  *transitan* el proxy stateless `ia-proxy` (opt-in explícito en ⚙️) — el proxy no loguea ni guarda.
+- **La clave de API del usuario vive en su navegador; nunca en infraestructura de terceros ni
+  compartida con otros usuarios.** Dos excepciones acordadas: (a) los proveedores
+  OpenAI-compatibles *transitan* el proxy stateless `ia-proxy` — no loguea ni guarda (decisiones
+  §7a); (b) **con sesión iniciada**, las keys/modelos se guardan en el bucket privado del propio
+  usuario (`sync/<uid>/config.json`, RLS por cuenta) para tenerlas en todos sus dispositivos
+  (decisiones §9). Sin login, siguen solo en `localStorage`.
 - Nunca commitear claves ni `.env` (el repo es público). La `service_role` de Supabase **nunca**
   al repo ni al cliente.
 - Al terminar una sesión: `tsc` + `lint` en verde, `git push`, y actualizar `docs/estado.md`.

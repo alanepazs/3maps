@@ -3,9 +3,11 @@
 import { MODELO_POR_DEFECTO, type ConfigIA } from "./ia";
 import { PROVEEDORES, type Proveedor } from "./intercambio";
 
-// La configuración de IA vive solo en el navegador del usuario (nunca a un
-// servidor de 3maps — invariante CLAUDE.md). Clave aparte de "3maps:settings"
-// porque es sensible.
+// La configuración de IA vive en el navegador (`localStorage["3maps:ia"]`, clave
+// aparte de "3maps:settings" por ser sensible). Con sesión iniciada TAMBIÉN
+// sincroniza a `sync/<uid>/config.json` (bucket privado del propio usuario) para
+// tener las mismas keys/modelos en todos los dispositivos — ver `exportarConfigNube`
+// / `fusionarConfigNube` y decisiones §9.
 //
 // Se guarda UNA key + modelo POR PROVEEDOR, más cuál está activo. Así probar
 // otro proveedor y volver no obliga a re-pegar la key.
@@ -121,6 +123,46 @@ function aConfig(a: Almacen): ConfigIA {
 // guardada para el proveedor activo — quien llama debe chequearlo.
 export function cargarConfigIA(): ConfigIA {
   return aConfig(leer());
+}
+
+// ── Sync entre dispositivos de las keys/modelos (fase 4, decisiones §9) ──────
+// El almacén viaja a `sync/<uid>/config.json` (bucket privado del propio usuario,
+// RLS por cuenta). `dueño` NO viaja (el path ya es el scoping).
+
+export type ConfigNube = {
+  activo: Proveedor;
+  keys: Partial<Record<Proveedor, Entrada>>;
+};
+
+export function exportarConfigNube(): ConfigNube {
+  const a = leer();
+  const keys: ConfigNube["keys"] = {};
+  for (const [p, e] of Object.entries(a.keys)) {
+    if (e && e.apiKey.trim()) keys[p as Proveedor] = e;
+  }
+  return { activo: a.activo, keys };
+}
+
+// Fusiona la config de la nube con la local. Unión de keys; en conflicto gana la
+// NUBE (es el último estado subido por cualquier dispositivo). Adopta el
+// `activo` de la nube si hay key para ese proveedor. Devuelve la config activa.
+export function fusionarConfigNube(nube: ConfigNube): ConfigIA {
+  const a = leer();
+  for (const [p, e] of Object.entries(nube.keys ?? {})) {
+    if (!esProveedor(p) || !e || typeof e !== "object") continue;
+    const ent = e as Partial<Entrada>;
+    if (typeof ent.apiKey === "string" && ent.apiKey.trim()) {
+      a.keys[p] = {
+        apiKey: ent.apiKey,
+        modelo: typeof ent.modelo === "string" ? ent.modelo : "",
+      };
+    }
+  }
+  if (esProveedor(nube.activo) && a.keys[nube.activo]) {
+    a.activo = nube.activo;
+  }
+  escribir(a);
+  return aConfig(a);
 }
 
 // Guarda la key/modelo del proveedor de `c` y lo deja como activo. Si `apiKey`

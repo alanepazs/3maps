@@ -72,23 +72,25 @@ src/
                          mistral, huggingface]. upstreamDe(prov) → clave del mapa PROVEEDORES del
                          proxy. ErrorIA con mensajes legibles.
     configIA.ts          localStorage "3maps:ia" = { activo, keys: {[prov]:{apiKey,modelo}}, dueño }
-                         — UNA key por proveedor (cambiar y volver no la pierde). cargarConfigIA()
-                         (siempre devuelve ConfigIA, default gemini), guardarConfigIA(c),
-                         cambiarProveedorActivo(p), borrarKeyProveedor(p), configGuardadaDe(p),
-                         scopeConfigIA(uid) — ata las keys a la cuenta: si loguea OTRA cuenta en el
-                         navegador, las borra (decisiones §9). Migra el formato viejo. Aparte de
-                         "3maps:settings" porque es sensible.
+                         — UNA key por proveedor. cargarConfigIA() (default gemini), guardarConfigIA,
+                         cambiarProveedorActivo, borrarKeyProveedor, configGuardadaDe.
+                         scopeConfigIA(uid) — si loguea OTRA cuenta, borra las keys locales.
+                         exportarConfigNube / fusionarConfigNube(nube) — sync entre dispositivos con
+                         sesión (a `sync/<uid>/config.json`, unión de keys, gana la nube; §9).
+                         Migra el formato viejo.
     supabase.ts          getSupabase() → SupabaseClient | null (null si no hay env). haySupabase()
                          para mostrar/ocultar UI. proxyIAUrl() = <supabaseUrl>/functions/v1/ia-proxy.
                          auth con persistSession/detectSessionInUrl true (fase 2.2, magic link).
     sync.ts              Sync entre dispositivos (fase 2.4, PER-MAPA desde 3.5; solo con sesión).
-                         Bucket privado sync/<uid>/<mapId>.json (formato .md-por-intercambio +
-                         `titulo`). planInicial(arbolLocal, uid, mapId) decide subir/traer/nada.
-                         subir/bajarArbolNube / metaNube (lee updated_at del SERVIDOR via
-                         storage.list). localStorage "3maps:sync:<mapId>" = {at, hash, uid}. LWW
-                         por hora del servidor (decisiones F2-8). El mapa "principal" cae al viejo
-                         arbol.json si no hay principal.json. Índice sync/<uid>/_mapas.json
-                         (subir/bajarIndiceMapasNube) para la lista entre dispositivos.
+                         Bucket privado. `sync/<uid>/<mapId>.json` = árbol (.md-por-intercambio +
+                         `titulo`). planInicial(arbolLocal, uid, mapId) → subir/traer/vaciar/nada,
+                         LWW por hora del SERVIDOR (`metaNube` lee updated_at via storage.list).
+                         localStorage "3maps:sync:<mapId>" = {at, hash, uid}. El mapa "principal"
+                         cae al viejo `arbol.json`. `_mapas.json` = títulos (unión al subir);
+                         `listarMapasNube` descubre mapas por storage.list (todo `<id>.json` = un
+                         mapa). `config.json` = keys/modelos (bajar/subirConfigNube, §9). Todo se
+                         baja por signed URL + `{cache:"no-store"}` (`descargarTexto`); se sube con
+                         `cacheControl: "0"` (decisiones F2-8, F2-4). Ver decisiones F3-4.
     compartir.ts         compartirArbol(arbol, titulo) → sube arboles/<slug>.json a Storage (mismo
                          formato que persistencia.ts), devuelve {slug, url}, y si hay sesión hace
                          insert en shared_trees (soft-fail). cargarArbolCompartido(slug) lo baja y

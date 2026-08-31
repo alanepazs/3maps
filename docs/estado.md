@@ -26,12 +26,15 @@
 
 ## Qué falta
 
-### Bug abierto — sync entre dispositivos
-- **El usuario reporta que NO sincroniza** (31-08-2026). A revisar en `sync.ts` + `useSync.ts`.
-- **Además faltan por diseño**: hoy solo sincroniza el **árbol de cada mapa** (`sync/<uid>/<mapId>.json`)
-  + el **índice de mapas** (`_mapas.json`, unión al loguear). **NO** sincroniza las **keys/modelos**
-  (`configIA` es local + `dueño`, ver decisiones §9) ni las prefs de vista. El usuario quiere que
-  mapas y keys/modelos también viajen entre dispositivos.
+### Sync entre dispositivos — arreglado 31-08-2026, falta probar
+- **La lista de mapas no sincronizaba** (bug reportado): índice `_mapas.json` se pisaba entre
+  dispositivos + `.download()` servía versión cacheada. Fix: descubrir mapas por
+  `storage.list()`, unión al subir el índice, signed URL + `no-store` al bajar, re-sync al volver
+  a foco. Decisiones F3-4.
+- **Keys/modelos ahora SÍ sincronizan** (`sync/<uid>/config.json`, bucket privado del usuario,
+  RLS por cuenta). Relaja la invariante de CLAUDE.md — decisión del usuario. Decisiones §9.
+- **Falta probar con 2 dispositivos logueados con la misma cuenta.** Las prefs de vista
+  (`"3maps:vista"`: colapsado/tamaño) siguen sin sincronizar (a propósito — son per-navegador).
 
 ### Prueba real (la hace el usuario, con key/login)
 - Los 7 proveedores vía proxy con una key real (Groq/Cerebras = mejores free tier).
