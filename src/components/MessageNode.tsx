@@ -112,6 +112,15 @@ export default function MessageNode({
         window.removeEventListener("pointermove", onMove);
         window.removeEventListener("pointerup", onUp);
         if (ultimo) guardarTamano(id, ultimo);
+        // Tragarse el `click` sintético post-drag (si no, deselecciona el globo).
+        window.addEventListener(
+          "click",
+          (ev) => {
+            ev.stopPropagation();
+            ev.preventDefault();
+          },
+          { capture: true, once: true },
+        );
       };
       window.addEventListener("pointermove", onMove);
       window.addEventListener("pointerup", onUp);

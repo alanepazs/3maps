@@ -70,6 +70,16 @@ export default function BranchTranscript({
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
       onResize?.(ultimo);
+      // El `pointerup` fuera de la manija dispara un `click` sintético cuyo
+      // target puede ser el fondo (que cierra el panel). Tragarse ese click.
+      window.addEventListener(
+        "click",
+        (ev) => {
+          ev.stopPropagation();
+          ev.preventDefault();
+        },
+        { capture: true, once: true },
+      );
     };
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
@@ -115,9 +125,10 @@ export default function BranchTranscript({
         {resizable && onResize && (
           <div
             onPointerDown={onResizeStart}
+            onClick={(e) => e.stopPropagation()}
             title="Arrastrá para cambiar el ancho"
-            className={`absolute inset-y-0 z-10 w-1.5 cursor-ew-resize hover:bg-sky-400/40 ${
-              side === "right" ? "left-0" : "right-0"
+            className={`absolute inset-y-0 z-30 w-3 cursor-ew-resize bg-white/5 hover:bg-sky-400/40 ${
+              side === "right" ? "left-0 -ml-1.5" : "right-0 -mr-1.5"
             }`}
           />
         )}

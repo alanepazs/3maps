@@ -170,6 +170,13 @@ Verificado en el preview pane (1280 y 375): manija del lado correcto, arrastre e
 vivo, clamp a 75vw, persistencia al bucket `desktop`, restore al recargar, modo
 móvil a pantalla completa con "🗺 Ver mapa" que cierra.
 
+Fix (31-08-2026): clickear la manija (o soltar el arrastre sobre el fondo)
+cerraba el panel — el `click` sintético post-`pointerup` caía en el fondo
+(`onClick={onClose}`). Se ensanchó la manija a 12px montada sobre el borde
+(`-ml-1.5`), se le puso `onClick` con `stopPropagation`, y `onResizeStart`
+registra un listener `click` de captura `once` que se traga el primer click
+después de soltar. Mismo patrón en la manija del globo (3.10).
+
 ### 3.12 — Ctrl+Enter ramifica, Enter continúa  ✅ (31-08-2026)
 
 En los dos cuadros de texto (barra inferior `Composer` + mini-composer de
