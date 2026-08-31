@@ -10,8 +10,16 @@
 // Migración del formato viejo (un solo "3maps:arbol"): al leer por primera vez
 // se crea el mapa "principal" y se mueve el árbol/vista viejos a sus claves.
 
-export type MetaMapa = { titulo: string; creado: string };
+export type MetaMapa = { titulo: string; creado: string; renombrado?: string };
 export type Mapas = Record<string, MetaMapa>;
+
+// Marca de tiempo del último cambio de nombre (o de creación si nunca se
+// renombró). Es reloj del navegador — el índice de mapas es UN blob JSON, no
+// hay `updated_at` por mapa como en los árboles. Sirve para LWW de títulos
+// entre dispositivos (los renames son raros y de a uno → alcanza).
+export function cuandoMeta(meta: MetaMapa): string {
+  return meta.renombrado ?? meta.creado ?? "";
+}
 
 const MAPAS_KEY = "3maps:mapas";
 const ACTIVO_KEY = "3maps:mapaActivo";
@@ -137,7 +145,11 @@ export function nombreMapaLibre(): string {
 export function renombrarMapa(mapId: string, titulo: string): Mapas {
   const m = leerMapas();
   if (m[mapId]) {
-    m[mapId] = { ...m[mapId], titulo: titulo.trim() || m[mapId].titulo };
+    m[mapId] = {
+      ...m[mapId],
+      titulo: titulo.trim() || m[mapId].titulo,
+      renombrado: new Date().toISOString(),
+    };
     guardarMapas(m);
   }
   return m;
@@ -156,16 +168,27 @@ export function borrarMapa(mapId: string): Mapas {
   return m;
 }
 
-// Registra un mapa que existe en la nube pero todavía no localmente (sync de la
-// lista de mapas entre dispositivos, fase 3.5). No pisa uno existente. Si el
-// título choca con otro mapa (distinto id) le agrega " (2)" — p. ej. dos
-// dispositivos que generaron "Mapa 2" a la vez.
+// Trae de la nube lo que falte localmente (sync de la lista de mapas, fase 3.5).
+// - Mapa que no existe local → se agrega. Si el título choca con otro (distinto
+//   id) le agrega " (2)" (p. ej. dos dispositivos que crearon "Mapa 2" a la vez).
+// - Mapa que YA existe local → se adopta el título de la nube SOLO si su rename
+//   es más nuevo (LWW por `cuandoMeta`). Antes esto se salteaba → los renames
+//   de otro dispositivo nunca llegaban.
 export function fusionarMapasNube(nube: Mapas): Mapas {
   const m = leerMapas();
   const titulos = new Set(Object.values(m).map((x) => x.titulo));
   let cambio = false;
   for (const [id, meta] of Object.entries(nube)) {
-    if (m[id]) continue;
+    if (m[id]) {
+      if (
+        meta.titulo !== m[id].titulo &&
+        cuandoMeta(meta) > cuandoMeta(m[id])
+      ) {
+        m[id] = { ...m[id], titulo: meta.titulo, renombrado: meta.renombrado };
+        cambio = true;
+      }
+      continue;
+    }
     let titulo = meta.titulo;
     if (titulos.has(titulo)) {
       let i = 2;

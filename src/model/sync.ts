@@ -2,7 +2,7 @@
 
 import type { ConfigNube } from "./configIA";
 import { parseMarkdown, toMarkdown, type Arbol } from "./intercambio";
-import { ID_PRINCIPAL, type Mapas } from "./mapas";
+import { cuandoMeta, ID_PRINCIPAL, type Mapas } from "./mapas";
 import { getSupabase } from "./supabase";
 
 // Sync entre dispositivos (fase 2.4, per-mapa desde fase 3.5). Solo con sesión.
@@ -285,7 +285,9 @@ export async function bajarIndiceMapasNube(
 // Sube el índice: UNIÓN de mapas (nube + local), UNIÓN de tombstones (nube +
 // `opts.borrar`), y se quitan de `mapas` todos los tombstoneados. Así un mapa
 // que alguien borró no vuelve, aunque otro dispositivo lo tenga local todavía
-// (ese re-sube y `subirIndiceMapasNube` lo vuelve a podar).
+// (ese re-sube y `subirIndiceMapasNube` lo vuelve a podar). Para un mapa que
+// está en ambos lados, el título con el rename MÁS NUEVO gana (LWW por
+// `cuandoMeta`) — antes ganaba siempre lo local y eso revertía renames ajenos.
 export async function subirIndiceMapasNube(
   uid: string,
   mapas: Mapas,
@@ -298,7 +300,12 @@ export async function subirIndiceMapasNube(
     ...(nube?.borrados ?? []),
     ...(opts?.borrar ?? []),
   ]);
-  const merged: Mapas = { ...(nube?.mapas ?? {}), ...mapas };
+  const merged: Mapas = { ...(nube?.mapas ?? {}) };
+  for (const [id, meta] of Object.entries(mapas)) {
+    const prev = merged[id];
+    merged[id] =
+      prev && cuandoMeta(prev) > cuandoMeta(meta) ? prev : meta;
+  }
   for (const id of borrados) delete merged[id];
   const sobre: SobreIndice = {
     v: VERSION,
