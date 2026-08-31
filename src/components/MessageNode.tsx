@@ -200,7 +200,7 @@ export default function MessageNode({
       <div
         className={
           tamano
-            ? "scroll-fino min-h-0 flex-1 overflow-auto pb-3"
+            ? "nowheel scroll-fino min-h-0 flex-1 overflow-auto pb-3"
             : "min-h-0"
         }
       >

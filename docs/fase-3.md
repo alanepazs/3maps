@@ -137,6 +137,10 @@ Fix (31-08-2026): la barra de scroll del cuerpo pisaba la manija. Se agregó
 encabezado ganó `bg-neutral-900` opaco + `z-10` (no lo tapa el texto al scrollear)
 y la manija `bg-neutral-900` + `z-20` (queda arriba de la barra).
 
+Fix (31-08-2026): la rueda del mouse dentro del cuerpo scrolleable zoomeaba el
+mapa. Se agregó la clase `nowheel` al contenedor → React Flow deja de capturar el
+`wheel` ahí y el div scrollea normal.
+
 No se usó `<NodeResizer>` de React Flow: querría escribir `width`/`height` en el
 nodo de RF, y la vista se reconstruye desde `arbolAVista` (que a propósito no
 lleva dimensiones) → habría que inyectarlas en cada rebuild. La manija propia con
