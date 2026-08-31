@@ -502,6 +502,11 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
   baja). El dispositivo que resetea marca su epoch ANTES de subir → no se auto-resetea.
 - La rama "all-tombstoned" de `sincronizarListaMapas` queda como fallback para el caso viejo (sin
   epoch en el índice).
+- **Borrar el ÚLTIMO mapa == "Empezar de cero"** (`borrarMapaActual`, rama `eraUltimo`): en vez de
+  `borrarMapaNube` + `subirIndiceMapasNube({borrar})` (que hace UNIÓN → un mapa fantasma del otro
+  dispositivo, que esta PC nunca tuvo, sobrevive en el índice y re-sincroniza), llama a
+  `empezarDeCeroNube` (tombstonea TODO lo de la nube + epoch). "No me queda ningún mapa" y
+  "empezar de cero" son lo mismo para la convergencia.
 - `sincronizarListaMapas` también: si el mapa activo desapareció (lo reseteó/borró otro
   dispositivo) → cambia a uno válido; si local Y nube quedan sin mapas → crea uno y lo sube.
 

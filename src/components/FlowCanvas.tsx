@@ -1011,7 +1011,8 @@ function Flow() {
     const borradoId = mapaId;
     let m = borrarMapa(borradoId);
     let siguiente = Object.keys(m)[0];
-    if (!siguiente) {
+    const eraUltimo = !siguiente;
+    if (eraUltimo) {
       // Era el último → arrancar uno nuevo vacío. Se escribe el registro a mano
       // (no `crearMapa`, que llamaría a `leerMapas()` sobre un registro vacío y
       // dispararía la migración → recrearía "principal").
@@ -1023,12 +1024,22 @@ function Flow() {
     setMapas(m);
     if (usuario) {
       const uid = usuario.id;
-      // En secuencia: primero borrar el árbol, después el índice con el tombstone
-      // (si van en paralelo, el índice puede releerse antes de borrar y re-añadir).
-      void (async () => {
-        await borrarMapaNube(uid, borradoId);
-        await subirIndiceMapasNube(uid, m, { borrar: [borradoId] });
-      })();
+      if (eraUltimo) {
+        // Borrar el ÚLTIMO mapa == "Empezar de cero": tombstonear todo lo de la
+        // nube + epoch nuevo. Si no, un mapa fantasma del otro dispositivo (que
+        // esta PC nunca tuvo) sobrevive en el índice y vuelve a sincronizarse.
+        const epoch = Date.now();
+        marcarEpoch(uid, epoch);
+        void empezarDeCeroNube(uid, { id: siguiente, meta: m[siguiente] }, epoch);
+      } else {
+        // En secuencia: primero borrar el árbol, después el índice con el
+        // tombstone (si van en paralelo, el índice puede releerse antes de
+        // borrar y re-añadir).
+        void (async () => {
+          await borrarMapaNube(uid, borradoId);
+          await subirIndiceMapasNube(uid, m, { borrar: [borradoId] });
+        })();
+      }
     }
     cargarEnMapa(siguiente, cargarArbol(siguiente));
     window.setTimeout(() => void fitView({ ...fitOpts, duration: 300 }), 60);
