@@ -436,6 +436,10 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
   LISTA de mapas. `revisarNube` sólo trae si local está limpio (no pisa cambios sin subir) y
   pre-chequea `metaNube` (hora del servidor) antes de bajar el árbol. Latencia típica: ≤15s o al
   cambiar de app y volver.
+- **No se sube el árbol mientras hay un globo `pending`** (`subirYa` corta si algún intercambio
+  está `pending`). Antes el debounce lo subía a mitad del streaming → el otro dispositivo parseaba
+  `pendiente: 1` como error ("la respuesta quedó a medias"). Ahora la respuesta llega recién
+  completa. Cada avance del streaming cambia `arbol` → el effect re-arma el debounce.
 - `mapas.ts`: `3maps:mapas` + `3maps:mapaActivo` + `3maps:arbol:<mapId>`. **Migración**: al leer
   por primera vez se crea el mapa `principal` y se mueve el viejo `3maps:arbol`. En la nube, el
   mapa `principal` cae al viejo `arbol.json` si todavía no hay `principal.json`.

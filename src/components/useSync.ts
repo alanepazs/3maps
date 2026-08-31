@@ -74,6 +74,14 @@ export function useSync(opts: {
     const uid = uidRef.current;
     if (!uid || !inicialListo.current) return;
     const snap = arbolRef.current;
+    // Hay una llamada a la IA en curso → NO subir el árbol a medias (el otro
+    // dispositivo mostraría "la respuesta quedó a medias"). No se re-agenda acá:
+    // cuando el streaming avanza/termina, `arbol` cambia y el effect de cambio
+    // vuelve a armar el debounce.
+    if (snap.intercambios.some((i) => i.pending)) {
+      pendiente.current = true;
+      return;
+    }
     setEstado("sincronizando");
     const at = await subirArbolNube(
       snap,
