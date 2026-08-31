@@ -1,6 +1,5 @@
 # 3maps
 
-> **3** = three = *tree* (árbol) · suena a "maps". Mapas de árbol.
 
 Web app para conversar con una IA (Claude / GPT / Gemini / DeepSeek, vía API con
 la clave del propio usuario) mostrando la conversación como un **árbol de nodos
