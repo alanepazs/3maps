@@ -19,14 +19,31 @@
   Moonshot/Kimi, SiliconFlow) vía el edge function `ia-proxy` (opt-in "usar proxy" en ⚙️). Una
   key/modelo por proveedor. `⚙️` trae mini-guía de API key por proveedor (`GUIA_API_KEY`) y aclara
   cuáles son open-source. **Probados e2e: Gemini + Groq.**
-- **Modelos probados (31-08)** — referencia rápida:
-  - **Groq** (proxy): andan `allam-2-7b`, `groq/compound`, `qwen3.6-27b`, `qwen3.8-27b`,
-    `openai/gpt-oss-20b` / `-120b` / `-safeguard-20b`. Fallan por no ser de chat (esperado):
-    `whisper-*` (STT), `llama-prompt-guard-2-*` (`max_tokens` ≤512), `orpheus-*` (piden términos).
-  - **Gemini** (directo): andan `2.5-flash`, `3-flash-preview`, `3.1-flash-lite` (+`-preview`),
-    `3.5-flash` (lento) / `-lite`, `3.6-flash`, `3.7-flash`. Deprecados (usuarios nuevos no):
-    `2.5-flash-lite`, `2.5-pro`. Aliases `*-latest` no van en free tier → ocultos del datalist
-    + aviso ámbar (decisiones §7b).
+- **Modelos probados (31-08)** — referencia rápida, ordenados de funcional a no funcional:
+  - **Groq** (proxy):
+    1. **Andan**: `allam-2-7b`, `groq/compound`, `qwen3.6-27b`, `qwen3.8-27b`,
+       `openai/gpt-oss-20b`, `openai/gpt-oss-120b`, `openai/gpt-oss-safeguard-20b`.
+    2. **No andan** (no son modelos de chat, esperado): `llama-prompt-guard-2-*`
+       (clasificador, `max_tokens` ≤512), `whisper-*` (STT), `orpheus-*` (TTS, piden
+       aceptar términos).
+  - **Gemini** (directo):
+    1. **Andan bien**: `3.7-flash`, `3.6-flash`, `3.1-flash-lite` (+ `-preview`),
+       `3-flash-preview`, `2.5-flash`.
+    2. **Andan lentos**: `3.5-flash`, `3.5-flash-lite`.
+    3. **No andan en key/cuenta nueva** (free tier): `2.5-flash-lite`, `2.5-pro`
+       (deprecados; una cuenta vieja o con billing sí los llama). Aliases `*-latest`
+       resuelven a modelos paid → ocultos de los chips de modelos + aviso ámbar (decisiones §7b).
+  - **Cerebras** (proxy) — probando (01-09): la key autentica OK (lista modelos vía proxy). Su
+    `/models` devuelve **solo 2** para esa key: `gemma-4-31b`, `gpt-oss-120b` (no es filtro
+    nuestro — `listarModelosOpenAICompat` no filtra; es lo que devuelve Cerebras). Ojo:
+    `MODELO_POR_DEFECTO.cerebras` = `llama-3.3-70b` no está en esa lista → salta el aviso ámbar.
+    **`chat/completions` con esos 2 → error tipo "no tiene saldo"** aunque la key tenga la cuota
+    gratis (1M tokens). Diagnóstico: el mensaje viejo mapeaba `quota` / 402 / 403 a "no tiene
+    saldo" — probablemente sea (a) el free tier de Cerebras NO habilita inferencia en esos
+    modelos grandes (solo se ven, no se llaman), o (b) rate-limit por minuto. `mensajeErrorOpenAICompat`
+    (`ia.ts`) reescrito: 429 → "límite/cuota, no es saldo"; parsea `{message}`/`{detail}`/`{error:string}`
+    además de `{error:{message}}` → ahora muestra el texto real del proveedor. Falta: retest con
+    el bundle nuevo y ver el mensaje exacto de Cerebras.
   - Los "`$` crudos" / "`\frac` crudo" que se vieron eran **bundle viejo cacheado**, no bug:
     F3-12 renderiza bien la salida de Gemini (verificado local). gpt-oss sí manda `\frac` sin
     `$` → heurística pendiente (Opcionales).

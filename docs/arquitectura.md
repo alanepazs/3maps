@@ -183,7 +183,10 @@ src/
                         "✓ Aplicado" (2s tras guardar) / "Borrar key". Aviso ámbar bajo el input
                         si el formato de la key no pinta del proveedor (avisoFormatoKey, local).
                         Botón "verificar key y ver sus modelos" → listarModelos() (gratis, no gasta
-                        tokens; 401 si la key es inválida) → chips clickeables + datalist. Los 13
+                        tokens; 401 si la key es inválida). El modelo se elige por CHIPS clickeables
+                        bajo el input (los reales de la key tras verificar; si no, MODELOS_SUGERIDOS
+                        del proveedor, rótulo "Sugeridos"). Sin `<datalist>` — la flecha nativa de
+                        Chrome quedaba vacía con un modelo válido ya tipeado. Los 13
                         proveedores; commit() lo dispara al guardar. `<details>` con la mini-guía
                         de API key (`GUIA_API_KEY`, F3-12 aclara open-source).
                         Textarea "instrucción de sistema" → onChange({systemPrompt}) directo.

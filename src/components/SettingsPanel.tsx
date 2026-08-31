@@ -297,6 +297,15 @@ export default function SettingsPanel({
   const modeloMuerto =
     proveedor === "gemini" && GEMINI_MODELOS_MUERTOS.has(modeloDraft.trim());
 
+  // Chips de modelos bajo el input: los reales de la key si ya se verificó, si no
+  // los sugeridos del proveedor. Reemplazan al viejo <datalist> (la flecha nativa
+  // de Chrome quedaba vacía cuando el input ya tenía un modelo válido).
+  const modelosKey = modelos ?? [];
+  const chipsSonSugeridos = modelosKey.length === 0;
+  const chipsModelo = chipsSonSugeridos
+    ? MODELOS_SUGERIDOS[proveedor]
+    : modelosKey;
+
   return (
     <div ref={contenedorRef} className="absolute left-4 top-4 z-10">
       <button
@@ -482,16 +491,8 @@ export default function SettingsPanel({
                   commit();
                 }
               }}
-              list="modelos-ia"
               className="mt-1 w-full rounded border border-white/15 bg-neutral-950 px-2 py-1.5 text-sm focus:border-sky-400 focus:outline-none"
             />
-            <datalist id="modelos-ia">
-              {Array.from(
-                new Set([...(modelos ?? []), ...MODELOS_SUGERIDOS[proveedor]]),
-              ).map((m) => (
-                <option key={m} value={m} />
-              ))}
-            </datalist>
           </label>
 
           <button
@@ -525,13 +526,15 @@ export default function SettingsPanel({
             )
           )}
 
-          {modelos && modelos.length > 0 && (
+          {chipsModelo.length > 0 && (
             <div className="mt-1.5">
               <p className="mb-1 text-[11px] text-white/40">
-                Modelos de tu key (click para elegir):
+                {chipsSonSugeridos
+                  ? "Sugeridos (verificá tu key para ver los reales):"
+                  : "Modelos de tu key (click para elegir):"}
               </p>
               <div className="flex flex-wrap gap-1">
-                {modelos.map((m) => (
+                {chipsModelo.map((m) => (
                   <button
                     key={m}
                     type="button"

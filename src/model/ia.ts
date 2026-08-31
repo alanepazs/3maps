@@ -917,20 +917,42 @@ async function mensajeErrorOpenAICompat(
 ): Promise<string> {
   let m: string | undefined;
   try {
-    const j = (await res.json()) as { error?: { message?: string } };
-    m = j?.error?.message;
+    // Los proveedores OpenAI-compat no coinciden en la forma del error: unos
+    // mandan `{ error: { message } }`, otros `{ error: "…" }`, `{ message }` o
+    // `{ detail }`. Probamos todas para no comernos el texto del proveedor.
+    const j = (await res.json()) as {
+      error?: { message?: string } | string;
+      message?: string;
+      detail?: string;
+    };
+    m =
+      (typeof j?.error === "string" ? j.error : j?.error?.message) ||
+      j?.message ||
+      j?.detail ||
+      undefined;
   } catch {
     // sin body legible
   }
+  const cola = m ? ` ${m}` : "";
   if (res.status === 401) return `API key de ${nombre} inválida.`;
-  if (res.status === 402 || /quota|balance|billing|insufficient/i.test(m ?? "")) {
-    return `${nombre}: la cuenta no tiene saldo. ${m ?? ""}`.trim();
+  if (res.status === 429) {
+    // Cuota del free tier (se agota por día/mes y se repone) o rate-limit (por
+    // minuto). NINGUNO de los dos es "falta de saldo" — el texto del proveedor
+    // aclara cuál es.
+    return `${nombre}: límite alcanzado (cuota gratuita o rate-limit, no es falta de saldo).${cola}`.trim();
   }
-  if (res.status === 403) return `${nombre} (403): ${m ?? "sin acceso"}.`;
+  if (
+    res.status === 402 ||
+    /\b(balance|billing|insufficient|credit|payment|no funds)\b/i.test(m ?? "")
+  ) {
+    return `${nombre}: la cuenta no tiene saldo, o el plan no incluye este modelo.${cola}`.trim();
+  }
+  if (res.status === 403) {
+    return `${nombre} (403): ${m ?? "sin acceso — puede que el modelo requiera un plan pago"}.`;
+  }
   if (res.status === 404) {
     return m ? `${nombre} (404): ${m}` : `El modelo indicado no existe en ${nombre}.`;
   }
-  if (res.status === 429) return `Límite de ${nombre} alcanzado. Probá más tarde.`;
   if (res.status === 502 || res.status === 503) {
     return `${nombre} está caído o saturado. Probá de nuevo.`;
   }

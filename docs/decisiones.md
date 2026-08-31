@@ -128,7 +128,7 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
    `gemini-2.0-flash` / `-1.5-flash` / `-pro` (retirados) + alias `*-latest`
    (`gemini-flash-latest`, `-pro-latest`, `-flash-lite-latest` → paid / "invalid argument" en
    free tier). Efecto triple: (a) `configIA` los migra al default al cargar; (b)
-   `listarModelosGemini` los esconde del datalist / "ver modelos"; (c) si el usuario igual
+   `listarModelosGemini` los esconde de los chips de "ver modelos"; (c) si el usuario igual
    tipea uno, `SettingsPanel` avisa en ámbar ("no anda en free tier, se usa `gemini-3.7-flash`")
    en vez de swappear en silencio (antes: "¿por qué me cambió el modelo?"). Los `2.5-*` **NO**
    van acá (una cuenta vieja/con billing sí los llama; Google devuelve su propio mensaje claro).
@@ -626,6 +626,17 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
   → error claro ("se quedó razonando, subí max tokens / cambiá de modelo").
 - **`.katex-compacto`** en `globals.css`: la matemática en bloque scrollea sola (los globos son
   ~260px), no rompe el layout.
+
+### F3-13. El modelo se elige por chips, no por `<datalist>`
+- **El bug**: el campo "Modelo" era un `<input list="modelos-ia">` + `<datalist>`. La flecha ▾ la
+  dibuja Chrome y **filtra las opciones por el valor actual del input** → con un modelo válido ya
+  tipeado (`gemini-2.5-flash`) el popup salía **vacío**. Además el popup nativo no se puede
+  estilar (se ve mal en tema oscuro) y duplicaba los chips "Modelos de tu key" de abajo.
+- **Ahora**: sin `datalist`. Fila de chips clickeables SIEMPRE visible bajo el input —
+  `modelos` (los reales de la key, tras "verificar") si están, si no `MODELOS_SUGERIDOS[proveedor]`
+  con el rótulo "Sugeridos". El input de texto queda (podés tipear un modelo que no está en la
+  lista; el set varía por key). Una sola forma de elegir, temeada y confiable.
+- **Revertir** (volver al datalist): reaparece la flecha que no despliega nada.
 
 ---
 
