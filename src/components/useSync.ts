@@ -4,7 +4,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { Arbol } from "@/model/intercambio";
 import { guardarArbol } from "@/model/persistencia";
-import { marcarSincronizado, planInicial, subirArbolNube } from "@/model/sync";
+import {
+  bajarArbolNube,
+  estadoSyncLocal,
+  marcarSincronizado,
+  metaNube,
+  planInicial,
+  subirArbolNube,
+} from "@/model/sync";
 import { useSesion } from "./useSesion";
 
 // Sync del árbol de trabajo entre dispositivos (fase 2.4, per-mapa desde 3.5).
@@ -21,6 +28,9 @@ import { useSesion } from "./useSesion";
 
 export type EstadoSync = "off" | "sincronizando" | "ok" | "error";
 const DEBOUNCE_MS = 1500;
+// Cada cuánto chequear si la nube tiene una versión más nueva del mapa abierto
+// (además de al volver a foco). El sync NO es push en tiempo real.
+const POLL_MS = 15_000;
 
 export function useSync(opts: {
   arbol: Arbol;
@@ -74,6 +84,47 @@ export function useSync(opts: {
     if (at) sincronizado.current = snap;
     setEstado(at ? "ok" : "error");
   }, []);
+
+  // ── Traer del otro dispositivo (poll + al volver a foco) ──────────────────
+  // El sync inicial corre una vez; después, si el otro dispositivo edita el mapa
+  // que tenés abierto, no te enterás hasta recargar. Esto lo chequea.
+  const revisarNube = useCallback(async () => {
+    const uid = uidRef.current;
+    const mapId = mapIdRef.current;
+    if (!uid || !inicialListo.current || pendiente.current) return;
+    // Local con cambios sin confirmar en la nube → no pisar (nuestro push gana).
+    if (arbolRef.current !== sincronizado.current) return;
+    // Pre-chequeo barato: si la hora del servidor no cambió, no bajar el árbol.
+    const meta = await metaNube(uid, mapId);
+    if (!meta || meta.updatedAt === estadoSyncLocal(mapId).at) return;
+    const bajado = await bajarArbolNube(uid, mapId);
+    if (!bajado) return;
+    if (uidRef.current !== uid || mapIdRef.current !== mapId) return;
+    if (arbolRef.current !== sincronizado.current) return;
+    if (bajado.updatedAt === estadoSyncLocal(mapId).at) return; // ya lo tenemos
+    setArbolRef.current(bajado.arbol);
+    guardarArbol(bajado.arbol, mapId);
+    marcarSincronizado(mapId, bajado.updatedAt, bajado.arbol, uid);
+    sincronizado.current = bajado.arbol;
+    if (bajado.titulo && bajado.titulo !== tituloRef.current) {
+      onTituloNubeRef.current?.(bajado.titulo);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!usuario || !activo) return;
+    const tick = () => {
+      if (document.visibilityState === "visible") void revisarNube();
+    };
+    const id = window.setInterval(tick, POLL_MS);
+    window.addEventListener("focus", tick);
+    document.addEventListener("visibilitychange", tick);
+    return () => {
+      window.clearInterval(id);
+      window.removeEventListener("focus", tick);
+      document.removeEventListener("visibilitychange", tick);
+    };
+  }, [usuario, activo, revisarNube]);
 
   // ── Sync inicial al loguear / cambiar de mapa (una vez por uid+mapa) ───────
   useEffect(() => {

@@ -1032,11 +1032,18 @@ function Flow() {
 
   useEffect(() => {
     void sincronizarListaMapas();
-    const onVis = () => {
+    const tick = () => {
       if (document.visibilityState === "visible") void sincronizarListaMapas();
     };
-    document.addEventListener("visibilitychange", onVis);
-    return () => document.removeEventListener("visibilitychange", onVis);
+    // Poll (el sync no es push) + al volver a foco.
+    const id = window.setInterval(tick, 15_000);
+    window.addEventListener("focus", tick);
+    document.addEventListener("visibilitychange", tick);
+    return () => {
+      window.clearInterval(id);
+      window.removeEventListener("focus", tick);
+      document.removeEventListener("visibilitychange", tick);
+    };
   }, [sincronizarListaMapas]);
 
   // ── Sync entre dispositivos (fase 2.4, per-mapa desde 3.5) ────────────────

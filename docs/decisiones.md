@@ -421,9 +421,15 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
   recursivo (~60 líneas), usa los altos medidos por React Flow. Escribe x/y al árbol Y a `nodes`
   (la firma de la vista excluye x/y a propósito → `setArbol` solo no movería nada).
 
-### F3-4. Varios mapas: un árbol por mapa, sync PER-MAPA, borrado no se propaga
+### F3-4. Varios mapas: un árbol por mapa, sync PER-MAPA
 - **Decidido con el usuario**: selector visible (chip al lado de ⚙️, no enterrado en ⚙️); cada
   mapa sincroniza en su propio `sync/<uid>/<mapId>.json`.
+- **El sync NO es push en tiempo real.** Se TRAE del otro dispositivo: (a) `useSync` inicial al
+  loguear / cambiar de mapa; (b) `revisarNube` en `useSync` — poll cada 15s + al volver a foco —
+  para el mapa ABIERTO; (c) `sincronizarListaMapas` en `FlowCanvas` — mismo poll/foco — para la
+  LISTA de mapas. `revisarNube` sólo trae si local está limpio (no pisa cambios sin subir) y
+  pre-chequea `metaNube` (hora del servidor) antes de bajar el árbol. Latencia típica: ≤15s o al
+  cambiar de app y volver.
 - `mapas.ts`: `3maps:mapas` + `3maps:mapaActivo` + `3maps:arbol:<mapId>`. **Migración**: al leer
   por primera vez se crea el mapa `principal` y se mueve el viejo `3maps:arbol`. En la nube, el
   mapa `principal` cae al viejo `arbol.json` si todavía no hay `principal.json`.

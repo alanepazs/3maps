@@ -37,6 +37,9 @@
 - **Keys/modelos ahora SÍ sincronizan** (`sync/<uid>/config.json`, bucket privado del usuario,
   RLS por cuenta). Relaja la invariante de CLAUDE.md — decisión del usuario. Decisiones §9.
 - **Borrar el último mapa** se permite (crea uno nuevo vacío).
+- **El sync NO es push en tiempo real**: se trae del otro dispositivo con un poll cada 15s + al
+  volver a foco la pestaña (`revisarNube` en `useSync` para el mapa abierto, `sincronizarListaMapas`
+  para la lista). Latencia ≤15s. Decisiones F3-4.
 - **Falta probar con 2 dispositivos logueados con la misma cuenta.** Prefs de vista
   (`"3maps:vista"`) siguen sin sincronizar (a propósito).
 

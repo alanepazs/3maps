@@ -114,7 +114,7 @@ export function estadoSyncLocal(mapId: string): EstadoLocal {
 
 // Metadata del objeto en la nube (hora del SERVIDOR) + qué archivo lo tiene
 // (para el mapa "principal", cae al `arbol.json` viejo si no hay `principal.json`).
-async function metaNube(
+export async function metaNube(
   uid: string,
   mapId: string,
 ): Promise<{ updatedAt: string; archivo: string } | null> {

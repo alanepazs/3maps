@@ -137,9 +137,11 @@ src/
                         (principal) o magic link. Sin Supabase → usuario null, cargando false.
     useSync.ts          Hook de sync (fase 2.4, per-mapa desde 3.5). Args: {arbol, setArbol, listo,
                         activo, mapId, titulo, onTituloNube?}. Sync inicial al loguear O al cambiar
-                        de (uid, mapId) — traer si la nube es más nueva, si no subir; push con
-                        debounce 1.5s + flush en pagehide. Devuelve EstadoSync
-                        ("off"|"sincronizando"|"ok"|"error"). No corre en modo compartido.
+                        de (uid, mapId) — traer si la nube es más nueva, si no subir. Después: push
+                        con debounce 1.5s + flush en pagehide; y `revisarNube` (poll cada 15s + al
+                        volver a foco) TRAE cambios del otro dispositivo del mapa abierto — sólo si
+                        local está limpio (`arbolRef === sincronizado`), pre-chequea `metaNube`.
+                        Devuelve EstadoSync. No corre en modo compartido.
     MapaSwitcher.tsx    Selector de mapas (fase 3.5): chip arriba a la izquierda al lado de ⚙️.
                         Lista + ＋ Nuevo mapa + ✎ Renombrar (window.prompt) + 🗑 Borrar (confirm;
                         deshabilitado si es el único). Cierra al clickear afuera. Props:
