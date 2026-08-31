@@ -14,8 +14,8 @@
   varios mapas, esconder la barra de chat. El `arbol` de `Intercambio`s es la fuente de la verdad;
   la vista de React Flow se deriva.
 - **IA** (`model/ia.ts`, wired en `FlowCanvas.responder`): streaming, contexto = solo el camino
-  raíz→globo con ventana + resumen. **13 proveedores**: Gemini + Claude directos del navegador; el
-  resto (DeepSeek, GPT, Groq, Cerebras, OpenRouter, Mistral, HuggingFace, Zhipu/GLM, Qwen,
+  raíz→globo con ventana + resumen. **12 proveedores**: Gemini + Claude directos del navegador; el
+  resto (DeepSeek, GPT, Groq, OpenRouter, Mistral, HuggingFace, Zhipu/GLM, Qwen,
   Moonshot/Kimi, SiliconFlow) vía el edge function `ia-proxy` (opt-in "usar proxy" en ⚙️). Una
   key/modelo por proveedor. `⚙️` trae mini-guía de API key por proveedor (`GUIA_API_KEY`) y aclara
   cuáles son open-source. **Probados e2e: Gemini + Groq.**
@@ -33,17 +33,10 @@
     3. **No andan en key/cuenta nueva** (free tier): `2.5-flash-lite`, `2.5-pro`
        (deprecados; una cuenta vieja o con billing sí los llama). Aliases `*-latest`
        resuelven a modelos paid → ocultos de los chips de modelos + aviso ámbar (decisiones §7b).
-  - **Cerebras** (proxy) — probando (01-09): la key autentica OK (lista modelos vía proxy). Su
-    `/models` devuelve **solo 2** para esa key: `gemma-4-31b`, `gpt-oss-120b` (no es filtro
-    nuestro — `listarModelosOpenAICompat` no filtra; es lo que devuelve Cerebras). Ojo:
-    `MODELO_POR_DEFECTO.cerebras` = `llama-3.3-70b` no está en esa lista → salta el aviso ámbar.
-    **`chat/completions` con esos 2 → error tipo "no tiene saldo"** aunque la key tenga la cuota
-    gratis (1M tokens). Diagnóstico: el mensaje viejo mapeaba `quota` / 402 / 403 a "no tiene
-    saldo" — probablemente sea (a) el free tier de Cerebras NO habilita inferencia en esos
-    modelos grandes (solo se ven, no se llaman), o (b) rate-limit por minuto. `mensajeErrorOpenAICompat`
-    (`ia.ts`) reescrito: 429 → "límite/cuota, no es saldo"; parsea `{message}`/`{detail}`/`{error:string}`
-    además de `{error:{message}}` → ahora muestra el texto real del proveedor. Falta: retest con
-    el bundle nuevo y ver el mensaje exacto de Cerebras.
+  - **Cerebras** — ❌ **eliminado** (01-09). Toda llamada de la key free → `402 "Payment required…
+    Visit your billing tab"` (confirmado en los Request Logs de Cerebras: llega, autentica, la
+    rechaza Cerebras, no el proxy). El free tier de API no se puede usar sin activar billing →
+    no sirve para el pitch "gratis sin tarjeta". Sacado de todo el código y la UI. Ver decisiones §7d.
   - Los "`$` crudos" / "`\frac` crudo" que se vieron eran **bundle viejo cacheado**, no bug:
     F3-12 renderiza bien la salida de Gemini (verificado local). gpt-oss sí manda `\frac` sin
     `$` → heurística pendiente (Opcionales).
@@ -64,7 +57,7 @@
 ## Qué falta
 
 ### Prueba real pendiente (la hace el usuario, con key/login)
-- Los otros 9 proveedores vía proxy con key real (Cerebras / GLM-flash / SiliconFlow = gratis).
+- Los otros 8 proveedores vía proxy con key real (GLM-flash / SiliconFlow = gratis).
 - Revalidar en vivo gpt-oss / qwen3 con el bundle F3-12: strip de `<think>` + `<br>` literal
   (el render `$…$` de Gemini ya está OK en local; primero forzar bundle nuevo con `?v=<algo>`).
 - Panel lateral redimensionable (3.11) + fixes de móvil (3.13) en Chrome real / celu.

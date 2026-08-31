@@ -21,7 +21,6 @@ export const PROVEEDORES_DISPONIBLES: Proveedor[] = [
   "gemini",
   "claude",
   "groq",
-  "cerebras",
   "openrouter",
   "siliconflow",
   "zhipu",
@@ -39,7 +38,6 @@ export const PROVEEDORES_VIA_PROXY: Proveedor[] = [
   "deepseek",
   "gpt",
   "groq",
-  "cerebras",
   "openrouter",
   "mistral",
   "huggingface",
@@ -73,13 +71,6 @@ export const MODELOS_SUGERIDOS: Record<Proveedor, string[]> = {
     "openai/gpt-oss-120b",
     "openai/gpt-oss-20b",
   ],
-  cerebras: [
-    "llama-3.3-70b",
-    "llama3.1-8b",
-    "qwen-3-32b",
-    "qwen-3-235b-a22b-instruct-2507",
-    "gpt-oss-120b",
-  ],
   openrouter: [
     "meta-llama/llama-3.3-70b-instruct:free",
     "deepseek/deepseek-chat-v3-0324:free",
@@ -111,7 +102,6 @@ export const MODELO_POR_DEFECTO: Record<Proveedor, string> = {
   gpt: "gpt-5.4-mini",
   gemini: "gemini-3.7-flash",
   groq: "llama-3.3-70b-versatile",
-  cerebras: "llama-3.3-70b",
   openrouter: "meta-llama/llama-3.3-70b-instruct:free",
   mistral: "mistral-small-latest",
   huggingface: "Qwen/Qwen2.5-72B-Instruct",
@@ -142,7 +132,6 @@ export const NOMBRE_PROVEEDOR: Record<Proveedor, string> = {
   gpt: "OpenAI",
   gemini: "Google Gemini",
   groq: "Groq",
-  cerebras: "Cerebras",
   openrouter: "OpenRouter",
   mistral: "Mistral",
   huggingface: "Hugging Face",
@@ -159,7 +148,6 @@ export const PISTA_API_KEY: Record<Proveedor, string> = {
   gpt: "sk-…",
   gemini: "AQ.… o AIza…",
   groq: "gsk_…",
-  cerebras: "csk-…",
   openrouter: "sk-or-…",
   mistral: "tu API key de Mistral",
   huggingface: "hf_…",
@@ -203,16 +191,6 @@ export const GUIA_API_KEY: Record<
       "Abrí el link y registrate (con Google o mail).",
       'Clic en "Create API Key", ponele un nombre.',
       "Copiá la clave (empieza con gsk_) y pegala acá.",
-    ],
-  },
-  cerebras: {
-    url: "https://cloud.cerebras.ai/",
-    gratis: true,
-    abierto: true,
-    pasos: [
-      "Abrí el link y creá una cuenta.",
-      'En el menú, entrá a "API Keys" y creá una.',
-      "Copiá la clave (empieza con csk-) y pegala acá.",
     ],
   },
   openrouter: {
@@ -328,8 +306,6 @@ export function avisoFormatoKey(
       return /^sk-/.test(k) ? null : "No parece una key válida (empiezan con \"sk-\").";
     case "groq":
       return /^gsk_/.test(k) ? null : "No parece una key de Groq (empiezan con \"gsk_\").";
-    case "cerebras":
-      return /^csk-/.test(k) ? null : "No parece una key de Cerebras (empiezan con \"csk-\").";
     case "openrouter":
       return /^sk-or-/.test(k)
         ? null
@@ -381,7 +357,6 @@ export async function llamarIA(
     case "deepseek":
     case "gpt":
     case "groq":
-    case "cerebras":
     case "openrouter":
     case "mistral":
     case "huggingface":
@@ -744,7 +719,7 @@ async function mensajeErrorGemini(res: Response, modelo?: string): Promise<strin
 }
 
 // ── Adaptador: OpenAI-compatible vía el proxy de 3maps ────────────────────
-// DeepSeek, GPT, Groq, Cerebras, OpenRouter, Mistral, Hugging Face: APIs
+// DeepSeek, GPT, Groq, OpenRouter, Mistral, Hugging Face: APIs
 // OpenAI-compatibles que NO habilitan CORS → no se pueden llamar desde el
 // navegador. El edge function `ia-proxy` reenvía y agrega el CORS. La key del
 // usuario TRANSITA por el proxy (stateless, no se guarda) — se habilita con el
@@ -756,7 +731,6 @@ const UPSTREAM: Partial<Record<Proveedor, string>> = {
   gpt: "openai",
   deepseek: "deepseek",
   groq: "groq",
-  cerebras: "cerebras",
   openrouter: "openrouter",
   mistral: "mistral",
   huggingface: "huggingface",
@@ -974,7 +948,6 @@ export async function listarModelos(config: ConfigIA): Promise<string[]> {
     case "deepseek":
     case "gpt":
     case "groq":
-    case "cerebras":
     case "openrouter":
     case "mistral":
     case "huggingface":

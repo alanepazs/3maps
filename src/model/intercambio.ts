@@ -15,7 +15,6 @@ export type Proveedor =
   | "gpt"
   | "gemini"
   | "groq"
-  | "cerebras"
   | "openrouter"
   | "mistral"
   | "huggingface"
@@ -31,7 +30,6 @@ export const PROVEEDORES: readonly Proveedor[] = [
   "gpt",
   "gemini",
   "groq",
-  "cerebras",
   "openrouter",
   "mistral",
   "huggingface",

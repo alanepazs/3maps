@@ -92,21 +92,36 @@ Complementa a:
   lo mapea a una base fija (mapa `PROVEEDORES` del edge function). Rutas limitadas a
   `/chat/completions` y `/models`.
 - **Proveedores vía proxy**: `deepseek`, `gpt` (`openai`), + free tiers reales →
-  `groq`, `cerebras`, `openrouter` (`:free`), `mistral` (1 RPM), `huggingface`, y (31-08-2026, del
+  `groq`, `openrouter` (`:free`), `mistral` (1 RPM), `huggingface`, y (31-08-2026, del
   ecosistema chino) `zhipu`/GLM (`open.bigmodel.cn/api/paas/v4`, GLM-4-Flash gratis), `qwen`
   (DashScope `dashscope-intl…/compatible-mode/v1`), `moonshot`/Kimi (`api.moonshot.cn/v1`),
   `siliconflow` (`api.siliconflow.cn/v1`, agregador con créditos gratis). Todos OpenAI-compatibles
   → mismo `llamarOpenAICompat` / `listarModelosOpenAICompat`. `upstreamDe` = mapa `Proveedor →
-  clave del proxy`. **Descartados**: Cloudflare (`account_id` en la URL), Doubao/ERNIE/Hunyuan
-  (verificación de empresa / OAuth), Kling/Seedance (video). **Redeploy del edge function
-  obligatorio** al sumar un proveedor (`supabase functions deploy ia-proxy` o el editor del panel).
+  clave del proxy`. **Descartados**: `cerebras` (§7d — 402 payment required en free tier),
+  Cloudflare (`account_id` en la URL), Doubao/ERNIE/Hunyuan (verificación de empresa / OAuth),
+  Kling/Seedance (video). **Redeploy del edge function obligatorio** al sumar un proveedor
+  (`supabase functions deploy ia-proxy` o el editor del panel).
 - **`GUIA_API_KEY`** (`ia.ts`, 31-08-2026): por proveedor, `{ url, gratis, abierto?, pasos[] }` —
   mini-guía paso a paso "cómo consigo la key" para gente que nunca usó una. `SettingsPanel` la
   muestra en un `<details>` bajo el input, con un botón que abre la web del proveedor y avisa si
-  cobra (sugiriendo Gemini). `abierto: true` (groq, cerebras, openrouter, huggingface, siliconflow)
+  cobra (sugiriendo Gemini). `abierto: true` (groq, openrouter, huggingface, siliconflow)
   → agrega la línea "acá usás modelos open-source (Llama, Qwen, DeepSeek, GLM…)". No hay proveedor
-  "open-source" aparte: los modelos abiertos ya se sirven vía esos 5 (online); un modo offline
+  "open-source" aparte: los modelos abiertos ya se sirven vía esos (online); un modo offline
   tipo Ollama quedó descartado por ahora (mixed-content/CORS + el celu no llega a `localhost`).
+
+### 7d. Cerebras: eliminado (free tier de API da 402 "payment required")
+- **Probado 01-09-2026** con una key nueva de `cloud.cerebras.ai` (sin tarjeta): la key
+  autentica, `/models` devuelve `gemma-4-31b` + `gpt-oss-120b`, y la página *Limits* muestra
+  esos modelos con cuota real (5 rpm, 3M tokens/día). Pero **toda** llamada a `chat/completions`
+  → `402 "Payment required to access this resource. Visit your billing tab."` (0 tokens,
+  confirmado en los Request Logs del propio Cerebras → la rechaza Cerebras, no el proxy).
+- **Conclusión**: el free tier de Cerebras es solo para el playground del sitio; la API pide
+  activar billing. Rompe el pitch de 3maps ("probá con una key gratis, sin tarjeta").
+- **Qué se hizo**: sacado de `Proveedor` (`intercambio.ts`), `PROVEEDORES*`, `MODELOS_SUGERIDOS`,
+  `MODELO_POR_DEFECTO`, `NOMBRE_PROVEEDOR`, `PISTA_API_KEY`, `GUIA_API_KEY`, los `switch` de
+  `ia.ts`, y el mapa `PROVEEDORES` del `ia-proxy`. Una config vieja con `activo: "cerebras"` cae
+  al default (`esProveedor` en `configIA.ts` la filtra sola). 13 → 12 proveedores.
+- **Revertir** (re-sumarlo): volvés a ofrecer un proveedor que le tira 402 a cualquier usuario nuevo.
 
 ### 7b. Modelos de Gemini: default `gemini-3.7-flash`, "thinking" mínimo por generación, botón "ver modelos"
 La API de Gemini se renovó entera en 2026 y una key **free tier** nueva de AI Studio se comporta

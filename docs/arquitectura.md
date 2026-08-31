@@ -22,7 +22,7 @@
   (`components/Markdown.tsx`). `katex/dist/katex.min.css` se importa ahí.
 - **`@supabase/supabase-js`** — backend **opcional** (fase 2). Sin las env `NEXT_PUBLIC_SUPABASE_*`,
   `getSupabase()` → null y la app sigue 100% local. Sin `transformers.js` todavía.
-- **Edge function** `supabase/functions/ia-proxy` (Deno) — proxy stateless para los 11 proveedores
+- **Edge function** `supabase/functions/ia-proxy` (Deno) — proxy stateless para los 10 proveedores
   OpenAI-compat (no habilitan CORS). Se deploya aparte con la CLI de Supabase, no por el workflow.
 - Deploy de la web: **GitHub Pages** (`output: "export"`).
 
@@ -80,8 +80,8 @@ src/
                          ia-proxy; SSE estilo OpenAI). Streaming vía opts.onTexto. opts.usarProxy
                          los gatea (si false → ErrorIA explicativo); resumir() lo recibe también.
                          listarModelos (Claude client.models.list(), Gemini GET /v1beta/models,
-                         los demás via proxy GET /models). PROVEEDORES_DISPONIBLES = 13 (Gemini,
-                         Claude + 11 vía proxy: deepseek, gpt, groq, cerebras, openrouter, mistral,
+                         los demás via proxy GET /models). PROVEEDORES_DISPONIBLES = 12 (Gemini,
+                         Claude + 10 vía proxy: deepseek, gpt, groq, openrouter, mistral,
                          huggingface, zhipu, qwen, moonshot, siliconflow). upstreamDe(prov) → clave
                          del mapa PROVEEDORES del proxy. `GUIA_API_KEY[prov]` = {url, gratis,
                          abierto?, pasos} (mini-guía en ⚙️). `sinRazonamiento()` saca <think> del
@@ -186,7 +186,7 @@ src/
                         tokens; 401 si la key es inválida). El modelo se elige por CHIPS clickeables
                         bajo el input (los reales de la key tras verificar; si no, MODELOS_SUGERIDOS
                         del proveedor, rótulo "Sugeridos"). Sin `<datalist>` — la flecha nativa de
-                        Chrome quedaba vacía con un modelo válido ya tipeado. Los 13
+                        Chrome quedaba vacía con un modelo válido ya tipeado. Los 12
                         proveedores; commit() lo dispara al guardar. `<details>` con la mini-guía
                         de API key (`GUIA_API_KEY`, F3-12 aclara open-source).
                         Textarea "instrucción de sistema" → onChange({systemPrompt}) directo.
@@ -212,8 +212,8 @@ supabase/
   schema.sql                    bucket `arboles` + RLS (incl. delete dueño-solo) + tabla
                                `shared_trees` + bucket privado `sync` (RLS por carpeta `<uid>/`,
                                fase 2.4). Lo corre el usuario.
-  functions/ia-proxy/index.ts   Edge function Deno. Proxy stateless para los 11 proveedores
-                               OpenAI-compatibles (openai, deepseek, groq, cerebras, openrouter,
+  functions/ia-proxy/index.ts   Edge function Deno. Proxy stateless para los 10 proveedores
+                               OpenAI-compatibles (openai, deepseek, groq, openrouter,
                                mistral, huggingface, zhipu, qwen, moonshot, siliconflow — mapa
                                PROVEEDORES): reenvía a la base fija de cada uno con x-ia-key, agrega
                                CORS, pipe del stream. Sin logs, sin storage. Redeploy obligatorio al
@@ -331,10 +331,11 @@ Props de `<ReactFlow>` que importan:
 
 ## IA (model/ia.ts)
 
-- `ConfigIA = { proveedor, apiKey, modelo }`. `PROVEEDORES_DISPONIBLES` = **13**
-  (`gemini, claude` + 11 vía proxy: `groq, cerebras, openrouter, siliconflow, zhipu, qwen, moonshot,
-  mistral, huggingface, deepseek, gpt`). `PROVEEDORES_VIA_PROXY` = **11** (todos menos gemini/claude
-  — no habilitan CORS → van por `ia-proxy`, decisiones §7a). `MODELO_POR_DEFECTO`,
+- `ConfigIA = { proveedor, apiKey, modelo }`. `PROVEEDORES_DISPONIBLES` = **12**
+  (`gemini, claude` + 10 vía proxy: `groq, openrouter, siliconflow, zhipu, qwen, moonshot,
+  mistral, huggingface, deepseek, gpt`). `PROVEEDORES_VIA_PROXY` = **10** (todos menos gemini/claude
+  — no habilitan CORS → van por `ia-proxy`, decisiones §7a). `cerebras` se eliminó (§7d).
+  `MODELO_POR_DEFECTO`,
   `MODELOS_SUGERIDOS`, `NOMBRE_PROVEEDOR`, `PISTA_API_KEY`, `GUIA_API_KEY` por proveedor.
 - `llamarIA(config, mensajes, opts)` → `switch(config.proveedor)`. Sumar proveedor = un `case`
   nuevo + entradas en los `Record<Proveedor,…>` + (si es OpenAI-compat) redeploy del `ia-proxy`.
