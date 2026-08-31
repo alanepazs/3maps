@@ -47,62 +47,13 @@ export const PROVEEDORES_VIA_PROXY: Proveedor[] = [
   "siliconflow",
 ];
 
-export const MODELOS_SUGERIDOS: Record<Proveedor, string[]> = {
-  claude: ["claude-haiku-4-5", "claude-sonnet-5", "claude-opus-5"],
-  deepseek: ["deepseek-v4-flash", "deepseek-v4-pro"],
-  gpt: ["gpt-5.4-mini", "gpt-5.5"],
-  // El free tier de Gemini (desde abr-2026) es solo Flash / Flash-Lite; los Pro
-  // pasaron a pago. Una key free tier NUEVA además devuelve 404 en los 2.5-*
-  // ("no longer available to new users, use gemini-3.x"). El botón "ver modelos
-  // disponibles" en ⚙️ lista lo que la key concreta puede usar. Ver decisiones §7b.
-  gemini: [
-    "gemini-3.7-flash",
-    "gemini-3.6-flash",
-    "gemini-3.5-flash",
-    "gemini-3.5-flash-lite",
-  ],
-  // Free tiers reales (sin tarjeta), todos sirviendo modelos open-weights
-  // (Llama, Qwen, DeepSeek, GLM, gpt-oss). El botón "ver modelos" de ⚙️ lista lo
-  // que cada key puede usar — los nombres cambian seguido.
-  groq: [
-    "llama-3.3-70b-versatile",
-    "llama-3.1-8b-instant",
-    "deepseek-r1-distill-llama-70b",
-    "openai/gpt-oss-120b",
-    "openai/gpt-oss-20b",
-  ],
-  openrouter: [
-    "meta-llama/llama-3.3-70b-instruct:free",
-    "deepseek/deepseek-chat-v3-0324:free",
-    "deepseek/deepseek-r1:free",
-    "qwen/qwen-2.5-72b-instruct:free",
-    "google/gemma-3-27b-it:free",
-  ],
-  mistral: ["mistral-small-latest", "open-mistral-nemo", "codestral-latest"],
-  huggingface: [
-    "Qwen/Qwen2.5-72B-Instruct",
-    "meta-llama/Llama-3.3-70B-Instruct",
-    "deepseek-ai/DeepSeek-R1",
-    "microsoft/phi-4",
-  ],
-  zhipu: ["glm-4-flash", "glm-4-plus", "glm-4-air"],
-  qwen: ["qwen-flash", "qwen-turbo", "qwen-plus", "qwen-max"],
-  moonshot: ["moonshot-v1-8k", "moonshot-v1-32k", "kimi-k2-0711-preview"],
-  siliconflow: [
-    "deepseek-ai/DeepSeek-V3",
-    "deepseek-ai/DeepSeek-R1",
-    "Qwen/Qwen2.5-72B-Instruct",
-    "THUDM/glm-4-9b-chat",
-  ],
-};
-
 export const MODELO_POR_DEFECTO: Record<Proveedor, string> = {
   claude: "claude-haiku-4-5",
   deepseek: "deepseek-v4-flash",
   gpt: "gpt-5.4-mini",
   gemini: "gemini-3.7-flash",
   groq: "llama-3.3-70b-versatile",
-  openrouter: "meta-llama/llama-3.3-70b-instruct:free",
+  openrouter: "nvidia/nemotron-3-super-120b-a12b:free",
   mistral: "mistral-small-latest",
   huggingface: "Qwen/Qwen2.5-72B-Instruct",
   zhipu: "glm-4-flash",
@@ -201,6 +152,7 @@ export const GUIA_API_KEY: Record<
       "Abrí el link y entrá con Google o GitHub.",
       'Clic en "Create Key".',
       "Copiá la clave (empieza con sk-or-) y pegala acá. Elegí modelos que terminan en \":free\".",
+      "El free tier son 50 llamadas por día, sin tarjeta. Si un modelo \":free\" tira error, su proveedor está saturado — probá otro.",
     ],
   },
   mistral: {

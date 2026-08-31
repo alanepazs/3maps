@@ -184,9 +184,10 @@ src/
                         si el formato de la key no pinta del proveedor (avisoFormatoKey, local).
                         Botón "verificar key y ver sus modelos" → listarModelos() (gratis, no gasta
                         tokens; 401 si la key es inválida). El modelo se elige por CHIPS clickeables
-                        bajo el input (los reales de la key tras verificar; si no, MODELOS_SUGERIDOS
-                        del proveedor, rótulo "Sugeridos"). Sin `<datalist>` — la flecha nativa de
-                        Chrome quedaba vacía con un modelo válido ya tipeado. Los 12
+                        bajo el input = SOLO los que la key puede usar (tras verificar; antes: sin
+                        chips). Nunca modelos adivinados (F3-13; `MODELOS_SUGERIDOS` se eliminó).
+                        Sin `<datalist>`. Filtro por substring sobre los chips si la lista > 12
+                        (OpenRouter ≈ 300). Los 12
                         proveedores; commit() lo dispara al guardar. `<details>` con la mini-guía
                         de API key (`GUIA_API_KEY`, F3-12 aclara open-source).
                         Textarea "instrucción de sistema" → onChange({systemPrompt}) directo.
@@ -335,8 +336,8 @@ Props de `<ReactFlow>` que importan:
   (`gemini, claude` + 10 vía proxy: `groq, openrouter, siliconflow, zhipu, qwen, moonshot,
   mistral, huggingface, deepseek, gpt`). `PROVEEDORES_VIA_PROXY` = **10** (todos menos gemini/claude
   — no habilitan CORS → van por `ia-proxy`, decisiones §7a). `cerebras` se eliminó (§7d).
-  `MODELO_POR_DEFECTO`,
-  `MODELOS_SUGERIDOS`, `NOMBRE_PROVEEDOR`, `PISTA_API_KEY`, `GUIA_API_KEY` por proveedor.
+  `MODELO_POR_DEFECTO`, `NOMBRE_PROVEEDOR`, `PISTA_API_KEY`, `GUIA_API_KEY` por proveedor
+  (`MODELOS_SUGERIDOS` se eliminó — F3-13).
 - `llamarIA(config, mensajes, opts)` → `switch(config.proveedor)`. Sumar proveedor = un `case`
   nuevo + entradas en los `Record<Proveedor,…>` + (si es OpenAI-compat) redeploy del `ia-proxy`.
   Cero cambios en el árbol (spec §6). `resumir()` usa el mismo proveedor (le pasa `usarProxy`).

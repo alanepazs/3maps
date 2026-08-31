@@ -18,7 +18,7 @@
   resto (DeepSeek, GPT, Groq, OpenRouter, Mistral, HuggingFace, Zhipu/GLM, Qwen,
   Moonshot/Kimi, SiliconFlow) vía el edge function `ia-proxy` (opt-in "usar proxy" en ⚙️). Una
   key/modelo por proveedor. `⚙️` trae mini-guía de API key por proveedor (`GUIA_API_KEY`) y aclara
-  cuáles son open-source. **Probados e2e: Gemini + Groq.**
+  cuáles son open-source. **Probados e2e: Gemini + Groq + OpenRouter.**
 - **Modelos probados (31-08)** — referencia rápida, ordenados de funcional a no funcional:
   - **Groq** (proxy):
     1. **Andan**: `allam-2-7b`, `groq/compound`, `qwen3.6-27b`, `qwen3.8-27b`,
@@ -33,6 +33,15 @@
     3. **No andan en key/cuenta nueva** (free tier): `2.5-flash-lite`, `2.5-pro`
        (deprecados; una cuenta vieja o con billing sí los llama). Aliases `*-latest`
        resuelven a modelos paid → ocultos de los chips de modelos + aviso ámbar (decisiones §7b).
+  - **OpenRouter** (proxy) — ✅ **free real, probado 01-09**. Sin tarjeta, saldo $0. Límites:
+    20 req/min + **50 req/día** ($0 gastado) → 1000/día si alguna vez cargás $10 (no vencen).
+    Saldo negativo → 402 hasta en los `:free` (no pasa si nunca ponés plata). Modelos:
+    - **Andan**: `minimax/minimax-m3:free`, `nvidia/nemotron-3-super-120b-a12b:free` (= nuevo
+      `MODELO_POR_DEFECTO.openrouter`; el viejo `meta-llama/llama-3.3-70b-instruct:free` ya no existe).
+    - **Fallan por proveedor upstream saturado** (429 "Provider returned error", NO es tu cuota —
+      minimax/nvidia andan al mismo tiempo): `google/gemma-4-31b-it:free`, `z-ai/glm-5.2:free`.
+    - `/models` de OpenRouter devuelve ~300 modelos (agregador) → resuelto con **filtro de chips**
+      (`> 12` modelos → aparece un `<input>` de substring; F3-13).
   - **Cerebras** — ❌ **eliminado** (01-09). Toda llamada de la key free → `402 "Payment required…
     Visit your billing tab"` (confirmado en los Request Logs de Cerebras: llega, autentica, la
     rechaza Cerebras, no el proxy). El free tier de API no se puede usar sin activar billing →

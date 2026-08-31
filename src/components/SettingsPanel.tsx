@@ -12,7 +12,6 @@ import {
   ErrorIA,
   GEMINI_MODELOS_MUERTOS,
   GUIA_API_KEY,
-  MODELOS_SUGERIDOS,
   MODELO_POR_DEFECTO,
   NOMBRE_PROVEEDOR,
   PISTA_API_KEY,
@@ -212,6 +211,8 @@ export default function SettingsPanel({
   const [modelos, setModelos] = useState<string[] | null>(null);
   const [cargandoModelos, setCargandoModelos] = useState(false);
   const [errorModelos, setErrorModelos] = useState<string | null>(null);
+  // Filtro de texto para la lista de chips (OpenRouter devuelve ~300 modelos).
+  const [filtroModelo, setFiltroModelo] = useState("");
 
   // Re-sincronizar los borradores cuando la config cambia desde afuera (cambio
   // de proveedor, "Borrar", key guardada de otro proveedor). Patrón "ajustar
@@ -227,6 +228,7 @@ export default function SettingsPanel({
     setModeloDraft(modeloGuardado);
     setModelos(null);
     setErrorModelos(null);
+    setFiltroModelo("");
   }
 
   const dirty =
@@ -297,14 +299,16 @@ export default function SettingsPanel({
   const modeloMuerto =
     proveedor === "gemini" && GEMINI_MODELOS_MUERTOS.has(modeloDraft.trim());
 
-  // Chips de modelos bajo el input: los reales de la key si ya se verificó, si no
-  // los sugeridos del proveedor. Reemplazan al viejo <datalist> (la flecha nativa
-  // de Chrome quedaba vacía cuando el input ya tenía un modelo válido).
+  // Chips de modelos bajo el input: SOLO los que la key puede usar de verdad
+  // (`listarModelos` tras "verificar"). Nunca modelos adivinados — evita ofrecer
+  // uno que la key no tiene (reemplazó al viejo <datalist> y a MODELOS_SUGERIDOS).
   const modelosKey = modelos ?? [];
-  const chipsSonSugeridos = modelosKey.length === 0;
-  const chipsModelo = chipsSonSugeridos
-    ? MODELOS_SUGERIDOS[proveedor]
+  const f = filtroModelo.trim().toLowerCase();
+  const chipsModelo = f
+    ? modelosKey.filter((m) => m.toLowerCase().includes(f))
     : modelosKey;
+  // El filtro aparece solo cuando la lista es larga (OpenRouter ≈ 300 modelos).
+  const mostrarFiltro = modelosKey.length > 12;
 
   return (
     <div ref={contenedorRef} className="absolute left-4 top-4 z-10">
@@ -526,15 +530,22 @@ export default function SettingsPanel({
             )
           )}
 
-          {chipsModelo.length > 0 && (
+          {modelosKey.length > 0 && (
             <div className="mt-1.5">
               <p className="mb-1 text-[11px] text-white/40">
-                {chipsSonSugeridos
-                  ? "Sugeridos (verificá tu key para ver los reales):"
-                  : "Modelos de tu key (click para elegir):"}
+                Modelos de tu key (click para elegir):
               </p>
+              {mostrarFiltro && (
+                <input
+                  type="text"
+                  value={filtroModelo}
+                  onChange={(e) => setFiltroModelo(e.target.value)}
+                  placeholder={`filtrar ${modelosKey.length} modelos… (ej: ":free")`}
+                  className="mb-1 w-full rounded border border-white/15 bg-neutral-950 px-2 py-1 text-[11px] placeholder:text-white/30 focus:border-sky-400 focus:outline-none"
+                />
+              )}
               <div className="flex flex-wrap gap-1">
-                {chipsModelo.map((m) => (
+                {chipsModelo.slice(0, 60).map((m) => (
                   <button
                     key={m}
                     type="button"
@@ -549,6 +560,16 @@ export default function SettingsPanel({
                   </button>
                 ))}
               </div>
+              {chipsModelo.length > 60 && (
+                <p className="mt-1 text-[11px] text-white/40">
+                  +{chipsModelo.length - 60} más — afiná el filtro.
+                </p>
+              )}
+              {chipsModelo.length === 0 && (
+                <p className="text-[11px] text-white/40">
+                  Ningún modelo de tu key coincide con “{filtroModelo.trim()}”.
+                </p>
+              )}
             </div>
           )}
 

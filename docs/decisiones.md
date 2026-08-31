@@ -642,16 +642,24 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
 - **`.katex-compacto`** en `globals.css`: la matemática en bloque scrollea sola (los globos son
   ~260px), no rompe el layout.
 
-### F3-13. El modelo se elige por chips, no por `<datalist>`
-- **El bug**: el campo "Modelo" era un `<input list="modelos-ia">` + `<datalist>`. La flecha ▾ la
-  dibuja Chrome y **filtra las opciones por el valor actual del input** → con un modelo válido ya
-  tipeado (`gemini-2.5-flash`) el popup salía **vacío**. Además el popup nativo no se puede
-  estilar (se ve mal en tema oscuro) y duplicaba los chips "Modelos de tu key" de abajo.
-- **Ahora**: sin `datalist`. Fila de chips clickeables SIEMPRE visible bajo el input —
-  `modelos` (los reales de la key, tras "verificar") si están, si no `MODELOS_SUGERIDOS[proveedor]`
-  con el rótulo "Sugeridos". El input de texto queda (podés tipear un modelo que no está en la
-  lista; el set varía por key). Una sola forma de elegir, temeada y confiable.
-- **Revertir** (volver al datalist): reaparece la flecha que no despliega nada.
+### F3-13. El modelo se elige por chips (solo los de la key), no por `<datalist>` ni sugeridos
+- **El bug del datalist**: el campo "Modelo" era un `<input list="modelos-ia">` + `<datalist>`.
+  La flecha ▾ la dibuja Chrome y **filtra las opciones por el valor actual del input** → con un
+  modelo válido ya tipeado (`gemini-2.5-flash`) el popup salía **vacío**. El popup nativo tampoco
+  se puede estilar (se ve mal en tema oscuro).
+- **Ahora**: sin `datalist`. Fila de chips clickeables bajo el input con **SOLO los modelos que
+  la key puede usar de verdad** (`listarModelos` tras "verificar key"). El input de texto queda
+  (podés tipear uno que no esté listado). Antes de verificar: sin chips (está el botón).
+- **Se eliminó `MODELOS_SUGERIDOS`** (01-09): era una lista adivinada por proveedor que se
+  mostraba como "Sugeridos" antes de verificar. Ofrecía modelos que la key no tenía (una key de
+  Cerebras mostraba `llama-3.3-70b` etc. que no existían para esa key → "¿aparecieron modelos
+  nuevos?"). **Regla nueva**: nunca ofrecer un modelo que no salió de la key. El default por
+  proveedor sigue en `MODELO_POR_DEFECTO`.
+- **Filtro de chips** (01-09): OpenRouter (agregador) devuelve ~300 modelos → un `<input>` de
+  filtro por substring aparece sobre los chips cuando la lista supera 12; se renderizan máx. 60
+  chips + "afiná el filtro".
+- **Revertir** (volver al datalist / a sugerir modelos adivinados): reaparece la flecha vacía /
+  vuelve la confusión de "modelos que no son de mi key".
 
 ---
 
