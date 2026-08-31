@@ -2,7 +2,7 @@ import FlowCanvas from "@/components/FlowCanvas";
 
 export default function Home() {
   return (
-    <main className="h-screen w-screen">
+    <main className="h-dvh w-full overflow-hidden">
       <FlowCanvas />
     </main>
   );

@@ -207,6 +207,14 @@ Verificado en el preview pane a 375: panel scrolleable con la última sección
 visible sobre el composer, "▤ Ordenar" despejado, minimapa oculto. Desktop
 intacto (mismo breakpoint 640px que `sm:`).
 
+Fix (31-08-2026): en el celu había que scrollear la página para ver el composer.
+Causa: `<main className="h-screen">` = `100vh` = viewport GRANDE (barra de URL
+oculta) → con la barra visible, el fondo del layout quedaba abajo del área
+visible. `h-screen` → `h-dvh` (viewport dinámico, sigue el chrome del navegador)
++ `overflow-hidden` en `<main>` y `<body>` (antes `min-h-full`, que dejaba
+crecer). El layout ahora encuadra exacto sin scroll. `w-screen` → `w-full`
+(evita el scroll horizontal por el ancho de la scrollbar).
+
 ---
 
 ## Sueltos que quedaron de fase 2

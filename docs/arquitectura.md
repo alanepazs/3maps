@@ -23,10 +23,13 @@
 src/
   app/
     layout.tsx      Root layout. metadata.title = "3maps". <html> con suppressHydrationWarning
-                    (por Darkreader). body flex-col, main h-screen.
-    page.tsx        Renderiza <FlowCanvas /> dentro de <main class="h-screen w-screen">.
+                    (por Darkreader). body: `flex h-full flex-col overflow-hidden`.
+    page.tsx        Renderiza <FlowCanvas /> dentro de <main class="h-dvh w-full overflow-hidden">.
+                    `dvh` (no `vh`) para que en móvil encuadre al área visible real, sin scroll.
     globals.css     Tailwind + tokens de color que siguen prefers-color-scheme (dark por defecto
-                    en el SO del usuario).
+                    en el SO del usuario). `@media (max-width:640px)`: sube los `.react-flow__
+                    controls` (los tapaba el composer) y oculta el `.react-flow__minimap`.
+                    `.scroll-fino` = scrollbar de 8px para el cuerpo del globo redimensionado.
   model/
     intercambio.ts       ★ Modelo de datos (fuente de la verdad). Tipos Intercambio/Arbol/Rama/
                          Proveedor. Funciones puras: consultas (buscar, hijos, descendientes,
