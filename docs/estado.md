@@ -49,7 +49,6 @@
 - **2.5b — embeddings** (`transformers.js`) si el match por palabras clave (`intercambiosRelevantes`)
   se queda corto. Misma firma → drop-in.
 - Modelos locales tipo Ollama para tareas internas (spec §10).
-- Botón "vaciar este mapa" en ⚙️.
 
 ## Issues conocidos / gotchas
 

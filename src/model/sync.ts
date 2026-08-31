@@ -280,15 +280,18 @@ export async function listarMapasNube(uid: string): Promise<string[]> {
 // Sube el índice haciendo UNIÓN con lo que ya hay en la nube — así un dispositivo
 // nunca borra del índice los mapas que solo existen en otro (bug 31-08-2026: era
 // un overwrite → cada `nuevoMapa`/`renombrar`/`borrar` pisaba la lista ajena).
-// Los borrados NO se propagan (política, decisiones F3-4).
+// `podar` saca esos ids del resultado (para el mapa que se acaba de borrar acá —
+// si no, se re-descubre como fantasma sin árbol).
 export async function subirIndiceMapasNube(
   uid: string,
   mapas: Mapas,
+  opts?: { podar?: string[] },
 ): Promise<void> {
   const sb = getSupabase();
   if (!sb || !uid) return;
   const nube = (await bajarIndiceMapasNube(uid)) ?? {};
   const merged: Mapas = { ...nube, ...mapas };
+  for (const id of opts?.podar ?? []) delete merged[id];
   const sobre: SobreIndice = { v: VERSION, mapas: merged };
   await sb.storage
     .from(BUCKET)

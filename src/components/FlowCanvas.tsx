@@ -64,8 +64,10 @@ import {
   borrarMapa,
   crearMapa,
   fusionarMapasNube,
+  guardarMapas,
   leerMapas,
   mapaActivoId,
+  nuevoMapaId,
   renombrarMapa,
   setMapaActivo,
   type Mapas,
@@ -947,25 +949,31 @@ function Flow() {
   }, [cancelInertia, cancelPanInertia, cargarEnMapa, usuario]);
 
   const borrarMapaActual = useCallback(() => {
-    const ids = Object.keys(mapas);
-    if (ids.length <= 1) return;
     const titulo = mapas[mapaId]?.titulo ?? "este mapa";
-    if (
-      !window.confirm(
-        `¿Borrar el mapa “${titulo}”? Se pierde su árbol (esto no se puede deshacer).`,
-      )
-    ) {
-      return;
-    }
+    const ultimo = Object.keys(mapas).length <= 1;
+    const msg = ultimo
+      ? `¿Borrar “${titulo}”? Es tu único mapa — se crea uno nuevo vacío. No se puede deshacer.`
+      : `¿Borrar el mapa “${titulo}”? Se pierde su árbol (esto no se puede deshacer).`;
+    if (!window.confirm(msg)) return;
     cancelInertia();
     cancelPanInertia();
-    const m = borrarMapa(mapaId);
+    const borradoId = mapaId;
+    let m = borrarMapa(borradoId);
+    let siguiente = Object.keys(m)[0];
+    if (!siguiente) {
+      // Era el último → arrancar uno nuevo vacío. Se escribe el registro a mano
+      // (no `crearMapa`, que llamaría a `leerMapas()` sobre un registro vacío y
+      // dispararía la migración → recrearía "principal").
+      siguiente = nuevoMapaId();
+      m = { [siguiente]: { titulo: "Mi mapa", creado: new Date().toISOString() } };
+      guardarMapas(m);
+      guardarArbol({ intercambios: [] }, siguiente);
+    }
     setMapas(m);
     if (usuario) {
-      void borrarMapaNube(usuario.id, mapaId);
-      void subirIndiceMapasNube(usuario.id, m);
+      void borrarMapaNube(usuario.id, borradoId);
+      void subirIndiceMapasNube(usuario.id, m, { podar: [borradoId] });
     }
-    const siguiente = Object.keys(m)[0];
     cargarEnMapa(siguiente, cargarArbol(siguiente));
     window.setTimeout(() => void fitView({ ...fitOpts, duration: 300 }), 60);
   }, [

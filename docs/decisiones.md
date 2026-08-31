@@ -429,6 +429,13 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
   mapa `principal` cae al viejo `arbol.json` si todavía no hay `principal.json`.
 - `useSync` re-corre el sync inicial al cambiar de `(uid, mapId)`. `3maps:sync` pasó a
   `3maps:sync:<mapId>`.
+- **Borrar el ÚLTIMO mapa** (31-08-2026, pedido del usuario): se permite. `borrarMapaActual`
+  borra el mapa y, si no queda ninguno, escribe a mano un mapa nuevo vacío ("Mi mapa") — NO usa
+  `crearMapa`, que llamaría a `leerMapas()` sobre un registro vacío y dispararía la migración
+  (recrearía "principal"). En la nube: borra el árbol (`borrarMapaNube`) **y poda el id del
+  índice** (`subirIndiceMapasNube(..., { podar: [id] })`) para que no vuelva como fantasma sin
+  árbol. (Un mapa borrado en otro dispositivo con copia local sigue sobreviviendo ahí — la
+  política de "no propagar borrados" solo aplica a esa copia local.)
 - **Descubrimiento de mapas** (arreglado 31-08-2026 — antes la lista no sincronizaba):
   - `_mapas.json` guarda solo los **títulos**. La EXISTENCIA de un mapa se descubre de
     `storage.list(<uid>/)` (`listarMapasNube`): todo `<id>.json` con árbol en la nube ES un mapa,

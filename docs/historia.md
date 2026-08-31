@@ -56,7 +56,7 @@ Todos los bloques del pedido + fixes post-uso. Detalle por archivo en `arquitect
 | **3.3** | La flecha rama↔tronco salta de lado DURANTE el drag (edge `sourceHandle` en vivo). | F3-2 |
 | **3.4** | Botón "▤ Ordenar" — auto-layout propio recursivo (`calcularLayout` en `layout.ts`). | F3-3 |
 | **3.5** | Varios mapas (`mapas.ts` + `MapaSwitcher`), sync per-mapa + índice `_mapas.json`. | F3-4 |
-| **3.6** | Borrar el globo raíz solo cuando es el último (`data.sinHijos`). | F3-5 |
+| **3.6** | Borrar el globo raíz solo cuando es el último (`data.sinHijos`). Borrar el último MAPA también se permite (crea uno nuevo vacío + poda el índice de la nube). | F3-5, F3-4 |
 | **3.7** | ⚙️ cierra al clickear afuera / Escape (listener `pointerdown` en captura). | — |
 | **3.8** | Panel: "Transcripción de la rama" → "Conversación hasta este globo". | — |
 | **3.9** | Mini-composer al pie de `BranchTranscript` (crea un hijo del globo abierto, el panel se mueve a él). | — |

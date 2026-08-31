@@ -122,16 +122,10 @@ export default function MapaSwitcher({
               onBorrar();
               setOpen(false);
             }}
-            disabled={unico}
-            className="w-full rounded px-2 py-1.5 text-left text-sm text-red-300 enabled:hover:bg-red-500/15 disabled:opacity-30"
+            className="w-full rounded px-2 py-1.5 text-left text-sm text-red-300 hover:bg-red-500/15"
           >
-            🗑 Borrar este mapa
+            {unico ? "🗑 Borrar y empezar de cero" : "🗑 Borrar este mapa"}
           </button>
-          {unico && (
-            <p className="px-2 pt-1 text-[11px] text-white/30">
-              Es tu único mapa.
-            </p>
-          )}
         </div>
       )}
     </div>
