@@ -136,8 +136,14 @@ src/
                         y `\[ \]`/`\( \)` normalizados a `$` antes de parsear). rehype-raw +
                         rehype-sanitize: el HTML del modelo (sobre todo `<br>` en tablas) se
                         interpreta pero saneado (un árbol compartido es de otro → no `<script>`).
+                        `sanitizarCrudo()` antes de parsear: saca basura de tokens del modelo
+                        (`<PAD>`…), colapsa floods, techo 60k — sin esto un flood crashea/cuelga
+                        el parser (F3-14). Envuelto en `<LimiteError>` (fallback = texto crudo).
                         Código/tablas con scroll horizontal propio; links target=_blank.
-                        Decisiones F3-12.
+                        Decisiones F3-12, F3-14.
+    LimiteError.tsx     Error boundary de clase genérico (`fallback` + `resetKey`). Aísla un crash
+                        de render: en `Markdown.tsx` y en el cuerpo de cada `MessageNode`. Un globo
+                        roto muestra el fallback, el resto de la app sigue viva. F3-14.
     BranchTranscript.tsx  Panel lateral: el camino raíz→globo (`caminoRaizA`) aplanado a Q/A tipo
                         chat. Vista derivada. Se abre con doble-click en un globo o el botón ⤢;
                         cierra con Esc / ✕ / click en el fondo. Botón ⇄ en el header cambia el

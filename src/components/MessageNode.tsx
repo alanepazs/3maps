@@ -13,6 +13,7 @@ import {
   type NodeProps,
 } from "@xyflow/react";
 
+import LimiteError from "./LimiteError";
 import Markdown from "./Markdown";
 import { NodeActionsContext } from "./nodeActions";
 import {
@@ -218,6 +219,25 @@ export default function MessageNode({
             : "min-h-0"
         }
       >
+       <LimiteError
+        resetKey={respuesta}
+        fallback={
+          <div className="px-3 py-2 text-left">
+            <p className="text-xs text-red-300">
+              ⚠ No se pudo mostrar esta respuesta.
+            </p>
+            {!readOnly && (
+              <button
+                type="button"
+                onClick={() => retryNode(id)}
+                className="mt-2 rounded border border-white/20 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
+              >
+                ↻ Rehacer
+              </button>
+            )}
+          </div>
+        }
+       >
         {error ? (
           <div className="px-3 py-2 text-left">
             <p className="whitespace-pre-wrap text-xs text-red-300">⚠ {error}</p>
@@ -268,6 +288,7 @@ export default function MessageNode({
             )}
           </div>
         )}
+       </LimiteError>
       </div>
 
       {!readOnly && (

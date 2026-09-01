@@ -1,4 +1,3 @@
-import { Component, type ReactNode } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
@@ -6,6 +5,8 @@ import rehypeRaw from "rehype-raw";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
+
+import LimiteError from "./LimiteError";
 
 // Render de markdown para las respuestas de la IA. Compacto (los globos son
 // angostos, ~260px) y en tema oscuro.
@@ -35,41 +36,32 @@ function normalizarMath(texto: string): string {
 const TOKENS_BASURA =
   /<\/?(?:pad|unk|mask|cls|sep|s|bos|eos|eot_id|end_of_turn|start_of_turn|begin_of_text|end_of_text|\|[^>]*\|)>/gi;
 
+// Techo de largo: una respuesta legítima rara vez pasa los ~20k chars. 60k deja
+// margen y frena que un modelo que escupe basura infinita cuelgue el parser.
+const MAX_CHARS = 60_000;
+
 function sanitizarCrudo(texto: string): string {
-  const limpio = texto.replace(TOKENS_BASURA, "");
-  // Backstop: si aún quedan cientos de aperturas de tag, es basura de token
-  // (`<foo><foo>…`). Escapamos TODO `<` → el texto se ve crudo pero no crashea.
-  // Una tabla grande con `<br>` ronda las 50; 120 deja margen de sobra.
-  const aperturas = (limpio.match(/<[a-z!/]/gi) ?? []).length;
-  return aperturas > 120 ? limpio.replace(/</g, "&lt;") : limpio;
+  let t = texto.replace(TOKENS_BASURA, "");
+
+  // Colapsar tiradas de un char especial de markdown/HTML repetido (`****…`,
+  // `[[[[…`) y de blockquote anidado (`> > > …`). Con miles de estos el parser
+  // entra en backtracking catastrófico (CUELGA — no lo agarra el error boundary)
+  // o anida miles de niveles (RangeError). Nunca es contenido real.
+  t = t
+    .replace(/([*_~[\]()#`<])\1{15,}/g, "$1$1$1")
+    .replace(/(>[ \t]*){12,}/g, "> > > ");
+
+  // Backstop de tags: si aún quedan cientos de aperturas `<x`, es basura de token
+  // (`<foo><foo>…`). Escapamos TODO `<` → se ve crudo pero no explota. Una tabla
+  // grande con `<br>` ronda las 50; 120 deja margen de sobra.
+  const aperturas = (t.match(/<[a-z!/]/gi) ?? []).length;
+  if (aperturas > 120) t = t.replace(/</g, "&lt;");
+
+  return t.length > MAX_CHARS
+    ? t.slice(0, MAX_CHARS) + "\n\n… (respuesta recortada)"
+    : t;
 }
 
-// Si el pipeline de markdown igual tira (input que no previmos), mostramos el
-// texto crudo en vez de tumbar todo el canvas.
-class LimiteMarkdown extends Component<
-  { crudo: string; children: ReactNode },
-  { rota: boolean }
-> {
-  state = { rota: false };
-  static getDerivedStateFromError() {
-    return { rota: true };
-  }
-  componentDidUpdate(prev: { crudo: string }) {
-    if (prev.crudo !== this.props.crudo && this.state.rota) {
-      this.setState({ rota: false });
-    }
-  }
-  render() {
-    if (this.state.rota) {
-      return (
-        <pre className="whitespace-pre-wrap break-words font-mono text-[11px] text-white/70">
-          {this.props.crudo}
-        </pre>
-      );
-    }
-    return this.props.children;
-  }
-}
 
 // Schema de sanitización = el default + lo que necesita remark-math/katex:
 // la clase `math math-inline|display` en el <span>/<div> que envuelve el TeX
@@ -170,7 +162,14 @@ export default function Markdown({ children }: { children: string }) {
   const texto = normalizarMath(sanitizarCrudo(children));
   return (
     <div className="katex-compacto break-words text-left [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
-      <LimiteMarkdown crudo={texto}>
+      <LimiteError
+        resetKey={texto}
+        fallback={
+          <pre className="whitespace-pre-wrap break-words font-mono text-[11px] text-white/70">
+            {texto}
+          </pre>
+        }
+      >
         <ReactMarkdown
           remarkPlugins={[remarkGfm, remarkMath]}
           rehypePlugins={[rehypeRaw, [rehypeSanitize, schema], rehypeKatex]}
@@ -178,7 +177,7 @@ export default function Markdown({ children }: { children: string }) {
         >
           {texto}
         </ReactMarkdown>
-      </LimiteMarkdown>
+      </LimiteError>
     </div>
   );
 }

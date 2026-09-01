@@ -649,6 +649,18 @@ function sinRazonamiento(s: string): string {
     .replace(/◁think▷[\s\S]*$/i, "");
 }
 
+// Tokens especiales (padding / BOS-EOS / plantillas de chat) que algunos modelos
+// filtran en la salida — nunca son contenido. Se sacan del stream para que no
+// lleguen al `.md` (fuente de la verdad). `Markdown.tsx` (`sanitizarCrudo`) es la
+// segunda red, para contenido ya guardado. Un modelo de HF devolvió `<PAD>` × 2800
+// y `rehype-raw` (tags sin cerrar) → stack overflow → crash del canvas. Ver F3-14.
+const TOKENS_BASURA =
+  /<\/?(?:pad|unk|mask|cls|sep|s|bos|eos|eot_id|end_of_turn|start_of_turn|begin_of_text|end_of_text|\|[^>]*\|)>/gi;
+
+function sinTokensBasura(s: string): string {
+  return s.replace(TOKENS_BASURA, "");
+}
+
 async function llamarOpenAICompat(
   config: ConfigIA,
   mensajes: Mensaje[],
@@ -732,7 +744,7 @@ async function llamarOpenAICompat(
     const trozo = chunk.choices?.[0]?.delta?.content;
     if (!trozo) return; // `reasoning` / `reasoning_content` se ignoran
     crudo += trozo;
-    const limpio = sinRazonamiento(crudo);
+    const limpio = sinTokensBasura(sinRazonamiento(crudo));
     if (limpio === acumulado) return;
     const delta = limpio.startsWith(acumulado)
       ? limpio.slice(acumulado.length)
@@ -759,12 +771,13 @@ async function llamarOpenAICompat(
 
   if (acumulado) return acumulado;
   if (errorEnStream) throw new ErrorIA(`${nombre}: ${errorEnStream}`);
-  // Llegó contenido pero era TODO cadena de pensamiento (nunca cerró el
-  // `<think>` o gastó el presupuesto razonando).
+  // Llegó contenido pero quedó vacío tras limpiar: era TODO cadena de pensamiento
+  // (nunca cerró el `<think>` / gastó el presupuesto) o TODO tokens internos
+  // (`<PAD>`…). En cualquier caso no hay respuesta → error reintentable.
   if (crudo.trim()) {
     throw new ErrorIA(
-      `El modelo se quedó razonando y no llegó a responder. ` +
-        `Probá subir "max tokens", otro modelo, o uno sin "reasoning".`,
+      `El modelo no devolvió una respuesta usable (solo razonamiento o tokens ` +
+        `internos). Probá subir "max tokens", otro modelo, o rehacé.`,
     );
   }
   throw new ErrorIA(`${nombre} no devolvió texto. Probá de nuevo o cambiá de modelo.`);

@@ -119,9 +119,12 @@
   **no corre transiciones CSS**, a veces reporta viewport 0; los gestos sintéticos de teclado/drag
   no disparan. **No es bug de la app.** En el pane se verifica **lógica/datos**; render, inercia y
   animaciones los prueba el usuario en Chrome real. (napkin §2-3.)
-- **Respuesta con `<PAD>` × miles (u otro token especial) crasheaba TODO el canvas** (`RangeError`
-  en `rehype-raw`). Arreglado 01-09 en `Markdown.tsx` (`sanitizarCrudo` + error boundary). Ver
-  decisiones F3-14. Si vuelve a pasar con otro token, sumar el patrón a `TOKENS_BASURA`.
+- **Un globo con basura del modelo (`<PAD>` × miles, floods `****`/`[[[[`/`> > >`) crasheaba/colgaba
+  TODO el canvas.** Arreglado 01-09, 3 capas (decisiones F3-14): (1) `ia.ts` `sinTokensBasura` saca
+  los tokens del stream → no se guardan; (2) `Markdown.tsx` `sanitizarCrudo` limpia contenido ya
+  guardado (strip + colapso de floods + techo 60k); (3) `<LimiteError>` boundary en `Markdown` y
+  en cada `MessageNode` → un globo roto muestra fallback, el resto vive. Si aparece otro token,
+  sumar el patrón a `TOKENS_BASURA` (está en `ia.ts` Y `Markdown.tsx`).
 - **CDN de GitHub Pages cachea `index.html` ~10 min.** Deploy nuevo ya: `?v=<algo>`. (3maps NO
   es una PWA — no hay `manifest.json` ni service worker; "agregar a pantalla de inicio" es solo
   un atajo con el caché normal del navegador. El `?v=` alcanza.)
