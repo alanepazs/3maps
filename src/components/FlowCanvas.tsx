@@ -56,6 +56,7 @@ import {
   nuevoId,
   quitarSubarbol,
   reparentar,
+  type Adjunto,
   type Arbol,
   type Intercambio,
   type Proveedor,
@@ -679,7 +680,12 @@ function Flow() {
   // "main" cuelga hacia abajo (sigue el hilo); "branch" nace por la derecha
   // (después se puede arrastrar a la izquierda). Devuelve el id del globo nuevo.
   const handleSubmit = useCallback(
-    (text: string, kind: BranchKind, parentId?: string): string | null => {
+    (
+      text: string,
+      kind: BranchKind,
+      parentId?: string,
+      adjuntos?: Adjunto[],
+    ): string | null => {
       if (readOnly) return null;
 
       // Árbol vacío: el primer globo es la raíz.
@@ -693,6 +699,7 @@ function Flow() {
           x: 250,
           y: 0,
           pending: true,
+          adjuntos,
         });
         const arbolNuevo: Arbol = { intercambios: [nuevo] };
         seleccionarLuegoRef.current = id;
@@ -729,6 +736,7 @@ function Flow() {
         x,
         y,
         pending: true,
+        adjuntos,
       });
       const arbolNuevo = agregar(arbol, nuevo);
 
@@ -1033,9 +1041,9 @@ function Flow() {
   // el panel a ese hijo, así se ve su respuesta sin cerrar el panel. Enter =
   // continúa el hilo ("main"), Ctrl/Cmd+Enter o botón = ramifica (fase 3.12).
   const responderDesdePanel = useCallback(
-    (text: string, kind: BranchKind) => {
+    (text: string, kind: BranchKind, adjuntos: Adjunto[]) => {
       if (!transcriptNodeId) return;
-      const id = handleSubmit(text, kind, transcriptNodeId);
+      const id = handleSubmit(text, kind, transcriptNodeId, adjuntos);
       if (id) verGloboEnPanel(id);
     },
     [handleSubmit, transcriptNodeId, verGloboEnPanel],

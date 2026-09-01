@@ -9,6 +9,19 @@ import type { Edge, Node } from "@xyflow/react";
 // `## Respuesta`. Ver `toMarkdown` / `parseMarkdown`.
 
 export type Rama = "main" | "branch-left" | "branch-right";
+
+// Un archivo adjuntado a un intercambio (T16). Vive en el `.md` del intercambio,
+// en el frontmatter como JSON en una línea. Se manda a la IA SOLO en el turno de
+// ese intercambio (no se re-manda cuando el globo es contexto de un hijo).
+export type TipoAdjunto = "texto" | "imagen" | "pdf";
+export type Adjunto = {
+  nombre: string; // "notas.md", "captura.png"
+  tipo: TipoAdjunto;
+  mime: string; // "text/markdown", "image/png", "application/pdf"
+  // tipo "texto": el contenido del archivo tal cual (UTF-8).
+  // tipo "imagen" | "pdf": base64 SIN el prefijo `data:...;base64,` ni saltos de línea.
+  contenido: string;
+};
 export type Proveedor =
   | "claude"
   | "deepseek"
@@ -56,6 +69,8 @@ export type Intercambio = {
   // proveedor no devolvió `usage`. Van al `.md` como `tokens_in` / `tokens_out`.
   tokensEntrada: number | null;
   tokensSalida: number | null;
+  // Archivos adjuntados a la pregunta (T16). `[]` = ninguno.
+  adjuntos: Adjunto[];
 };
 
 export type Arbol = {
@@ -88,6 +103,7 @@ export function crearIntercambio(campos: {
   fecha?: string;
   pending?: boolean;
   error?: string | null;
+  adjuntos?: Adjunto[];
 }): Intercambio {
   return {
     id: campos.id ?? nuevoId(),
@@ -105,6 +121,7 @@ export function crearIntercambio(campos: {
     error: campos.error ?? null,
     tokensEntrada: null,
     tokensSalida: null,
+    adjuntos: campos.adjuntos ?? [],
   };
 }
 
@@ -273,6 +290,8 @@ export function arbolAVista(a: Arbol): { nodes: Node[]; edges: Edge[] } {
       sinHijos: !conPadre.has(ic.id),
       ancho: ic.ancho,
       alto: ic.alto,
+      // Para el badge "📎 N" en el header del globo (T16).
+      adjuntosN: ic.adjuntos.length,
     },
   }));
   const edges: Edge[] = a.intercambios
@@ -297,6 +316,28 @@ export function arbolAVista(a: Arbol): { nodes: Node[]; edges: Edge[] } {
 
 // ── Serialización `.md` ────────────────────────────────────────────────────
 
+const TIPOS_ADJUNTO: readonly TipoAdjunto[] = ["texto", "imagen", "pdf"];
+
+// Parsea el `adjuntos:` del frontmatter con validación. Si el JSON está roto o
+// un item no valida → se descarta ese item (no rompe la carga del árbol).
+function parseAdjuntos(raw: string): Adjunto[] {
+  if (!raw) return [];
+  try {
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) return [];
+    return arr.filter(
+      (x): x is Adjunto =>
+        !!x &&
+        typeof x.nombre === "string" &&
+        typeof x.mime === "string" &&
+        typeof x.contenido === "string" &&
+        (TIPOS_ADJUNTO as string[]).includes(x.tipo),
+    );
+  } catch {
+    return [];
+  }
+}
+
 export function toMarkdown(ic: Intercambio): string {
   const front = [
     `id: ${ic.id}`,
@@ -317,6 +358,10 @@ export function toMarkdown(ic: Intercambio): string {
     // Se persiste para poder recuperar una llamada que quedó a medias: al
     // recargar, un `pendiente` sin terminar pasa a ser un error reintentable.
     `pendiente: ${ic.pending ? "1" : ""}`,
+    // Archivos adjuntos (T16): JSON en una línea (los `contenido` — texto
+    // escapado o base64 — no tienen saltos de línea reales tras JSON.stringify,
+    // así que no rompen el parser de frontmatter). Vacío = sin adjuntos.
+    `adjuntos: ${ic.adjuntos.length > 0 ? JSON.stringify(ic.adjuntos) : ""}`,
   ].join("\n");
   return (
     `---\n${front}\n---\n\n` +
@@ -393,6 +438,7 @@ export function parseMarkdown(
     respuesta: respuestaTxt === "" ? null : respuestaTxt,
     pending,
     error,
+    adjuntos: parseAdjuntos(meta.adjuntos ?? ""),
   };
 }
 

@@ -119,9 +119,14 @@ Chrome real (agarrarla con zoom out).
   (`estimarTokens(armarContexto(…))`, usa el resumen cacheado si hay, nunca lo dispara).
   Decisiones F3-20. · **T12** cada turno IA del panel muestra "N → N tok" de `tokensEntrada/Salida`
   del `.md` (nada si no los tiene). Decisiones F3-21. Los dos verificados en el pane.
-- **Falta**: **T15** respuestas que son un documento entero (`.md`/código): UX (spec) · **T16**
-  drag & drop de archivos al mini-composer (spec + scope con Alan). Con T15/T16 (ambas
-  spec-primero) se cierra la Fase 4.
+- **Hecho (02-09)**: **T16a** (adjuntar archivos de texto al mini-composer del panel). Spec en
+  `tasks/T16-spec.md` (decisiones cerradas con Alan). `Adjunto` en el `.md` (frontmatter JSON 1
+  línea); `armarContexto` pega el texto adjunto a la pregunta y NO lo re-manda a los hijos;
+  `src/model/adjuntos.ts` (leer/validar, topes 128KB/1MB/2MB); dropzone + paste + 📎 + chips;
+  badge "📎 N" en el globo y chips en el panel. Decisiones F3-22. 25 asserts + verificado en el
+  pane. **Falta T16b (imágenes) y T16c (PDF)** — misma spec, sub-tareas.
+- **Falta**: **T15** respuestas que son un documento entero (`.md`/código): UX (spec) · **T16b/c**
+  imágenes y PDF. Con T15 + T16 completo se cierra la Fase 4.
 - **Bugfix layout (01-09, decisiones F3-7b/c)**: ramificar una rama en un árbol ancho mandaba el
   globo nuevo lejísimo abajo ("suelto") o **pisando otro globo**. `ubicarNuevoGlobo`: `H_NUEVO`
   260 (real, nace colapsado), búsqueda en anillos ampliada, y fallback `bajarHastaLibre` que baja

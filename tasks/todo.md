@@ -49,7 +49,17 @@
 - [x] Bugfix — ramificar una rama en árbol ancho tiraba el globo lejos/suelto: `ubicarNuevoGlobo`
       búsqueda en anillos acotada + `resolverSolapes()` al crear (`layout.ts`, `FlowCanvas.tsx`; decisiones F3-7b)
 - [ ] T15 — Respuestas que SON un documento (`.md`, código largo): investigar UX — ¿bloque plegable + copiar/descargar? ¿mejor instrucción de sistema? (spec primero) [investigar]
-- [ ] T16 — Drag & drop de archivos al mini-composer del panel (adjuntar al contexto) — investigar alcance: text/imagen, límites, qué proveedores lo soportan (spec primero) [L]
+- [~] T16 — Adjuntar archivos al mini-composer del panel. Spec: `tasks/T16-spec.md` (decisiones
+      cerradas con Alan 02-09: texto+img+pdf, vive en el `.md`, solo el panel, texto obligatorio,
+      topes 128KB/1MB/2MB). Sub-tareas: **T16a texto ✅** · T16b imágenes · T16c PDF.
+  - [x] **T16a — texto punta a punta.** `Adjunto`/`Intercambio.adjuntos` + `.md` (frontmatter JSON
+        1 línea) + `Mensaje.adjuntos` + `armarContexto` pega el texto adjunto a la pregunta (NO se
+        re-manda a los hijos) + `src/model/adjuntos.ts` (leer/validar/topes) + dropzone/paste/📎 +
+        chips + badge "📎 N" en el globo + chip lectura en el panel. (`intercambio.ts`, `contexto.ts`,
+        `adjuntos.ts`, `BranchTranscript.tsx`, `FlowCanvas.tsx`, `MessageNode.tsx`, `compartir.ts`;
+        decisiones F3-22) — 25 asserts scratch + verificado en el pane (drop, reject, send, reload).
+  - [ ] T16b — imágenes (compresión `<canvas>`, bloques nativos Claude/Gemini + `image_url`, thumbnails).
+  - [ ] T16c — PDF (bloque `document`/`inline_data`, aviso "solo Gemini/Claude").
 
 ### Checkpoint Fase 4
 - [ ] `tsc` + `lint` + `build` verde

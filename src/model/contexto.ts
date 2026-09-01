@@ -1,4 +1,9 @@
-import { caminoRaizA, type Arbol, type Intercambio } from "./intercambio";
+import {
+  caminoRaizA,
+  type Adjunto,
+  type Arbol,
+  type Intercambio,
+} from "./intercambio";
 
 // Armado del contexto que se le manda a la IA. Reglas (CLAUDE.md / spec §4-§5):
 //
@@ -20,7 +25,19 @@ import { caminoRaizA, type Arbol, type Intercambio } from "./intercambio";
 // es trivial acá: todo el árbol vive en memoria y `caminoRaizA` es O(profundidad).
 
 export type Rol = "user" | "assistant";
-export type Mensaje = { rol: Rol; texto: string };
+export type Mensaje = {
+  rol: Rol;
+  texto: string;
+  // Adjuntos NO textuales (imagen / pdf) del intercambio actual — los mapean los
+  // adaptadores de `ia.ts` a bloques nativos por proveedor (T16b/c). Los adjuntos
+  // de texto NO viajan acá: `armarContexto` los mete directo en `texto`.
+  adjuntos?: Adjunto[];
+};
+
+// Un adjunto de texto, como bloque delimitado dentro del mensaje del usuario.
+function bloqueAdjuntoTexto(a: Adjunto): string {
+  return `\n\n--- archivo adjunto: ${a.nombre} ---\n${a.contenido}\n--- fin de ${a.nombre} ---`;
+}
 
 export type OpcionesContexto = {
   // Cuántos intercambios recientes del camino van completos. Los anteriores se
@@ -52,8 +69,15 @@ function normalizar(mensajes: Mensaje[]): Mensaje[] {
     const ultimo = out[out.length - 1];
     if (ultimo && ultimo.rol === m.rol) {
       ultimo.texto = `${ultimo.texto}\n\n${m.texto}`;
+      if (m.adjuntos?.length) {
+        ultimo.adjuntos = [...(ultimo.adjuntos ?? []), ...m.adjuntos];
+      }
     } else {
-      out.push({ rol: m.rol, texto: m.texto });
+      out.push(
+        m.adjuntos?.length
+          ? { rol: m.rol, texto: m.texto, adjuntos: m.adjuntos }
+          : { rol: m.rol, texto: m.texto },
+      );
     }
   }
   return out;
@@ -209,7 +233,22 @@ export function armarContexto(
     crudo.push({ rol: "assistant", texto: "Tenido en cuenta." });
   }
 
-  if (actual) crudo.push(...aplanar(actual));
+  if (actual) {
+    const msgs = aplanar(actual);
+    // Los adjuntos del intercambio actual van SOLO en su turno (no se re-mandan
+    // cuando este globo es contexto de un hijo): los de texto se pegan al mensaje
+    // del usuario; los de imagen/pdf viajan en `.adjuntos` para los adaptadores.
+    if (actual.adjuntos.length > 0 && msgs[0]?.rol === "user") {
+      const textos = actual.adjuntos.filter((a) => a.tipo === "texto");
+      const otros = actual.adjuntos.filter((a) => a.tipo !== "texto");
+      msgs[0] = {
+        ...msgs[0],
+        texto: msgs[0].texto + textos.map(bloqueAdjuntoTexto).join(""),
+        ...(otros.length > 0 ? { adjuntos: otros } : {}),
+      };
+    }
+    crudo.push(...msgs);
+  }
 
   return normalizar(crudo);
 }

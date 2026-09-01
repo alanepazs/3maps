@@ -46,6 +46,11 @@ src/
                          conPosicion, conRama, conRespuesta, reparentar), arbolAVista (deriva
                          nodes/edges de React Flow), toMarkdown / parseMarkdown, arbolInicial
                          (= { intercambios: [] }, árbol vacío — el 1er submit crea la raíz).
+    adjuntos.ts          Archivos adjuntos (T16). tipoDeArchivo(File)→"texto"|"imagen"|"pdf"|null
+                         (MIME + extensión), leerArchivo(File,pesoActual)→{ok,adjunto|error}
+                         (T16a: solo texto, con FileReader), pesoAdjunto / fmtBytes / iconoAdjunto /
+                         descargarAdjunto, topes LIMITE_TEXTO 128KB / LIMITE_BINARIO 1MB /
+                         LIMITE_INTERCAMBIO 2MB. Decisiones F3-22.
     persistencia.ts      guardarArbol(arbol, mapId) / cargarArbol(mapId) en localStorage
                          ("3maps:arbol:<mapId>"), un string .md por intercambio. Cae a
                          arbolInicial() si no hay nada.
@@ -159,6 +164,9 @@ src/
                         calculada en FlowCanvas; F3-20). Cada turno IA: "N → N tok" de
                         `Intercambio.tokensEntrada/Salida` si los tiene (T12, F3-21). `fmtTokens`
                         exportado acá (lo usan los dos contadores).
+                        Mini-composer (T16a): dropzone + onPaste + botón 📎 → adjuntar archivos de
+                        texto; chips con ✕; el turno "Vos" muestra los adjuntos en modo lectura.
+                        `onSubmit(text, kind, adjuntos)`. F3-22.
                         Props: {intercambios, side, onFlipSide, onClose, onSubmit?, onStop?,
                         onRetry?, nav?, onNavigate?, contextoTokens?, width?, resizable?, onResize?}.
     SharedBanner.tsx    Cartel arriba cuando se ve un árbol compartido (`?compartir=`). Props:
@@ -404,7 +412,8 @@ Props de `<ReactFlow>` que importan:
 
 ## MessageNode.tsx
 
-`data`: `{ pregunta, respuesta, pending?, error?, isRoot?, sinHijos?, ancho, alto }`.
+`data`: `{ pregunta, respuesta, pending?, error?, isRoot?, sinHijos?, ancho, alto, adjuntosN }`.
+`adjuntosN` > 0 → badge "📎 N" en el header (T16, F3-22).
 - Ancho por defecto 260px; **redimensionable** con la manija ◢ abajo-derecha (F3-8): tamaño en
   `data.ancho/alto` (va al `.md`, sincroniza), cuerpo `flex-1 overflow-auto nowheel scroll-fino`.
 - Cuerpo: `pending` ("escribiendo…" + texto + ▍) · `error` (recuadro rojo + "↻ Reintentar") ·
@@ -418,9 +427,11 @@ Props de `<ReactFlow>` que importan:
 
 ## model/intercambio.ts (modelo de datos)
 
-`Intercambio` = `{ id, padreId, rama, x, y, ancho, alto, tokensEntrada, tokensSalida, proveedor,
-fecha, pregunta, respuesta, pending, error }` (`ancho`/`alto` = null → auto; tamaño manual del
-globo, F3-8. `tokensEntrada`/`tokensSalida` = null si el proveedor no dio `usage`; T11, F3-19).
+`Intercambio` = `{ id, padreId, rama, x, y, ancho, alto, tokensEntrada, tokensSalida, adjuntos,
+proveedor, fecha, pregunta, respuesta, pending, error }` (`ancho`/`alto` = null → auto; tamaño
+manual del globo, F3-8. `tokensEntrada`/`tokensSalida` = null si el proveedor no dio `usage`; T11,
+F3-19. `adjuntos: Adjunto[]` = archivos de la pregunta, `[]` = ninguno; T16, F3-22).
+`Adjunto` = `{ nombre, tipo: "texto"|"imagen"|"pdf", mime, contenido }`.
 `Arbol` = `{ intercambios: Intercambio[] }`. Coincide con el frontmatter del `.md` (spec §3).
 - `rama`: `"main"` (tronco, por abajo) | `"branch-left"` | `"branch-right"` (costado). Los ids de
   los handles `source` del `MessageNode` se llaman igual → `arbolAVista` hace `sourceHandle: ic.rama`
@@ -433,11 +444,14 @@ globo, F3-8. `tokensEntrada`/`tokensSalida` = null si el proveedor no dio `usage
   `## Pregunta` / `## Respuesta`. `padre_id` / `proveedor` vacíos → `null`. `pendiente: 1` (una
   llamada a medias) → al parsear se convierte en un `error` reintentable (`pending` nunca se
   restaura como tal). `tokens_in` / `tokens_out` (T11): tokens del proveedor, vacío → `null`;
-  un `.md` viejo sin esas líneas parsea igual.
+  un `.md` viejo sin esas líneas parsea igual. `adjuntos:` (T16) = JSON en 1 línea; JSON roto o
+  item inválido → `[]` (`parseAdjuntos`).
 
 ## model/contexto.ts (armado del contexto para la IA)
 
-`Mensaje` = `{ rol: "user" | "assistant", texto }`.
+`Mensaje` = `{ rol: "user" | "assistant", texto, adjuntos? }`. `adjuntos?` = solo imagen/pdf del
+intercambio actual, para los adaptadores de `ia.ts` (T16b/c); los adjuntos de TEXTO los pega
+`armarContexto` dentro de `texto`. F3-22.
 
 `armarContexto(arbol, nodoId, opts?, resumenViejo?)` → `Mensaje[]`:
 - **Solo el camino raíz→`nodoId`** (`caminoRaizA`), nunca el árbol entero (invariante CLAUDE.md).

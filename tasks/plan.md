@@ -81,7 +81,8 @@ Cada tarea = una rama/commit, con el ciclo `spec-driven` → `incremental-implem
 - [x] **T12 — Contador de tokens gastados por globo (usa T11).** [S] (decisiones F3-21)
 - [ ] **T14 — Auto-scroll del panel sigue el texto mientras streamea.** [S]
 - [ ] **T15 — Respuestas que son un documento entero (`.md`/código): UX.** [investigar]
-- [ ] **T16 — Drag & drop de archivos al mini-composer del panel.** [L — spec primero]
+- [~] **T16 — Adjuntar archivos al mini-composer.** [L] Spec `tasks/T16-spec.md`. **T16a texto ✅**
+      (F3-22) · T16b imágenes · T16c PDF.
 - [ ] **T13 — Heurística de LaTeX crudo en `normalizarMath`.** [S] (independiente; adelantable)
 
 #### Checkpoint Fase 4
@@ -309,17 +310,44 @@ globo? Spec primero (decidir con Alan qué comportamiento).
 **Dependencies:** puede tocar `settings.systemPrompt` default, `Markdown.tsx`, `MessageNode.tsx`.
 **Scope:** investigar → S/M.
 
-### T16 — Drag & drop de archivos al mini-composer del panel (pedido de Alan, 01-09)
-**Descripción:** Poder arrastrar y soltar archivos dentro del chat lateral y que se sumen al
-contexto de la próxima pregunta. Investigar alcance: ¿solo texto (`.md`, `.txt`, código) o también
-imágenes? Los proveedores difieren mucho (Claude/Gemini/GPT tienen visión + file API; los
-open-source vía proxy en general no). Límites de tamaño. Dónde vive el adjunto (¿en el `.md` del
-intercambio? ¿efímero?). Spec + decisión de scope con Alan antes de implementar.
+### T16 — Adjuntar archivos al mini-composer del panel (pedido de Alan, 01-09)
+**Spec completa: `tasks/T16-spec.md`.** Decisiones con Alan (02-09): texto + imágenes + PDF; el
+adjunto vive en el `.md` del intercambio; solo el mini-composer del panel; el texto de la
+pregunta es obligatorio; tipo no soportado → rechazo + lista de tipos; badge de adjuntos en el
+globo Y en el panel; topes 128 KB (texto) / 1 MB (bin) / 2 MB (intercambio); orden
+texto → imágenes → PDF.
 
-**Acceptance criteria:** por definir en la spec.
+**T16a — texto punta a punta ✅ (decisiones F3-22)**
+- `Adjunto` / `TipoAdjunto` + `Intercambio.adjuntos: Adjunto[]` (`intercambio.ts`).
+- `.md`: `adjuntos: <JSON en 1 línea>` en el frontmatter (los `contenido` no tienen `\n` real
+  tras `JSON.stringify` → no rompe el parser mínimo). JSON roto → `[]`, `.md` viejo → `[]`.
+- `Mensaje.adjuntos?` (solo imagen/pdf, para los adaptadores en T16b/c). `armarContexto` pega los
+  adjuntos de TEXTO al mensaje del usuario del intercambio actual, delimitados
+  (`--- archivo adjunto: … ---`). **NO se re-mandan** cuando el globo es contexto de un hijo.
+  `normalizar` preserva `.adjuntos`.
+- `src/model/adjuntos.ts` (nuevo): `tipoDeArchivo`, `leerArchivo` (T16a: solo texto; img/pdf →
+  aviso "pronto"), `pesoAdjunto`, `fmtBytes`, `iconoAdjunto`, `descargarAdjunto`, los topes.
+- UI (`BranchTranscript`): dropzone en el mini-composer + `onPaste` + botón 📎 (`<input file>`
+  oculto) + chips con ✕ + aviso ámbar. `onSubmit` → `(text, kind, adjuntos)`. Placeholder cambia
+  con adjuntos. Chips en modo lectura en el turno "Vos" (descargan al click).
+- `MessageNode`: badge "📎 N" en el header (`data.adjuntosN` desde `arbolAVista`).
+- `compartir.ts`: si el árbol con adjuntos supera `MAX_BYTES_COMPARTIR` → error que menciona los
+  adjuntos.
+- **Verificado**: 25 asserts scratch (round-trip `.md`, folding de contexto, no-reenvío a hijos,
+  helpers) + pane (drop→chip, rechazo de imagen y de archivo >128KB, envío crea globo con adjunto,
+  persiste tras reload, badge en el canvas, chip lectura en el panel). `tsc`/`lint`/`build` verde.
+- **Falta que Alan pruebe en Brave**: paste de una captura (rechaza, "solo texto"), ✕ para quitar
+  un chip, descarga de un adjunto desde el panel.
 
-**Dependencies:** `BranchTranscript.tsx` (mini-composer), `contexto.ts`, `ia.ts` (mensajes multimodales),
-`intercambio.ts` (persistir el adjunto). **Scope:** L — cortar en sub-tareas.
+**T16b — imágenes** (pendiente): compresión `<canvas>` (JPEG ~0.8, máx 1568px), `tipo:"imagen"` en
+los 3 adaptadores (bloques nativos Claude/Gemini, `image_url` OpenAI-compat), thumbnails en el
+panel, aviso cuando el modelo no tiene visión. Widen el `accept` + `leerArchivo`.
+
+**T16c — PDF** (pendiente): `tipo:"pdf"`, bloque `document` (Claude) / `inline_data` (Gemini),
+aviso ámbar "PDF solo Gemini (gratis) o Claude" con otros proveedores.
+
+**Dependencies:** `BranchTranscript.tsx`, `contexto.ts`, `intercambio.ts`, `adjuntos.ts`,
+`ia.ts` (T16b/c: mensajes multimodales). **Scope:** L.
 
 ### T13 — Heurística de LaTeX crudo
 **Descripción:** En `normalizarMath` (`Markdown.tsx`): si una línea tiene `\frac{`, `\sqrt{`,

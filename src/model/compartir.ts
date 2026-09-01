@@ -90,8 +90,12 @@ export async function compartirArbol(
 
   const cuerpo = JSON.stringify(sobre);
   if (cuerpo.length > MAX_BYTES_COMPARTIR) {
+    const tieneAdjuntos = a.intercambios.some((ic) => ic.adjuntos.length > 0);
     throw new ErrorCompartir(
-      "El árbol es demasiado grande para compartir (límite ~1 MB de texto).",
+      tieneAdjuntos
+        ? "El árbol es demasiado grande para compartir (límite ~1 MB). Los " +
+          "archivos adjuntos suman mucho — sacalos o compartí una rama sin ellos."
+        : "El árbol es demasiado grande para compartir (límite ~1 MB de texto).",
     );
   }
 

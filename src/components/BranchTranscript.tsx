@@ -4,14 +4,23 @@ import {
   useEffect,
   useRef,
   useState,
+  type ClipboardEvent as ReactClipboardEvent,
+  type DragEvent as ReactDragEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
 
 import type { BranchKind } from "./Composer";
 import Markdown from "./Markdown";
 import { ANCHO_PANEL_MAX_FRAC, ANCHO_PANEL_MIN } from "./settings";
+import {
+  descargarAdjunto,
+  fmtBytes,
+  iconoAdjunto,
+  leerArchivo,
+  pesoAdjunto,
+} from "@/model/adjuntos";
 import { NOMBRE_PROVEEDOR } from "@/model/ia";
-import type { Intercambio } from "@/model/intercambio";
+import type { Adjunto, Intercambio } from "@/model/intercambio";
 
 // 1234 → "1.2k", 950 → "950". Compartido por el contador de contexto (T10) y el
 // de tokens gastados (T12).
@@ -51,7 +60,7 @@ export default function BranchTranscript({
   side: "left" | "right";
   onFlipSide: () => void;
   onClose: () => void;
-  onSubmit?: (text: string, kind: BranchKind) => void;
+  onSubmit?: (text: string, kind: BranchKind, adjuntos: Adjunto[]) => void;
   // Corta el stream del globo abierto en el panel (si está `pending`).
   onStop?: () => void;
   // Vuelve a pedir la respuesta del globo abierto en el panel.
@@ -70,6 +79,12 @@ export default function BranchTranscript({
   onResize?: (px: number) => void;
 }) {
   const [borrador, setBorrador] = useState("");
+  // Archivos adjuntos a la próxima pregunta (T16). Se limpian al enviar.
+  const [adjuntos, setAdjuntos] = useState<Adjunto[]>([]);
+  const [avisoAdj, setAvisoAdj] = useState<string | null>(null);
+  const [arrastrando, setArrastrando] = useState(false);
+  const arrastreDepth = useRef(0);
+  const inputArchRef = useRef<HTMLInputElement>(null);
   const finRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -146,11 +161,63 @@ export default function BranchTranscript({
     if (cerca) finRef.current?.scrollIntoView({ block: "end" });
   }, [ultimo?.respuesta, streameando]);
 
+  // Lee archivos soltados / pegados / elegidos y los suma a `adjuntos`, con los
+  // topes de `adjuntos.ts`. El texto de la pregunta sigue siendo obligatorio.
+  const agregarArchivos = async (files: FileList | File[]) => {
+    const lista = Array.from(files);
+    if (lista.length === 0) return;
+    setAvisoAdj(null);
+    let peso = adjuntos.reduce((n, a) => n + pesoAdjunto(a), 0);
+    const nuevos: Adjunto[] = [];
+    for (const file of lista) {
+      const r = await leerArchivo(file, peso);
+      if (r.ok) {
+        nuevos.push(r.adjunto);
+        peso += pesoAdjunto(r.adjunto);
+      } else {
+        setAvisoAdj(r.error);
+      }
+    }
+    if (nuevos.length > 0) setAdjuntos((prev) => [...prev, ...nuevos]);
+  };
+
+  const quitarAdjunto = (i: number) =>
+    setAdjuntos((prev) => prev.filter((_, j) => j !== i));
+
+  const onDrop = (e: ReactDragEvent) => {
+    e.preventDefault();
+    arrastreDepth.current = 0;
+    setArrastrando(false);
+    if (e.dataTransfer.files.length > 0) void agregarArchivos(e.dataTransfer.files);
+  };
+  const onDragEnter = (e: ReactDragEvent) => {
+    if (![...e.dataTransfer.types].includes("Files")) return;
+    e.preventDefault();
+    arrastreDepth.current += 1;
+    setArrastrando(true);
+  };
+  const onDragOver = (e: ReactDragEvent) => {
+    if ([...e.dataTransfer.types].includes("Files")) e.preventDefault();
+  };
+  const onDragLeave = () => {
+    arrastreDepth.current = Math.max(0, arrastreDepth.current - 1);
+    if (arrastreDepth.current === 0) setArrastrando(false);
+  };
+  const onPaste = (e: ReactClipboardEvent) => {
+    const files = e.clipboardData?.files;
+    if (files && files.length > 0) {
+      e.preventDefault();
+      void agregarArchivos(files);
+    }
+  };
+
   const enviar = (kind: BranchKind) => {
     const t = borrador.trim();
     if (!t || !onSubmit) return;
-    onSubmit(t, kind);
+    onSubmit(t, kind, adjuntos);
     setBorrador("");
+    setAdjuntos([]);
+    setAvisoAdj(null);
   };
 
   return (
@@ -289,6 +356,25 @@ export default function BranchTranscript({
                   <div className="whitespace-pre-wrap rounded-md rounded-tl-none bg-sky-500/10 px-3 py-2 text-white">
                     {ic.pregunta}
                   </div>
+                  {ic.adjuntos.length > 0 && (
+                    <div className="mt-1.5 flex flex-wrap gap-1.5">
+                      {ic.adjuntos.map((a, j) => (
+                        <button
+                          key={j}
+                          type="button"
+                          onClick={() => descargarAdjunto(a)}
+                          title={`Descargar ${a.nombre}`}
+                          className="flex items-center gap-1 rounded border border-white/15 bg-white/[0.04] px-2 py-1 text-[11px] text-white/70 hover:bg-white/10"
+                        >
+                          <span aria-hidden>{iconoAdjunto(a.tipo)}</span>
+                          <span className="max-w-[12rem] truncate">{a.nombre}</span>
+                          <span className="text-white/40">
+                            {fmtBytes(pesoAdjunto(a))}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
               <div className="border-l-2 border-white/15 pl-2.5">
@@ -353,24 +439,90 @@ export default function BranchTranscript({
             </button>
           </div>
         ) : onSubmit ? (
-          <div className="border-t border-white/10 p-3">
+          <div
+            className={`relative border-t border-white/10 p-3 ${
+              arrastrando ? "outline-dashed outline-2 -outline-offset-4 outline-sky-400/70" : ""
+            }`}
+            onDragEnter={onDragEnter}
+            onDragOver={onDragOver}
+            onDragLeave={onDragLeave}
+            onDrop={onDrop}
+          >
+            {arrastrando && (
+              <div className="pointer-events-none absolute inset-2 z-10 flex items-center justify-center rounded-md bg-neutral-950/80 text-sm text-sky-300">
+                Soltá los archivos acá
+              </div>
+            )}
+            {(adjuntos.length > 0 || avisoAdj) && (
+              <div className="mb-2 space-y-1.5">
+                {adjuntos.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {adjuntos.map((a, i) => (
+                      <span
+                        key={i}
+                        className="flex items-center gap-1 rounded border border-white/15 bg-white/[0.04] px-2 py-1 text-[11px] text-white/80"
+                      >
+                        <span aria-hidden>{iconoAdjunto(a.tipo)}</span>
+                        <span className="max-w-[12rem] truncate">{a.nombre}</span>
+                        <span className="text-white/40">{fmtBytes(pesoAdjunto(a))}</span>
+                        <button
+                          type="button"
+                          onClick={() => quitarAdjunto(i)}
+                          aria-label={`Quitar ${a.nombre}`}
+                          className="ml-0.5 text-white/40 hover:text-white"
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {avisoAdj && (
+                  <p className="text-[11px] text-amber-300/90">⚠ {avisoAdj}</p>
+                )}
+              </div>
+            )}
             <textarea
               value={borrador}
               onChange={(e) => setBorrador(e.target.value)}
+              onPaste={onPaste}
               onKeyDown={(e) => {
                 if (e.key !== "Enter" || e.shiftKey) return;
                 e.preventDefault();
                 enviar(e.ctrlKey || e.metaKey ? "branch" : "main");
               }}
               rows={2}
-              placeholder="Seguí la conversación desde este globo…"
+              placeholder={
+                adjuntos.length > 0
+                  ? "Escribí qué hago con el archivo (ej: “explicá”, “resumí”)…"
+                  : "Seguí la conversación desde este globo…"
+              }
               className="w-full resize-none rounded-md border border-white/15 bg-neutral-950 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-sky-400 focus:outline-none"
             />
+            <input
+              ref={inputArchRef}
+              type="file"
+              multiple
+              accept=".md,.markdown,.txt,.text,.csv,.tsv,.json,.jsonl,.yaml,.yml,.toml,.xml,.html,.css,.js,.jsx,.ts,.tsx,.py,.rb,.go,.rs,.java,.kt,.c,.h,.cpp,.cs,.php,.sh,.sql,.log,.diff,text/*"
+              className="hidden"
+              onChange={(e) => {
+                if (e.target.files) void agregarArchivos(e.target.files);
+                e.target.value = "";
+              }}
+            />
             <div className="mt-2 flex items-center justify-between gap-2">
-              <span className="text-[11px] text-white/30">
-                Enter continúa · Ctrl+Enter ramifica
-              </span>
-              <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => inputArchRef.current?.click()}
+                title="Adjuntar un archivo de texto"
+                className="rounded border border-white/15 px-2 py-1 text-xs text-white/60 hover:bg-white/10 hover:text-white"
+              >
+                📎
+              </button>
+              <div className="flex items-center gap-2">
+                <span className="hidden text-[11px] text-white/30 sm:inline">
+                  Enter continúa · Ctrl+Enter ramifica
+                </span>
                 <button
                   type="button"
                   onClick={() => enviar("branch")}

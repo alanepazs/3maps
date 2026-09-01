@@ -907,6 +907,36 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
   (F3-20) y este.
 - **Revertir**: se saca el `<span>` del turno IA; los datos siguen en el `.md`.
 
+### F3-22. Adjuntar archivos (T16a — texto): `Adjunto` en el `.md`, se pega al contexto, no se re-manda
+Spec completa y decisiones de alcance en `tasks/T16-spec.md`. Lo no obvio de la implementación:
+
+- **`Adjunto` (`intercambio.ts`)** = `{ nombre, tipo: "texto"|"imagen"|"pdf", mime, contenido }`.
+  `contenido` = texto plano (tipo `texto`) o base64 sin prefijo (imagen/pdf, T16b/c).
+  `Intercambio.adjuntos: Adjunto[]` (`[]` = ninguno).
+- **`.md`**: `adjuntos: <JSON.stringify(adjuntos)>` en **una línea** del frontmatter. Funciona con
+  el parser mínimo (`key: value` por línea) porque `JSON.stringify` nunca emite un `\n` real (los
+  saltos van como `\\n`) y el base64 no tiene `:` ni `\n`. JSON roto o item inválido → ese item se
+  descarta (`parseAdjuntos`), nunca rompe la carga del árbol. `.md` viejo sin la línea → `[]`.
+  Mismo criterio que el `error` (§1).
+- **El adjunto va a la IA SOLO en el turno de su intercambio.** `armarContexto`: al aplanar el
+  intercambio `actual`, pega los adjuntos de **texto** dentro del `Mensaje.texto` del usuario,
+  delimitados (`--- archivo adjunto: {nombre} ---`). Los de imagen/pdf van en `Mensaje.adjuntos`
+  (nuevo campo opcional) para que los mapeen los adaptadores en T16b/c. Cuando el mismo globo es
+  contexto de un hijo, se manda **solo su pregunta/respuesta** — nunca de nuevo el archivo (costo
+  de tokens + rompería el prompt caching). `normalizar` ahora preserva `.adjuntos` al concatenar.
+- **Los adaptadores de `ia.ts` no se tocaron en T16a** (el texto ya viaja dentro de `.texto`).
+- **`src/model/adjuntos.ts`** (nuevo): lectura/validación (`FileReader`), `tipoDeArchivo` (por
+  MIME + extensión), topes (`LIMITE_TEXTO` 128 KB · `LIMITE_BINARIO` 1 MB · `LIMITE_INTERCAMBIO`
+  2 MB — el mapa entero sincroniza como UN JSON de 5 MB, así que cada adjunto compite con eso),
+  `pesoAdjunto`/`fmtBytes`/`iconoAdjunto`/`descargarAdjunto`. T16a: `leerArchivo` solo acepta
+  texto; imagen/pdf → aviso "pronto".
+- **UI**: dropzone + `onPaste` + botón 📎 SOLO en el mini-composer del panel (no la barra
+  `Composer`). El texto de la pregunta es **obligatorio** aunque haya adjunto. Badge "📎 N" en el
+  header del globo (`data.adjuntosN` desde `arbolAVista`) y chips en el turno "Vos" del panel
+  (descargan al click).
+- **Revertir**: sacás el campo `adjuntos` del modelo + `adjuntos.ts` + la UI del panel. Un `.md`
+  con `adjuntos:` seguiría parseando (la línea se ignora).
+
 ---
 
 ## Build / deploy

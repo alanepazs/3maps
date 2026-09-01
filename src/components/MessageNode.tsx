@@ -62,6 +62,8 @@ export default function MessageNode({
   const respuesta = data.respuesta ? String(data.respuesta) : null;
   const pending = Boolean(data.pending);
   const error = data.error ? String(data.error) : null;
+  const adjuntosN =
+    typeof data.adjuntosN === "number" ? data.adjuntosN : 0;
   const { deleteNode, retryNode, stopNode, openNode, resizeNode, readOnly } =
     useContext(NodeActionsContext);
   const { getZoom } = useReactFlow();
@@ -277,6 +279,14 @@ export default function MessageNode({
 
       {pregunta && (
         <div className="relative z-10 shrink-0 border-b border-white/10 bg-neutral-900 px-3 py-1.5 text-left font-medium text-white">
+          {adjuntosN > 0 && (
+            <span
+              className="mr-1.5 rounded bg-white/10 px-1 text-xs font-normal text-white/60"
+              title={`${adjuntosN} archivo${adjuntosN > 1 ? "s" : ""} adjunto${adjuntosN > 1 ? "s" : ""}`}
+            >
+              📎 {adjuntosN}
+            </span>
+          )}
           {pregunta}
         </div>
       )}
