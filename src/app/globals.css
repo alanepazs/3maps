@@ -76,3 +76,23 @@ body {
     display: none !important;
   }
 }
+
+/* Lápiz "escribiendo" sobre el globo mientras la IA streamea (MessageNode). */
+@keyframes lapiz-escribe {
+  0%,
+  100% {
+    transform: rotate(-12deg) translateY(0);
+  }
+  50% {
+    transform: rotate(6deg) translateY(-1px);
+  }
+}
+.lapiz-escribiendo {
+  display: inline-block;
+  animation: lapiz-escribe 0.9s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lapiz-escribiendo {
+    animation: none;
+  }
+}

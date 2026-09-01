@@ -59,7 +59,7 @@ export default function MessageNode({
   const respuesta = data.respuesta ? String(data.respuesta) : null;
   const pending = Boolean(data.pending);
   const error = data.error ? String(data.error) : null;
-  const { deleteNode, retryNode, openNode, resizeNode, readOnly } =
+  const { deleteNode, retryNode, stopNode, openNode, resizeNode, readOnly } =
     useContext(NodeActionsContext);
   const { getZoom } = useReactFlow();
 
@@ -147,6 +147,30 @@ export default function MessageNode({
         selected ? "border-sky-400 ring-2 ring-sky-400/40" : "border-white/20"
       }`}
     >
+      {/* Mientras streamea: badge de lápiz "escribiendo" + STOP, flotando sobre
+          el borde del globo (el globo tiene overflow-hidden → va en un
+          NodeToolbar, que se renderiza afuera). */}
+      <NodeToolbar
+        isVisible={pending && !readOnly}
+        position={Position.Top}
+        align="start"
+      >
+        <div className="flex items-center gap-1 rounded-md border border-white/15 bg-neutral-900 px-1.5 py-1 shadow-lg">
+          <span className="lapiz-escribiendo text-sm leading-none" aria-hidden>
+            ✏️
+          </span>
+          <button
+            type="button"
+            onClick={() => stopNode(id)}
+            title="Detener la respuesta"
+            aria-label="Detener la respuesta"
+            className="flex h-5 w-5 items-center justify-center rounded border border-white/20 text-[10px] text-white/80 hover:bg-white/10"
+          >
+            <span className="block h-2 w-2 bg-current" />
+          </button>
+        </div>
+      </NodeToolbar>
+
       <NodeToolbar isVisible={selected} position={Position.Top} align="end">
         <div className="flex gap-1.5">
           <button
