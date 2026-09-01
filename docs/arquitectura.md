@@ -53,6 +53,10 @@ src/
                          PDF = base64 tal cual, tope 1MB. pesoAdjunto / fmtBytes / iconoAdjunto / dataUrl /
                          descargarAdjunto (base64→Blob para binarios). Topes LIMITE_TEXTO 128KB /
                          LIMITE_BINARIO 1MB / LIMITE_INTERCAMBIO 2MB. Decisiones F3-22 / F3-22b.
+    exportar.ts          Sacar una respuesta como texto (T15, F3-23). nombreArchivoRespuesta(resp)
+                         → {nombre,contenido,mime} (fence único → interior + ext del lang; parece
+                         markdown → .md; si no → .txt; nombre del slug del 1er `# Título`).
+                         descargarTexto(nombre,contenido,mime) · copiarTexto(t)→bool.
     persistencia.ts      guardarArbol(arbol, mapId) / cargarArbol(mapId) en localStorage
                          ("3maps:arbol:<mapId>"), un string .md por intercambio. Cae a
                          arbolInicial() si no hay nada.
@@ -148,7 +152,9 @@ src/
                         (`<PAD>`…), colapsa floods, techo 60k — sin esto un flood crashea/cuelga
                         el parser (F3-14). Envuelto en `<LimiteError>` (fallback = texto crudo).
                         Código/tablas con scroll horizontal propio; links target=_blank.
-                        Decisiones F3-12, F3-14.
+                        Prop `conCopiar` (la pasa el panel, NO el globo): botón "⧉" por bloque de
+                        código que copia ese bloque en crudo (T15, F3-23).
+                        Decisiones F3-12, F3-14, F3-23.
     LimiteError.tsx     Error boundary de clase genérico (`fallback` + `resetKey`). Aísla un crash
                         de render: en `Markdown.tsx` y en el cuerpo de cada `MessageNode`. Un globo
                         roto muestra el fallback, el resto de la app sigue viva. F3-14.
@@ -170,6 +176,8 @@ src/
                         texto e imágenes; chips con ✕ (thumbnail si es imagen); el turno "Vos"
                         muestra los adjuntos en modo lectura (imagen → thumbnail → lightbox
                         `verImagen`). `onSubmit(text, kind, adjuntos)`. F3-22 / F3-22b.
+                        Turno IA del último globo (T15, F3-23): "⧉ Copiar" + "⬇ Guardar" la
+                        respuesta; `<Markdown conCopiar>`.
                         Props: {intercambios, side, onFlipSide, onClose, onSubmit?, onStop?,
                         onRetry?, nav?, onNavigate?, contextoTokens?, proveedorNombre?,
                         proveedorLeePdf?, width?, resizable?, onResize?}.

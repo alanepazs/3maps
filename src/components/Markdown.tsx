@@ -1,3 +1,4 @@
+import { useState } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
@@ -7,6 +8,7 @@ import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 
 import LimiteError from "./LimiteError";
+import { copiarTexto } from "@/model/exportar";
 
 // Render de markdown para las respuestas de la IA. Compacto (los globos son
 // angostos, ~260px) y en tema oscuro.
@@ -122,6 +124,40 @@ const schema = {
   },
 };
 
+// Texto crudo del `<code>` dentro de un `<pre>` (nodo hast de react-markdown).
+function extraerTextoCodigo(node: unknown): string {
+  const el = node as {
+    children?: Array<{
+      tagName?: string;
+      children?: Array<{ type?: string; value?: string }>;
+    }>;
+  };
+  const code = el?.children?.find((c) => c.tagName === "code");
+  return (code?.children ?? [])
+    .map((c) => (c.type === "text" ? (c.value ?? "") : ""))
+    .join("");
+}
+
+// Botón "copiar este bloque" (T15), solo cuando `<Markdown conCopiar>`.
+function BotonCopiarBloque({ texto }: { texto: string }) {
+  const [ok, setOk] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={async () => {
+        if (await copiarTexto(texto)) {
+          setOk(true);
+          setTimeout(() => setOk(false), 1500);
+        }
+      }}
+      title="Copiar este bloque"
+      className="absolute right-1 top-1 rounded border border-white/15 bg-neutral-900/90 px-1.5 py-0.5 text-[10px] text-white/60 opacity-0 transition-opacity hover:bg-white/10 hover:text-white group-hover:opacity-100"
+    >
+      {ok ? "✓" : "⧉"}
+    </button>
+  );
+}
+
 const components: Components = {
   a: ({ children, href }) => (
     <a
@@ -199,8 +235,29 @@ const components: Components = {
   ),
 };
 
-export default function Markdown({ children }: { children: string }) {
+// `pre` con botón "copiar este bloque" (T15). Se usa solo con `conCopiar`.
+const preConCopiar: Components["pre"] = ({ children, node }) => {
+  const codigo = extraerTextoCodigo(node);
+  return (
+    <pre className="group relative my-1.5 overflow-x-auto rounded bg-black/40 p-2">
+      {codigo && <BotonCopiarBloque texto={codigo} />}
+      {children}
+    </pre>
+  );
+};
+
+export default function Markdown({
+  children,
+  conCopiar = false,
+}: {
+  children: string;
+  // Botón "copiar" en cada bloque de código (T15). Lo activa el panel, no el globo.
+  conCopiar?: boolean;
+}) {
   const texto = normalizarMath(sanitizarCrudo(children));
+  const comps = conCopiar
+    ? { ...components, pre: preConCopiar }
+    : components;
   return (
     <div className="katex-compacto break-words text-left [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
       <LimiteError
@@ -214,7 +271,7 @@ export default function Markdown({ children }: { children: string }) {
         <ReactMarkdown
           remarkPlugins={[remarkGfm, remarkMath]}
           rehypePlugins={[rehypeRaw, [rehypeSanitize, schema], rehypeKatex]}
-          components={components}
+          components={comps}
         >
           {texto}
         </ReactMarkdown>

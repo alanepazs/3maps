@@ -988,6 +988,31 @@ Spec completa y decisiones de alcance en `tasks/T16-spec.md`. Lo no obvio de la 
 - **Con esto T16 queda completo** (texto + imágenes + PDF). El `.md` es la fuente de la verdad;
   un árbol con adjuntos pesados no se puede compartir (tope ~1 MB) — el error lo dice.
 
+### F3-23. Sacar una respuesta como texto: copiar / guardar (T15)
+- **El problema**: pedir un `.md` a un globo → el modelo lo devuelve como cuerpo de la respuesta
+  en crudo → el globo lo **renderiza**, así que no había forma de copiar el `.md` fuente ni
+  bajarlo.
+- **`src/model/exportar.ts`** (nuevo): `nombreArchivoRespuesta(respuesta) → { nombre, contenido,
+  mime }` — heurística:
+  - Toda la respuesta (tras trim) es UN solo fence ```` ```lang … ``` ```` → `contenido` = el
+    interior; extensión y mime del `lang` (`css`→`.css text/css`, `ts`→`.ts`, `md`→`.md`…, lang
+    desconocido/sin lang → `.txt`).
+  - Si no, pero `pareceMarkdown` (encabezados, listas, `**bold**`, fences, links, tablas) → `.md`
+    / `text/markdown`, contenido completo.
+  - Si no → `.txt` / `text/plain`.
+  - Nombre base: slug del primer `# Título` (acentos y símbolos limpiados), si no `respuesta` /
+    `documento`.
+  - `descargarTexto` (Blob + `<a download>`), `copiarTexto` (`navigator.clipboard`, sin fallback).
+- **UI — SOLO en el panel** (decisión de Alan; el `NodeToolbar` del globo queda como está):
+  - `BranchTranscript`, turno IA del **último** globo: "⧉ Copiar" (feedback "✓ Copiado" 1.5s) +
+    "⬇ Guardar", junto a "↻ Rehacer". Solo con `respuesta` y sin `error`/`pending`.
+  - `Markdown.tsx` gana la prop **`conCopiar`** (la pasa `BranchTranscript`, NO `MessageNode`):
+    con ella, `components.pre` → `preConCopiar` envuelve cada bloque con un botón "⧉" (hover,
+    `group-hover:opacity-100`) que copia ese bloque en crudo (`extraerTextoCodigo(node)` del hast).
+- **Descartado**: la "doc card" (tarjeta compacta cuando la respuesta ES un documento) y tocar el
+  `systemPrompt` por defecto — Alan: núcleo ahora, el resto si no alcanza.
+- **Revertir**: se saca `exportar.ts` + los botones + la prop `conCopiar`.
+
 ---
 
 ## Build / deploy

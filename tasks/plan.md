@@ -80,15 +80,17 @@ Cada tarea = una rama/commit, con el ciclo `spec-driven` → `incremental-implem
 - [x] **T11 — `llamarIA` devuelve `{ texto, uso }`; `uso` → `.md`.** [M] (decisiones F3-19)
 - [x] **T12 — Contador de tokens gastados por globo (usa T11).** [S] (decisiones F3-21)
 - [ ] **T14 — Auto-scroll del panel sigue el texto mientras streamea.** [S]
-- [ ] **T15 — Respuestas que son un documento entero (`.md`/código): UX.** [investigar]
+- [x] **T15 — Respuestas que son un documento: copiar / guardar.** [S] (decisiones F3-23)
+      Núcleo: "⧉ Copiar" + "⬇ Guardar" la respuesta en el panel + "copiar" por bloque de código
+      (gateado al panel con `conCopiar`); `src/model/exportar.ts` con la heurística de nombre.
 - [x] **T16 — Adjuntar archivos al mini-composer.** [L] Spec `tasks/T16-spec.md`. **T16a texto ✅**
       (F3-22) · **T16b imágenes ✅** (F3-22b) · **T16c PDF ✅** (F3-22c). Falta prueba de Alan con keys.
-- [ ] **T13 — Heurística de LaTeX crudo en `normalizarMath`.** [S] (independiente; adelantable)
+- [x] **T13 — Heurística de LaTeX crudo en `normalizarMath`.** [S] (F3-14b, ya shippeada)
 
-#### Checkpoint Fase 4
-- [ ] `tsc` + `lint` + `build` verde; `_scratch.mts` de `normalizarMath` (T13) con asserts.
-- [ ] En Chrome real: el panel distingue turnos, el STOP corta, las flechas navegan, los
-      contadores muestran números plausibles, y `\frac{...}` suelto de gpt-oss ahora renderiza.
+#### Checkpoint Fase 4 — **TODAS las tareas hechas** (T7-T16). Falta solo la prueba de Alan.
+- [x] `tsc` + `lint` + `build` verde en cada tarea; scratch por tarea.
+- [ ] **Chrome real (Alan)**: turnos, STOP, flechas, contadores, `\frac`, adjuntos (texto/imagen/
+      PDF con Gemini/Claude, pegar captura), copiar/guardar respuesta.
 
 ## Detalle de tareas
 
@@ -298,17 +300,29 @@ el panel scrollea al fondo en cada actualización de `respuesta` (mismo patrón 
 
 **Dependencies:** None. **Files:** `BranchTranscript.tsx`. **Scope:** S.
 
-### T15 — Respuestas que son un documento entero (pedido de Alan, 01-09)
-**Descripción:** Alan pidió a un globo un `.md` y el modelo devolvió texto suelto (no un archivo /
-bloque). Investigar la UX correcta: (a) reforzar la instrucción de sistema para que devuelva el
-documento en un fence ```` ```markdown ````; (b) en `MessageNode`/`Markdown`, un fence largo →
-bloque plegable + botón "copiar" / "descargar .md"; (c) ¿un botón "guardar como archivo" a nivel
-globo? Spec primero (decidir con Alan qué comportamiento).
+### T15 — Respuestas que son un documento: copiar / guardar (pedido de Alan, 01-09)
+**Spec: `tasks/T15-spec.md`.** Decisiones con Alan (02-09): solo el núcleo (copiar + guardar la
+respuesta, en el panel; + copiar por bloque de código gateado al panel). Heurística de nombre de
+archivo. Sin doc card. Sin tocar `systemPrompt`.
 
-**Acceptance criteria:** por definir en la spec.
+**Núcleo:**
+- `src/model/exportar.ts` (nuevo): `nombreArchivoRespuesta(respuesta)` → `{ nombre, contenido,
+  mime }` (fence único → interior + ext del lang; parece markdown → `.md`; si no → `.txt`; nombre
+  del slug del 1er `# Título` o `respuesta`). `descargarTexto(nombre, contenido, mime)` (Blob + `<a download>`).
+- `Markdown.tsx`: prop `conCopiar?`; con ella, `components.pre` envuelve cada bloque con un botón
+  "⧉" (hover) que copia el código crudo (`extraerTextoCodigo(node)`).
+- `BranchTranscript.tsx`: en el turno IA del último globo (junto a "↻ Rehacer"), "⧉ Copiar" +
+  "⬇ Guardar" (solo con `respuesta` y sin `pending`); pasa `conCopiar` a su `<Markdown>`.
 
-**Dependencies:** puede tocar `settings.systemPrompt` default, `Markdown.tsx`, `MessageNode.tsx`.
-**Scope:** investigar → S/M.
+**Acceptance:** ✅ todas verificadas.
+- [x] Guardar una respuesta `.md` baja el texto FUENTE (no el render) — el pane confirmó
+      `readme-de-3maps.md` con el markdown crudo.
+- [x] Copiar pone el texto fuente en el portapapeles, feedback "✓ Copiado".
+- [x] El bloque ```` ```bash ```` del panel tiene su botón; el globo del canvas NO (0 botones).
+- [x] `tsc`/`lint`/`build` verde; 14 asserts de `nombreArchivoRespuesta`.
+
+**Files:** `src/model/exportar.ts` (nuevo), `Markdown.tsx`, `BranchTranscript.tsx`. **Scope:** S.
+**Falta prueba de Alan**: copiar/pegar y descargar de verdad en Brave.
 
 ### T16 — Adjuntar archivos al mini-composer del panel (pedido de Alan, 01-09)
 **Spec completa: `tasks/T16-spec.md`.** Decisiones con Alan (02-09): texto + imágenes + PDF; el

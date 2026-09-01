@@ -48,7 +48,11 @@
 - [x] T14 — Auto-scroll del `BranchTranscript` sigue el texto mientras streamea (hoy no lo hace bien) (`BranchTranscript.tsx`) [S]
 - [x] Bugfix — ramificar una rama en árbol ancho tiraba el globo lejos/suelto: `ubicarNuevoGlobo`
       búsqueda en anillos acotada + `resolverSolapes()` al crear (`layout.ts`, `FlowCanvas.tsx`; decisiones F3-7b)
-- [ ] T15 — Respuestas que SON un documento (`.md`, código largo): investigar UX — ¿bloque plegable + copiar/descargar? ¿mejor instrucción de sistema? (spec primero) [investigar]
+- [x] T15 — Respuestas que SON un documento: copiar / guardar. `src/model/exportar.ts` nuevo
+      (`nombreArchivoRespuesta` heurística: fence único → interior + ext; parece markdown → `.md`;
+      slug del `# Título` · `descargarTexto` · `copiarTexto`). "⧉ Copiar" + "⬇ Guardar" en el turno
+      IA del panel; "⧉" por bloque de código en `Markdown.tsx` (prop `conCopiar`, solo el panel).
+      Sin doc card, sin tocar systemPrompt. (decisiones F3-23) — 14 asserts + verificado en el pane.
 - [x] T16 — Adjuntar archivos al mini-composer del panel (texto + imágenes + PDF). Spec:
       `tasks/T16-spec.md`. **T16a texto ✅ · T16b imágenes ✅ · T16c PDF ✅** (F3-22/b/c). Falta
       prueba de Alan con keys reales (imagen/PDF con Gemini/Claude, modelo de visión de Groq,
@@ -75,9 +79,11 @@
         decisiones F3-22c) — 11 asserts + verificado en el pane (chip 📕, aviso con Groq / sin aviso
         con Gemini, envío persiste). **T16 COMPLETO.**
 
-### Checkpoint Fase 4
-- [ ] `tsc` + `lint` + `build` verde
-- [ ] Chrome real: turnos diferenciados; STOP corta; flechas navegan; contadores plausibles
+### Checkpoint Fase 4 — **TODO IMPLEMENTADO (T7-T16 + T13)**. Falta solo la prueba de Alan.
+- [x] `tsc` + `lint` + `build` verde (en cada tarea)
+- [ ] Chrome real (Alan): turnos diferenciados; STOP corta; flechas navegan; contadores
+      plausibles; adjuntos texto/imagen/PDF con keys reales (Gemini/Claude/Groq-vision); pegar
+      captura; copiar/guardar respuesta
 
 ## Fuera de este plan (más adelante — pedidos de Alan 01-09)
 - **B1** — color por globo: marcar la esquina sup-derecha del título con un color a elección.

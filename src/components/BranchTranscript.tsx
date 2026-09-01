@@ -20,6 +20,11 @@ import {
   leerArchivo,
   pesoAdjunto,
 } from "@/model/adjuntos";
+import {
+  copiarTexto,
+  descargarTexto,
+  nombreArchivoRespuesta,
+} from "@/model/exportar";
 import { NOMBRE_PROVEEDOR } from "@/model/ia";
 import type { Adjunto, Intercambio } from "@/model/intercambio";
 
@@ -91,6 +96,8 @@ export default function BranchTranscript({
   const [arrastrando, setArrastrando] = useState(false);
   // Imagen abierta a tamaño completo (lightbox).
   const [verImagen, setVerImagen] = useState<Adjunto | null>(null);
+  // Feedback "✓ Copiado" del botón de copiar la respuesta (T15).
+  const [copiada, setCopiada] = useState(false);
   const arrastreDepth = useRef(0);
   const inputArchRef = useRef<HTMLInputElement>(null);
   const finRef = useRef<HTMLDivElement>(null);
@@ -424,23 +431,56 @@ export default function BranchTranscript({
                   </p>
                 ) : ic.respuesta ? (
                   <div className="rounded-md rounded-tl-none bg-white/[0.04] px-3 py-2 text-white/90">
-                    <Markdown>{ic.respuesta}</Markdown>
+                    <Markdown conCopiar>{ic.respuesta}</Markdown>
                   </div>
                 ) : ic.pending ? (
                   <p className="italic text-white/40">escribiendo…</p>
                 ) : (
                   <p className="italic text-white/40">Respuesta pendiente</p>
                 )}
-                {/* "Rehacer" en el último intercambio (el globo abierto). */}
-                {onRetry && !ic.pending && i === intercambios.length - 1 && (
-                  <button
-                    type="button"
-                    onClick={onRetry}
-                    className="mt-1.5 rounded border border-white/15 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
-                    title="Volver a pedir la respuesta"
-                  >
-                    ↻ {ic.error ? "Reintentar" : "Rehacer"}
-                  </button>
+                {/* Acciones del globo abierto (el último del camino). */}
+                {!ic.pending && i === intercambios.length - 1 && (
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {onRetry && (
+                      <button
+                        type="button"
+                        onClick={onRetry}
+                        className="rounded border border-white/15 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
+                        title="Volver a pedir la respuesta"
+                      >
+                        ↻ {ic.error ? "Reintentar" : "Rehacer"}
+                      </button>
+                    )}
+                    {ic.respuesta && !ic.error && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (await copiarTexto(ic.respuesta ?? "")) {
+                              setCopiada(true);
+                              setTimeout(() => setCopiada(false), 1500);
+                            }
+                          }}
+                          className="rounded border border-white/15 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
+                          title="Copiar la respuesta como texto"
+                        >
+                          {copiada ? "✓ Copiado" : "⧉ Copiar"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const { nombre, contenido, mime } =
+                              nombreArchivoRespuesta(ic.respuesta ?? "");
+                            descargarTexto(nombre, contenido, mime);
+                          }}
+                          className="rounded border border-white/15 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
+                          title="Guardar la respuesta como archivo"
+                        >
+                          ⬇ Guardar
+                        </button>
+                      </>
+                    )}
+                  </div>
                 )}
               </div>
             </div>

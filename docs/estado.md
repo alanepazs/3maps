@@ -129,8 +129,15 @@ Chrome real (agarrarla con zoom out).
   Gemini/Claude". Decisiones F3-22 / F3-22b / F3-22c. 25+13+11 asserts + verificado en el pane.
   **Falta prueba de Alan con keys reales** (imagen/PDF con Gemini/Claude, modelo de visión de Groq,
   pegar captura).
-- **Falta**: **T15** respuestas que son un documento entero (`.md`/código): UX (spec). Con T15 se
-  cierra la Fase 4.
+- **Hecho (02-09)**: **T15** — sacar una respuesta como texto. `src/model/exportar.ts`
+  (`nombreArchivoRespuesta` heurística de nombre/ext, `descargarTexto`, `copiarTexto`). En el
+  panel, turno IA del último globo: "⧉ Copiar" + "⬇ Guardar"; "⧉" por bloque de código
+  (`Markdown` prop `conCopiar`, solo el panel). Sin doc card, sin tocar `systemPrompt`.
+  Decisiones F3-23. 14 asserts + pane.
+
+**Fase 4 (rediseño de `BranchTranscript`) — TODO IMPLEMENTADO (T7-T16 + T13).** Falta solo que
+Alan pruebe en Chrome real con keys: turnos, STOP, flechas, contadores, adjuntos (texto/imagen/PDF
+con Gemini/Claude/Groq-vision), pegar captura, copiar/guardar respuesta.
 - **Bugfix layout (01-09, decisiones F3-7b/c)**: ramificar una rama en un árbol ancho mandaba el
   globo nuevo lejísimo abajo ("suelto") o **pisando otro globo**. `ubicarNuevoGlobo`: `H_NUEVO`
   260 (real, nace colapsado), búsqueda en anillos ampliada, y fallback `bajarHastaLibre` que baja
