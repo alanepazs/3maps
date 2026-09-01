@@ -88,20 +88,28 @@
 
 ### Opcionales (no bloquean)
 - **⚙️ `SettingsPanel` — rediseño** (pedido del usuario 01-09):
-  - **2 pestañas**: una de config **del mapa** (envión al soltar, ventana de contexto, instrucción
-    de sistema — comportamiento del lienzo/conversación) y otra de **conectividad** (Proveedor,
-    API key, modelo, toggle del proxy, y el estado de Cuenta/sync + Compartir). A decidir al
-    implementar: si "ventana de contexto" y "systemPrompt" van con "mapa" o con "conectividad"
-    (son de la conversación IA pero no son credenciales).
+  - **2 pestañas**: (a) **"Mapa"** = envión al soltar + **ventana de contexto** + **instrucción de
+    sistema** (`systemPrompt`) — todo lo que es comportamiento del lienzo/conversación; (b)
+    **"Conectividad"** = Proveedor + API key + modelo + toggle del proxy + estado de Cuenta/sync +
+    Compartir.
   - **Todo lo que hoy cuelga del título "IA" separado de Cuenta / Compartir / Lienzo** — hoy están
     apilados en el mismo panel scrolleable de `w-72`.
   - **La caja ámbar del proxy** ("Hugging Face no se puede llamar directo… tu key pasa por el
     servidor de 3maps…") **ocupa demasiado** y molesta aunque el dato importe. Colapsarla en un
     `<details>` ("¿por qué pasa por un proxy? ▸") o achicar a 1 línea + link; el checkbox del
     opt-in queda siempre visible, la explicación se pliega.
+- **Globo `pending` — ícono de "escribiendo" + STOP en el canvas** (pedido del usuario 01-09):
+  - Sobre el globo mientras streamea, un **ícono de lápiz** (con movimiento/animación si se puede)
+    junto al texto "escribiendo…".
+  - Al lado, un **botón cuadrado de STOP funcional** que corta el stream de ESE globo. Mecanismo:
+    `FlowCanvas` ya tiene `enVueloRef` (Map<id, AbortController>) → `enVueloRef.current.get(id)?.abort()`.
+    Al abortar por el usuario: dejar la respuesta parcial visible y marcar el globo como listo (no
+    `pending`, no `error`) o con un estado "cortado". Hoy el abort del usuario es silencioso y el
+    globo queda `pending` para siempre salvo watchdog. Va en `MessageNode` (estado `pending`) +
+    un handler nuevo en `NodeActionsContext` (`stopNode`), como `retryNode`/`deleteNode`.
 - **`BranchTranscript` (panel lateral expandido) — rediseño** (lista de mejoras del usuario):
   - Diferenciación más moderna entre turno del usuario y turno de la IA (hoy es pobre).
-  - Botón **STOP** para cortar la respuesta de la IA mientras streamea.
+  - Botón **STOP** en el mini-composer del panel (mismo `stopNode` del punto de arriba).
   - Contador de tokens: disponibles vs. gastados en cada interacción.
   - Contador de contexto por globo y del árbol completo.
   - Flechas laterales en el chat del panel para navegar entre el hilo principal y las
