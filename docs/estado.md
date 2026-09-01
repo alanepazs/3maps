@@ -91,21 +91,17 @@ está toda shippeada — falta solo la prueba de Alan en Chrome real con keys (v
 
 **Falta que Alan pruebe en Chrome real con keys** (el pane no cubre render/inercia/streaming real
 ni llamadas con key):
-- Adjuntos: imagen y PDF con **Gemini** y **Claude** (bloques nativos); un modelo de visión de
-  **Groq** (llama-4/3.2-vision) + el aviso "sin visión"; **pegar una captura** de pantalla.
-  Nota: los formatos de imagen/PDF de Gemini usan `inline_data`/`mime_type` (snake_case) — si
-  Gemini 400ea, probar camelCase (decisiones F3-22b).
-  - **02-09 — imagen + Gemini CONFIRMADO** ✅: los 8 modelos `gemini-3.x` (`3-flash-preview`,
-    `3.1-flash-lite(-preview)`, `3.5-flash(-lite)`, `3.6-flash`, `3.7-flash`) leen la imagen bien.
-    El adjunto se envía OK (thumbnail en el turno "Vos"). `3.1-pro-preview` = solo rate-limit (429).
-  - **02-09 — `gemini-2.5-flash-lite` y `gemini-2.5-pro` → 404 "no longer available to new users"**
-    → **agregados a `GEMINI_MODELOS_MUERTOS`** (Alan: el usuario regular no los va a querer). El
-    `2.5-flash` a secas sigue andando. Decisiones §7b (cambio de criterio anotado).
+- **02-09 — imagen + PDF con Gemini CONFIRMADO** ✅: `gemini-2.5-flash`, `3-flash-preview`,
+  `3.1-flash-lite(-preview)`, `3.5-flash(-lite)`, `3.6-flash`, `3.7-flash` leen imagen Y PDF bien
+  (`inline_data`/`mime_type` snake_case anda, no hizo falta camelCase). El adjunto se envía OK
+  (thumbnail en el turno "Vos"). `3.1-pro-preview(-customtools)` = solo rate-limit (429).
+  - `gemini-2.5-flash-lite` y `gemini-2.5-pro` → 404 "no longer available to new users" →
+    **agregados a `GEMINI_MODELOS_MUERTOS`** (Alan). El `2.5-flash` a secas sigue. Decisiones §7b.
+- **Falta probar**: imagen/PDF con **Claude**; un modelo de visión de **Groq** (llama-4/3.2-vision)
+  + el aviso "sin visión"; **pegar una captura** de pantalla; copiar/guardar respuesta (T15);
+  turnos/STOP/flechas/contadores del panel; `\frac` suelto de gpt-oss; manija de resize con zoom out.
 - `stream_options.include_usage` (T11) — asumido que anda en Groq/OpenRouter/HuggingFace; si
   alguno tira 400 habría que gatearlo por proveedor en `llamarOpenAICompat`.
-- Copiar/guardar respuesta (T15): copiar-pegar y descargar de verdad.
-- Turnos/STOP/flechas/contadores del panel; `\frac` suelto de gpt-oss; manija de resize con
-  zoom out.
 
 ### Backlog (fuera del plan de fases) → `tasks/todo.md` "Fuera de este plan"
 
