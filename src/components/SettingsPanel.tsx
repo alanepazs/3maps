@@ -309,6 +309,11 @@ export default function SettingsPanel({
     : modelosKey;
   // El filtro aparece solo cuando la lista es larga (OpenRouter ≈ 300 modelos).
   const mostrarFiltro = modelosKey.length > 12;
+  // Tope de chips renderizados: SiliconFlow (~80) entra entero; solo listas
+  // gigantes (OpenRouter) se truncan.
+  const MAX_CHIPS = 90;
+  const chipsVisibles = chipsModelo.slice(0, MAX_CHIPS);
+  const chipsOcultos = chipsModelo.length - chipsVisibles.length;
 
   return (
     <div ref={contenedorRef} className="absolute left-4 top-4 z-10">
@@ -540,12 +545,12 @@ export default function SettingsPanel({
                   type="text"
                   value={filtroModelo}
                   onChange={(e) => setFiltroModelo(e.target.value)}
-                  placeholder={`filtrar ${modelosKey.length} modelos… (ej: ":free")`}
+                  placeholder={`filtrar ${modelosKey.length} modelos…`}
                   className="mb-1 w-full rounded border border-white/15 bg-neutral-950 px-2 py-1 text-[11px] placeholder:text-white/30 focus:border-sky-400 focus:outline-none"
                 />
               )}
               <div className="flex flex-wrap gap-1">
-                {chipsModelo.slice(0, 60).map((m) => (
+                {chipsVisibles.map((m) => (
                   <button
                     key={m}
                     type="button"
@@ -560,9 +565,10 @@ export default function SettingsPanel({
                   </button>
                 ))}
               </div>
-              {chipsModelo.length > 60 && (
+              {chipsOcultos > 0 && (
                 <p className="mt-1 text-[11px] text-white/40">
-                  +{chipsModelo.length - 60} más — afiná el filtro.
+                  +{chipsOcultos} modelo{chipsOcultos > 1 ? "s" : ""} más — usá el
+                  filtro de arriba para acotar.
                 </p>
               )}
               {chipsModelo.length === 0 && (

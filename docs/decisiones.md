@@ -663,8 +663,8 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
   nuevos?"). **Regla nueva**: nunca ofrecer un modelo que no salió de la key. El default por
   proveedor sigue en `MODELO_POR_DEFECTO`.
 - **Filtro de chips** (01-09): OpenRouter (agregador) devuelve ~300 modelos → un `<input>` de
-  filtro por substring aparece sobre los chips cuando la lista supera 12; se renderizan máx. 60
-  chips + "afiná el filtro".
+  filtro por substring aparece sobre los chips cuando la lista supera 12. Se renderizan máx. 90
+  chips (SiliconFlow ~80 entra entero; solo OpenRouter se trunca) + "+N más — usá el filtro".
 - **Revertir** (volver al datalist / a sugerir modelos adivinados): reaparece la flecha vacía /
   vuelve la confusión de "modelos que no son de mi key".
 
