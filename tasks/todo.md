@@ -42,7 +42,9 @@
       Claude `final.usage` · Gemini `usageMetadata` (thoughts van a salida) · OpenAI-compat `stream_options:{include_usage:true}`
       → chunk final. Proveedor sin usage → `uso: null`, sin contador. (`ia.ts`, `intercambio.ts`, `FlowCanvas.tsx`; decisiones F3-19)
       ⚠️ Falta que Alan confirme e2e que `stream_options` no rompe Groq/OpenRouter/HuggingFace.
-- [ ] T12 — Contador de tokens gastados por globo (`BranchTranscript.tsx`) [S] — dep: T11
+- [x] T12 — Contador de tokens gastados por globo: cada turno IA del panel muestra
+      "`{fmtTokens(tokensEntrada)} → {fmtTokens(tokensSalida)} tok`" junto al nombre del proveedor,
+      con `title`. Si el `.md` no tiene tokens → no muestra nada (nunca "0"). (`BranchTranscript.tsx`; decisiones F3-21)
 - [x] T14 — Auto-scroll del `BranchTranscript` sigue el texto mientras streamea (hoy no lo hace bien) (`BranchTranscript.tsx`) [S]
 - [x] Bugfix — ramificar una rama en árbol ancho tiraba el globo lejos/suelto: `ubicarNuevoGlobo`
       búsqueda en anillos acotada + `resolverSolapes()` al crear (`layout.ts`, `FlowCanvas.tsx`; decisiones F3-7b)

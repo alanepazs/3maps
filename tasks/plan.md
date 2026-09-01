@@ -78,7 +78,7 @@ Cada tarea = una rama/commit, con el ciclo `spec-driven` → `incremental-implem
 - [ ] **T9 — Flechas para navegar hermanos / ramas de un globo desde el panel.** [M]
 - [x] **T10 — Contador de contexto (estimado) en el panel.** [M] (decisiones F3-20)
 - [x] **T11 — `llamarIA` devuelve `{ texto, uso }`; `uso` → `.md`.** [M] (decisiones F3-19)
-- [ ] **T12 — Contador de tokens gastados por globo (usa T11).** [S]
+- [x] **T12 — Contador de tokens gastados por globo (usa T11).** [S] (decisiones F3-21)
 - [ ] **T14 — Auto-scroll del panel sigue el texto mientras streamea.** [S]
 - [ ] **T15 — Respuestas que son un documento entero (`.md`/código): UX.** [investigar]
 - [ ] **T16 — Drag & drop de archivos al mini-composer del panel.** [L — spec primero]
@@ -269,14 +269,18 @@ stub: Gemini `usageMetadata`, OpenAI-compat `usage` en chunk final, sin-usage �
 
 **Files:** `ia.ts`, `intercambio.ts`, `FlowCanvas.tsx`. **Scope:** M.
 
-### T12 — Contador de tokens gastados
-**Descripción:** En el panel, por globo, mostrar `usage.in` / `usage.out` / total si el `.md` lo
-tiene. Opcional: total de la rama.
+### T12 — Contador de tokens gastados ✅ (decisiones F3-21)
+**Hecho:** Cada turno IA del panel muestra, junto al nombre del proveedor,
+`{fmtTokens(ic.tokensEntrada)} → {fmtTokens(ic.tokensSalida)} tok` (`title` con los números
+exactos y qué es cada uno). Solo si ambos son `number` (el `.md` los tiene) — si no, nada.
+Total de la rama: NO se hizo (marcado opcional; sería sumar sobre `intercambios`).
 
 **Acceptance criteria:**
-- [ ] Muestra los números del `.md`; si no hay `usage`, no muestra nada (no "0").
+- [x] Muestra los números del `.md`; sin tokens → no muestra nada (verificado en el pane: 3er
+      globo sin `tokens_*` no muestra "0").
 
-**Verification:** `tsc`/`lint`/`build`; Chrome real con una llamada real que devuelve usage.
+**Verificado:** `tsc`/`lint`/`build` verde; pane con `.md` inyectado — 2 globos con tokens muestran
+"1.2k → 400 tok" / "1.9k → 520 tok", el 3ro (sin tokens) no muestra nada.
 
 **Dependencies:** T11. **Files:** `BranchTranscript.tsx`. **Scope:** S.
 

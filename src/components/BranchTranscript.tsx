@@ -294,6 +294,17 @@ export default function BranchTranscript({
               <div className="border-l-2 border-white/15 pl-2.5">
                 <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-white/40">
                   {ic.proveedor ? NOMBRE_PROVEEDOR[ic.proveedor] : "IA"}
+                  {/* Tokens que reportó el proveedor para ESTE globo (T11 → .md).
+                      Nada si no vinieron (nunca un "0" falso). */}
+                  {typeof ic.tokensEntrada === "number" &&
+                    typeof ic.tokensSalida === "number" && (
+                      <span
+                        className="ml-2 font-normal normal-case tracking-normal text-white/30"
+                        title={`Tokens de esta respuesta: ${ic.tokensEntrada} de entrada (contexto + pregunta) + ${ic.tokensSalida} de salida`}
+                      >
+                        {fmtTokens(ic.tokensEntrada)} → {fmtTokens(ic.tokensSalida)} tok
+                      </span>
+                    )}
                 </p>
                 {ic.error ? (
                   <p className="whitespace-pre-wrap text-xs text-red-300">

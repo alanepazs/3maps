@@ -107,19 +107,21 @@ Chrome real (agarrarla con zoom out).
   unida por ese costado (ramas hijas + el padre si el globo abierto es una rama), apiladas y
   ordenadas por el `y` del destino; se reordenan si un globo se mueve. Muestran la pregunta del
   destino al hover. Hijos `main`, hermanos y contexto: por scroll o click. El panel **abre en el
-  "Vos"** del globo, no al final.
+  "Vos"** del globo, no al final. · **T10 + T11 + T12** contadores de tokens (ver abajo).
 - **Hecho (01-09, cont.)**: **T11** `llamarIA` → `{ texto, uso }`; el `usage` del proveedor
   (Claude `final.usage` · Gemini `usageMetadata` · OpenAI-compat `stream_options:{include_usage}`)
   se guarda en el `.md` (`tokens_in`/`tokens_out`). `uso: null` si el proveedor no lo manda.
-  Decisiones F3-19. ⚠️ **Falta prueba de Alan**: confirmar que `stream_options` no rompe
-  Groq/OpenRouter/HuggingFace con key real.
+  Decisiones F3-19. Alan decidió **no probar con keys reales** — se asume que `stream_options`
+  anda en Groq/OpenRouter/HuggingFace (lo soportan por doc; si alguno tira 400 habría que
+  gatearlo por proveedor en `llamarOpenAICompat`).
 - **Hecho (01-09, cont.)**: **T10** contador de contexto — `estimarTokens(mensajes) = Σ chars/4`
   en `contexto.ts`; el header del panel muestra "≈ N tokens de contexto" del globo abierto
   (`estimarTokens(armarContexto(…))`, usa el resumen cacheado si hay, nunca lo dispara).
-  Decisiones F3-20. Verificado en el pane (2 interc. → ≈150).
-- **Falta**: T12 contador de tokens gastados por globo (lee `tokens_in/out` del `.md`, usa T11) ·
-  **T15** respuestas que son un documento entero (`.md`/código): UX (spec) · **T16** drag & drop
-  de archivos al mini-composer (spec + scope con Alan).
+  Decisiones F3-20. · **T12** cada turno IA del panel muestra "N → N tok" de `tokensEntrada/Salida`
+  del `.md` (nada si no los tiene). Decisiones F3-21. Los dos verificados en el pane.
+- **Falta**: **T15** respuestas que son un documento entero (`.md`/código): UX (spec) · **T16**
+  drag & drop de archivos al mini-composer (spec + scope con Alan). Con T15/T16 (ambas
+  spec-primero) se cierra la Fase 4.
 - **Bugfix layout (01-09, decisiones F3-7b/c)**: ramificar una rama en un árbol ancho mandaba el
   globo nuevo lejísimo abajo ("suelto") o **pisando otro globo**. `ubicarNuevoGlobo`: `H_NUEVO`
   260 (real, nace colapsado), búsqueda en anillos ampliada, y fallback `bajarHastaLibre` que baja

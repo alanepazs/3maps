@@ -894,6 +894,19 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
   quiere un "tamaño del mapa" va al lado del `MapaSwitcher`, no acá.
 - **Revertir**: sacás `estimarTokens` + el `useMemo` + la prop → el panel no muestra el contexto.
 
+### F3-21. Tokens gastados por globo, inline junto al proveedor (T12)
+- Cada turno IA del `BranchTranscript` muestra `{fmtTokens(tokensEntrada)} → {fmtTokens(tokensSalida)}
+  tok` al lado del nombre del proveedor, atenuado, con `title` que da los números exactos y aclara
+  "entrada (contexto + pregunta)" / "salida". Lee directo de `Intercambio.tokensEntrada/Salida`
+  (T11 / F3-19) — cero estado nuevo.
+- **Nada si no hay tokens**: el guard es `typeof … === "number"` en AMBOS. Un `.md` viejo, un
+  globo sin responder, o un proveedor que no mandó `usage` → no se muestra el bloque (nunca "0").
+- **Sin total de rama** (era opcional en el plan). Si se quiere: sumar `tokensEntrada + tokensSalida`
+  sobre `intercambios` en el header, al lado del contador de contexto.
+- **`fmtTokens`** vive en `BranchTranscript.tsx` (exportado) — lo comparten el contador de contexto
+  (F3-20) y este.
+- **Revertir**: se saca el `<span>` del turno IA; los datos siguen en el `.md`.
+
 ---
 
 ## Build / deploy

@@ -156,7 +156,9 @@ src/
                         style.width por DOM, persiste al soltar vía `onResize`). Si no (móvil),
                         pantalla completa + botón "🗺 Ver mapa" en el header.
                         Header: "N interc. · ≈ N tokens de contexto" (T10, prop `contextoTokens`
-                        calculada en FlowCanvas; F3-20). `fmtTokens` exportado acá (lo reusa T12).
+                        calculada en FlowCanvas; F3-20). Cada turno IA: "N → N tok" de
+                        `Intercambio.tokensEntrada/Salida` si los tiene (T12, F3-21). `fmtTokens`
+                        exportado acá (lo usan los dos contadores).
                         Props: {intercambios, side, onFlipSide, onClose, onSubmit?, onStop?,
                         onRetry?, nav?, onNavigate?, contextoTokens?, width?, resizable?, onResize?}.
     SharedBanner.tsx    Cartel arriba cuando se ve un árbol compartido (`?compartir=`). Props:
