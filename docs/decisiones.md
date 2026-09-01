@@ -2,7 +2,7 @@
 
 > Por qué el código es como es. Cada entrada: **qué se decidió**, **por qué**, y **qué romperías
 > si lo revertís sin pensar**. Si vas a ir en contra de una de estas, que sea a propósito.
-> Última actualización: 31-08-2026.
+> Última actualización: 01-09-2026.
 
 Complementa a:
 - `docs/spec-proyecto.md` — el diseño y las decisiones de producto (modelo de datos, UX, roadmap).

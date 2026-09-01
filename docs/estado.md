@@ -2,7 +2,7 @@
 
 > Snapshot para retomar. Solo **dónde estamos + qué falta + gotchas**. Historial → git +
 > `docs/historia.md`. "Qué hace cada archivo" → `docs/arquitectura.md`. Por qué el código es así →
-> `docs/decisiones.md`. Última actualización: 31-08-2026.
+> `docs/decisiones.md`. Última actualización: 01-09-2026.
 
 ## Dónde estamos
 
@@ -20,7 +20,7 @@
   (`GUIA_API_KEY`) y aclara cuáles son open-source.
   **Probados e2e: Gemini + Groq + OpenRouter + HuggingFace** — los 4 free reales y fluidos.
   Claude/DeepSeek/GPT son pagos (el user trae saldo). **Lista de proveedores cerrada en 7.**
-- **Modelos probados (31-08)** — referencia rápida, ordenados de funcional a no funcional:
+- **Modelos probados (31-08 / 01-09)** — referencia rápida, ordenados de funcional a no funcional:
   - **Groq** (proxy):
     1. **Andan**: `allam-2-7b`, `groq/compound`, `qwen3.6-27b`, `qwen3.8-27b`,
        `openai/gpt-oss-20b`, `openai/gpt-oss-120b`, `openai/gpt-oss-safeguard-20b`.
@@ -87,7 +87,19 @@
 - ⚠️ LWW de títulos usa el reloj del navegador: relojes MUY desfasados podrían elegir mal.
 
 ### Opcionales (no bloquean)
-- **Panel lateral expandido — rediseño** (lista de mejoras del usuario):
+- **⚙️ `SettingsPanel` — rediseño** (pedido del usuario 01-09):
+  - **2 pestañas**: una de config **del mapa** (envión al soltar, ventana de contexto, instrucción
+    de sistema — comportamiento del lienzo/conversación) y otra de **conectividad** (Proveedor,
+    API key, modelo, toggle del proxy, y el estado de Cuenta/sync + Compartir). A decidir al
+    implementar: si "ventana de contexto" y "systemPrompt" van con "mapa" o con "conectividad"
+    (son de la conversación IA pero no son credenciales).
+  - **Todo lo que hoy cuelga del título "IA" separado de Cuenta / Compartir / Lienzo** — hoy están
+    apilados en el mismo panel scrolleable de `w-72`.
+  - **La caja ámbar del proxy** ("Hugging Face no se puede llamar directo… tu key pasa por el
+    servidor de 3maps…") **ocupa demasiado** y molesta aunque el dato importe. Colapsarla en un
+    `<details>` ("¿por qué pasa por un proxy? ▸") o achicar a 1 línea + link; el checkbox del
+    opt-in queda siempre visible, la explicación se pliega.
+- **`BranchTranscript` (panel lateral expandido) — rediseño** (lista de mejoras del usuario):
   - Diferenciación más moderna entre turno del usuario y turno de la IA (hoy es pobre).
   - Botón **STOP** para cortar la respuesta de la IA mientras streamea.
   - Contador de tokens: disponibles vs. gastados en cada interacción.
