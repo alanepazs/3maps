@@ -532,6 +532,8 @@ function Flow() {
       let ultimaActividad = Date.now();
       const inicio = Date.now();
       let cortadoPorTimeout = false;
+      // Lo último que llegó, sin throttle — para conservarlo si el usuario corta.
+      let ultimoAcumulado = "";
       const watchdog = window.setInterval(() => {
         const ahora = Date.now();
         if (
@@ -596,6 +598,7 @@ function Flow() {
           onTexto: (_delta, acumulado) => {
             const ahora = Date.now();
             ultimaActividad = ahora;
+            ultimoAcumulado = acumulado;
             if (ahora - ultimoRender < 80) return;
             ultimoRender = ahora;
             setArbol((a) =>
@@ -615,6 +618,20 @@ function Flow() {
         // quedó pisando a otro, empujarlo (solo el solapado, ver layout.ts).
         resolverSolapes();
       } catch (e) {
+        // El usuario apretó STOP → lo que llegó queda como respuesta final.
+        // `abort("usuario")` hace que `fetch` rechace con el string "usuario"
+        // (no un DOMException), así que se chequea el signal, no `e`.
+        if (ctrl.signal.aborted && ctrl.signal.reason === "usuario") {
+          setArbol((a) =>
+            conRespuesta(a, nodeId, {
+              respuesta: ultimoAcumulado || null,
+              pending: false,
+              proveedor: configIA.proveedor,
+            }),
+          );
+          resolverSolapes();
+          return;
+        }
         if (e instanceof Error && e.name === "AbortError") {
           // Timeout del watchdog → error reintentable (deja la respuesta parcial
           // a la vista). Abort "normal" (el usuario re-disparó / borró) → nada.
@@ -723,6 +740,12 @@ function Flow() {
     },
     [responder, readOnly],
   );
+
+  // El usuario cortó la respuesta de un globo mientras streameaba. `responder`
+  // lee `signal.reason` en el catch y conserva lo que llegó (ver ahí).
+  const stopNode = useCallback((id: string) => {
+    enVueloRef.current.get(id)?.abort("usuario");
+  }, []);
 
   // Al soltar / frenar el envión: escribir la posición final al árbol y, si es
   // una rama, fijar el lado (izq/der) según dónde quedó respecto del padre.
@@ -916,8 +939,8 @@ function Flow() {
   );
 
   const nodeActions = useMemo(
-    () => ({ deleteNode, retryNode, openNode, resizeNode, readOnly }),
-    [deleteNode, retryNode, openNode, resizeNode, readOnly],
+    () => ({ deleteNode, retryNode, stopNode, openNode, resizeNode, readOnly }),
+    [deleteNode, retryNode, stopNode, openNode, resizeNode, readOnly],
   );
 
   // Ancho del panel lateral (fase 3.11): bucket por ancho de viewport. En móvil

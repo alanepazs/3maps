@@ -10,6 +10,9 @@ export type NodeActions = {
   deleteNode: (id: string) => void;
   // Vuelve a pedirle la respuesta a la IA para este intercambio.
   retryNode: (id: string) => void;
+  // Corta la llamada IA en vuelo de este globo; lo que llegó queda como
+  // respuesta final (no `pending`, no `error`).
+  stopNode: (id: string) => void;
   // Abre el panel de transcripción de la rama (raíz→este nodo).
   openNode: (id: string) => void;
   // Guarda el tamaño manual del globo (va al `.md` → sincroniza). null = auto.
@@ -21,6 +24,7 @@ export type NodeActions = {
 export const NodeActionsContext = createContext<NodeActions>({
   deleteNode: () => {},
   retryNode: () => {},
+  stopNode: () => {},
   openNode: () => {},
   resizeNode: () => {},
   readOnly: false,
