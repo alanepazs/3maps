@@ -22,7 +22,7 @@
   (`components/Markdown.tsx`). `katex/dist/katex.min.css` se importa ahí.
 - **`@supabase/supabase-js`** — backend **opcional** (fase 2). Sin las env `NEXT_PUBLIC_SUPABASE_*`,
   `getSupabase()` → null y la app sigue 100% local. Sin `transformers.js` todavía.
-- **Edge function** `supabase/functions/ia-proxy` (Deno) — proxy stateless para los 7 proveedores
+- **Edge function** `supabase/functions/ia-proxy` (Deno) — proxy stateless para los 6 proveedores
   OpenAI-compat (no habilitan CORS). Se deploya aparte con la CLI de Supabase, no por el workflow.
 - Deploy de la web: **GitHub Pages** (`output: "export"`).
 
@@ -80,8 +80,8 @@ src/
                          ia-proxy; SSE estilo OpenAI). Streaming vía opts.onTexto. opts.usarProxy
                          los gatea (si false → ErrorIA explicativo); resumir() lo recibe también.
                          listarModelos (Claude client.models.list(), Gemini GET /v1beta/models,
-                         los demás via proxy GET /models). PROVEEDORES_DISPONIBLES = 9 (Gemini,
-                         Claude + 7 vía proxy: deepseek, gpt, groq, openrouter, mistral,
+                         los demás via proxy GET /models). PROVEEDORES_DISPONIBLES = 8 (Gemini,
+                         Claude + 6 vía proxy: deepseek, gpt, groq, openrouter,
                          huggingface, qwen). upstreamDe(prov) → clave
                          del mapa PROVEEDORES del proxy. `GUIA_API_KEY[prov]` = {url, gratis,
                          abierto?, pasos} (mini-guía en ⚙️). `sinRazonamiento()` saca <think> del
@@ -187,7 +187,7 @@ src/
                         bajo el input = SOLO los que la key puede usar (tras verificar; antes: sin
                         chips). Nunca modelos adivinados (F3-13; `MODELOS_SUGERIDOS` se eliminó).
                         Sin `<datalist>`. Filtro por substring sobre los chips si la lista > 12
-                        (OpenRouter ≈ 300). Los 9
+                        (OpenRouter ≈ 300). Los 8
                         proveedores; commit() lo dispara al guardar. `<details>` con la mini-guía
                         de API key (`GUIA_API_KEY`, F3-12 aclara open-source).
                         Textarea "instrucción de sistema" → onChange({systemPrompt}) directo.
@@ -213,9 +213,9 @@ supabase/
   schema.sql                    bucket `arboles` + RLS (incl. delete dueño-solo) + tabla
                                `shared_trees` + bucket privado `sync` (RLS por carpeta `<uid>/`,
                                fase 2.4). Lo corre el usuario.
-  functions/ia-proxy/index.ts   Edge function Deno. Proxy stateless para los 7 proveedores
+  functions/ia-proxy/index.ts   Edge function Deno. Proxy stateless para los 6 proveedores
                                OpenAI-compatibles (openai, deepseek, groq, openrouter,
-                               mistral, huggingface, qwen — mapa
+                               huggingface, qwen — mapa
                                PROVEEDORES): reenvía a la base fija de cada uno con x-ia-key, agrega
                                CORS, pipe del stream. Sin logs, sin storage. Redeploy obligatorio al
                                sumar un proveedor: `supabase functions deploy ia-proxy` o el editor.
@@ -332,10 +332,10 @@ Props de `<ReactFlow>` que importan:
 
 ## IA (model/ia.ts)
 
-- `ConfigIA = { proveedor, apiKey, modelo }`. `PROVEEDORES_DISPONIBLES` = **9**
-  (`gemini, claude` + 7 vía proxy: `groq, openrouter, qwen, mistral, huggingface, deepseek, gpt`).
-  `PROVEEDORES_VIA_PROXY` = **7** (todos menos gemini/claude — no habilitan CORS → van por
-  `ia-proxy`, decisiones §7a). `cerebras`/`siliconflow`/`zhipu`/`moonshot` se eliminaron (§7d).
+- `ConfigIA = { proveedor, apiKey, modelo }`. `PROVEEDORES_DISPONIBLES` = **8**
+  (`gemini, claude` + 6 vía proxy: `groq, openrouter, qwen, huggingface, deepseek, gpt`).
+  `PROVEEDORES_VIA_PROXY` = **6** (todos menos gemini/claude — no habilitan CORS → van por
+  `ia-proxy`, decisiones §7a). `cerebras`/`siliconflow`/`zhipu`/`moonshot`/`mistral` se eliminaron (§7d).
   `MODELO_POR_DEFECTO`, `NOMBRE_PROVEEDOR`, `PISTA_API_KEY`, `GUIA_API_KEY` por proveedor
   (`MODELOS_SUGERIDOS` se eliminó — F3-13).
 - `llamarIA(config, mensajes, opts)` → `switch(config.proveedor)`. Sumar proveedor = un `case`

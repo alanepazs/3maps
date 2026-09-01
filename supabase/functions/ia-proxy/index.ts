@@ -1,6 +1,6 @@
 // ia-proxy — proxy stateless para los proveedores de IA OpenAI-compatibles que
 // NO habilitan CORS desde el navegador (OpenAI, DeepSeek, Groq, OpenRouter,
-// Mistral, Hugging Face, Qwen).
+// Hugging Face, Qwen).
 // Ver docs/decisiones.md §7a, F2-6.
 //
 // Qué hace: recibe la request del navegador, la reenvía al proveedor con la API
@@ -22,7 +22,6 @@ const PROVEEDORES: Record<string, string> = {
   deepseek: "https://api.deepseek.com",
   groq: "https://api.groq.com/openai/v1",
   openrouter: "https://openrouter.ai/api/v1",
-  mistral: "https://api.mistral.ai/v1",
   huggingface: "https://router.huggingface.co/v1",
   qwen: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
 };

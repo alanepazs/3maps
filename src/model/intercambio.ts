@@ -16,7 +16,6 @@ export type Proveedor =
   | "gemini"
   | "groq"
   | "openrouter"
-  | "mistral"
   | "huggingface"
   | "qwen";
 
@@ -28,7 +27,6 @@ export const PROVEEDORES: readonly Proveedor[] = [
   "gemini",
   "groq",
   "openrouter",
-  "mistral",
   "huggingface",
   "qwen",
 ];

@@ -14,11 +14,12 @@
   varios mapas, esconder la barra de chat. El `arbol` de `Intercambio`s es la fuente de la verdad;
   la vista de React Flow se deriva.
 - **IA** (`model/ia.ts`, wired en `FlowCanvas.responder`): streaming, contexto = solo el camino
-  raíz→globo con ventana + resumen. **9 proveedores**: Gemini + Claude directos del navegador; el
-  resto (DeepSeek, GPT, Groq, OpenRouter, Mistral, HuggingFace, Qwen) vía el edge function
+  raíz→globo con ventana + resumen. **8 proveedores**: Gemini + Claude directos del navegador; el
+  resto (DeepSeek, GPT, Groq, OpenRouter, HuggingFace, Qwen) vía el edge function
   `ia-proxy` (opt-in "usar proxy" en ⚙️). Una key/modelo por proveedor. `⚙️` trae mini-guía de
   API key por proveedor (`GUIA_API_KEY`) y aclara cuáles son open-source.
-  **Probados e2e: Gemini + Groq + OpenRouter.**
+  **Probados e2e: Gemini + Groq + OpenRouter.** El free fluido lo cargan esos 3; Claude/DeepSeek/GPT
+  son pagos (el user trae saldo). Qwen + HuggingFace = sin probar.
 - **Modelos probados (31-08)** — referencia rápida, ordenados de funcional a no funcional:
   - **Groq** (proxy):
     1. **Andan**: `allam-2-7b`, `groq/compound`, `qwen3.6-27b`, `qwen3.8-27b`,
@@ -42,14 +43,14 @@
       minimax/nvidia andan al mismo tiempo): `google/gemma-4-31b-it:free`, `z-ai/glm-5.2:free`.
     - `/models` de OpenRouter devuelve ~300 modelos (agregador) → resuelto con **filtro de chips**
       (`> 12` modelos → aparece un `<input>` de substring; F3-13).
-  - **Eliminados (01-09): Cerebras, SiliconFlow, Zhipu, Moonshot** — el free real está gateado
-    (billing / real-name china / registro `.cn`), no sirven para "gratis sin tarjeta". 13 → 9
-    proveedores. Detalle + evidencia en decisiones §7d. Resumen:
+  - **Eliminados (01-09): Cerebras, SiliconFlow, Zhipu, Moonshot, Mistral** — el free no da una
+    experiencia fluida. **13 → 8 proveedores.** Detalle + evidencia en decisiones §7d. Resumen:
     - **Cerebras**: toda llamada → `402 "Payment required. Visit your billing tab"` (confirmado
       en sus Request Logs). El free tier es solo del playground.
     - **SiliconFlow**: 1ª llamada pasa (trial $1), después `"Sorry, your account balance is
       insufficient"`. Los `:free` piden verificación real-name China-only desde may-2026.
     - **Zhipu / Moonshot**: sacados sin probar — registro solo `.cn` (CAPTCHA + teléfono chinos).
+    - **Mistral**: free real pero **1 req/min** → mata el ramificar en paralelo. Sacado sin probar.
   - **The strip de `<think>` funciona OK** — verificado con Qwen3-8B (SiliconFlow) antes de sacarlo.
   - Los "`$` crudos" / "`\frac` crudo" que se vieron eran **bundle viejo cacheado**, no bug:
     F3-12 renderiza bien la salida de Gemini (verificado local). gpt-oss sí manda `\frac` sin
@@ -71,7 +72,8 @@
 ## Qué falta
 
 ### Prueba real pendiente (la hace el usuario, con key/login)
-- Faltan probar con key real: **Mistral, HuggingFace, Qwen** (gratis), **DeepSeek, GPT** (pagos).
+- Faltan probar con key real: **HuggingFace, Qwen** (gratis — ver si el signup/uso es fluido o
+  van al mismo destino que los eliminados), **DeepSeek, GPT** (pagos).
 - Revalidar en vivo gpt-oss / qwen3 con el bundle F3-12: strip de `<think>` + `<br>` literal
   (el render `$…$` de Gemini ya está OK en local; primero forzar bundle nuevo con `?v=<algo>`).
 - Panel lateral redimensionable (3.11) + fixes de móvil (3.13) en Chrome real / celu.

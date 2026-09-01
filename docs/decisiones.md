@@ -91,15 +91,15 @@ Complementa a:
 - **Anti-SSRF**: el cliente manda un *nombre* de proveedor (`x-ia-provider`), no una URL; el proxy
   lo mapea a una base fija (mapa `PROVEEDORES` del edge function). Rutas limitadas a
   `/chat/completions` y `/models`.
-- **Proveedores vía proxy** (7): `deepseek`, `gpt` (`openai`) — pagos; + free tiers →
-  `groq`, `openrouter` (`:free`), `mistral` (1 RPM), `huggingface`, `qwen` (DashScope
+- **Proveedores vía proxy** (6): `deepseek`, `gpt` (`openai`) — pagos; + free tiers →
+  `groq`, `openrouter` (`:free`), `huggingface`, `qwen` (DashScope
   `dashscope-intl…/compatible-mode/v1`, endpoint internacional). Todos OpenAI-compatibles
   → mismo `llamarOpenAICompat` / `listarModelosOpenAICompat`. `upstreamDe` = mapa `Proveedor →
-  clave del proxy`. **Descartados**: `cerebras`, `siliconflow`, `zhipu`, `moonshot` (§7d — real-name
-  / billing gate, no sirven para "gratis sin tarjeta"); Cloudflare (`account_id` en la URL),
-  Doubao/ERNIE/Hunyuan (verificación de empresa / OAuth), Kling/Seedance (video). **Redeploy del
-  edge function obligatorio** al sumar/cambiar un proveedor (`supabase functions deploy ia-proxy`
-  o el editor del panel).
+  clave del proxy`. **Descartados**: `cerebras`, `siliconflow`, `zhipu`, `moonshot`, `mistral`
+  (§7d — free real gateado o inutilizable; no sirven para "gratis sin tarjeta"); Cloudflare
+  (`account_id` en la URL), Doubao/ERNIE/Hunyuan (verificación de empresa / OAuth), Kling/Seedance
+  (video). **Redeploy del edge function obligatorio** al sumar/cambiar un proveedor
+  (`supabase functions deploy ia-proxy` o el editor del panel).
 - **`GUIA_API_KEY`** (`ia.ts`, 31-08-2026): por proveedor, `{ url, gratis, abierto?, pasos[] }` —
   mini-guía paso a paso "cómo consigo la key" para gente que nunca usó una. `SettingsPanel` la
   muestra en un `<details>` bajo el input, con un botón que abre la web del proveedor y avisa si
@@ -108,9 +108,9 @@ Complementa a:
   "open-source" aparte: los modelos abiertos ya se sirven vía esos (online); un modo offline
   tipo Ollama quedó descartado por ahora (mixed-content/CORS + el celu no llega a `localhost`).
 
-### 7d. Cerebras, SiliconFlow, Zhipu, Moonshot: eliminados (el free real está gateado)
-Probados uno por uno (01-09-2026). Todos autentican y listan modelos, pero el free tier no se
-puede usar de verdad sin un gate que un usuario nuevo no-chino no pasa:
+### 7d. Cerebras, SiliconFlow, Zhipu, Moonshot, Mistral: eliminados (free inutilizable)
+Probados uno por uno (01-09-2026). Todos autentican y listan modelos, pero el free tier no da una
+experiencia fluida a un usuario nuevo:
 - **Cerebras** (`cloud.cerebras.ai`, sin tarjeta): la página *Limits* muestra `gemma-4-31b` /
   `gpt-oss-120b` con cuota (5 rpm, 3M tok/día), pero **toda** llamada a `chat/completions` →
   `402 "Payment required to access this resource. Visit your billing tab."` (0 tokens, confirmado
@@ -122,15 +122,19 @@ puede usar de verdad sin un gate que un usuario nuevo no-chino no pasa:
   acepta documentos de China continental (los internacionales "contactar a soporte").
 - **Zhipu** (`open.bigmodel.cn`) y **Moonshot** (`api.moonshot.cn`): registro solo en sitio `.cn`
   con CAPTCHA + teléfono chinos + real-name. Eliminados **sin probar** — el patrón es el mismo.
-- **Qué se hizo**: los 4 sacados de `Proveedor` (`intercambio.ts`), `PROVEEDORES*`,
+- **Mistral** (`console.mistral.ai`): free tier real pero **1 request por minuto**. Ramificar en
+  paralelo (el punto de 3maps) con 60s de espera entre llamadas no es una experiencia usable.
+  Eliminado sin probar e2e (decisión del usuario: "buscamos una experiencia fluida").
+- **Qué se hizo**: los 5 sacados de `Proveedor` (`intercambio.ts`), `PROVEEDORES*`,
   `MODELO_POR_DEFECTO`, `NOMBRE_PROVEEDOR`, `PISTA_API_KEY`, `GUIA_API_KEY`, los `switch` de
   `ia.ts`, `UPSTREAM`, y el mapa `PROVEEDORES` del `ia-proxy` (redeploy). Una config vieja con
   `activo` en uno de esos cae al default (`esProveedor` en `configIA.ts` la filtra sola).
-  **13 → 9 proveedores** (7 vía proxy). `MODELOS_SUGERIDOS` ya se había eliminado (F3-13).
+  **13 → 8 proveedores** (6 vía proxy). `MODELOS_SUGERIDOS` ya se había eliminado (F3-13).
 - **Regla**: un proveedor solo entra si un usuario nuevo cualquiera puede sacar una key **y
-  llamar la API gratis** sin tarjeta / verificación de identidad / registro China-only. Probarlo
-  con una key nueva de verdad antes de darlo por bueno.
-- **Revertir**: volvés a ofrecer proveedores que le tiran 402 / "insufficient balance" a cualquier
+  llamar la API gratis y fluido** — sin tarjeta, sin verificación de identidad, sin registro
+  China-only, y sin un rate-limit que rompa el ramificar en paralelo. Probarlo con una key nueva
+  de verdad antes de darlo por bueno.
+- **Revertir**: volvés a ofrecer proveedores que le tiran 402 / "insufficient balance" / 429 a cualquier
   usuario nuevo.
 
 ### 7b. Modelos de Gemini: default `gemini-3.7-flash`, "thinking" mínimo por generación, botón "ver modelos"

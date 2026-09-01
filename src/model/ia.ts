@@ -23,7 +23,6 @@ export const PROVEEDORES_DISPONIBLES: Proveedor[] = [
   "groq",
   "openrouter",
   "qwen",
-  "mistral",
   "huggingface",
   "deepseek",
   "gpt",
@@ -36,7 +35,6 @@ export const PROVEEDORES_VIA_PROXY: Proveedor[] = [
   "gpt",
   "groq",
   "openrouter",
-  "mistral",
   "huggingface",
   "qwen",
 ];
@@ -48,7 +46,6 @@ export const MODELO_POR_DEFECTO: Record<Proveedor, string> = {
   gemini: "gemini-3.7-flash",
   groq: "llama-3.3-70b-versatile",
   openrouter: "nvidia/nemotron-3-super-120b-a12b:free",
-  mistral: "mistral-small-latest",
   huggingface: "Qwen/Qwen2.5-72B-Instruct",
   qwen: "qwen-flash",
 };
@@ -75,7 +72,6 @@ export const NOMBRE_PROVEEDOR: Record<Proveedor, string> = {
   gemini: "Google Gemini",
   groq: "Groq",
   openrouter: "OpenRouter",
-  mistral: "Mistral",
   huggingface: "Hugging Face",
   qwen: "Qwen (Alibaba)",
 };
@@ -88,7 +84,6 @@ export const PISTA_API_KEY: Record<Proveedor, string> = {
   gemini: "AQ.… o AIza…",
   groq: "gsk_…",
   openrouter: "sk-or-…",
-  mistral: "tu API key de Mistral",
   huggingface: "hf_…",
   qwen: "sk-…",
 };
@@ -138,15 +133,6 @@ export const GUIA_API_KEY: Record<
       'Clic en "Create Key".',
       "Copiá la clave (empieza con sk-or-) y pegala acá. Elegí modelos que terminan en \":free\".",
       "El free tier son 50 llamadas por día, sin tarjeta. Si un modelo \":free\" tira error, su proveedor está saturado — probá otro.",
-    ],
-  },
-  mistral: {
-    url: "https://console.mistral.ai/api-keys",
-    gratis: true,
-    pasos: [
-      "Abrí el link y creá una cuenta.",
-      'Clic en "Create new key".',
-      "Copiá la clave y pegala acá. (El plan gratis es 1 pedido por minuto.)",
     ],
   },
   huggingface: {
@@ -220,7 +206,7 @@ export function avisoFormatoKey(
     case "huggingface":
       return /^hf_/.test(k) ? null : "No parece un token de Hugging Face (empiezan con \"hf_\").";
     default:
-      return null; // mistral no tiene prefijo fijo
+      return null; // sin regla de formato para este proveedor
   }
 }
 
@@ -265,7 +251,6 @@ export async function llamarIA(
     case "gpt":
     case "groq":
     case "openrouter":
-    case "mistral":
     case "huggingface":
     case "qwen":
       return llamarOpenAICompat(config, mensajes, opts);
@@ -623,7 +608,7 @@ async function mensajeErrorGemini(res: Response, modelo?: string): Promise<strin
 }
 
 // ── Adaptador: OpenAI-compatible vía el proxy de 3maps ────────────────────
-// DeepSeek, GPT, Groq, OpenRouter, Mistral, Hugging Face: APIs
+// DeepSeek, GPT, Groq, OpenRouter, Hugging Face, Qwen: APIs
 // OpenAI-compatibles que NO habilitan CORS → no se pueden llamar desde el
 // navegador. El edge function `ia-proxy` reenvía y agrega el CORS. La key del
 // usuario TRANSITA por el proxy (stateless, no se guarda) — se habilita con el
@@ -636,7 +621,6 @@ const UPSTREAM: Partial<Record<Proveedor, string>> = {
   deepseek: "deepseek",
   groq: "groq",
   openrouter: "openrouter",
-  mistral: "mistral",
   huggingface: "huggingface",
   qwen: "qwen",
 };
@@ -850,7 +834,6 @@ export async function listarModelos(config: ConfigIA): Promise<string[]> {
     case "gpt":
     case "groq":
     case "openrouter":
-    case "mistral":
     case "huggingface":
     case "qwen":
       return listarModelosOpenAICompat(config);
