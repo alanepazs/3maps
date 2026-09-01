@@ -733,10 +733,17 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
   (`@keyframes lapiz-escribe` en `globals.css`, guard `prefers-reduced-motion`) + un botón cuadrado
   que llama `stopNode`.
 - **`modoStream`** (`pending && !tamano && override !== true`): el cuerpo arranca clampeado a
-  `ALTO_COLAPSADO` (220px) con `overflow-y-auto` + auto-scroll al fondo (`useEffect([respuesta,
-  modoStream])`). NO crece con el texto → no empuja el layout. Al terminar (`pending:false`) vuelve
-  la lógica de F3-1 (`modoColapsadoFinal`: `overflow-hidden` + fade "⌄ ver más"). El tamaño manual
-  (F3-8) sigue ganando.
+  `ALTO_COLAPSADO` (220px) con `overflow-y-auto`. NO crece con el texto → no empuja el layout. Al
+  terminar (`pending:false`) vuelve la lógica de F3-1 (`modoColapsadoFinal`: `overflow-hidden` +
+  fade "⌄ ver más"). El tamaño manual (F3-8) sigue ganando.
+- **Auto-scroll mientras `pending`**: el `useEffect([respuesta, pending, hayTamano])` apunta al
+  contenedor scrolleable que corresponda — `cuerpoRef` (inner, `modoStream`) o `scrollExtRef`
+  (wrapper externo `overflow-auto`, cuando hay tamaño manual). Solo fuerza el fondo si estás a
+  <200px de él (si scrolleaste arriba a leer, no). Bug que arregla: agrandar el globo a mano
+  mientras streamea apagaba el auto-scroll (Alan lo reportó).
+- **`BranchTranscript`**: mismo patrón de auto-scroll (T14, `useEffect([ultimo.respuesta,
+  streameando])`, guard <120px) + botón "↻ Rehacer" en el último intercambio (`onRetry` →
+  `retryNode(transcriptNodeId)`).
 - **Revertir**: el abort del usuario vuelve a ser silencioso (globo `pending` para siempre salvo
   watchdog) y el globo vuelve a crecer con cada token.
 - **`prefers-reduced-motion`**: NO se saca la animación del lápiz — se cambia el meneo
