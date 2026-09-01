@@ -346,3 +346,21 @@ Falla típica de gpt-oss-120b (`\frac{a}{b}` entre paréntesis normales).
 
 - **T10/T12**: ¿los contadores van en el header del panel, al pie, o por-globo inline? Decidir con
   el diseño de T7.
+
+## Backlog nuevo (pedidos de Alan 01-09, fuera del plan de 4 fases)
+
+- **B1 — color por globo**: marcar la esquina sup-derecha del título con un color a elección.
+  `Intercambio.color` → `.md` + frontmatter; picker desde el `NodeToolbar`. [S/M]
+- **B2 — ventana de contexto adaptativa**: resumir más agresivo / ventana que se achica a medida
+  que la rama crece. ❓ **Pregunta a responder primero**: ¿cuánto gasta el `resumir()` con keys
+  gratuitas? Instrumentar y medir (relacionado con T11 `usage`). [investigar → M]
+- **B3 — multi-select move + envión**: hoy al soltar una selección de varios globos, uno queda con
+  envión (el que trackeó `useNodeInertia`). Decidir: sin envión de grupo (recomendado — no aporta,
+  confunde) o envión parejo a todos. Toca `useNodeInertia` `onSelectionDrag*`. [S]
+- **B4 — Setting "grosor de líneas"**: `Settings.edgeWidth` → CSS de `.react-flow__edge-path`
+  (`stroke-width`). Slider en la pestaña "Lienzo". [S]
+- **B5 — Setting "fuente" + "tamaño de texto"**: un puñado de fuentes conocidas (cargar en
+  `layout.tsx` con `next/font`), `Settings.fontFamily` / `fontScale` → CSS var en `<html>`. [M]
+- **B6 — marca 3maps en el mapa**: preparar el código para un fondo con el logo (un `<Background>`
+  custom de React Flow, o un div de fondo con el SVG a opacidad baja, detrás del `<ReactFlow>`).
+  Sugerir opciones cuando se llegue (watermark esquina vs. fondo tenue vs. logo en el header). [M]

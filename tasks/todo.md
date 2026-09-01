@@ -43,7 +43,24 @@
 - [ ] `tsc` + `lint` + `build` verde
 - [ ] Chrome real: turnos diferenciados; STOP corta; flechas navegan; contadores plausibles
 
-## Fuera de este plan (más adelante)
+## Fuera de este plan (más adelante — pedidos de Alan 01-09)
+- **B1** — color por globo: marcar la esquina sup-derecha del título con un color a elección.
+  Va al `.md` (`Intercambio.color`), se elige desde el `NodeToolbar`.
+- **B2** — optimizar la ventana de contexto a medida que el mapa crece (resumen más agresivo,
+  ventana adaptativa). ❓ **Pregunta pendiente**: ¿es mucho el gasto de tokens que hace el
+  `resumir()` con keys gratuitas? Medir antes de tocar.
+- **B3** — multi-select move: al mover varios globos seleccionados, uno solo queda con envión.
+  Decidir: quitarle el envión a ese, o dárselo a todos (probablemente ninguno — el envión de
+  grupo no aporta y confunde). Toca `useNodeInertia` / `onSelectionDrag*`.
+- **B4** — Setting "grosor de líneas": engrosar/afinar los edges conectores (`Settings.edgeWidth`
+  → `arbolAVista` / CSS de `.react-flow__edge-path`).
+- **B5** — Settings "fuente" (un puñado de las conocidas) + "tamaño de texto". Toca `globals.css`
+  / `layout.tsx` (cargar las fuentes) + `Settings`.
+- **B6** — preparar el código para un fondo del mapa con el logo de 3maps (o usar la marca en
+  algún lado). Abrir a sugerencias cuando se llegue. Probablemente un `<Background>` custom de
+  React Flow o un div de fondo con el SVG del logo, opacidad baja.
+
+## Fuera de este plan (más adelante — pre-existentes)
 - Auto-switch de proveedor al pegar una key de otro
 - Export/import `.zip` de la carpeta de `.md` + File System Access API
 - Embeddings 2.5b (`transformers.js`) si el match por palabras se queda corto
