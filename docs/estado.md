@@ -88,21 +88,25 @@
 
 ### Plan de trabajo activo → `tasks/plan.md` + `tasks/todo.md`
 
-**Fase 1 SHIPPEADA (01-09)**: T13 heurística LaTeX crudo (`normalizarMath`, F3-14b) · T1 `stopNode`
-+ T2 badge de lápiz animado + STOP sobre el globo `pending` · T3 globo nace colapsado a 220px
-mientras streamea con auto-scroll (decisiones F3-15). Falta que el usuario lo pruebe en Chrome real
-(animación + STOP mid-stream + auto-scroll).
+**Fase 1 SHIPPEADA + probada en Chrome (01-09)**: T13 heurística LaTeX crudo (`normalizarMath`,
+F3-14b) · T1 `stopNode` + T2 badge de lápiz (pulsa con reduce-motion) + STOP sobre el globo
+`pending` · T3 globo nace colapsado a 220px mientras streamea con auto-scroll (decisiones F3-15).
 
-**Pendiente** (Fases 2-4 del plan):
-- **Fase 2 — ⚙️ `SettingsPanel` en 2 pestañas** "Lienzo" (envión, ventana de contexto, systemPrompt)
-  / "IA" (proveedor, key, modelo, proxy, Cuenta, Compartir), + colapsar la caja ámbar del proxy en
-  un `<details>` (el checkbox del opt-in siempre visible).
-- **Fase 3 — manija de resize** (`MessageNode.tsx` ◢): `cursor: nwse-resize` + tooltip +
-  contra-escala `1/zoom` para que sea agarrable con zoom out.
-- **Fase 4 — rediseño de `BranchTranscript`**: turno usuario vs. IA diferenciados · STOP en el
-  mini-composer (reusa `stopNode`) · flechas de navegación (hermanos ◀▶ + padre ▲ + primer hijo ▼)
-  · contador de contexto estimado (`≈ chars/4`) por globo y árbol · `llamarIA` devuelve `usage` →
-  al `.md` → contador de tokens gastados por globo.
+**Fase 2 SHIPPEADA (01-09)**: ⚙️ `SettingsPanel` en 2 pestañas "Lienzo" (envión, ventana de
+contexto, systemPrompt) / "IA" (proveedor, key, modelo, proxy, Cuenta, Compartir) + caja ámbar del
+proxy colapsada en un `<details>` (checkbox del opt-in siempre visible). Decisiones F3-16.
+
+**Fase 3 SHIPPEADA (01-09)**: manija de resize del globo (◢) `cursor-nwse-resize` + contra-escala
+`clamp(1, 1/zoom, 4)` → agarrable con zoom out. Decisiones F3-17. Falta que Alan lo pruebe en
+Chrome real (agarrarla con zoom out).
+
+**Pendiente — Fase 4: rediseño de `BranchTranscript`** (`tasks/plan.md` T7-T16):
+- turno usuario vs. IA diferenciados · STOP en el mini-composer (reusa `stopNode`) · flechas de
+  navegación (hermanos ◀▶ + padre ▲ + primer hijo ▼) · contador de contexto estimado (`≈ chars/4`)
+  por globo y árbol · `llamarIA` devuelve `usage` → al `.md` → contador de tokens gastados.
+- **T14** auto-scroll del panel sigue el texto mientras streamea (hoy no) · **T15** respuestas que
+  son un documento entero (`.md`/código): UX (spec) · **T16** drag & drop de archivos al
+  mini-composer (spec + scope con Alan).
 - **Manija de redimensionar del globo (◢) — más usable con zoom out.** Hoy (`MessageNode.tsx`,
   F3-8/F3-10) es un elemento chico absoluto abajo-derecha: (a) el cursor no cambia (queda la
   manito de React Flow) y no hay tooltip; (b) con zoom out el globo se achica en pantalla → la

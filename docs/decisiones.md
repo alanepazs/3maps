@@ -739,6 +739,28 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
   (F3-8) sigue ganando.
 - **Revertir**: el abort del usuario vuelve a ser silencioso (globo `pending` para siempre salvo
   watchdog) y el globo vuelve a crecer con cada token.
+- **`prefers-reduced-motion`**: NO se saca la animación del lápiz — se cambia el meneo
+  (rotate+translate) por un pulso de opacidad (`lapiz-pulso`, no vestibular). El pane y el Brave
+  de Alan tienen reduce-motion → un `animation: none` dejaba el lápiz estático (bug que reportó).
+
+### F3-16. ⚙️ `SettingsPanel` en 2 pestañas "Lienzo" / "IA" (T4, T5)
+- **"Lienzo"** = envión al soltar + ventana de contexto + instrucción de sistema (comportamiento
+  del mapa/conversación). **"IA"** = proveedor + API key + modelo + chips + toggle proxy + Cuenta
+  + Compartir. Estado `tab` en `useState` (NO persiste — preferencia de sesión), arranca en
+  "Lienzo". Se sacaron los headers de sección "Lienzo"/"IA" (los reemplazan las pestañas).
+- **Caja ámbar del proxy**: la explicación larga ("no habilita CORS…") va en un `<details>`
+  cerrado ("¿por qué pasa por un proxy? ▸"); el **checkbox del opt-in** y el aviso "esta instancia
+  no tiene proxy" quedan siempre visibles. La caja ocupaba media pantalla y molestaba (pedido de Alan).
+- **Revertir**: vuelve el panel apilado de 745 líneas en un solo scroll y la caja ámbar gigante.
+
+### F3-17. Manija de resize del globo (◢): `nwse-resize` + contra-escala por zoom (T6)
+- **`cursor-se-resize` → `cursor-nwse-resize`** (la flecha diagonal ↖↘). El `title` "Arrastrá para
+  redimensionar" ya estaba.
+- **Contra-escala**: `escalaManija = clamp(1, 1/zoom, 4)` con `zoom = useStore(s => s.transform[2])`
+  (re-render solo al cambiar el zoom, NO al panear). `transform: scale()` en la manija (cosmético
+  + área de click; no toca el cálculo del drag, que usa `rootRef.getBoundingClientRect()` / `getZoom()`).
+  Sin esto, con zoom 0.15 la manija medía 2.4px en pantalla → imposible de agarrar; ahora ~9.6px.
+- **Revertir**: la manija vuelve a volverse sub-píxel al alejar el zoom.
 
 ---
 

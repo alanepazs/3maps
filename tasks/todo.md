@@ -22,11 +22,11 @@
 - [x] Guardar la key sigue andando; ningún control se perdió
 
 ## Fase 3 — Manija de resize con zoom out
-- [ ] T6 — `cursor: nwse-resize` + tooltip + contra-escala `1/zoom` (`MessageNode.tsx`) [S]
+- [x] T6 — `cursor: nwse-resize` + tooltip + contra-escala `1/zoom` (`MessageNode.tsx`) [S]
 
 ### Checkpoint Fase 3
-- [ ] `tsc` + `lint` + `build` verde
-- [ ] Chrome real: con zoom out la manija sigue agarrable; cursor cambia al pasar por encima
+- [x] `tsc` + `lint` + `build` verde
+- [x] Chrome real: con zoom out la manija sigue agarrable; cursor cambia al pasar por encima
 
 ## Fase 4 — Rediseño de `BranchTranscript`
 - [ ] T7 — Turno usuario vs. IA diferenciados (`BranchTranscript.tsx`) [S]

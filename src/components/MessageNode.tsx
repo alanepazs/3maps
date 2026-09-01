@@ -11,6 +11,7 @@ import {
   NodeToolbar,
   Position,
   useReactFlow,
+  useStore,
   type NodeProps,
 } from "@xyflow/react";
 
@@ -63,6 +64,11 @@ export default function MessageNode({
   const { deleteNode, retryNode, stopNode, openNode, resizeNode, readOnly } =
     useContext(NodeActionsContext);
   const { getZoom } = useReactFlow();
+  // Zoom del lienzo (re-render solo al cambiar el zoom, no al panear). Se usa
+  // para contra-escalar la manija de resize: con zoom out el globo se achica en
+  // pantalla y la manija quedaría sub-píxel e imposible de agarrar.
+  const zoomLienzo = useStore((s) => s.transform[2]);
+  const escalaManija = Math.min(4, Math.max(1, 1 / (zoomLienzo || 1)));
 
   // Vista colapsada / expandida (fase 3.1). Preferencia por globo, no va al `.md`.
   const largoRespuesta = respuesta?.length ?? 0;
@@ -351,8 +357,10 @@ export default function MessageNode({
               ? "Arrastrá para redimensionar · doble clic para volver al tamaño automático"
               : "Arrastrá para redimensionar"
           }
-          className="nodrag nowheel absolute bottom-0 right-0 z-20 h-4 w-4 cursor-se-resize rounded-tl bg-neutral-900"
+          className="nodrag nowheel absolute bottom-0 right-0 z-20 h-4 w-4 cursor-nwse-resize rounded-tl bg-neutral-900"
           style={{
+            transform: `scale(${escalaManija})`,
+            transformOrigin: "bottom right",
             backgroundImage:
               "linear-gradient(135deg, transparent 0 45%, rgba(255,255,255,0.65) 45% 55%, transparent 55% 68%, rgba(255,255,255,0.65) 68% 78%, transparent 78%)",
           }}
