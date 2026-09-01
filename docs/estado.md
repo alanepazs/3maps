@@ -95,6 +95,13 @@ ni llamadas con key):
   **Groq** (llama-4/3.2-vision) + el aviso "sin visión"; **pegar una captura** de pantalla.
   Nota: los formatos de imagen/PDF de Gemini usan `inline_data`/`mime_type` (snake_case) — si
   Gemini 400ea, probar camelCase (decisiones F3-22b).
+  - **02-09 — 1er intento**: el adjunto de imagen SE ENVIÓ OK (thumbnail en el turno "Vos"), pero
+    la llamada falló con **`gemini-2.5-flash-lite` → 404 "no longer available to new users"**
+    (caso conocido §7b: los `2.5-*-lite`/`2.5-pro` no andan en keys nuevas; `ListModels` igual los
+    lista → aparecen en los chips). El mensaje de error salió claro. **La prueba de imagen sigue
+    sin confirmar — rehacer con `gemini-3.7-flash`.** ❓ evaluar meter `gemini-2.5-flash-lite` +
+    `gemini-2.5-pro` en `GEMINI_MODELOS_MUERTOS` (los esconde de los chips + migra + avisa) vs.
+    dejar el 404 claro (la decisión actual de §7b).
 - `stream_options.include_usage` (T11) — asumido que anda en Groq/OpenRouter/HuggingFace; si
   alguno tira 400 habría que gatearlo por proveedor en `llamarOpenAICompat`.
 - Copiar/guardar respuesta (T15): copiar-pegar y descargar de verdad.
