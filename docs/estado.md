@@ -85,6 +85,12 @@
     `\sqrt{`, `\text{`, `\sum` sueltos, sin `$` en la línea) → `$…$`. Falla típica de los
     modelos open-source chicos (gpt-oss-120b escribe `\frac{...}` entre paréntesis normales).
     El fix F3-12 solo cubre `\[ \]` y `\( \)`, no el LaTeX sin marcar.
+- **Globo nuevo nace colapsado mientras streamea.** Hoy un globo `pending` crece a lo largo del
+  stream (empuja el layout) y recién se puede colapsar cuando la respuesta terminó y pasa los 400
+  chars (`vista.ts` / `MessageNode`, F3-1: `colapsable` mira `respuesta.length`, no el texto
+  parcial). Pedido: que arranque colapsado a `ALTO_COLAPSADO` (220px, cuerpo scrolleable) apenas
+  se crea, y que el usuario lo expanda si quiere. Ojo: no romper el auto-scroll del texto que
+  entra, ni el tamaño manual (F3-8) que gana sobre el colapso.
 - **Auto-switch de proveedor** al pegar una key de otro (hoy `avisoFormatoKey` solo avisa).
 - **Export/import** `.zip` de la carpeta de `.md` + File System Access API (spec §7).
 - **2.5b — embeddings** (`transformers.js`) si `intercambiosRelevantes` (match por palabras) se
