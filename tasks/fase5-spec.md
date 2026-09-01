@@ -103,11 +103,12 @@ medio) — **eso no corta el tramo**, la rama es otro tramo que nace de al lado.
 - Sigue existiendo para el caso rápido: continúa el **tramo activo** (Enter agrega a su punta) /
   Ctrl+Enter ramifica desde su punta. El primer mensaje (árbol vacío) también sale de acá.
 - "Activo" = el tramo seleccionado en el canvas (o el último tocado).
-- **Bug a arreglar antes de F5 (F5-0)**: la flecha `⌄` que esconde el composer reacciona lento /
-  pide doble clic. Alan la quiere en **un solo clic**. Investigar (probable: los dos `<div>`
-  absolutos superpuestos "✎ Escribir" / barra, o un `click` de captura `{once:true}` de las
-  manijas de resize que se come el primero, o el hit-area chico del glifo). Fix chico e
-  independiente de F5.
+- **F5-0 ✅ HECHO (02-09)**: la flecha `⌄` pedía doble clic. Causa confirmada: el `click` de
+  captura `{ once: true }` que arman las manijas de resize (globo ◢ / borde del panel) para
+  tragarse el click sintético post-drag — se comía **cualquier** click posterior, no solo el
+  sintético. `components/gestos.ts` `tragarClickSintetico()`: desarma en el primer `pointerdown`
+  (un click real lo tiene, el sintético no) + timeout 500ms. + el `⌄` ahora es "⌄ ocultar"
+  (área más grande). 3 asserts de la lógica en el pane.
 
 ### `settings.ts` + pestaña "Lienzo" — Setting de crecimiento
 
@@ -139,7 +140,7 @@ medio) — **eso no corta el tramo**, la rama es otro tramo que nace de al lado.
 
 ## Sub-tareas (implementación incremental)
 
-- **F5-0 — fix del `⌄` del Composer** (un solo clic). Independiente, va primero.
+- **F5-0 ✅ — fix del `⌄` del Composer** (un solo clic). `tragarClickSintetico` en `gestos.ts`.
 - **F5-1 — `arbolAVista` agrupa tramos + `MessageNode` los renderiza** (read-only, sin
   crecimiento, sin cambiar cómo se crean los globos). Los mapas viejos se ven agrupados. `_scratch`
   de la función de agrupado (cadenas `main`, ramas del medio, punta). **El más importante.**

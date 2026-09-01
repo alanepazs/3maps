@@ -667,8 +667,14 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
   sigue local en `vista.ts` (es cómo mirás esta pantalla, no contenido).
 - **Tamaño manual gana sobre el colapso de F3-1**: `mostrarColapsado = colapsable && !expandido && !tamano`.
   Doble clic en la manija o botón "↔ Auto" borra la entrada.
-- El `pointerup` fuera de la manija dispara un `click` que caía en el fondo → se registra un
-  listener `click` de captura `{once:true}` que se lo traga (mismo patrón en la manija del panel).
+- El `pointerup` fuera de la manija dispara un `click` sintético que caía en el fondo →
+  `tragarClickSintetico()` (`components/gestos.ts`) lo traga. **F5-0 (02-09)**: antes era un
+  `{ once: true }` que se comía el **próximo** click, sin importar cuándo — si redimensionabas
+  algo y después clickeabas otra cosa (típico: el `⌄` que esconde el composer), ese click se
+  perdía y parecía "no responde / pide doble clic". Ahora se distingue: el click sintético
+  post-drag no viene precedido de un `pointerdown` nuevo; uno real sí → si llega un `pointerdown`
+  antes del click, se desarma. Timeout de respaldo 500ms. Mismo helper en la manija del panel.
+  + el `⌄` del composer pasó de un glifo suelto (25×28px) a "⌄ ocultar" (más fácil de acertar).
 
 ### F3-9. Ancho del panel lateral: **por dispositivo**, arrastre por DOM
 - `settings.transcriptWidth = { mobile, desktop }`, bucket por `window.innerWidth < 768`. El

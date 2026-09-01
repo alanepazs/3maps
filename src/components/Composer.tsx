@@ -93,9 +93,9 @@ export default function Composer({
               tabIndex={oculto ? -1 : 0}
               title="Esconder el chat"
               aria-label="Esconder el chat"
-              className="shrink-0 rounded px-2 py-0.5 text-white/40 hover:bg-white/10 hover:text-white/80"
+              className="-my-1 -mr-1 flex shrink-0 items-center gap-1 rounded px-2.5 py-1.5 text-xs leading-none text-white/45 hover:bg-white/10 hover:text-white/90"
             >
-              ⌄
+              <span className="text-sm leading-none">⌄</span> ocultar
             </button>
           </div>
           <textarea

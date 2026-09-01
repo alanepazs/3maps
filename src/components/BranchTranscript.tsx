@@ -12,6 +12,7 @@ import {
 import type { BranchKind } from "./Composer";
 import Markdown from "./Markdown";
 import { ANCHO_PANEL_MAX_FRAC, ANCHO_PANEL_MIN } from "./settings";
+import { tragarClickSintetico } from "./gestos";
 import {
   dataUrl,
   descargarAdjunto,
@@ -132,16 +133,7 @@ export default function BranchTranscript({
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
       onResize?.(ultimo);
-      // El `pointerup` fuera de la manija dispara un `click` sintético cuyo
-      // target puede ser el fondo (que cierra el panel). Tragarse ese click.
-      window.addEventListener(
-        "click",
-        (ev) => {
-          ev.stopPropagation();
-          ev.preventDefault();
-        },
-        { capture: true, once: true },
-      );
+      tragarClickSintetico(); // si no, el click post-drag cierra el panel
     };
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);

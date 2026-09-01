@@ -15,6 +15,7 @@ import {
   type NodeProps,
 } from "@xyflow/react";
 
+import { tragarClickSintetico } from "./gestos";
 import LimiteError from "./LimiteError";
 import Markdown from "./Markdown";
 import { NodeActionsContext } from "./nodeActions";
@@ -146,15 +147,7 @@ export default function MessageNode({
         window.removeEventListener("pointerup", onUp);
         if (ultimo) resizeNode(id, ultimo.w, ultimo.h);
         setDrag(null);
-        // Tragarse el `click` sintético post-drag (si no, deselecciona el globo).
-        window.addEventListener(
-          "click",
-          (ev) => {
-            ev.stopPropagation();
-            ev.preventDefault();
-          },
-          { capture: true, once: true },
-        );
+        tragarClickSintetico(); // si no, el click post-drag deselecciona el globo
       };
       window.addEventListener("pointermove", onMove);
       window.addEventListener("pointerup", onUp);

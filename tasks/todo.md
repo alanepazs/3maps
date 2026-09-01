@@ -89,7 +89,8 @@
 **Spec: `tasks/fase5-spec.md`** (decisiones cerradas con Alan 02-09, esperando "dale"). Cambio
 **solo de vista** (el modelo de datos no cambia; cero migración). Enter agrega al mismo globo;
 globo nuevo solo al ramificar; el globo crece unos px por mensaje (slider en "Lienzo").
-Sub-tareas: F5-0 (fix del `⌄` del Composer, un clic) → F5-1 (`arbolAVista` agrupa tramos) →
+Sub-tareas: **F5-0 ✅** (fix del `⌄` del Composer — `tragarClickSintetico` en `gestos.ts`; el
+`{once:true}` de las manijas de resize se comía cualquier click posterior) → F5-1 (`arbolAVista` agrupa tramos) →
 F5-2 (Enter a la punta) → F5-3 (ramificar desde cualquier intercambio) → F5-4 (slider) →
 F5-5 (adaptar layout/nav/delete/stop) → F5-6 (docs + invariante de `CLAUDE.md`).
 
