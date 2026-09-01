@@ -100,7 +100,8 @@ proxy colapsada en un `<details>` (checkbox del opt-in siempre visible). Decisio
 `clamp(1, 1/zoom, 4)` → agarrable con zoom out. Decisiones F3-17. Falta que Alan lo pruebe en
 Chrome real (agarrarla con zoom out).
 
-**Fase 4 EN CURSO — rediseño de `BranchTranscript`** (`tasks/plan.md` T7-T16):
+**Fase 4 — rediseño de `BranchTranscript` — IMPLEMENTADA (T7-T16 + T13)** (`tasks/plan.md`).
+Falta solo la prueba de Alan en Chrome real con keys. Detalle abajo:
 - **Hecho (01-09)**: T7 turno usuario/IA diferenciados · T8 STOP en el mini-composer (reusa
   `stopNode`) · T14 auto-scroll del panel sigue el texto mientras streamea · **T9** (rediseñado,
   decisiones F3-18/c/d): flechas laterales `‹` `›` en el margen del panel — **una por cada rama**
