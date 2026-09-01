@@ -86,44 +86,23 @@
 - Que el watchdog de 45s no corte un stream lento-pero-vivo.
 - ⚠️ LWW de títulos usa el reloj del navegador: relojes MUY desfasados podrían elegir mal.
 
-### Opcionales (no bloquean)
-- **⚙️ `SettingsPanel` — rediseño** (pedido del usuario 01-09):
-  - **2 pestañas**: (a) **"Mapa"** = envión al soltar + **ventana de contexto** + **instrucción de
-    sistema** (`systemPrompt`) — todo lo que es comportamiento del lienzo/conversación; (b)
-    **"Conectividad"** = Proveedor + API key + modelo + toggle del proxy + estado de Cuenta/sync +
-    Compartir.
-  - **Todo lo que hoy cuelga del título "IA" separado de Cuenta / Compartir / Lienzo** — hoy están
-    apilados en el mismo panel scrolleable de `w-72`.
-  - **La caja ámbar del proxy** ("Hugging Face no se puede llamar directo… tu key pasa por el
-    servidor de 3maps…") **ocupa demasiado** y molesta aunque el dato importe. Colapsarla en un
-    `<details>` ("¿por qué pasa por un proxy? ▸") o achicar a 1 línea + link; el checkbox del
-    opt-in queda siempre visible, la explicación se pliega.
-- **Globo `pending` — ícono de "escribiendo" + STOP en el canvas** (pedido del usuario 01-09):
-  - Sobre el globo mientras streamea, un **ícono de lápiz** (con movimiento/animación si se puede)
-    junto al texto "escribiendo…".
-  - Al lado, un **botón cuadrado de STOP funcional** que corta el stream de ESE globo. Mecanismo:
-    `FlowCanvas` ya tiene `enVueloRef` (Map<id, AbortController>) → `enVueloRef.current.get(id)?.abort()`.
-    Al abortar por el usuario: dejar la respuesta parcial visible y marcar el globo como listo (no
-    `pending`, no `error`) o con un estado "cortado". Hoy el abort del usuario es silencioso y el
-    globo queda `pending` para siempre salvo watchdog. Va en `MessageNode` (estado `pending`) +
-    un handler nuevo en `NodeActionsContext` (`stopNode`), como `retryNode`/`deleteNode`.
-- **`BranchTranscript` (panel lateral expandido) — rediseño** (lista de mejoras del usuario):
-  - Diferenciación más moderna entre turno del usuario y turno de la IA (hoy es pobre).
-  - Botón **STOP** en el mini-composer del panel (mismo `stopNode` del punto de arriba).
-  - Contador de tokens: disponibles vs. gastados en cada interacción.
-  - Contador de contexto por globo y del árbol completo.
-  - Flechas laterales en el chat del panel para navegar entre el hilo principal y las
-    ramificaciones (hermanos / ramas de un globo).
-  - Heurística en `normalizarMath` para envolver LaTeX crudo sin delimitadores (`\frac{`,
-    `\sqrt{`, `\text{`, `\sum` sueltos, sin `$` en la línea) → `$…$`. Falla típica de los
-    modelos open-source chicos (gpt-oss-120b escribe `\frac{...}` entre paréntesis normales).
-    El fix F3-12 solo cubre `\[ \]` y `\( \)`, no el LaTeX sin marcar.
-- **Globo nuevo nace colapsado mientras streamea.** Hoy un globo `pending` crece a lo largo del
-  stream (empuja el layout) y recién se puede colapsar cuando la respuesta terminó y pasa los 400
-  chars (`vista.ts` / `MessageNode`, F3-1: `colapsable` mira `respuesta.length`, no el texto
-  parcial). Pedido: que arranque colapsado a `ALTO_COLAPSADO` (220px, cuerpo scrolleable) apenas
-  se crea, y que el usuario lo expanda si quiere. Ojo: no romper el auto-scroll del texto que
-  entra, ni el tamaño manual (F3-8) que gana sobre el colapso.
+### Plan de trabajo activo → `tasks/plan.md` + `tasks/todo.md`
+
+**Fase 1 SHIPPEADA (01-09)**: T13 heurística LaTeX crudo (`normalizarMath`, F3-14b) · T1 `stopNode`
++ T2 badge de lápiz animado + STOP sobre el globo `pending` · T3 globo nace colapsado a 220px
+mientras streamea con auto-scroll (decisiones F3-15). Falta que el usuario lo pruebe en Chrome real
+(animación + STOP mid-stream + auto-scroll).
+
+**Pendiente** (Fases 2-4 del plan):
+- **Fase 2 — ⚙️ `SettingsPanel` en 2 pestañas** "Lienzo" (envión, ventana de contexto, systemPrompt)
+  / "IA" (proveedor, key, modelo, proxy, Cuenta, Compartir), + colapsar la caja ámbar del proxy en
+  un `<details>` (el checkbox del opt-in siempre visible).
+- **Fase 3 — manija de resize** (`MessageNode.tsx` ◢): `cursor: nwse-resize` + tooltip +
+  contra-escala `1/zoom` para que sea agarrable con zoom out.
+- **Fase 4 — rediseño de `BranchTranscript`**: turno usuario vs. IA diferenciados · STOP en el
+  mini-composer (reusa `stopNode`) · flechas de navegación (hermanos ◀▶ + padre ▲ + primer hijo ▼)
+  · contador de contexto estimado (`≈ chars/4`) por globo y árbol · `llamarIA` devuelve `usage` →
+  al `.md` → contador de tokens gastados por globo.
 - **Manija de redimensionar del globo (◢) — más usable con zoom out.** Hoy (`MessageNode.tsx`,
   F3-8/F3-10) es un elemento chico absoluto abajo-derecha: (a) el cursor no cambia (queda la
   manito de React Flow) y no hay tooltip; (b) con zoom out el globo se achica en pantalla → la

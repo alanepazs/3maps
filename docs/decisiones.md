@@ -708,6 +708,38 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
 - **No hace falta migración**: las capas 2 y 3 corren en cada render.
 - **Revertir**: una respuesta con basura de tokens vuelve a poder tumbar toda la app.
 
+### F3-14b. `normalizarMath` envuelve LaTeX crudo suelto en `$…$` (T13)
+- **El problema**: modelos open-source chicos (gpt-oss-120b) escriben `\frac{a}{b}` entre
+  paréntesis normales, sin `$`. `remark-math` solo entiende `$`/`$$` → quedaba LaTeX literal. F3-12
+  solo cubre `\[ \]` y `\( \)`.
+- **`envolverLatexCrudo`** en `Markdown.tsx`, antes de parsear, **línea por línea**: envuelve el
+  token `\cmd` (+ args `{…}` / `_` / `^`, 1 nivel de anidado) en `$…$`. Saltea: líneas dentro de un
+  fence ` ``` `, líneas indentadas 4+, líneas que ya tienen `$`, líneas sin `\`.
+- **`esMathReal`**: un token cuenta solo si lleva `{`/`_`/`^` **o** es un comando de la lista de
+  "sueltos" (`\cdot \sum \pi \le`…). Así `\n`, `\t`, `C:\newfolder`, "el comando `\frac`" (sin `{`)
+  **no se tocan**.
+- **Verificado** con `renderToStaticMarkup`: `\frac`/`\sqrt` → KaTeX; prosa, rutas, tablas + `<br>`
+  intactos.
+- **Revertir**: gpt-oss vuelve a mostrar `\frac{...}` como texto.
+
+### F3-15. STOP por globo + el globo `pending` no crece con el stream (T1-T3)
+- **`stopNode(id)`** (`NodeActionsContext`, como `retryNode`): `enVueloRef.current.get(id)?.abort("usuario")`.
+  `responder` chequea `ctrl.signal.aborted && signal.reason === "usuario"` **al tope del catch** —
+  `abort(reason)` hace que `fetch` rechace con el *reason* (string), no un `DOMException`, así que
+  se mira el signal, no `e`. Conserva `ultimoAcumulado` (lo último que llegó, SIN el throttle de
+  80ms del render) como respuesta final: `pending:false`, sin `error`. "↻ Rehacer" sigue.
+- **Badge de lápiz + STOP** (`MessageNode`): mientras `pending && !readOnly`, un `<NodeToolbar
+  align="start">` (se renderiza fuera del globo, que tiene `overflow-hidden`) con un `✏️` animado
+  (`@keyframes lapiz-escribe` en `globals.css`, guard `prefers-reduced-motion`) + un botón cuadrado
+  que llama `stopNode`.
+- **`modoStream`** (`pending && !tamano && override !== true`): el cuerpo arranca clampeado a
+  `ALTO_COLAPSADO` (220px) con `overflow-y-auto` + auto-scroll al fondo (`useEffect([respuesta,
+  modoStream])`). NO crece con el texto → no empuja el layout. Al terminar (`pending:false`) vuelve
+  la lógica de F3-1 (`modoColapsadoFinal`: `overflow-hidden` + fade "⌄ ver más"). El tamaño manual
+  (F3-8) sigue ganando.
+- **Revertir**: el abort del usuario vuelve a ser silencioso (globo `pending` para siempre salvo
+  watchdog) y el globo vuelve a crecer con cada token.
+
 ---
 
 ## Build / deploy

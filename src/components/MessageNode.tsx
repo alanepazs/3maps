@@ -1,6 +1,7 @@
 import {
   useCallback,
   useContext,
+  useEffect,
   useRef,
   useState,
   type PointerEvent as ReactPointerEvent,
@@ -64,8 +65,6 @@ export default function MessageNode({
   const { getZoom } = useReactFlow();
 
   // Vista colapsada / expandida (fase 3.1). Preferencia por globo, no va al `.md`.
-  // Mientras streamea se muestra completo; el tope aplica recién con la respuesta
-  // final larga.
   const largoRespuesta = respuesta?.length ?? 0;
   const colapsable = !pending && largoRespuesta > LIMITE_COLAPSO;
   const [override, setOverride] = useState<boolean | undefined>(() =>
@@ -82,12 +81,24 @@ export default function MessageNode({
     drag ?? (anchoData && altoData ? { w: anchoData, h: altoData } : undefined);
   const rootRef = useRef<HTMLDivElement>(null);
 
-  const mostrarColapsado = colapsable && !expandido && !tamano;
+  // Mientras streamea, el globo arranca chico (no crece con el texto, no empuja
+  // el layout) y scrollea solo al fondo. El usuario puede expandirlo (override).
+  const modoStream = pending && !tamano && override !== true;
+  const modoColapsadoFinal = colapsable && !expandido && !tamano;
+  const mostrarColapsado = modoStream || modoColapsadoFinal;
   const alternarExpandido = () => {
     const nuevo = !expandido;
     setOverride(nuevo);
     guardarExpandido(id, nuevo);
   };
+
+  // Auto-scroll al fondo del cuerpo mientras entra texto en modo streaming.
+  const cuerpoRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (modoStream && cuerpoRef.current) {
+      cuerpoRef.current.scrollTop = cuerpoRef.current.scrollHeight;
+    }
+  }, [respuesta, modoStream]);
 
   const onResizeStart = useCallback(
     (e: ReactPointerEvent) => {
@@ -287,7 +298,14 @@ export default function MessageNode({
             }`}
           >
             <div
-              className={mostrarColapsado ? "overflow-hidden" : undefined}
+              ref={cuerpoRef}
+              className={
+                modoStream
+                  ? "scroll-fino nowheel overflow-y-auto"
+                  : modoColapsadoFinal
+                    ? "overflow-hidden"
+                    : undefined
+              }
               style={
                 mostrarColapsado ? { maxHeight: ALTO_COLAPSADO } : undefined
               }
@@ -301,13 +319,22 @@ export default function MessageNode({
                 ))}
               {respuesta == null && !pending && "Respuesta pendiente"}
             </div>
-            {mostrarColapsado && (
+            {modoColapsadoFinal && (
               <button
                 type="button"
                 onClick={alternarExpandido}
                 className="nodrag absolute inset-x-0 bottom-0 flex items-end justify-center bg-gradient-to-t from-neutral-900 via-neutral-900/85 to-transparent pb-1 pt-10 text-xs text-sky-300 hover:text-sky-200"
               >
                 ⌄ ver más
+              </button>
+            )}
+            {modoStream && respuesta != null && (
+              <button
+                type="button"
+                onClick={() => setOverride(true)}
+                className="nodrag mt-1 text-[11px] text-sky-300 hover:text-sky-200"
+              >
+                ⌄ ver todo mientras escribe
               </button>
             )}
           </div>
