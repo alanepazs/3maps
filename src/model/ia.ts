@@ -59,7 +59,7 @@ export const MODELO_POR_DEFECTO: Record<Proveedor, string> = {
   zhipu: "glm-4-flash",
   qwen: "qwen-flash",
   moonshot: "moonshot-v1-8k",
-  siliconflow: "deepseek-ai/DeepSeek-V3",
+  siliconflow: "Qwen/Qwen3-8B",
 };
 
 // Modelos de Gemini que ya no sirven para una key free tier nueva y hay que
@@ -202,13 +202,15 @@ export const GUIA_API_KEY: Record<
     ],
   },
   siliconflow: {
-    url: "https://cloud.siliconflow.cn/account/ak",
+    // Sitio GLOBAL (.com): registro con mail, sin teléfono. El sitio .cn pide
+    // CAPTCHA en chino + teléfono chino. Free tier excluido en UE/UK/Suiza.
+    url: "https://cloud.siliconflow.com/account/ak",
     gratis: true,
     abierto: true,
     pasos: [
-      "Abrí el link y registrate con mail o GitHub.",
+      "Abrí el link (sitio global .com) y registrate con mail o GitHub.",
       'En "API Keys" → "Create Access Token".',
-      "Copiá la clave (empieza con sk-) y pegala acá. Trae créditos gratis y da acceso a DeepSeek, Qwen, GLM, etc.",
+      "Copiá la clave (empieza con sk-) y pegala acá. Trae ~$1 de crédito + modelos chicos gratis para siempre (Qwen3-8B, DeepSeek-R1-Distill-Qwen-7B).",
     ],
   },
   deepseek: {

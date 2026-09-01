@@ -95,12 +95,19 @@ Complementa a:
   `groq`, `openrouter` (`:free`), `mistral` (1 RPM), `huggingface`, y (31-08-2026, del
   ecosistema chino) `zhipu`/GLM (`open.bigmodel.cn/api/paas/v4`, GLM-4-Flash gratis), `qwen`
   (DashScope `dashscope-intl…/compatible-mode/v1`), `moonshot`/Kimi (`api.moonshot.cn/v1`),
-  `siliconflow` (`api.siliconflow.cn/v1`, agregador con créditos gratis). Todos OpenAI-compatibles
+  `siliconflow` (**`api.siliconflow.com/v1` — el sitio GLOBAL**; el `.cn` pide CAPTCHA + teléfono
+  chinos; el `.com` es registro con mail, ~$1 + modelos chicos $0 para siempre, free tier
+  excluido en UE/UK/Suiza — 01-09-2026). Todos OpenAI-compatibles
   → mismo `llamarOpenAICompat` / `listarModelosOpenAICompat`. `upstreamDe` = mapa `Proveedor →
   clave del proxy`. **Descartados**: `cerebras` (§7d — 402 payment required en free tier),
   Cloudflare (`account_id` en la URL), Doubao/ERNIE/Hunyuan (verificación de empresa / OAuth),
-  Kling/Seedance (video). **Redeploy del edge function obligatorio** al sumar un proveedor
+  Kling/Seedance (video). **Redeploy del edge function obligatorio** al sumar/cambiar un proveedor
   (`supabase functions deploy ia-proxy` o el editor del panel).
+- ⚠️ **Proveedores chinos y el registro**: `zhipu` (`open.bigmodel.cn`) y `moonshot` (`api.moonshot.cn`)
+  registran solo en sitio `.cn` (CAPTCHA + teléfono chinos) → probablemente **no sirven para el
+  pitch "cualquiera saca una key gratis"**. `qwen` ya usa el endpoint internacional
+  (`dashscope-intl`); `siliconflow` se movió al `.com` global (arriba). A revisar al probarlos —
+  si el registro es China-only, mismo destino que `cerebras` (§7d).
 - **`GUIA_API_KEY`** (`ia.ts`, 31-08-2026): por proveedor, `{ url, gratis, abierto?, pasos[] }` —
   mini-guía paso a paso "cómo consigo la key" para gente que nunca usó una. `SettingsPanel` la
   muestra en un `<details>` bajo el input, con un botón que abre la web del proveedor y avisa si

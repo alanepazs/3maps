@@ -66,7 +66,10 @@
 ## Qué falta
 
 ### Prueba real pendiente (la hace el usuario, con key/login)
-- Los otros 8 proveedores vía proxy con key real (GLM-flash / SiliconFlow = gratis).
+- Los otros 7 proveedores vía proxy con key real. **SiliconFlow**: usar el sitio GLOBAL
+  `cloud.siliconflow.com` (el `.cn` pide CAPTCHA + teléfono chinos) — proxy ya apunta a
+  `api.siliconflow.com/v1`, default `Qwen/Qwen3-8B` (gratis). ⚠️ Zhipu/Moonshot podrían ser
+  China-only para registrarse (decisiones §7a).
 - Revalidar en vivo gpt-oss / qwen3 con el bundle F3-12: strip de `<think>` + `<br>` literal
   (el render `$…$` de Gemini ya está OK en local; primero forzar bundle nuevo con `?v=<algo>`).
 - Panel lateral redimensionable (3.11) + fixes de móvil (3.13) en Chrome real / celu.

@@ -27,7 +27,7 @@ const PROVEEDORES: Record<string, string> = {
   zhipu: "https://open.bigmodel.cn/api/paas/v4",
   qwen: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
   moonshot: "https://api.moonshot.cn/v1",
-  siliconflow: "https://api.siliconflow.cn/v1",
+  siliconflow: "https://api.siliconflow.com/v1",
 };
 
 const RUTAS_OK = new Set(["/chat/completions", "/models"]);
