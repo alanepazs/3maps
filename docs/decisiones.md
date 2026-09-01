@@ -831,9 +831,13 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
     por una **línea de costado** (F3-2b) — sus **ramas hijas**, más el **padre si el globo abierto
     es una rama** (`branch-left` → padre a la derecha `›`; `branch-right` → padre a la izquierda
     `‹`). Los hijos `main`, los hermanos y el contexto NO: a esos se llega por scroll del panel o
-    click en el mapa. Si un lado tiene varios (padre + varias ramas hijas), la flecha va al más
-    arriba (`sort` por Y); al resto, por el mapa. Verificado con scratch (7 asserts) + pane (árbol
-    de los screenshots de Alan: `dame › ensename › Analisis`, y `Analisis ‹ ensename` reversible).
+    click en el mapa.
+  - **F3-18d (01-09, "tengo 2 ramas a la derecha y solo llego a una")**. `nav` devuelve una
+    **lista por lado** (no un solo destino) → `BranchTranscript` apila **una flechita por rama**,
+    en columna, ordenadas por el `y` del globo destino (borde superior, no el centro → no depende
+    del alto). Cada flecha muestra la pregunta del destino al pasar el mouse (`aria-label` +
+    `<span>` con `group-hover`). Si un globo se mueve, `nav` recalcula y las flechas se reordenan
+    solas (ej: mové "metáforas" arriba de "1 intermedio" → su flecha sube). Verificado en el pane.
 - **Abrir en "Vos"** (pedido de Alan): al abrir el panel o navegar, `scrollTop` se pone en el
   arranque del intercambio abierto (`inicioUltimoRef`, el `<div>` del último bloque), no al final
   de la respuesta — "así sabemos dónde estamos parados". Reemplaza el viejo `scrollIntoView(end)`

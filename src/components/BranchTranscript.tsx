@@ -49,9 +49,12 @@ export default function BranchTranscript({
   onStop?: () => void;
   // Vuelve a pedir la respuesta del globo abierto en el panel.
   onRetry?: () => void;
-  // Globo de al lado en el MAPA (izq / der) al que saltan las flechas laterales
-  // del panel. `null` = no hay nada de ese lado. Ver `nav` en FlowCanvas.
-  nav?: { left: string | null; right: string | null } | null;
+  // Globos unidos por una línea de costado (ver `nav` en FlowCanvas). Una lista
+  // por lado, ordenada de arriba a abajo → una flechita por destino, apiladas.
+  nav?: {
+    left: { id: string; label: string }[];
+    right: { id: string; label: string }[];
+  } | null;
   onNavigate?: (id: string) => void;
   width?: number;
   resizable?: boolean;
@@ -211,31 +214,45 @@ export default function BranchTranscript({
           </div>
         </div>
 
-        {/* Flechas laterales: saltar a la rama unida por ese costado (rama hija,
-            o el padre si este globo es una rama). Van en el margen, a media
-            altura del chat. El resto (hijos de continuación, hermanos, contexto)
-            se ve scrolleando el panel o clickeando el globo en el mapa. */}
-        {nav && onNavigate && nav.left && (
-          <button
-            type="button"
-            onClick={() => onNavigate(nav.left!)}
-            title="Ir a la rama unida por la izquierda"
-            aria-label="Ir a la rama unida por la izquierda"
-            className="absolute left-3 top-1/2 z-30 flex h-11 w-6 -translate-y-1/2 items-center justify-center rounded-md border border-white/15 bg-neutral-900/90 text-lg leading-none text-white/60 shadow-lg hover:bg-white/10 hover:text-white"
-          >
-            ‹
-          </button>
+        {/* Flechas laterales: una por cada rama unida por ese costado (ramas
+            hijas, o el padre si este globo es una rama), apiladas en el orden
+            vertical de los globos en el mapa. El resto (hijos de continuación,
+            hermanos, contexto) se ve scrolleando el panel o clickeando el mapa. */}
+        {nav && onNavigate && nav.left.length > 0 && (
+          <div className="absolute left-3 top-1/2 z-30 flex -translate-y-1/2 flex-col gap-1">
+            {nav.left.map((d) => (
+              <button
+                key={d.id}
+                type="button"
+                onClick={() => onNavigate(d.id)}
+                aria-label={`Ir a: ${d.label}`}
+                className="group/nav relative flex h-9 w-6 items-center justify-center rounded-md border border-white/15 bg-neutral-900/90 text-lg leading-none text-white/60 shadow-lg hover:bg-white/10 hover:text-white"
+              >
+                ‹
+                <span className="pointer-events-none absolute left-full ml-1.5 hidden max-w-[14rem] truncate whitespace-nowrap rounded bg-neutral-800 px-2 py-1 text-xs text-white/85 shadow-lg group-hover/nav:block">
+                  {d.label}
+                </span>
+              </button>
+            ))}
+          </div>
         )}
-        {nav && onNavigate && nav.right && (
-          <button
-            type="button"
-            onClick={() => onNavigate(nav.right!)}
-            title="Ir a la rama unida por la derecha"
-            aria-label="Ir a la rama unida por la derecha"
-            className="absolute right-3 top-1/2 z-30 flex h-11 w-6 -translate-y-1/2 items-center justify-center rounded-md border border-white/15 bg-neutral-900/90 text-lg leading-none text-white/60 shadow-lg hover:bg-white/10 hover:text-white"
-          >
-            ›
-          </button>
+        {nav && onNavigate && nav.right.length > 0 && (
+          <div className="absolute right-3 top-1/2 z-30 flex -translate-y-1/2 flex-col gap-1">
+            {nav.right.map((d) => (
+              <button
+                key={d.id}
+                type="button"
+                onClick={() => onNavigate(d.id)}
+                aria-label={`Ir a: ${d.label}`}
+                className="group/nav relative flex h-9 w-6 items-center justify-center rounded-md border border-white/15 bg-neutral-900/90 text-lg leading-none text-white/60 shadow-lg hover:bg-white/10 hover:text-white"
+              >
+                ›
+                <span className="pointer-events-none absolute right-full mr-1.5 hidden max-w-[14rem] truncate whitespace-nowrap rounded bg-neutral-800 px-2 py-1 text-xs text-white/85 shadow-lg group-hover/nav:block">
+                  {d.label}
+                </span>
+              </button>
+            ))}
+          </div>
         )}
 
         <div

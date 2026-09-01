@@ -951,8 +951,11 @@ function Flow() {
   // Navegación del panel (`‹` `›`): saltar SOLO a los globos unidos al globo
   // abierto por una línea de COSTADO — sus ramas hijas, más el padre si el
   // globo abierto es una rama (ahí la línea al padre también sale de costado).
-  // Cada flecha = el lado por el que sale esa línea. Los hijos `main` (línea
-  // por abajo) y los hermanos no entran: a esos se llega por scroll o click.
+  // Los hijos `main` (línea por abajo) y los hermanos no entran: a esos se
+  // llega por scroll o click.
+  // Cada lado devuelve una LISTA ordenada por `y` (borde superior del globo,
+  // no el centro → no depende del alto): una flechita por destino, apiladas en
+  // ese orden. Si un globo se mueve, `nav` recalcula y las flechas se reordenan.
   const nav = useMemo(() => {
     if (!transcriptNodeId) return null;
     const ic = buscar(arbol, transcriptNodeId);
@@ -973,10 +976,13 @@ function Flow() {
       if (h.rama === "branch-left") izq.push(h);
       else if (h.rama === "branch-right") der.push(h);
     }
-    // El más arriba de cada lado; si hay varios, al resto se llega por el mapa.
+    const rotular = (n: Intercambio) => ({
+      id: n.id,
+      label: n.pregunta.trim().slice(0, 48) || "(sin título)",
+    });
     izq.sort((a, b) => a.y - b.y);
     der.sort((a, b) => a.y - b.y);
-    return { left: izq[0]?.id ?? null, right: der[0]?.id ?? null };
+    return { left: izq.map(rotular), right: der.map(rotular) };
   }, [arbol, transcriptNodeId]);
 
   // Composer del panel lateral (fase 3.9): crea un hijo del globo abierto y mueve

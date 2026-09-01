@@ -103,10 +103,11 @@ Chrome real (agarrarla con zoom out).
 **Fase 4 EN CURSO — rediseño de `BranchTranscript`** (`tasks/plan.md` T7-T16):
 - **Hecho (01-09)**: T7 turno usuario/IA diferenciados · T8 STOP en el mini-composer (reusa
   `stopNode`) · T14 auto-scroll del panel sigue el texto mientras streamea · **T9** (rediseñado,
-  decisiones F3-18/c): **2 flechas laterales** `‹` `›` en el margen del panel. Navegan SOLO a los
-  globos unidos por una **línea de costado**: las ramas hijas + el padre si el globo abierto es
-  una rama (`branch-left` → padre a la derecha, etc.). Hijos `main`, hermanos y contexto: por
-  scroll o click en el mapa. El panel **abre en el "Vos"** del globo, no al final.
+  decisiones F3-18/c/d): flechas laterales `‹` `›` en el margen del panel — **una por cada rama**
+  unida por ese costado (ramas hijas + el padre si el globo abierto es una rama), apiladas y
+  ordenadas por el `y` del destino; se reordenan si un globo se mueve. Muestran la pregunta del
+  destino al hover. Hijos `main`, hermanos y contexto: por scroll o click. El panel **abre en el
+  "Vos"** del globo, no al final.
 - **Falta**: T10 contador de contexto estimado (`≈ chars/4`) por globo y árbol · T11 `llamarIA`
   devuelve `usage` → al `.md` · T12 contador de tokens gastados por globo (usa T11) · **T15**
   respuestas que son un documento entero (`.md`/código): UX (spec) · **T16** drag & drop de
