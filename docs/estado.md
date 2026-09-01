@@ -18,8 +18,8 @@
   resto (DeepSeek, GPT, Groq, OpenRouter, HuggingFace, Qwen) vía el edge function
   `ia-proxy` (opt-in "usar proxy" en ⚙️). Una key/modelo por proveedor. `⚙️` trae mini-guía de
   API key por proveedor (`GUIA_API_KEY`) y aclara cuáles son open-source.
-  **Probados e2e: Gemini + Groq + OpenRouter.** El free fluido lo cargan esos 3; Claude/DeepSeek/GPT
-  son pagos (el user trae saldo). Qwen + HuggingFace = sin probar.
+  **Probados e2e: Gemini + Groq + OpenRouter + HuggingFace.** El free fluido lo cargan esos 4;
+  Claude/DeepSeek/GPT son pagos (el user trae saldo). Qwen = sin probar.
 - **Modelos probados (31-08)** — referencia rápida, ordenados de funcional a no funcional:
   - **Groq** (proxy):
     1. **Andan**: `allam-2-7b`, `groq/compound`, `qwen3.6-27b`, `qwen3.8-27b`,
@@ -51,6 +51,10 @@
       insufficient"`. Los `:free` piden verificación real-name China-only desde may-2026.
     - **Zhipu / Moonshot**: sacados sin probar — registro solo `.cn` (CAPTCHA + teléfono chinos).
     - **Mistral**: free real pero **1 req/min** → mata el ramificar en paralelo. Sacado sin probar.
+  - **HuggingFace** (proxy) — ✅ **free real, probado 01-09**. Signup limpio (mail, token `hf_`
+    tipo "Inference", sin teléfono/CAPTCHA). Los primeros 8 modelos de la key andan perfecto.
+    ⚠️ **un modelo devolvió `<PAD>` × 2800** (token de padding) → crasheaba el render → arreglado
+    en 3 capas (F3-14). `/models` devuelve ~90 → chips en `<details>` plegable (F3-13).
   - **The strip de `<think>` funciona OK** — verificado con Qwen3-8B (SiliconFlow) antes de sacarlo.
   - Los "`$` crudos" / "`\frac` crudo" que se vieron eran **bundle viejo cacheado**, no bug:
     F3-12 renderiza bien la salida de Gemini (verificado local). gpt-oss sí manda `\frac` sin
@@ -72,8 +76,8 @@
 ## Qué falta
 
 ### Prueba real pendiente (la hace el usuario, con key/login)
-- Faltan probar con key real: **HuggingFace, Qwen** (gratis — ver si el signup/uso es fluido o
-  van al mismo destino que los eliminados), **DeepSeek, GPT** (pagos).
+- Faltan probar con key real: **Qwen** (gratis — ver si el signup de Alibaba Cloud es fluido),
+  **DeepSeek, GPT** (pagos).
 - Revalidar en vivo gpt-oss / qwen3 con el bundle F3-12: strip de `<think>` + `<br>` literal
   (el render `$…$` de Gemini ya está OK en local; primero forzar bundle nuevo con `?v=<algo>`).
 - Panel lateral redimensionable (3.11) + fixes de móvil (3.13) en Chrome real / celu.
