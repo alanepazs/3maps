@@ -18,7 +18,7 @@
   resto (DeepSeek, GPT, Groq, OpenRouter, Mistral, HuggingFace, Zhipu/GLM, Qwen,
   Moonshot/Kimi, SiliconFlow) vía el edge function `ia-proxy` (opt-in "usar proxy" en ⚙️). Una
   key/modelo por proveedor. `⚙️` trae mini-guía de API key por proveedor (`GUIA_API_KEY`) y aclara
-  cuáles son open-source. **Probados e2e: Gemini + Groq + OpenRouter.**
+  cuáles son open-source. **Probados e2e: Gemini + Groq + OpenRouter + SiliconFlow.**
 - **Modelos probados (31-08)** — referencia rápida, ordenados de funcional a no funcional:
   - **Groq** (proxy):
     1. **Andan**: `allam-2-7b`, `groq/compound`, `qwen3.6-27b`, `qwen3.8-27b`,
@@ -42,6 +42,11 @@
       minimax/nvidia andan al mismo tiempo): `google/gemma-4-31b-it:free`, `z-ai/glm-5.2:free`.
     - `/models` de OpenRouter devuelve ~300 modelos (agregador) → resuelto con **filtro de chips**
       (`> 12` modelos → aparece un `<input>` de substring; F3-13).
+  - **SiliconFlow** (proxy) — ✅ **free real, probado 01-09**, vía el sitio **global** `.com`
+    (`api.siliconflow.com/v1`; el `.cn` pide CAPTCHA + teléfono chinos). Registro con mail, ~$1
+    de crédito + modelos chicos $0 para siempre. `Qwen/Qwen3-8B` respondió OK (dashboard: ~1.8K
+    tokens, $0.0001, deducción $0). Default nuevo = `Qwen/Qwen3-8B`. Es reasoning (Qwen3) →
+    depende del strip de `<think>` (F3-12). Free tier excluido en UE/UK/Suiza (no acá).
   - **Cerebras** — ❌ **eliminado** (01-09). Toda llamada de la key free → `402 "Payment required…
     Visit your billing tab"` (confirmado en los Request Logs de Cerebras: llega, autentica, la
     rechaza Cerebras, no el proxy). El free tier de API no se puede usar sin activar billing →
@@ -66,10 +71,9 @@
 ## Qué falta
 
 ### Prueba real pendiente (la hace el usuario, con key/login)
-- Los otros 7 proveedores vía proxy con key real. **SiliconFlow**: usar el sitio GLOBAL
-  `cloud.siliconflow.com` (el `.cn` pide CAPTCHA + teléfono chinos) — proxy ya apunta a
-  `api.siliconflow.com/v1`, default `Qwen/Qwen3-8B` (gratis). ⚠️ Zhipu/Moonshot podrían ser
-  China-only para registrarse (decisiones §7a).
+- Faltan probar con key real: DeepSeek, GPT, Mistral, HuggingFace, Zhipu, Qwen, Moonshot
+  (DeepSeek/GPT necesitan saldo; Mistral/HF gratis). ⚠️ Zhipu/Moonshot podrían ser China-only
+  para registrarse (decisiones §7a).
 - Revalidar en vivo gpt-oss / qwen3 con el bundle F3-12: strip de `<think>` + `<br>` literal
   (el render `$…$` de Gemini ya está OK en local; primero forzar bundle nuevo con `?v=<algo>`).
 - Panel lateral redimensionable (3.11) + fixes de móvil (3.13) en Chrome real / celu.
