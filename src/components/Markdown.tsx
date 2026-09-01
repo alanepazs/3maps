@@ -20,12 +20,53 @@ import LimiteError from "./LimiteError";
 //                    TeX como texto plano; katex después genera markup confiable.
 //   rehype-katex  renderiza la matemática (necesita katex.min.css, importado arriba)
 
-// Los modelos usan varios delimitadores para la matemática. remark-math solo
-// entiende `$`/`$$`; normalizamos `\[ \]` → `$$` y `\( \)` → `$` antes de parsear.
-function normalizarMath(texto: string): string {
+// Comandos de matemática sin argumento (`\cdot`, `\sum`, `\pi`…) que igual
+// queremos envolver si el modelo los deja sueltos sin `$`.
+const MATH_SUELTOS =
+  "cdot|times|div|pm|mp|leq|geq|le|ge|neq|ne|approx|equiv|to|rightarrow|Rightarrow|infty|partial|nabla|sum|int|prod|forall|exists|in|notin|subset|cup|cap|pi|alpha|beta|gamma|delta|theta|lambda|mu|sigma|phi|omega|Delta|Sigma|Omega|Gamma|Phi";
+
+// Un token LaTeX: `\cmd` + (opcional) sub/superíndices con arg + (opcional)
+// grupos `{…}` (1 nivel de anidado).
+const TOKEN_LATEX =
+  /\\[a-zA-Z]+(?:\s*[_^]\s*(?:\{(?:[^{}]|\{[^{}]*\})*\}|\\?[a-zA-Z0-9]+))*(?:\s*\{(?:[^{}]|\{[^{}]*\})*\})*/g;
+
+// Un token cuenta como matemática real solo si lleva `{`/`_`/`^` o es un comando
+// de la lista de sueltos — así `\n`, `\t`, `C:\newfolder`, "el comando \frac"
+// (sin `{`) NO se tocan.
+function esMathReal(m: string): boolean {
+  if (/[{}_^]/.test(m)) return true;
+  const cmd = m.match(/^\\([a-zA-Z]+)/)?.[1] ?? "";
+  return new RegExp(`^(?:${MATH_SUELTOS})$`).test(cmd);
+}
+
+// Modelos open-source chicos (gpt-oss-120b…) escupen `\frac{…}` entre paréntesis
+// normales, sin `$`. remark-math no lo agarra → queda LaTeX crudo. Envolvemos el
+// token en `$…$`, línea por línea, salteando código y líneas que ya tienen `$`.
+function envolverLatexCrudo(texto: string): string {
+  let enFence = false;
   return texto
-    .replace(/\\\[\s*([\s\S]+?)\s*\\\]/g, (_, m) => `\n\n$$\n${m}\n$$\n\n`)
-    .replace(/\\\(\s*([\s\S]+?)\s*\\\)/g, (_, m) => `$${m}$`);
+    .split("\n")
+    .map((linea) => {
+      if (/^\s*```/.test(linea)) {
+        enFence = !enFence;
+        return linea;
+      }
+      if (enFence || /^ {4,}\S/.test(linea)) return linea;
+      if (linea.includes("$") || !linea.includes("\\")) return linea;
+      return linea.replace(TOKEN_LATEX, (m) => (esMathReal(m) ? `$${m}$` : m));
+    })
+    .join("\n");
+}
+
+// Los modelos usan varios delimitadores para la matemática. remark-math solo
+// entiende `$`/`$$`; normalizamos `\[ \]` → `$$` y `\( \)` → `$`, y envolvemos el
+// LaTeX crudo suelto, antes de parsear.
+function normalizarMath(texto: string): string {
+  return envolverLatexCrudo(
+    texto
+      .replace(/\\\[\s*([\s\S]+?)\s*\\\]/g, (_, m) => `\n\n$$\n${m}\n$$\n\n`)
+      .replace(/\\\(\s*([\s\S]+?)\s*\\\)/g, (_, m) => `$${m}$`),
+  );
 }
 
 // Tokens especiales que largan algunos modelos (padding, BOS/EOS, plantillas de
