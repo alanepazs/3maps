@@ -14,8 +14,10 @@
   `main`). Enter agrega al mismo globo; globo nuevo solo al ramificar. **Cambio solo de vista,
   cero migración.** F5-0 ✅ (fix del `⌄`), F5-1 ✅ (`calcularTramos` + `arbolAVista` reescrito),
   F5-2 casi (folded), F5-3 ✅ (ramificar desde cualquier intercambio del tramo), F5-4 ✅ (el
-  globo crece con la conversación — slider en "Lienzo"; se sacó expandir/colapsar). Falta F5-5
-  (Ordenar/solapes + streaming del globo), F5-6 (docs + renombres).
+  globo crece con la conversación — slider en "Lienzo"; se sacó expandir/colapsar),
+  F5-4b ✅ (fixes: auto-scroll de streaming en panel + globos, `⌄` de un click, zona de agarre
+  del resize más grande — decisiones F5-4b). Falta F5-5 (Ordenar/solapes + streaming del globo),
+  F5-6 (docs + renombres).
 
 - **Canvas** (React Flow): árbol de globos, tronco vertical + ramas al costado, envión al soltar,
   2 modos (manito / selección con espacio), redimensionar globo y panel, auto-layout ("▤ Ordenar"),

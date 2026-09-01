@@ -158,26 +158,34 @@ export default function BranchTranscript({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose, verImagen]);
 
-  // Al abrir el panel o navegar a otro globo: mostrar el arranque de ESE
-  // intercambio ("Vos: …") arriba de todo — no el final de la respuesta. Para
-  // ver el contexto (los padres) se scrollea hacia arriba.
+  // Al abrir el panel / navegar a un globo EXISTENTE: mostrar el arranque de ese
+  // intercambio ("Vos: …"), no el final. Si el último es una respuesta fresca en
+  // curso (la mandaste desde el composer), NO — de eso se encarga el auto-scroll.
   useEffect(() => {
+    if (!ultimo || (ultimo.respuesta == null && !ultimo.error)) return;
     const cont = scrollRef.current;
     const ini = inicioUltimoRef.current;
     if (!cont || !ini) return;
     cont.scrollTop = Math.max(0, ini.offsetTop - 12);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ultimo?.id]);
 
-  // Mientras el último globo streamea, seguir el texto — pero solo si el usuario
-  // ya está cerca del fondo (si scrolleó hacia arriba a leer, no lo forzamos).
+  // Mientras el último globo streamea, seguir el texto. Se sigue salvo que el
+  // usuario scrollee hacia arriba a leer (`pegado` = false); vuelve a seguir si
+  // baja. Se re-pega al abrir / navegar / mandar (cambia `ultimo?.id`).
+  const pegado = useRef(true);
+  useEffect(() => {
+    pegado.current = true;
+  }, [ultimo?.id]);
   useEffect(() => {
     if (!streameando) return;
     const cont = scrollRef.current;
-    if (!cont) return;
-    const cerca =
-      cont.scrollHeight - cont.scrollTop - cont.clientHeight < 120;
-    if (cerca) finRef.current?.scrollIntoView({ block: "end" });
+    if (cont && pegado.current) cont.scrollTop = cont.scrollHeight;
   }, [ultimo?.respuesta, streameando]);
+  const alScrollear = () => {
+    const c = scrollRef.current;
+    if (c) pegado.current = c.scrollHeight - c.scrollTop - c.clientHeight < 60;
+  };
 
   // Lee archivos soltados / pegados / elegidos y los suma a `adjuntos`, con los
   // topes de `adjuntos.ts`. El texto de la pregunta sigue siendo obligatorio.
@@ -372,6 +380,7 @@ export default function BranchTranscript({
 
         <div
           ref={scrollRef}
+          onScroll={alScrollear}
           className="relative flex-1 space-y-5 overflow-y-auto px-10 py-4"
         >
           {intercambios.map((ic, i) => (

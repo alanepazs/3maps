@@ -4,26 +4,35 @@
 // dispara un `click` sintético cuyo `target` puede ser el fondo del canvas —
 // deseleccionaría el globo o cerraría el panel. Hay que tragarse **ese** click.
 //
-// El bug que arregla F5-0: antes se armaba `{ once: true }`, que se come el
-// PRÓXIMO click sea cuando sea → si redimensionabas algo y después clickeabas
-// otra cosa (típico: la flecha `⌄` que esconde el composer), ese click se perdía
-// y parecía que la UI "no responde / pide doble clic".
+// El click sintético post-drag llega prácticamente pegado al `pointerup` (mismo
+// task / microtask). Un click REAL del usuario viene bastante después (bajar +
+// soltar el mouse, mover a otro control). Así que: se traga el primer `click`
+// solo si llega dentro de una ventana corta desde que se armó; después, o si no
+// llega ninguno, se desarma.
 //
-// Distinción: el click sintético post-drag NO viene precedido de un `pointerdown`
-// nuevo; un click real del usuario SÍ. Así que si llega un `pointerdown` antes
-// del click, desarmamos. Timeout de respaldo por si no llega ningún click.
+// F5-0 / re-fix: antes era un `{ once: true }` que se comía el PRÓXIMO click sin
+// importar cuándo → si redimensionabas algo y después clickeabas otra cosa (el
+// `⌄` que esconde el composer), ese click se perdía y parecía "no responde /
+// pide doble clic".
 export function tragarClickSintetico(): void {
+  const t0 =
+    typeof performance !== "undefined" ? performance.now() : Date.now();
+  const ahora = () =>
+    typeof performance !== "undefined" ? performance.now() : Date.now();
+
   const tragar = (ev: Event) => {
-    ev.stopPropagation();
-    ev.preventDefault();
-    limpiar();
-  };
-  const limpiar = () => {
-    clearTimeout(t);
     window.removeEventListener("click", tragar, true);
-    window.removeEventListener("pointerdown", limpiar, true);
+    clearTimeout(backstop);
+    if (ahora() - t0 < 150) {
+      // Es el sintético del drag: tragarlo.
+      ev.stopPropagation();
+      ev.preventDefault();
+    }
+    // Si llegó más tarde, es un click real → se deja pasar.
   };
-  const t = setTimeout(limpiar, 500);
+  const backstop = setTimeout(
+    () => window.removeEventListener("click", tragar, true),
+    400,
+  );
   window.addEventListener("click", tragar, { capture: true });
-  window.addEventListener("pointerdown", limpiar, { capture: true });
 }

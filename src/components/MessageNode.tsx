@@ -91,15 +91,22 @@ export default function MessageNode({
   const altoTramo =
     ALTO_BASE_GLOBO + Math.min(n * crecimientoPx, crecimientoTope);
 
-  // Auto-scroll al fondo mientras la punta streamea (si estás cerca del fondo).
+  // Auto-scroll al fondo mientras la punta streamea. Se sigue el texto salvo que
+  // el usuario scrollee hacia arriba a leer (`pegado` = false); vuelve a seguir
+  // si baja de nuevo. Se re-pega al arrancar una respuesta nueva (`puntaId`).
+  const pegado = useRef(true);
+  useEffect(() => {
+    pegado.current = true;
+  }, [puntaId]);
   useEffect(() => {
     if (!pending) return;
     const el = cuerpoRef.current;
-    if (!el) return;
-    if (el.scrollHeight - el.scrollTop - el.clientHeight < 240) {
-      el.scrollTop = el.scrollHeight;
-    }
+    if (el && pegado.current) el.scrollTop = el.scrollHeight;
   }, [rev, pending]);
+  const alScrollear = () => {
+    const el = cuerpoRef.current;
+    if (el) pegado.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+  };
 
   const onResizeStart = useCallback(
     (e: ReactPointerEvent) => {
@@ -253,6 +260,7 @@ export default function MessageNode({
 
       <div
         ref={cuerpoRef}
+        onScroll={alScrollear}
         className="nowheel scroll-fino min-h-0 flex-1 overflow-y-auto pb-2"
       >
         <LimiteError
@@ -318,14 +326,19 @@ export default function MessageNode({
               ? "Arrastrá para redimensionar · doble clic para volver al tamaño automático"
               : "Arrastrá para redimensionar"
           }
-          className="nodrag nowheel absolute bottom-0 right-0 z-20 h-4 w-4 cursor-nwse-resize rounded-tl bg-neutral-900"
-          style={{
-            transform: `scale(${escalaManija})`,
-            transformOrigin: "bottom right",
-            backgroundImage:
-              "linear-gradient(135deg, transparent 0 45%, rgba(255,255,255,0.65) 45% 55%, transparent 55% 68%, rgba(255,255,255,0.65) 68% 78%, transparent 78%)",
-          }}
-        />
+          // Zona de agarre generosa (transparente) para que el cursor cambie a
+          // tiempo al acercarse a la esquina; la manija visible va adentro.
+          className="nodrag nowheel absolute bottom-0 right-0 z-20 flex h-7 w-7 cursor-nwse-resize items-end justify-end"
+          style={{ transform: `scale(${escalaManija})`, transformOrigin: "bottom right" }}
+        >
+          <span
+            className="h-4 w-4 rounded-tl bg-neutral-900"
+            style={{
+              backgroundImage:
+                "linear-gradient(135deg, transparent 0 45%, rgba(255,255,255,0.65) 45% 55%, transparent 55% 68%, rgba(255,255,255,0.65) 68% 78%, transparent 78%)",
+            }}
+          />
+        </div>
       )}
 
       <Handle

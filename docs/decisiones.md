@@ -2,7 +2,7 @@
 
 > Por qué el código es como es. Cada entrada: **qué se decidió**, **por qué**, y **qué romperías
 > si lo revertís sin pensar**. Si vas a ir en contra de una de estas, que sea a propósito.
-> Última actualización: 01-09-2026.
+> Última actualización: 02-09-2026.
 
 Complementa a:
 - `docs/spec-proyecto.md` — el diseño y las decisiones de producto (modelo de datos, UX, roadmap).
@@ -1115,6 +1115,25 @@ Ver F3-8 (actualizado) — `components/gestos.ts` `tragarClickSintetico()`.
   `localStorage["3maps:vista"]` queda muerta (inofensiva).
 - Verificado en el pane: 2 msgs → 126px, 12 msgs → 216px (px=9); slider a 20 → 348px; px=0 →
   todos 108px.
+
+### F5-4b. Fixes post-F5-4: auto-scroll de streaming, `⌄` de un click, agarre de resize
+- **Auto-scroll durante el stream** (se había perdido en el panel y en los globos): patrón
+  `pegado` — un `useRef(true)` que se re-arma al cambiar la punta (`ultimo?.id` / `puntaId`),
+  un `onScroll` que lo apaga si el usuario sube a leer (>40-60px del fondo) y lo re-prende si
+  vuelve a bajar, y un `useEffect` que hace `scrollTop = scrollHeight` en cada tick del stream
+  **solo si `pegado`**. En `BranchTranscript`, el efecto viejo "abre en el Vos" ahora se saltea
+  cuando `ultimo` todavía no tiene `respuesta` (respuesta fresca en curso) → no pelea con el
+  follow.
+- **`gestos.ts` (`tragarClickSintetico`) — de `pointerdown`-disarm a ventana de tiempo**: el
+  click sintético post-drag llega <150ms del `pointerup`; un click real llega después. Se traga
+  el primer `click` **solo si** cae dentro de esa ventana; si no, se deja pasar. Backstop 400ms.
+  El approach anterior (desarmar en el primer `pointerdown`) fallaba con mouse real → el `⌄`
+  pedía doble click.
+- **Agarre de resize del globo (`MessageNode`)**: la zona clickeable pasó de `h-4 w-4` (16px) a
+  `h-7 w-7` (28px, ~2x área) con la manija visible (`h-4 w-4` + gradiente) adentro, alineada
+  abajo-derecha. El cursor `nwse-resize` cambia antes al acercarse a la esquina.
+- Verificado en el pane: `⌄` togglea en un click en los dos sentidos; grip `cursor: nwse-resize`
+  con zona de 28px. El follow del stream lo prueba Alan con key real.
 
 ---
 
