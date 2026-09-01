@@ -49,15 +49,9 @@ export default function BranchTranscript({
   onStop?: () => void;
   // Vuelve a pedir la respuesta del globo abierto en el panel.
   onRetry?: () => void;
-  // Navegación por el árbol desde el globo abierto (ids destino o null).
-  nav?: {
-    prev: string | null;
-    next: string | null;
-    up: string | null;
-    down: string | null;
-    pos: number;
-    total: number;
-  } | null;
+  // Globo de al lado en el MAPA (izq / der) al que saltan las flechas laterales
+  // del panel. `null` = no hay nada de ese lado. Ver `nav` en FlowCanvas.
+  nav?: { left: string | null; right: string | null } | null;
   onNavigate?: (id: string) => void;
   width?: number;
   resizable?: boolean;
@@ -67,6 +61,9 @@ export default function BranchTranscript({
   const finRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  // Arranque del intercambio abierto ("Vos: …") — al abrir/navegar el panel se
+  // posiciona acá, no al final de la respuesta, para ver dónde estás parado.
+  const inicioUltimoRef = useRef<HTMLDivElement>(null);
 
   const ultimo = intercambios[intercambios.length - 1];
   const streameando = Boolean(ultimo?.pending);
@@ -116,10 +113,15 @@ export default function BranchTranscript({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  // Bajar al último intercambio cuando llega uno nuevo (o crece el path).
+  // Al abrir el panel o navegar a otro globo: mostrar el arranque de ESE
+  // intercambio ("Vos: …") arriba de todo — no el final de la respuesta. Para
+  // ver el contexto (los padres) se scrollea hacia arriba.
   useEffect(() => {
-    finRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [intercambios.length]);
+    const cont = scrollRef.current;
+    const ini = inicioUltimoRef.current;
+    if (!cont || !ini) return;
+    cont.scrollTop = Math.max(0, ini.offsetTop - 12);
+  }, [ultimo?.id]);
 
   // Mientras el último globo streamea, seguir el texto — pero solo si el usuario
   // ya está cerca del fondo (si scrolleó hacia arriba a leer, no lo forzamos).
@@ -209,42 +211,42 @@ export default function BranchTranscript({
           </div>
         </div>
 
-        {nav && onNavigate && (
-          <div className="flex items-center gap-1 border-b border-white/10 px-4 py-1.5 text-white/60">
-            {(
-              [
-                ["up", "▲", "Ir al globo padre"],
-                ["prev", "◀", "Hermano anterior"],
-                ["next", "▶", "Hermano siguiente"],
-                ["down", "▼", "Ir al primer hijo"],
-              ] as const
-            ).map(([dir, icon, label]) => (
-              <button
-                key={dir}
-                type="button"
-                onClick={() => nav[dir] && onNavigate(nav[dir]!)}
-                disabled={!nav[dir]}
-                title={label}
-                aria-label={label}
-                className="rounded px-1.5 py-0.5 text-xs enabled:hover:bg-white/10 enabled:hover:text-white disabled:opacity-25"
-              >
-                {icon}
-              </button>
-            ))}
-            {nav.total > 1 && (
-              <span className="ml-1 text-[11px] text-white/40">
-                hermano {nav.pos} / {nav.total}
-              </span>
-            )}
-          </div>
+        {/* Flechas laterales: saltar al globo de al lado en el MAPA (izq/der).
+            Van en el margen, a media altura del chat. Para ir al padre /
+            contexto se scrollea el panel hacia arriba (no hay flecha ↑). */}
+        {nav && onNavigate && nav.left && (
+          <button
+            type="button"
+            onClick={() => onNavigate(nav.left!)}
+            title="Ir al globo de la izquierda en el mapa"
+            aria-label="Ir al globo de la izquierda en el mapa"
+            className="absolute left-3 top-1/2 z-30 flex h-11 w-6 -translate-y-1/2 items-center justify-center rounded-md border border-white/15 bg-neutral-900/90 text-lg leading-none text-white/60 shadow-lg hover:bg-white/10 hover:text-white"
+          >
+            ‹
+          </button>
+        )}
+        {nav && onNavigate && nav.right && (
+          <button
+            type="button"
+            onClick={() => onNavigate(nav.right!)}
+            title="Ir al globo de la derecha en el mapa"
+            aria-label="Ir al globo de la derecha en el mapa"
+            className="absolute right-3 top-1/2 z-30 flex h-11 w-6 -translate-y-1/2 items-center justify-center rounded-md border border-white/15 bg-neutral-900/90 text-lg leading-none text-white/60 shadow-lg hover:bg-white/10 hover:text-white"
+          >
+            ›
+          </button>
         )}
 
         <div
           ref={scrollRef}
-          className="flex-1 space-y-5 overflow-y-auto px-4 py-4"
+          className="relative flex-1 space-y-5 overflow-y-auto px-10 py-4"
         >
           {intercambios.map((ic, i) => (
-            <div key={ic.id} className="space-y-2">
+            <div
+              key={ic.id}
+              ref={i === intercambios.length - 1 ? inicioUltimoRef : undefined}
+              className="space-y-2"
+            >
               {ic.pregunta && (
                 <div className="border-l-2 border-sky-400/50 pl-2.5">
                   <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-sky-300/70">

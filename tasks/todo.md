@@ -31,7 +31,9 @@
 ## Fase 4 — Rediseño de `BranchTranscript`
 - [x] T7 — Turno usuario vs. IA diferenciados (`BranchTranscript.tsx`) [S]
 - [x] T8 — STOP en el mini-composer del panel (`BranchTranscript.tsx`, `FlowCanvas.tsx`) [S] — dep: T1
-- [x] T9 — Flechas de navegación: hermanos + subir al padre + bajar al primer hijo (`BranchTranscript.tsx`, `FlowCanvas.tsx`, `intercambio.ts`) [M]
+- [x] T9 — Flechas de navegación (rediseñado, decisiones F3-18): 2 flechas laterales `‹` `›`
+      espaciales (saltan al hermano de al lado según su X en el canvas), sin flecha ↑ (scroll
+      hacia arriba = contexto). El panel abre en el "Vos" del globo. (`BranchTranscript.tsx`, `FlowCanvas.tsx`)
 - [ ] T10 — Contador de contexto estimado por globo y árbol (`contexto.ts`, `BranchTranscript.tsx`) [M]
 - [ ] T11 — `llamarIA` devuelve `usage`; se guarda en el `.md` (`ia.ts`, `intercambio.ts`, `FlowCanvas.tsx`, `contexto.ts`) [M]
 - [ ] T12 — Contador de tokens gastados por globo (`BranchTranscript.tsx`) [S] — dep: T11

@@ -58,6 +58,7 @@ import {
   raices,
   reparentar,
   type Arbol,
+  type Intercambio,
   type Proveedor,
   type Rama,
 } from "@/model/intercambio";
@@ -939,23 +940,27 @@ function Flow() {
     [arbol, transcriptNodeId],
   );
 
-  // Navegación del panel: hermanos (◀▶), padre (▲), primer hijo (▼) del globo
-  // abierto. `null` = no hay a dónde ir en esa dirección.
+  // Navegación del panel: saltar al globo hermano de al lado (izq / der) según
+  // dónde está en el MAPA, no en el árbol. Hermanos = globos que salen del
+  // mismo padre (o las raíces, si el abierto es raíz). Se ordenan por su X en
+  // el canvas y se toma el anterior / siguiente — si arrastrás un hermano de
+  // lado, la flecha que lo alcanza cambia sola. Al padre se llega scrolleando
+  // el panel hacia arriba (no hay flecha ↑).
   const nav = useMemo(() => {
     if (!transcriptNodeId) return null;
     const ic = buscar(arbol, transcriptNodeId);
     if (!ic) return null;
-    const hermanos =
-      ic.padreId === null ? raices(arbol) : hijos(arbol, ic.padreId);
-    const idx = hermanos.findIndex((h) => h.id === transcriptNodeId);
-    const kids = hijos(arbol, transcriptNodeId);
+    const centroX = (n: Intercambio) => n.x + (n.ancho ?? 260) / 2;
+    const hermanos = (
+      ic.padreId === null ? raices(arbol) : hijos(arbol, ic.padreId)
+    )
+      .slice()
+      .sort((a, b) => centroX(a) - centroX(b) || a.y - b.y);
+    const i = hermanos.findIndex((h) => h.id === transcriptNodeId);
+    if (i === -1) return { left: null, right: null };
     return {
-      prev: idx > 0 ? hermanos[idx - 1].id : null,
-      next: idx >= 0 && idx < hermanos.length - 1 ? hermanos[idx + 1].id : null,
-      up: ic.padreId,
-      down: kids[0]?.id ?? null,
-      pos: idx + 1,
-      total: hermanos.length,
+      left: i > 0 ? hermanos[i - 1].id : null,
+      right: i < hermanos.length - 1 ? hermanos[i + 1].id : null,
     };
   }, [arbol, transcriptNodeId]);
 

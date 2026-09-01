@@ -780,6 +780,30 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
   Sin esto, con zoom 0.15 la manija medía 2.4px en pantalla → imposible de agarrar; ahora ~9.6px.
 - **Revertir**: la manija vuelve a volverse sub-píxel al alejar el zoom.
 
+### F3-18. Flechas del panel: 2 laterales, espaciales, y el panel abre en "Vos" (T7-T9)
+- **T7/T8/T14** (commit `244f578`): en `BranchTranscript` el intercambio se muestra en 2 turnos
+  (Vos / IA con `NOMBRE_PROVEEDOR`), el mini-composer tiene STOP mientras streamea, y el
+  auto-scroll sigue el texto (guard <120px del fondo).
+- **T9 — flechas de navegación, rediseño (01-09, pedido de Alan)**. La 1ª versión eran 4 flechas
+  ▲◀▶▼ en una fila bajo el header, con semántica de árbol (▲ padre, ◀▶ hermanos, ▼ 1er hijo) +
+  "hermano N/M". Estaba **mal**: en el canvas el padre de una rama está al *costado*, no arriba, y
+  un hijo-rama también → las flechas no se correspondían con el mapa. Ahora:
+  - **2 flechas** (`‹` `›`), a media altura del panel, en el **margen** (padding `px-10`) entre el
+    chat y el borde — con lugar para agarrar el borde a redimensionar.
+  - **Sin flecha ↑**: al padre / contexto se llega **scrolleando el panel hacia arriba** (el panel
+    ya muestra todo el camino raíz→globo).
+  - **Espaciales**: `nav` (en `FlowCanvas`) ordena los **hermanos** (mismo padre, o las raíces) por
+    su centro X en el canvas y toma el anterior / siguiente al globo abierto. Si arrastrás un
+    hermano al otro lado, la flecha que lo alcanza **cambia de lado sola** (`nav` depende de
+    `arbol`, y `asentar` escribe la X nueva). `‹`/`›` desaparecen si no hay hermano de ese lado.
+  - **Solo hermanos** (no hijos): "navegar entre globos/ramas". A un hijo se va por el mapa o por
+    el mini-composer. Fácil de ampliar si hiciera falta.
+- **Abrir en "Vos"** (pedido de Alan): al abrir el panel o navegar, `scrollTop` se pone en el
+  arranque del intercambio abierto (`inicioUltimoRef`, el `<div>` del último bloque), no al final
+  de la respuesta — "así sabemos dónde estamos parados". Reemplaza el viejo `scrollIntoView(end)`
+  on `[intercambios.length]`. El follow del streaming (T14) queda igual.
+- **Revertir**: vuelve la fila de 4 flechas ▲◀▶▼ + "hermano N/M" y el panel abre scrolleado al final.
+
 ---
 
 ## Build / deploy
