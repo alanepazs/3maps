@@ -41,8 +41,8 @@
       `MODELO_POR_DEFECTO.openrouter`; el viejo `meta-llama/llama-3.3-70b-instruct:free` ya no existe).
     - **Fallan por proveedor upstream saturado** (429 "Provider returned error", NO es tu cuota —
       minimax/nvidia andan al mismo tiempo): `google/gemma-4-31b-it:free`, `z-ai/glm-5.2:free`.
-    - `/models` de OpenRouter devuelve ~300 modelos (agregador) → resuelto con **filtro de chips**
-      (`> 12` modelos → aparece un `<input>` de substring; F3-13).
+    - `/models` de OpenRouter devuelve ~300 modelos (agregador) → se muestran **todos** en un
+      `<details>` plegable con `<input>` de filtro por substring; el contenedor scrollea (F3-13).
   - **Eliminados (01-09): Cerebras, SiliconFlow, Zhipu, Moonshot, Mistral, Qwen** — el free no da
     una experiencia fluida. **13 → 7 proveedores.** Detalle + evidencia en decisiones §7d. Resumen:
     - **Cerebras**: toda llamada → `402 "Payment required. Visit your billing tab"` (confirmado
@@ -57,7 +57,7 @@
     tipo "Inference", sin teléfono/CAPTCHA). Los primeros 8 modelos de la key andan perfecto.
     ⚠️ **un modelo devolvió `<PAD>` × 2800** (token de padding) → crasheaba el render → arreglado
     en 3 capas (F3-14). `/models` devuelve ~90 → chips en `<details>` plegable (F3-13).
-  - **The strip de `<think>` funciona OK** — verificado con Qwen3-8B (SiliconFlow) antes de sacarlo.
+  - **El strip de `<think>` funciona OK** — verificado con Qwen3-8B (SiliconFlow) antes de sacarlo.
   - Los "`$` crudos" / "`\frac` crudo" que se vieron eran **bundle viejo cacheado**, no bug:
     F3-12 renderiza bien la salida de Gemini (verificado local). gpt-oss sí manda `\frac` sin
     `$` → heurística pendiente (Opcionales).
