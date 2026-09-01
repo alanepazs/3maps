@@ -309,8 +309,8 @@ export default function SettingsPanel({
     : modelosKey;
   // El filtro aparece solo cuando la lista es larga (OpenRouter ≈ 300 modelos).
   const mostrarFiltro = modelosKey.length > 12;
-  // Tope de chips renderizados: SiliconFlow (~80) entra entero; solo listas
-  // gigantes (OpenRouter) se truncan.
+  // Tope de chips renderizados: las listas normales entran enteras; solo las
+  // gigantes tipo agregador (OpenRouter ≈ 300) se truncan.
   const MAX_CHIPS = 90;
   const chipsVisibles = chipsModelo.slice(0, MAX_CHIPS);
   const chipsOcultos = chipsModelo.length - chipsVisibles.length;

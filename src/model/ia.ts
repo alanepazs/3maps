@@ -22,10 +22,7 @@ export const PROVEEDORES_DISPONIBLES: Proveedor[] = [
   "claude",
   "groq",
   "openrouter",
-  "siliconflow",
-  "zhipu",
   "qwen",
-  "moonshot",
   "mistral",
   "huggingface",
   "deepseek",
@@ -41,10 +38,7 @@ export const PROVEEDORES_VIA_PROXY: Proveedor[] = [
   "openrouter",
   "mistral",
   "huggingface",
-  "zhipu",
   "qwen",
-  "moonshot",
-  "siliconflow",
 ];
 
 export const MODELO_POR_DEFECTO: Record<Proveedor, string> = {
@@ -56,10 +50,7 @@ export const MODELO_POR_DEFECTO: Record<Proveedor, string> = {
   openrouter: "nvidia/nemotron-3-super-120b-a12b:free",
   mistral: "mistral-small-latest",
   huggingface: "Qwen/Qwen2.5-72B-Instruct",
-  zhipu: "glm-4-flash",
   qwen: "qwen-flash",
-  moonshot: "moonshot-v1-8k",
-  siliconflow: "Qwen/Qwen3-8B",
 };
 
 // Modelos de Gemini que ya no sirven para una key free tier nueva y hay que
@@ -86,10 +77,7 @@ export const NOMBRE_PROVEEDOR: Record<Proveedor, string> = {
   openrouter: "OpenRouter",
   mistral: "Mistral",
   huggingface: "Hugging Face",
-  zhipu: "Zhipu / GLM",
   qwen: "Qwen (Alibaba)",
-  moonshot: "Moonshot / Kimi",
-  siliconflow: "SiliconFlow",
 };
 
 // Pista de formato de la API key, por proveedor (para el placeholder del input).
@@ -102,10 +90,7 @@ export const PISTA_API_KEY: Record<Proveedor, string> = {
   openrouter: "sk-or-…",
   mistral: "tu API key de Mistral",
   huggingface: "hf_…",
-  zhipu: "tu API key de Zhipu",
   qwen: "sk-…",
-  moonshot: "sk-…",
-  siliconflow: "sk-…",
 };
 
 // Mini-guía "cómo consigo mi API key", por proveedor — para gente que nunca usó
@@ -174,15 +159,6 @@ export const GUIA_API_KEY: Record<
       "Copiá el token (empieza con hf_) y pegalo acá.",
     ],
   },
-  zhipu: {
-    url: "https://open.bigmodel.cn/usercenter/apikeys",
-    gratis: true,
-    pasos: [
-      "Abrí el link y registrate (la web está en chino — usá el traductor del navegador).",
-      "En el panel de API Keys, creá una nueva.",
-      'Copiá la clave y pegala acá. Modelo gratis: "glm-4-flash".',
-    ],
-  },
   qwen: {
     url: "https://bailian.console.aliyun.com/?apiKey=1",
     gratis: true,
@@ -190,27 +166,6 @@ export const GUIA_API_KEY: Record<
       "Abrí el link y creá una cuenta de Alibaba Cloud.",
       'Buscá "API-KEY" y creá una.',
       "Copiá la clave (empieza con sk-) y pegala acá.",
-    ],
-  },
-  moonshot: {
-    url: "https://platform.moonshot.cn/console/api-keys",
-    gratis: true,
-    pasos: [
-      "Abrí el link y registrate (pide número de teléfono).",
-      "En API Keys, creá una nueva.",
-      "Copiá la clave (empieza con sk-) y pegala acá.",
-    ],
-  },
-  siliconflow: {
-    // Sitio GLOBAL (.com): registro con mail, sin teléfono. El sitio .cn pide
-    // CAPTCHA en chino + teléfono chino. Free tier excluido en UE/UK/Suiza.
-    url: "https://cloud.siliconflow.com/account/ak",
-    gratis: true,
-    abierto: true,
-    pasos: [
-      "Abrí el link (sitio global .com) y registrate con mail o GitHub.",
-      'En "API Keys" → "Create Access Token".',
-      "Copiá la clave (empieza con sk-) y pegala acá. Trae ~$1 de crédito + modelos chicos gratis para siempre (Qwen3-8B, DeepSeek-R1-Distill-Qwen-7B).",
     ],
   },
   deepseek: {
@@ -255,8 +210,6 @@ export function avisoFormatoKey(
     case "deepseek":
     case "gpt":
     case "qwen":
-    case "moonshot":
-    case "siliconflow":
       return /^sk-/.test(k) ? null : "No parece una key válida (empiezan con \"sk-\").";
     case "groq":
       return /^gsk_/.test(k) ? null : "No parece una key de Groq (empiezan con \"gsk_\").";
@@ -267,7 +220,7 @@ export function avisoFormatoKey(
     case "huggingface":
       return /^hf_/.test(k) ? null : "No parece un token de Hugging Face (empiezan con \"hf_\").";
     default:
-      return null; // mistral / zhipu no tienen prefijo fijo
+      return null; // mistral no tiene prefijo fijo
   }
 }
 
@@ -314,10 +267,7 @@ export async function llamarIA(
     case "openrouter":
     case "mistral":
     case "huggingface":
-    case "zhipu":
     case "qwen":
-    case "moonshot":
-    case "siliconflow":
       return llamarOpenAICompat(config, mensajes, opts);
     default:
       throw new ErrorIA(
@@ -688,10 +638,7 @@ const UPSTREAM: Partial<Record<Proveedor, string>> = {
   openrouter: "openrouter",
   mistral: "mistral",
   huggingface: "huggingface",
-  zhipu: "zhipu",
   qwen: "qwen",
-  moonshot: "moonshot",
-  siliconflow: "siliconflow",
 };
 function upstreamDe(proveedor: Proveedor): string {
   return UPSTREAM[proveedor] ?? proveedor;
@@ -705,10 +652,10 @@ type OpenAIChunk = {
   error?: { message?: string };
 };
 
-// Los modelos "reasoning" (gpt-oss, qwen3, Kimi, DeepSeek-R1…) mandan su cadena
-// de pensamiento antes de la respuesta: a veces en un campo aparte (`reasoning`
-// / `reasoning_content`, que ignoramos), a veces inline entre `<think>…</think>`
-// (Kimi usa `◁think▷…◁/think▷`). No es la respuesta → se saca. Durante el
+// Los modelos "reasoning" (gpt-oss, qwen3, DeepSeek-R1…) mandan su cadena de
+// pensamiento antes de la respuesta: a veces en un campo aparte (`reasoning` /
+// `reasoning_content`, que ignoramos), a veces inline entre `<think>…</think>`
+// (algunos usan `◁think▷…◁/think▷`). No es la respuesta → se saca. Durante el
 // stream, un `<think>` sin cerrar todavía oculta todo lo que viene después.
 function sinRazonamiento(s: string): string {
   return s
@@ -905,10 +852,7 @@ export async function listarModelos(config: ConfigIA): Promise<string[]> {
     case "openrouter":
     case "mistral":
     case "huggingface":
-    case "zhipu":
     case "qwen":
-    case "moonshot":
-    case "siliconflow":
       return listarModelosOpenAICompat(config);
     default:
       throw new ErrorIA(

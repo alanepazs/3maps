@@ -18,10 +18,7 @@ export type Proveedor =
   | "openrouter"
   | "mistral"
   | "huggingface"
-  | "zhipu"
-  | "qwen"
-  | "moonshot"
-  | "siliconflow";
+  | "qwen";
 
 export const RAMAS: readonly Rama[] = ["main", "branch-left", "branch-right"];
 export const PROVEEDORES: readonly Proveedor[] = [
@@ -33,10 +30,7 @@ export const PROVEEDORES: readonly Proveedor[] = [
   "openrouter",
   "mistral",
   "huggingface",
-  "zhipu",
   "qwen",
-  "moonshot",
-  "siliconflow",
 ];
 
 export type Intercambio = {

@@ -91,44 +91,47 @@ Complementa a:
 - **Anti-SSRF**: el cliente manda un *nombre* de proveedor (`x-ia-provider`), no una URL; el proxy
   lo mapea a una base fija (mapa `PROVEEDORES` del edge function). Rutas limitadas a
   `/chat/completions` y `/models`.
-- **Proveedores vía proxy**: `deepseek`, `gpt` (`openai`), + free tiers reales →
-  `groq`, `openrouter` (`:free`), `mistral` (1 RPM), `huggingface`, y (31-08-2026, del
-  ecosistema chino) `zhipu`/GLM (`open.bigmodel.cn/api/paas/v4`, GLM-4-Flash gratis), `qwen`
-  (DashScope `dashscope-intl…/compatible-mode/v1`), `moonshot`/Kimi (`api.moonshot.cn/v1`),
-  `siliconflow` (**`api.siliconflow.com/v1` — el sitio GLOBAL**; el `.cn` pide CAPTCHA + teléfono
-  chinos; el `.com` es registro con mail, ~$1 + modelos chicos $0 para siempre, free tier
-  excluido en UE/UK/Suiza — 01-09-2026). Todos OpenAI-compatibles
+- **Proveedores vía proxy** (7): `deepseek`, `gpt` (`openai`) — pagos; + free tiers →
+  `groq`, `openrouter` (`:free`), `mistral` (1 RPM), `huggingface`, `qwen` (DashScope
+  `dashscope-intl…/compatible-mode/v1`, endpoint internacional). Todos OpenAI-compatibles
   → mismo `llamarOpenAICompat` / `listarModelosOpenAICompat`. `upstreamDe` = mapa `Proveedor →
-  clave del proxy`. **Descartados**: `cerebras` (§7d — 402 payment required en free tier),
-  Cloudflare (`account_id` en la URL), Doubao/ERNIE/Hunyuan (verificación de empresa / OAuth),
-  Kling/Seedance (video). **Redeploy del edge function obligatorio** al sumar/cambiar un proveedor
-  (`supabase functions deploy ia-proxy` o el editor del panel).
-- ⚠️ **Proveedores chinos y el registro**: `zhipu` (`open.bigmodel.cn`) y `moonshot` (`api.moonshot.cn`)
-  registran solo en sitio `.cn` (CAPTCHA + teléfono chinos) → probablemente **no sirven para el
-  pitch "cualquiera saca una key gratis"**. `qwen` ya usa el endpoint internacional
-  (`dashscope-intl`); `siliconflow` se movió al `.com` global (arriba). A revisar al probarlos —
-  si el registro es China-only, mismo destino que `cerebras` (§7d).
+  clave del proxy`. **Descartados**: `cerebras`, `siliconflow`, `zhipu`, `moonshot` (§7d — real-name
+  / billing gate, no sirven para "gratis sin tarjeta"); Cloudflare (`account_id` en la URL),
+  Doubao/ERNIE/Hunyuan (verificación de empresa / OAuth), Kling/Seedance (video). **Redeploy del
+  edge function obligatorio** al sumar/cambiar un proveedor (`supabase functions deploy ia-proxy`
+  o el editor del panel).
 - **`GUIA_API_KEY`** (`ia.ts`, 31-08-2026): por proveedor, `{ url, gratis, abierto?, pasos[] }` —
   mini-guía paso a paso "cómo consigo la key" para gente que nunca usó una. `SettingsPanel` la
   muestra en un `<details>` bajo el input, con un botón que abre la web del proveedor y avisa si
-  cobra (sugiriendo Gemini). `abierto: true` (groq, openrouter, huggingface, siliconflow)
+  cobra (sugiriendo Gemini). `abierto: true` (groq, openrouter, huggingface)
   → agrega la línea "acá usás modelos open-source (Llama, Qwen, DeepSeek, GLM…)". No hay proveedor
   "open-source" aparte: los modelos abiertos ya se sirven vía esos (online); un modo offline
   tipo Ollama quedó descartado por ahora (mixed-content/CORS + el celu no llega a `localhost`).
 
-### 7d. Cerebras: eliminado (free tier de API da 402 "payment required")
-- **Probado 01-09-2026** con una key nueva de `cloud.cerebras.ai` (sin tarjeta): la key
-  autentica, `/models` devuelve `gemma-4-31b` + `gpt-oss-120b`, y la página *Limits* muestra
-  esos modelos con cuota real (5 rpm, 3M tokens/día). Pero **toda** llamada a `chat/completions`
-  → `402 "Payment required to access this resource. Visit your billing tab."` (0 tokens,
-  confirmado en los Request Logs del propio Cerebras → la rechaza Cerebras, no el proxy).
-- **Conclusión**: el free tier de Cerebras es solo para el playground del sitio; la API pide
-  activar billing. Rompe el pitch de 3maps ("probá con una key gratis, sin tarjeta").
-- **Qué se hizo**: sacado de `Proveedor` (`intercambio.ts`), `PROVEEDORES*`, `MODELOS_SUGERIDOS`,
+### 7d. Cerebras, SiliconFlow, Zhipu, Moonshot: eliminados (el free real está gateado)
+Probados uno por uno (01-09-2026). Todos autentican y listan modelos, pero el free tier no se
+puede usar de verdad sin un gate que un usuario nuevo no-chino no pasa:
+- **Cerebras** (`cloud.cerebras.ai`, sin tarjeta): la página *Limits* muestra `gemma-4-31b` /
+  `gpt-oss-120b` con cuota (5 rpm, 3M tok/día), pero **toda** llamada a `chat/completions` →
+  `402 "Payment required to access this resource. Visit your billing tab."` (0 tokens, confirmado
+  en los Request Logs de Cerebras → la rechaza Cerebras, no el proxy). El free tier es solo del
+  playground; la API pide billing.
+- **SiliconFlow** (sitio global `.com`, registro con mail): la 1ª llamada pasa (usa el ~$1 de
+  trial, $0.0001), después `Qwen/Qwen3-8B` → `"Sorry, your account balance is insufficient"`.
+  Desde el 15-may-2026 los modelos `:free` exigen **verificación de identidad real-name** que solo
+  acepta documentos de China continental (los internacionales "contactar a soporte").
+- **Zhipu** (`open.bigmodel.cn`) y **Moonshot** (`api.moonshot.cn`): registro solo en sitio `.cn`
+  con CAPTCHA + teléfono chinos + real-name. Eliminados **sin probar** — el patrón es el mismo.
+- **Qué se hizo**: los 4 sacados de `Proveedor` (`intercambio.ts`), `PROVEEDORES*`,
   `MODELO_POR_DEFECTO`, `NOMBRE_PROVEEDOR`, `PISTA_API_KEY`, `GUIA_API_KEY`, los `switch` de
-  `ia.ts`, y el mapa `PROVEEDORES` del `ia-proxy`. Una config vieja con `activo: "cerebras"` cae
-  al default (`esProveedor` en `configIA.ts` la filtra sola). 13 → 12 proveedores.
-- **Revertir** (re-sumarlo): volvés a ofrecer un proveedor que le tira 402 a cualquier usuario nuevo.
+  `ia.ts`, `UPSTREAM`, y el mapa `PROVEEDORES` del `ia-proxy` (redeploy). Una config vieja con
+  `activo` en uno de esos cae al default (`esProveedor` en `configIA.ts` la filtra sola).
+  **13 → 9 proveedores** (7 vía proxy). `MODELOS_SUGERIDOS` ya se había eliminado (F3-13).
+- **Regla**: un proveedor solo entra si un usuario nuevo cualquiera puede sacar una key **y
+  llamar la API gratis** sin tarjeta / verificación de identidad / registro China-only. Probarlo
+  con una key nueva de verdad antes de darlo por bueno.
+- **Revertir**: volvés a ofrecer proveedores que le tiran 402 / "insufficient balance" a cualquier
+  usuario nuevo.
 
 ### 7b. Modelos de Gemini: default `gemini-3.7-flash`, "thinking" mínimo por generación, botón "ver modelos"
 La API de Gemini se renovó entera en 2026 y una key **free tier** nueva de AI Studio se comporta
@@ -642,8 +645,9 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
   persona → no puede inyectar `<script>`). `sanitize` corre ANTES de `katex` (sanea el TeX como
   texto plano; katex después genera markup confiable). El schema agrega la clase
   `math math-inline|display` al allowlist (si no, katex no encuentra los nodos).
-- **`ia.ts` `sinRazonamiento()`**: saca `<think>…</think>` y `◁think▷…◁/think▷` (Kimi) del
-  stream; un `<think>` sin cerrar oculta todo lo que sigue (así no parpadea mientras razona).
+- **`ia.ts` `sinRazonamiento()`**: saca `<think>…</think>` y `◁think▷…◁/think▷` (variante que
+  usan algunos modelos) del stream; un `<think>` sin cerrar oculta todo lo que sigue (así no
+  parpadea mientras razona).
   `delta.reasoning` / `delta.reasoning_content` se ignoran. Si la respuesta fue 100% razonamiento
   → error claro ("se quedó razonando, subí max tokens / cambiá de modelo").
 - **`.katex-compacto`** en `globals.css`: la matemática en bloque scrollea sola (los globos son
@@ -664,7 +668,8 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
   proveedor sigue en `MODELO_POR_DEFECTO`.
 - **Filtro de chips** (01-09): OpenRouter (agregador) devuelve ~300 modelos → un `<input>` de
   filtro por substring aparece sobre los chips cuando la lista supera 12. Se renderizan máx. 90
-  chips (SiliconFlow ~80 entra entero; solo OpenRouter se trunca) + "+N más — usá el filtro".
+  chips (las listas normales entran enteras; solo un agregador tipo OpenRouter se trunca) +
+  "+N más — usá el filtro".
 - **Revertir** (volver al datalist / a sugerir modelos adivinados): reaparece la flecha vacía /
   vuelve la confusión de "modelos que no son de mi key".
 
