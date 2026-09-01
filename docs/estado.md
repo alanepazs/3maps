@@ -2,12 +2,14 @@
 
 > Snapshot para retomar. Solo **dónde estamos + qué falta + gotchas**. Historial → git +
 > `docs/historia.md`. "Qué hace cada archivo" → `docs/arquitectura.md`. Por qué el código es así →
-> `docs/decisiones.md`. Última actualización: 01-09-2026.
+> `docs/decisiones.md`. Última actualización: 02-09-2026.
 
 ## Dónde estamos
 
-**Fase 1 + 2 + 3 shippeadas y en producción.** `https://alanepazs.github.io/3maps/`
+**Fases 1-4 implementadas y en producción.** `https://alanepazs.github.io/3maps/`
 (deploy automático en cada push a `main`). Repo `github.com/alanepazs/3maps`, local `D:\IA\3maps`.
+La **Fase 4** (rediseño del panel + contadores de tokens + adjuntos + copiar/guardar respuesta)
+está toda shippeada — falta solo la prueba de Alan en Chrome real con keys (ver "Qué falta").
 
 - **Canvas** (React Flow): árbol de globos, tronco vertical + ramas al costado, envión al soltar,
   2 modos (manito / selección con espacio), redimensionar globo y panel, auto-layout ("▤ Ordenar"),
@@ -61,9 +63,14 @@
   - Los "`$` crudos" / "`\frac` crudo" que se vieron eran **bundle viejo cacheado**, no bug:
     F3-12 renderiza bien la salida de Gemini (verificado local). gpt-oss sí manda `\frac` sin
     `$` → heurística pendiente (Opcionales).
-- **Respuestas** (`Markdown.tsx`): matemática con KaTeX (`$…$`, `$$…$$`, `\[ \]`, `\( \)`), HTML
-  del modelo saneado (`<br>` en tablas), y `ia.ts` saca el `<think>…</think>` de los modelos
-  reasoning. Decisiones F3-12.
+- **Respuestas** (`Markdown.tsx`): matemática con KaTeX (`$…$`, `$$…$$`, `\[ \]`, `\( \)`, `\frac`
+  suelto), HTML del modelo saneado (`<br>` en tablas), `ia.ts` saca el `<think>…</think>` de los
+  modelos reasoning. En el panel: botón "⧉" por bloque de código (`conCopiar`). Decisiones F3-12,
+  F3-14b, F3-23.
+- **Panel `BranchTranscript`** (Fase 4): turnos Vos/IA, STOP en el mini-composer, flechas `‹`/`›`
+  de navegación por ramas, contador de contexto (`≈ N tokens`) en el header + tokens gastados por
+  turno, **adjuntar archivos** (texto/imagen/PDF) al mini-composer, "⧉ Copiar" / "⬇ Guardar" la
+  respuesta. Detalle: `docs/historia.md` "Fase 4" + decisiones F3-18..F3-23.
 - **Backend opcional** (Supabase, `ref` ejecjjpdjoxgrbqrhwwd): login Google/magic-link, compartir
   por link (`?compartir=<slug>`), "mis árboles" + despublicar, **sync entre dispositivos**. Sin
   las env `NEXT_PUBLIC_SUPABASE_*` la app es 100% local.
@@ -77,84 +84,44 @@
 
 ## Qué falta
 
-### Prueba real pendiente (la hace el usuario, con key/login)
-- Faltan probar con key real: **DeepSeek, GPT** (pagos — cuando el user tenga saldo). Los 4 free
-  (Gemini/Groq/OpenRouter/HuggingFace) ya están probados; la lista de proveedores está cerrada.
-- Revalidar en vivo gpt-oss / qwen3 con el bundle F3-12: strip de `<think>` + `<br>` literal
-  (el render `$…$` de Gemini ya está OK en local; primero forzar bundle nuevo con `?v=<algo>`).
-- Panel lateral redimensionable (3.11) + fixes de móvil (3.13) en Chrome real / celu.
-- Que el watchdog de 45s no corte un stream lento-pero-vivo.
-- ⚠️ LWW de títulos usa el reloj del navegador: relojes MUY desfasados podrían elegir mal.
+### Fase 4 — implementada, pendiente prueba de Alan
 
-### Plan de trabajo activo → `tasks/plan.md` + `tasks/todo.md`
+**T1-T16 (+ T13) todo en prod.** Qué shippeó cada tarea: `docs/historia.md` "Fase 4"; el porqué:
+`decisiones.md` F3-14b..F3-23; el plan: `tasks/plan.md` + `tasks/todo.md`.
 
-**Fase 1 SHIPPEADA + probada en Chrome (01-09)**: T13 heurística LaTeX crudo (`normalizarMath`,
-F3-14b) · T1 `stopNode` + T2 badge de lápiz (pulsa con reduce-motion) + STOP sobre el globo
-`pending` · T3 globo nace colapsado a 220px mientras streamea con auto-scroll (decisiones F3-15).
+**Falta que Alan pruebe en Chrome real con keys** (el pane no cubre render/inercia/streaming real
+ni llamadas con key):
+- Adjuntos: imagen y PDF con **Gemini** y **Claude** (bloques nativos); un modelo de visión de
+  **Groq** (llama-4/3.2-vision) + el aviso "sin visión"; **pegar una captura** de pantalla.
+  Nota: los formatos de imagen/PDF de Gemini usan `inline_data`/`mime_type` (snake_case) — si
+  Gemini 400ea, probar camelCase (decisiones F3-22b).
+- `stream_options.include_usage` (T11) — asumido que anda en Groq/OpenRouter/HuggingFace; si
+  alguno tira 400 habría que gatearlo por proveedor en `llamarOpenAICompat`.
+- Copiar/guardar respuesta (T15): copiar-pegar y descargar de verdad.
+- Turnos/STOP/flechas/contadores del panel; `\frac` suelto de gpt-oss; manija de resize con
+  zoom out.
 
-**Fase 2 SHIPPEADA (01-09)**: ⚙️ `SettingsPanel` en 2 pestañas "Lienzo" (envión, ventana de
-contexto, systemPrompt) / "IA" (proveedor, key, modelo, proxy, Cuenta, Compartir) + caja ámbar del
-proxy colapsada en un `<details>` (checkbox del opt-in siempre visible). Decisiones F3-16.
+### Backlog (fuera del plan de fases) → `tasks/todo.md` "Fuera de este plan"
 
-**Fase 3 SHIPPEADA (01-09)**: manija de resize del globo (◢) `cursor-nwse-resize` + contra-escala
-`clamp(1, 1/zoom, 4)` → agarrable con zoom out. Decisiones F3-17. Falta que Alan lo pruebe en
-Chrome real (agarrarla con zoom out).
-
-**Fase 4 — rediseño de `BranchTranscript` — IMPLEMENTADA (T7-T16 + T13)** (`tasks/plan.md`).
-Falta solo la prueba de Alan en Chrome real con keys. Detalle abajo:
-- **Hecho (01-09)**: T7 turno usuario/IA diferenciados · T8 STOP en el mini-composer (reusa
-  `stopNode`) · T14 auto-scroll del panel sigue el texto mientras streamea · **T9** (rediseñado,
-  decisiones F3-18/c/d): flechas laterales `‹` `›` en el margen del panel — **una por cada rama**
-  unida por ese costado (ramas hijas + el padre si el globo abierto es una rama), apiladas y
-  ordenadas por el `y` del destino; se reordenan si un globo se mueve. Muestran la pregunta del
-  destino al hover. Hijos `main`, hermanos y contexto: por scroll o click. El panel **abre en el
-  "Vos"** del globo, no al final. · **T10 + T11 + T12** contadores de tokens (ver abajo).
-- **Hecho (01-09, cont.)**: **T11** `llamarIA` → `{ texto, uso }`; el `usage` del proveedor
-  (Claude `final.usage` · Gemini `usageMetadata` · OpenAI-compat `stream_options:{include_usage}`)
-  se guarda en el `.md` (`tokens_in`/`tokens_out`). `uso: null` si el proveedor no lo manda.
-  Decisiones F3-19. Alan decidió **no probar con keys reales** — se asume que `stream_options`
-  anda en Groq/OpenRouter/HuggingFace (lo soportan por doc; si alguno tira 400 habría que
-  gatearlo por proveedor en `llamarOpenAICompat`).
-- **Hecho (01-09, cont.)**: **T10** contador de contexto — `estimarTokens(mensajes) = Σ chars/4`
-  en `contexto.ts`; el header del panel muestra "≈ N tokens de contexto" del globo abierto
-  (`estimarTokens(armarContexto(…))`, usa el resumen cacheado si hay, nunca lo dispara).
-  Decisiones F3-20. · **T12** cada turno IA del panel muestra "N → N tok" de `tokensEntrada/Salida`
-  del `.md` (nada si no los tiene). Decisiones F3-21. Los dos verificados en el pane.
-- **Hecho (02-09)**: **T16 completo** (adjuntar texto + imágenes + PDF al mini-composer del panel).
-  Spec `tasks/T16-spec.md`. `Adjunto` en el `.md` (frontmatter JSON 1 línea); `armarContexto` pega
-  el texto adjunto a la pregunta y NO lo re-manda a los hijos; imágenes → `comprimirImagen`
-  (`<canvas>`, 1568px, JPEG salvo PNG con transparencia); PDF → base64 tal cual (tope 1MB). Bloques
-  nativos por proveedor en `ia.ts` (`multimediaDe`); OpenAI-compat solo imágenes. `src/model/
-  adjuntos.ts` (leer/validar/comprimir, topes 128KB/1MB/2MB). Dropzone + paste + 📎 + chips
-  (thumbnail si es imagen) + lightbox; badge "📎 N" en el globo; aviso ámbar "PDF solo
-  Gemini/Claude". Decisiones F3-22 / F3-22b / F3-22c. 25+13+11 asserts + verificado en el pane.
-  **Falta prueba de Alan con keys reales** (imagen/PDF con Gemini/Claude, modelo de visión de Groq,
-  pegar captura).
-- **Hecho (02-09)**: **T15** — sacar una respuesta como texto. `src/model/exportar.ts`
-  (`nombreArchivoRespuesta` heurística de nombre/ext, `descargarTexto`, `copiarTexto`). En el
-  panel, turno IA del último globo: "⧉ Copiar" + "⬇ Guardar"; "⧉" por bloque de código
-  (`Markdown` prop `conCopiar`, solo el panel). Sin doc card, sin tocar `systemPrompt`.
-  Decisiones F3-23. 14 asserts + pane.
-
-**Fase 4 (rediseño de `BranchTranscript`) — TODO IMPLEMENTADO (T7-T16 + T13).** Falta solo que
-Alan pruebe en Chrome real con keys: turnos, STOP, flechas, contadores, adjuntos (texto/imagen/PDF
-con Gemini/Claude/Groq-vision), pegar captura, copiar/guardar respuesta.
-- **Bugfix layout (01-09, decisiones F3-7b/c)**: ramificar una rama en un árbol ancho mandaba el
-  globo nuevo lejísimo abajo ("suelto") o **pisando otro globo**. `ubicarNuevoGlobo`: `H_NUEVO`
-  260 (real, nace colapsado), búsqueda en anillos ampliada, y fallback `bajarHastaLibre` que baja
-  por la columna hasta un hueco que **no pisa a nadie** (prioridad de Alan). 31 asserts → 0 solapes.
-- **Bugfix drag (01-09, decisiones F3-18b)**: al mover un globo, la flecha `‹`/`›` (y la posición
-  guardada) a veces quedaban en la ubicación de creación — `asentar` leía `getNode`, un commit
-  atrasado. Ahora usa la posición autoritativa del `onNodeDragStop` + envión acumulado.
-- **Flechas de enlace (01-09, decisiones F3-2b)**: la rama entraba por ARRIBA del hijo (solo el
-  lado del padre era costado). Ahora `MessageNode` tiene handles `target` `t-top`/`t-left`/`t-right`
-  y `arbolAVista` conecta la rama costado↔costado (opuestos); el tronco sigue abajo↔arriba.
+- **B1-B7** (pedidos de Alan 01-09): color por globo · ventana de contexto adaptativa (medir el
+  gasto de `resumir()` primero — se cruza con T11) · multi-select move + envión · grosor de líneas
+  · fuente + tamaño de texto · logo de fondo · zoom de lupa en hover.
+- **T15 "doc card"** — tarjeta compacta cuando la respuesta ES un documento; si el núcleo de T15
+  no alcanza.
 - **Auto-switch de proveedor** al pegar una key de otro (hoy `avisoFormatoKey` solo avisa).
-- **Export/import** `.zip` de la carpeta de `.md` + File System Access API (spec §7).
+- **Export/import** `.zip` de la carpeta de `.md` + File System Access API (spec §7). Ahora con
+  T16, los adjuntos van en el `.md` → un export tiene que incluirlos.
 - **2.5b — embeddings** (`transformers.js`) si `intercambiosRelevantes` (match por palabras) se
   queda corto. Misma firma → drop-in.
-- Modelos locales tipo Ollama (spec §10) — descartado por ahora (mixed-content/CORS + el celu no
-  llega a `localhost`); los modelos abiertos ya se sirven online vía Groq/OpenRouter/etc.
+- Modelos locales tipo Ollama (spec §10) — descartado (mixed-content/CORS + el celu no llega a
+  `localhost`); los modelos abiertos ya se sirven online vía Groq/OpenRouter/etc.
+
+### Prueba real pre-existente pendiente
+- **DeepSeek, GPT** con key real (pagos — cuando Alan tenga saldo). Los 4 free
+  (Gemini/Groq/OpenRouter/HuggingFace) ya están probados; lista de proveedores cerrada en 7.
+- Panel/globo redimensionable + fixes de móvil (3.11/3.13) en celu.
+- Que el watchdog de 45s no corte un stream lento-pero-vivo.
+- ⚠️ LWW de títulos usa el reloj del navegador: relojes MUY desfasados podrían elegir mal.
 
 ## Issues conocidos / gotchas
 

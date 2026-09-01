@@ -68,3 +68,27 @@ Todos los bloques del pedido + fixes post-uso. Detalle por archivo en `arquitect
 Fixes post-uso (fase 3): llamada IA que quedaba estática → watchdog + `pendiente:1` + "↻ Rehacer"
 (F3-6); superposición de globos nuevos (F3-7); manija del panel/globo que cerraba/deseleccionaba
 al soltar (se traga el `click` post-`pointerup`).
+
+---
+
+## Fase 4 — Rediseño del panel + contadores + adjuntos (implementada, en prod 01/02-09-2026)
+
+Plan `tasks/plan.md` (T1-T16). Implementación completa; pendiente la prueba de Alan en Chrome
+real con keys.
+
+| Tarea | Qué | Ref |
+|---|---|---|
+| **T13** | `envolverLatexCrudo` en `Markdown.tsx`: `\frac{…}` suelto sin `$` → `$…$`, línea por línea, salteando código/rutas/`\n`. | F3-14b |
+| **T1-T3** | `stopNode` corta el stream de un globo conservando lo parcial · badge de lápiz animado FUERA del globo + botón STOP · el globo nace colapsado a 220px mientras streamea + auto-scroll. | F3-15 |
+| **T4-T5** | ⚙️ `SettingsPanel` en 2 pestañas "Lienzo"/"IA" + caja ámbar del proxy en un `<details>`. | F3-16 |
+| **T6** | Manija de resize del globo: `cursor-nwse-resize` + contra-escala `clamp(1, 1/zoom, 4)`. | F3-17 |
+| **T7-T9, T14** | `BranchTranscript`: turnos Vos/IA · STOP en el mini-composer · auto-scroll sigue el stream · flechas `‹`/`›` que navegan SOLO por líneas de costado (ramas hijas + padre si el abierto es rama), apiladas por `y`. Panel abre en el "Vos". | F3-18/b/c/d/e |
+| **T11** | `llamarIA` → `{ texto, uso }`; el `usage` del proveedor (Claude `final.usage` / Gemini `usageMetadata` / OpenAI-compat `stream_options.include_usage`) → `.md` (`tokens_in`/`tokens_out`). | F3-19 |
+| **T10** | `estimarTokens(mensajes) = Σ chars/4` (`contexto.ts`); header del panel "≈ N tokens de contexto" del globo abierto (usa resumen cacheado, nunca lo dispara). | F3-20 |
+| **T12** | Cada turno IA del panel muestra "N → N tok" de `tokensEntrada/Salida` del `.md` (nada si no los tiene). | F3-21 |
+| **T16** | Adjuntar archivos al mini-composer del panel (texto + imágenes + PDF). `Adjunto` en el `.md` (frontmatter JSON 1 línea); imágenes recomprimidas con `<canvas>` (1568px); bloques nativos por proveedor (`ia.ts` `multimediaDe`); `src/model/adjuntos.ts`. Dropzone + paste + 📎 + chips + lightbox + badge "📎 N" + aviso "PDF solo Gemini/Claude". | F3-22/b/c |
+| **T15** | Sacar una respuesta como texto: `src/model/exportar.ts` (`nombreArchivoRespuesta` heurística de nombre/ext). Panel: "⧉ Copiar" + "⬇ Guardar" + "⧉" por bloque de código (`Markdown` prop `conCopiar`). | F3-23 |
+
+Bugfixes de la fase: `ubicarNuevoGlobo` no pisa a nadie (F3-7b/c) · `asentar` usa la posición
+autoritativa del `onNodeDragStop` (F3-18b) · la rama entra al hijo por el costado opuesto
+(nuevos handles `t-left`/`t-right`/`t-top`, F3-2b).
