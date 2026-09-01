@@ -100,21 +100,19 @@ proxy colapsada en un `<details>` (checkbox del opt-in siempre visible). Decisio
 `clamp(1, 1/zoom, 4)` → agarrable con zoom out. Decisiones F3-17. Falta que Alan lo pruebe en
 Chrome real (agarrarla con zoom out).
 
-**Pendiente — Fase 4: rediseño de `BranchTranscript`** (`tasks/plan.md` T7-T16):
-- turno usuario vs. IA diferenciados · STOP en el mini-composer (reusa `stopNode`) · flechas de
-  navegación (hermanos ◀▶ + padre ▲ + primer hijo ▼) · contador de contexto estimado (`≈ chars/4`)
-  por globo y árbol · `llamarIA` devuelve `usage` → al `.md` → contador de tokens gastados.
-- **T14** auto-scroll del panel sigue el texto mientras streamea (hoy no) · **T15** respuestas que
-  son un documento entero (`.md`/código): UX (spec) · **T16** drag & drop de archivos al
-  mini-composer (spec + scope con Alan).
-- **Manija de redimensionar del globo (◢) — más usable con zoom out.** Hoy (`MessageNode.tsx`,
-  F3-8/F3-10) es un elemento chico absoluto abajo-derecha: (a) el cursor no cambia (queda la
-  manito de React Flow) y no hay tooltip; (b) con zoom out el globo se achica en pantalla → la
-  manija queda sub-píxel e imposible de agarrar sin acercar mucho. Pedido: `cursor: nwse-resize`
-  + `title="Arrastrá para redimensionar"`, y **contra-escalar la manija por `1/zoom`** (o mínimo
-  en px de pantalla, vía `useViewport()`) para que mantenga tamaño de click constante. Alternativa:
-  reevaluar `<NodeResizeControl>` de React Flow con `onResize` → árbol (F3-8 lo descartó por
-  reinyectar width/height en cada rebuild — ver decisiones F3-8).
+**Fase 4 EN CURSO — rediseño de `BranchTranscript`** (`tasks/plan.md` T7-T16):
+- **Hecho (01-09)**: T7 turno usuario/IA diferenciados · T8 STOP en el mini-composer (reusa
+  `stopNode`) · T14 auto-scroll del panel sigue el texto mientras streamea · **T9** fila de
+  flechas ▲◀▶▼ en el header del panel (padre / hermanos / primer hijo) + indicador "hermano N/M";
+  navegar = mover `transcriptNodeId`. `nav` se calcula en `FlowCanvas` con `hijos()`/`raices()`.
+- **Falta**: T10 contador de contexto estimado (`≈ chars/4`) por globo y árbol · T11 `llamarIA`
+  devuelve `usage` → al `.md` · T12 contador de tokens gastados por globo (usa T11) · **T15**
+  respuestas que son un documento entero (`.md`/código): UX (spec) · **T16** drag & drop de
+  archivos al mini-composer (spec + scope con Alan).
+- **Bugfix layout (01-09, decisiones F3-7b)**: ramificar una rama en un árbol ancho mandaba el
+  globo nuevo lejísimo abajo ("suelto"). `ubicarNuevoGlobo` ahora busca en anillos acotados
+  alrededor del padre (prefiere salir 1 columna al costado a la altura del padre antes que bajar
+  mucho por su columna); `handleSubmit` llama `resolverSolapes()` al crear.
 - **Auto-switch de proveedor** al pegar una key de otro (hoy `avisoFormatoKey` solo avisa).
 - **Export/import** `.zip` de la carpeta de `.md` + File System Access API (spec §7).
 - **2.5b — embeddings** (`transformers.js`) si `intercambiosRelevantes` (match por palabras) se

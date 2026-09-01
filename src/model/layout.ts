@@ -126,25 +126,55 @@ export function ubicarNuevoGlobo(
     return { x: parent.x, y: baseY, rama: "main" };
   }
 
-  // Rama: lado con menos ramas primero (empate → derecha).
-  const ramas = hijos(a, parentId).filter((h) => h.rama !== "main");
-  const nDer = ramas.filter((h) => h.rama === "branch-right").length;
-  const nIzq = ramas.filter((h) => h.rama === "branch-left").length;
-  const orden: Rama[] =
-    nDer <= nIzq
-      ? ["branch-right", "branch-left"]
-      : ["branch-left", "branch-right"];
-  for (const rama of orden) {
-    const x =
-      rama === "branch-right"
-        ? parent.x + pm.w + GAP_X
-        : parent.x - (W_NUEVO + GAP_X);
-    for (let k = 0; k < 12; k++) {
-      const y = parent.y + k * (H_NUEVO + 80);
-      if (libre(x, y)) return { x, y, rama };
+  // ── Rama: a un costado del padre ────────────────────────────────────────
+  // Posición ideal (la misma que arma "Ordenar"): pegada al lado del padre y
+  // alineada arriba con él. Si está ocupada, se abre en anillos CERCA del
+  // padre — prueba el otro lado y hasta 2 columnas más afuera, y unas pocas
+  // filas arriba/abajo. Nunca se va lejos: si no hay lugar cerca, cae pegada
+  // al lado preferido y `resolverSuperposiciones` / "Ordenar" la bajan por su
+  // columna. (Antes caminaba hasta ~2700px hacia abajo buscando un hueco y el
+  // globo quedaba suelto, lejísimo del padre — el bug de ramificar una rama.)
+  const ramasHijas = hijos(a, parentId).filter((h) => h.rama !== "main");
+  const nDer = ramasHijas.filter((h) => h.rama === "branch-right").length;
+  const nIzq = ramasHijas.filter((h) => h.rama === "branch-left").length;
+  const preferido: Rama = nDer <= nIzq ? "branch-right" : "branch-left";
+  const opuesto: Rama =
+    preferido === "branch-right" ? "branch-left" : "branch-right";
+
+  const xLado = (rama: Rama, anillo: number) => {
+    const afuera = anillo * (W_NUEVO + GAP_X);
+    return rama === "branch-right"
+      ? parent.x + pm.w + GAP_X + afuera
+      : parent.x - (W_NUEVO + GAP_X) - afuera;
+  };
+  const PASO_Y = H_NUEVO + 40;
+
+  let mejor: { x: number; y: number; rama: Rama } | null = null;
+  let mejorCosto = Infinity;
+  for (let anillo = 0; anillo <= 2; anillo++) {
+    for (const rama of [preferido, opuesto]) {
+      const x = xLado(rama, anillo);
+      for (const fila of [0, 1, -1, 2, -2, 3, -3]) {
+        const y = parent.y + fila * PASO_Y;
+        if (!libre(x, y)) continue;
+        // Bajar mucho por la columna del padre (fila grande) lo deja "suelto"
+        // entre otras ramas; salir una columna al costado (anillo) a la altura
+        // del padre se lee mejor como rama. Por eso `fila` pesa más que `anillo`.
+        const costo =
+          Math.abs(fila) * 1.5 +
+          anillo * 2 +
+          (rama === preferido ? 0 : 3) +
+          (fila < 0 ? 0.5 : 0); // a igualdad, mejor bajar que subir
+        if (costo < mejorCosto) {
+          mejorCosto = costo;
+          mejor = { x, y, rama };
+        }
+      }
     }
   }
-  return { x: parent.x + pm.w + GAP_X, y: parent.y, rama: "branch-right" };
+  if (mejor) return mejor;
+  // Todo ocupado cerca: pegada al lado preferido; el solapador la baja.
+  return { x: xLado(preferido, 0), y: parent.y, rama: preferido };
 }
 
 // ── Empujar los globos que se PISAN, mínimamente (fase 3) ──────────────────

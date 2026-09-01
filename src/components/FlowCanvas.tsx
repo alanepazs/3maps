@@ -729,10 +729,21 @@ function Flow() {
       setArbol(arbolNuevo);
       setActiveNodeId(id);
       centrarEnGlobo(x, y);
+      // Si `ubicarNuevoGlobo` no encontró hueco cerca del padre y lo dejó
+      // pegado a él, bajarlo por su columna ya (sin esperar a la respuesta).
+      resolverSolapes();
       void responder(id, arbolNuevo);
       return id;
     },
-    [arbol, activeNodeId, responder, readOnly, getNode, centrarEnGlobo],
+    [
+      arbol,
+      activeNodeId,
+      responder,
+      readOnly,
+      getNode,
+      centrarEnGlobo,
+      resolverSolapes,
+    ],
   );
 
   const retryNode = useCallback(

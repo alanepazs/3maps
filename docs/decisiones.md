@@ -567,6 +567,17 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
   cambios" → lo re-subiría y frenaría el poll, con ping-pong de posiciones entre dispositivos. Si
   un árbol traído se pisa en tu pantalla → "▤ Ordenar" a mano. **Decisión del usuario** (vs.
   auto-Ordenar completo, que perdía el arreglo manual).
+- **F3-7b (01-09-2026, bug de "ramificar una ramificación")**: la búsqueda de `branch` original
+  probaba SOLO las 2 columnas pegadas al padre y bajaba hasta ~2700px (12 filas × 230) buscando
+  hueco → en un árbol ancho las 2 columnas están tapadas por las ramas del abuelo y el globo
+  nuevo caía lejísimo, abajo de todo, visualmente suelto. Ahora `ubicarNuevoGlobo` hace una
+  búsqueda en **anillos acotada** alrededor del padre (hasta 2 columnas al costado × ±3 filas)
+  y elige la candidata libre de **menor costo** — `fila` pesa más que `anillo`, así que preferir
+  salir una columna al costado *a la altura del padre* antes que bajar mucho por su columna (se
+  lee mejor como rama). Si NADA está libre cerca → cae pegada al lado preferido y `resolverSolapes`
+  la baja por su columna. `handleSubmit` ahora llama `resolverSolapes()` al crear (no solo al
+  terminar la respuesta) para asentar ese caso enseguida. Verificado con scratch (8 asserts) +
+  repro en el pane (rama de un nodo medio en árbol denso → queda a `Δy=0` del padre, no a +2700).
 
 ### F3-6. La llamada a la IA tiene watchdog + `pending` se persiste
 - **Por qué**: al ramificar varias ramas en paralelo, si el stream de un proveedor se queda

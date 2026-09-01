@@ -36,6 +36,8 @@
 - [ ] T11 — `llamarIA` devuelve `usage`; se guarda en el `.md` (`ia.ts`, `intercambio.ts`, `FlowCanvas.tsx`, `contexto.ts`) [M]
 - [ ] T12 — Contador de tokens gastados por globo (`BranchTranscript.tsx`) [S] — dep: T11
 - [x] T14 — Auto-scroll del `BranchTranscript` sigue el texto mientras streamea (hoy no lo hace bien) (`BranchTranscript.tsx`) [S]
+- [x] Bugfix — ramificar una rama en árbol ancho tiraba el globo lejos/suelto: `ubicarNuevoGlobo`
+      búsqueda en anillos acotada + `resolverSolapes()` al crear (`layout.ts`, `FlowCanvas.tsx`; decisiones F3-7b)
 - [ ] T15 — Respuestas que SON un documento (`.md`, código largo): investigar UX — ¿bloque plegable + copiar/descargar? ¿mejor instrucción de sistema? (spec primero) [investigar]
 - [ ] T16 — Drag & drop de archivos al mini-composer del panel (adjuntar al contexto) — investigar alcance: text/imagen, límites, qué proveedores lo soportan (spec primero) [L]
 
