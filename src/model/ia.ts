@@ -990,6 +990,21 @@ export async function listarModelos(config: ConfigIA): Promise<string[]> {
   }
 }
 
+// Modelos de proveedores OpenAI-compat que NO sirven para un chat en 3maps y se
+// esconden de los chips de ⚙️ (el usuario igual puede tiparlos). Ver estado.md
+// "Modelos probados". `patron` = STT/TTS/clasificadores (cualquier proveedor);
+// `porProveedor` = ids puntuales.
+const MODELO_OCULTO_PATRON =
+  /whisper|orpheus|prompt-guard|playai|text-to-speech|speech-to-text|\bembed(ding)?\b|moderation/i;
+const MODELOS_OCULTOS_POR_PROVEEDOR: Partial<Record<Proveedor, Set<string>>> = {
+  // `allam-2-7b` responde en árabe — inútil para un usuario en español (Alan 02-09).
+  groq: new Set(["allam-2-7b"]),
+};
+function modeloListable(proveedor: Proveedor, id: string): boolean {
+  if (MODELO_OCULTO_PATRON.test(id)) return false;
+  return !MODELOS_OCULTOS_POR_PROVEEDOR[proveedor]?.has(id);
+}
+
 async function listarModelosOpenAICompat(config: ConfigIA): Promise<string[]> {
   const nombre = NOMBRE_PROVEEDOR[config.proveedor];
   const proxy = proxyIAUrl();
@@ -1014,6 +1029,7 @@ async function listarModelosOpenAICompat(config: ConfigIA): Promise<string[]> {
   return (j.data ?? [])
     .map((m) => m.id ?? "")
     .filter(Boolean)
+    .filter((id) => modeloListable(config.proveedor, id))
     .sort();
 }
 

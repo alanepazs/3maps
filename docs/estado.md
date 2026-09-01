@@ -24,11 +24,16 @@ está toda shippeada — falta solo la prueba de Alan en Chrome real con keys (v
   Claude/DeepSeek/GPT son pagos (el user trae saldo). **Lista de proveedores cerrada en 7.**
 - **Modelos probados (31-08 / 01-09)** — referencia rápida, ordenados de funcional a no funcional:
   - **Groq** (proxy):
-    1. **Andan**: `allam-2-7b`, `groq/compound`, `qwen3.6-27b`, `qwen3.8-27b`,
-       `openai/gpt-oss-20b`, `openai/gpt-oss-120b`, `openai/gpt-oss-safeguard-20b`.
-    2. **No andan** (no son modelos de chat, esperado): `llama-prompt-guard-2-*`
-       (clasificador, `max_tokens` ≤512), `whisper-*` (STT), `orpheus-*` (TTS, piden
-       aceptar términos).
+    1. **Chat de texto**: `groq/compound(-mini)`, `openai/gpt-oss-20b/120b/safeguard-20b`,
+       `llama-3.3-70b-versatile`.
+    2. **Con visión** (leen imagen adjunta, 02-09): `qwen/qwen3.6-27b`, `qwen/qwen3.8-27b`. Los
+       demás → 400 `messages[N].content must be a string` + aviso "¿acepta imágenes?".
+    3. **Escondidos de los chips** (`MODELO_OCULTO_PATRON` / `MODELOS_OCULTOS_POR_PROVEEDOR` en
+       `ia.ts`, `listarModelosOpenAICompat`): `allam-2-7b` (responde en árabe, Alan 02-09),
+       `whisper-*` (STT), `orpheus-*` (TTS), `llama-prompt-guard-2-*` (clasificador, `max_tokens`
+       ≤512). Se pueden tipear a mano igual.
+    4. **PDF**: NO se manda a Groq a propósito (solo Gemini/Claude nativo) — el modelo recibe
+       solo el texto y responde "no veo imagen". El aviso ámbar lo anticipa.
   - **Gemini** (directo):
     1. **Andan bien** (leen imagen adjunta, 02-09): `3.7-flash`, `3.6-flash`, `3.5-flash(-lite)`,
        `3.1-flash-lite` (+ `-preview`), `3-flash-preview`, `2.5-flash`.
@@ -97,9 +102,11 @@ ni llamadas con key):
   (thumbnail en el turno "Vos"). `3.1-pro-preview(-customtools)` = solo rate-limit (429).
   - `gemini-2.5-flash-lite` y `gemini-2.5-pro` → 404 "no longer available to new users" →
     **agregados a `GEMINI_MODELOS_MUERTOS`** (Alan). El `2.5-flash` a secas sigue. Decisiones §7b.
-- **Falta probar**: un modelo de visión de **Groq** (llama-4/3.2-vision) + el aviso "sin visión";
-  **pegar una captura** de pantalla; copiar/guardar respuesta (T15); turnos/STOP/flechas/
-  contadores del panel; `\frac` suelto de gpt-oss; manija de resize con zoom out.
+- **02-09 — Groq visión CONFIRMADO** ✅: `qwen/qwen3.6-27b` y `qwen/qwen3.8-27b` leen la imagen
+  (path `image_url` OK); el aviso "¿acepta imágenes?" sale bien con los que no. Modelos junk
+  escondidos de los chips (ver arriba).
+- **Falta probar**: **pegar una captura** de pantalla; copiar/guardar respuesta (T15); turnos/
+  STOP/flechas/contadores del panel; `\frac` suelto de gpt-oss; manija de resize con zoom out.
 - **Bloqueado por saldo** (Alan no tiene, 02-09): imagen/PDF con **Claude** (código igual al de
   Gemini — bloques `image`/`document` nativos, sin beta header; debería andar). Idem DeepSeek/GPT.
 - `stream_options.include_usage` (T11) — asumido que anda en Groq/OpenRouter/HuggingFace; si

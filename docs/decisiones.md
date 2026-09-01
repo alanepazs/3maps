@@ -140,6 +140,21 @@ experiencia fluida a un usuario nuevo:
 - **Revertir**: volvés a ofrecer proveedores que le tiran 402 / "insufficient balance" / 429 a cualquier
   usuario nuevo.
 
+### 7e. Modelos OpenAI-compat escondidos de los chips (`modeloListable` en `ia.ts`)
+El `/models` de Groq (y de cualquier proveedor del proxy) mezcla en la misma lista modelos de
+chat con cosas que no sirven para 3maps: STT (`whisper-*`), TTS (`orpheus-*`), clasificadores
+(`llama-prompt-guard-2-*`, `max_tokens` ≤ 512), y modelos que responden en otro idioma
+(`allam-2-7b` → árabe, inútil para un usuario en español — Alan 02-09). `listarModelosOpenAICompat`
+los filtra (`MODELO_OCULTO_PATRON` regex + `MODELOS_OCULTOS_POR_PROVEEDOR` por id). Mismo criterio
+que `GEMINI_MODELOS_MUERTOS` (§7b) y la eliminación de `MODELOS_SUGERIDOS` (F3-13): **nunca ofrecer
+en los chips un modelo que va a fallar o confundir**. El usuario igual puede tiparlos a mano.
+- **Visión** (02-09): de Groq, solo `qwen/qwen3.6-27b` y `qwen3.8-27b` leen imágenes. El resto →
+  400 `messages[N].content must be a string`; `mensajeErrorOpenAICompat` agrega "¿acepta
+  imágenes? probá Gemini/Claude". El PDF **nunca** se manda por el proxy (solo Gemini/Claude
+  nativo, F3-22c).
+- **`gpt-oss-safeguard-20b` NO se esconde** — es un chat de texto normal; el regex evita `guard-2`
+  justamente para no pescarlo.
+
 ### 7b. Modelos de Gemini: default `gemini-3.7-flash`, "thinking" mínimo por generación, botón "ver modelos"
 La API de Gemini se renovó entera en 2026 y una key **free tier** nueva de AI Studio se comporta
 distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el código:
