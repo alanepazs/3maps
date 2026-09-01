@@ -1,6 +1,6 @@
 // ia-proxy — proxy stateless para los proveedores de IA OpenAI-compatibles que
 // NO habilitan CORS desde el navegador (OpenAI, DeepSeek, Groq, OpenRouter,
-// Hugging Face, Qwen).
+// Hugging Face).
 // Ver docs/decisiones.md §7a, F2-6.
 //
 // Qué hace: recibe la request del navegador, la reenvía al proveedor con la API
@@ -23,7 +23,6 @@ const PROVEEDORES: Record<string, string> = {
   groq: "https://api.groq.com/openai/v1",
   openrouter: "https://openrouter.ai/api/v1",
   huggingface: "https://router.huggingface.co/v1",
-  qwen: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
 };
 
 const RUTAS_OK = new Set(["/chat/completions", "/models"]);

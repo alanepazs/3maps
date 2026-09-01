@@ -14,12 +14,12 @@
   varios mapas, esconder la barra de chat. El `arbol` de `Intercambio`s es la fuente de la verdad;
   la vista de React Flow se deriva.
 - **IA** (`model/ia.ts`, wired en `FlowCanvas.responder`): streaming, contexto = solo el camino
-  raíz→globo con ventana + resumen. **8 proveedores**: Gemini + Claude directos del navegador; el
-  resto (DeepSeek, GPT, Groq, OpenRouter, HuggingFace, Qwen) vía el edge function
-  `ia-proxy` (opt-in "usar proxy" en ⚙️). Una key/modelo por proveedor. `⚙️` trae mini-guía de
-  API key por proveedor (`GUIA_API_KEY`) y aclara cuáles son open-source.
-  **Probados e2e: Gemini + Groq + OpenRouter + HuggingFace.** El free fluido lo cargan esos 4;
-  Claude/DeepSeek/GPT son pagos (el user trae saldo). Qwen = sin probar.
+  raíz→globo con ventana + resumen. **7 proveedores**: Gemini + Claude directos del navegador; el
+  resto (DeepSeek, GPT, Groq, OpenRouter, HuggingFace) vía el edge function `ia-proxy` (opt-in
+  "usar proxy" en ⚙️). Una key/modelo por proveedor. `⚙️` trae mini-guía de API key por proveedor
+  (`GUIA_API_KEY`) y aclara cuáles son open-source.
+  **Probados e2e: Gemini + Groq + OpenRouter + HuggingFace** — los 4 free reales y fluidos.
+  Claude/DeepSeek/GPT son pagos (el user trae saldo). **Lista de proveedores cerrada en 7.**
 - **Modelos probados (31-08)** — referencia rápida, ordenados de funcional a no funcional:
   - **Groq** (proxy):
     1. **Andan**: `allam-2-7b`, `groq/compound`, `qwen3.6-27b`, `qwen3.8-27b`,
@@ -43,14 +43,16 @@
       minimax/nvidia andan al mismo tiempo): `google/gemma-4-31b-it:free`, `z-ai/glm-5.2:free`.
     - `/models` de OpenRouter devuelve ~300 modelos (agregador) → resuelto con **filtro de chips**
       (`> 12` modelos → aparece un `<input>` de substring; F3-13).
-  - **Eliminados (01-09): Cerebras, SiliconFlow, Zhipu, Moonshot, Mistral** — el free no da una
-    experiencia fluida. **13 → 8 proveedores.** Detalle + evidencia en decisiones §7d. Resumen:
+  - **Eliminados (01-09): Cerebras, SiliconFlow, Zhipu, Moonshot, Mistral, Qwen** — el free no da
+    una experiencia fluida. **13 → 7 proveedores.** Detalle + evidencia en decisiones §7d. Resumen:
     - **Cerebras**: toda llamada → `402 "Payment required. Visit your billing tab"` (confirmado
       en sus Request Logs). El free tier es solo del playground.
     - **SiliconFlow**: 1ª llamada pasa (trial $1), después `"Sorry, your account balance is
       insufficient"`. Los `:free` piden verificación real-name China-only desde may-2026.
     - **Zhipu / Moonshot**: sacados sin probar — registro solo `.cn` (CAPTCHA + teléfono chinos).
     - **Mistral**: free real pero **1 req/min** → mata el ramificar en paralelo. Sacado sin probar.
+    - **Qwen** (Alibaba Cloud, consola internacional): el signup pide **verificar tarjeta** con
+      cargo de $1 (+ teléfono + KYC), aunque los docs digan "no card". DeepSeek ya cubre ese hueco.
   - **HuggingFace** (proxy) — ✅ **free real, probado 01-09**. Signup limpio (mail, token `hf_`
     tipo "Inference", sin teléfono/CAPTCHA). Los primeros 8 modelos de la key andan perfecto.
     ⚠️ **un modelo devolvió `<PAD>` × 2800** (token de padding) → crasheaba el render → arreglado
@@ -76,9 +78,8 @@
 ## Qué falta
 
 ### Prueba real pendiente (la hace el usuario, con key/login)
-- Faltan probar con key real: **Qwen** (gratis vía consola INTERNACIONAL
-  `bailian.console.alibabacloud.com` en inglés — NO la `.aliyun.com` china; free tier sin tarjeta,
-  verificación por teléfono; default `qwen-plus`), **DeepSeek, GPT** (pagos).
+- Faltan probar con key real: **DeepSeek, GPT** (pagos — cuando el user tenga saldo). Los 4 free
+  (Gemini/Groq/OpenRouter/HuggingFace) ya están probados; la lista de proveedores está cerrada.
 - Revalidar en vivo gpt-oss / qwen3 con el bundle F3-12: strip de `<think>` + `<br>` literal
   (el render `$…$` de Gemini ya está OK en local; primero forzar bundle nuevo con `?v=<algo>`).
 - Panel lateral redimensionable (3.11) + fixes de móvil (3.13) en Chrome real / celu.

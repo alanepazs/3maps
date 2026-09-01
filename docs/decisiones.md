@@ -91,14 +91,11 @@ Complementa a:
 - **Anti-SSRF**: el cliente manda un *nombre* de proveedor (`x-ia-provider`), no una URL; el proxy
   lo mapea a una base fija (mapa `PROVEEDORES` del edge function). Rutas limitadas a
   `/chat/completions` y `/models`.
-- **Proveedores vía proxy** (6): `deepseek`, `gpt` (`openai`) — pagos; + free tiers →
-  `groq`, `openrouter` (`:free`), `huggingface`, `qwen` (DashScope
-  `dashscope-intl…/compatible-mode/v1` + consola internacional `bailian.console.alibabacloud.com`
-  en inglés — NO la `.aliyun.com` china; free tier sin tarjeta, solo verificación por teléfono).
-  Todos OpenAI-compatibles
+- **Proveedores vía proxy** (5): `deepseek`, `gpt` (`openai`) — pagos; + free tiers →
+  `groq`, `openrouter` (`:free`), `huggingface`. Todos OpenAI-compatibles
   → mismo `llamarOpenAICompat` / `listarModelosOpenAICompat`. `upstreamDe` = mapa `Proveedor →
-  clave del proxy`. **Descartados**: `cerebras`, `siliconflow`, `zhipu`, `moonshot`, `mistral`
-  (§7d — free real gateado o inutilizable; no sirven para "gratis sin tarjeta"); Cloudflare
+  clave del proxy`. **Descartados**: `cerebras`, `siliconflow`, `zhipu`, `moonshot`, `mistral`,
+  `qwen` (§7d — free real gateado o inutilizable; no sirven para "gratis sin tarjeta"); Cloudflare
   (`account_id` en la URL), Doubao/ERNIE/Hunyuan (verificación de empresa / OAuth), Kling/Seedance
   (video). **Redeploy del edge function obligatorio** al sumar/cambiar un proveedor
   (`supabase functions deploy ia-proxy` o el editor del panel).
@@ -110,7 +107,7 @@ Complementa a:
   "open-source" aparte: los modelos abiertos ya se sirven vía esos (online); un modo offline
   tipo Ollama quedó descartado por ahora (mixed-content/CORS + el celu no llega a `localhost`).
 
-### 7d. Cerebras, SiliconFlow, Zhipu, Moonshot, Mistral: eliminados (free inutilizable)
+### 7d. Cerebras, SiliconFlow, Zhipu, Moonshot, Mistral, Qwen: eliminados (free inutilizable)
 Probados uno por uno (01-09-2026). Todos autentican y listan modelos, pero el free tier no da una
 experiencia fluida a un usuario nuevo:
 - **Cerebras** (`cloud.cerebras.ai`, sin tarjeta): la página *Limits* muestra `gemma-4-31b` /
@@ -127,11 +124,15 @@ experiencia fluida a un usuario nuevo:
 - **Mistral** (`console.mistral.ai`): free tier real pero **1 request por minuto**. Ramificar en
   paralelo (el punto de 3maps) con 60s de espera entre llamadas no es una experiencia usable.
   Eliminado sin probar e2e (decisión del usuario: "buscamos una experiencia fluida").
-- **Qué se hizo**: los 5 sacados de `Proveedor` (`intercambio.ts`), `PROVEEDORES*`,
+- **Qwen** (Alibaba Cloud Model Studio, consola internacional `.alibabacloud.com`): el endpoint
+  `dashscope-intl` sí es OpenAI-compat y hay free tier, pero el signup pide **verificar una
+  tarjeta** con un cargo de $1 (además de teléfono + KYC de Alibaba Cloud) — los docs decían "no
+  credit card required", la realidad no. DeepSeek ya cubre "modelo chino barato con tarjeta".
+- **Qué se hizo**: los 6 sacados de `Proveedor` (`intercambio.ts`), `PROVEEDORES*`,
   `MODELO_POR_DEFECTO`, `NOMBRE_PROVEEDOR`, `PISTA_API_KEY`, `GUIA_API_KEY`, los `switch` de
   `ia.ts`, `UPSTREAM`, y el mapa `PROVEEDORES` del `ia-proxy` (redeploy). Una config vieja con
   `activo` en uno de esos cae al default (`esProveedor` en `configIA.ts` la filtra sola).
-  **13 → 8 proveedores** (6 vía proxy). `MODELOS_SUGERIDOS` ya se había eliminado (F3-13).
+  **13 → 7 proveedores** (5 vía proxy). `MODELOS_SUGERIDOS` ya se había eliminado (F3-13).
 - **Regla**: un proveedor solo entra si un usuario nuevo cualquiera puede sacar una key **y
   llamar la API gratis y fluido** — sin tarjeta, sin verificación de identidad, sin registro
   China-only, y sin un rate-limit que rompa el ramificar en paralelo. Probarlo con una key nueva

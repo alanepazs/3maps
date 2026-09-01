@@ -22,7 +22,6 @@ export const PROVEEDORES_DISPONIBLES: Proveedor[] = [
   "claude",
   "groq",
   "openrouter",
-  "qwen",
   "huggingface",
   "deepseek",
   "gpt",
@@ -36,7 +35,6 @@ export const PROVEEDORES_VIA_PROXY: Proveedor[] = [
   "groq",
   "openrouter",
   "huggingface",
-  "qwen",
 ];
 
 export const MODELO_POR_DEFECTO: Record<Proveedor, string> = {
@@ -47,7 +45,6 @@ export const MODELO_POR_DEFECTO: Record<Proveedor, string> = {
   groq: "llama-3.3-70b-versatile",
   openrouter: "nvidia/nemotron-3-super-120b-a12b:free",
   huggingface: "Qwen/Qwen2.5-72B-Instruct",
-  qwen: "qwen-plus",
 };
 
 // Modelos de Gemini que ya no sirven para una key free tier nueva y hay que
@@ -73,7 +70,6 @@ export const NOMBRE_PROVEEDOR: Record<Proveedor, string> = {
   groq: "Groq",
   openrouter: "OpenRouter",
   huggingface: "Hugging Face",
-  qwen: "Qwen (Alibaba)",
 };
 
 // Pista de formato de la API key, por proveedor (para el placeholder del input).
@@ -85,7 +81,6 @@ export const PISTA_API_KEY: Record<Proveedor, string> = {
   groq: "gsk_…",
   openrouter: "sk-or-…",
   huggingface: "hf_…",
-  qwen: "sk-…",
 };
 
 // Mini-guía "cómo consigo mi API key", por proveedor — para gente que nunca usó
@@ -145,18 +140,6 @@ export const GUIA_API_KEY: Record<
       "Copiá el token (empieza con hf_) y pegalo acá.",
     ],
   },
-  qwen: {
-    // Consola INTERNACIONAL en inglés (`.alibabacloud.com`, no `.aliyun.com` que
-    // es la china). El endpoint que usa el proxy ya es `dashscope-intl`. Free
-    // tier real sin tarjeta; pide verificación por teléfono (cualquier país).
-    url: "https://bailian.console.alibabacloud.com/?tab=api#/api-key",
-    gratis: true,
-    pasos: [
-      "Abrí el link (consola internacional en inglés) y creá una cuenta de Alibaba Cloud (pide verificar un teléfono, cualquier país; sin tarjeta).",
-      'En "API Keys" → "Create API Key".',
-      "Copiá la clave (empieza con sk-) y pegala acá. Elegí un modelo gratis: qwen-plus, qwen-max o qwen3-coder-plus.",
-    ],
-  },
   deepseek: {
     url: "https://platform.deepseek.com/api_keys",
     gratis: false,
@@ -198,7 +181,6 @@ export function avisoFormatoKey(
         : "No parece una key de Gemini (empiezan con \"AQ.\" o \"AIza\").";
     case "deepseek":
     case "gpt":
-    case "qwen":
       return /^sk-/.test(k) ? null : "No parece una key válida (empiezan con \"sk-\").";
     case "groq":
       return /^gsk_/.test(k) ? null : "No parece una key de Groq (empiezan con \"gsk_\").";
@@ -255,7 +237,6 @@ export async function llamarIA(
     case "groq":
     case "openrouter":
     case "huggingface":
-    case "qwen":
       return llamarOpenAICompat(config, mensajes, opts);
     default:
       throw new ErrorIA(
@@ -611,7 +592,7 @@ async function mensajeErrorGemini(res: Response, modelo?: string): Promise<strin
 }
 
 // ── Adaptador: OpenAI-compatible vía el proxy de 3maps ────────────────────
-// DeepSeek, GPT, Groq, OpenRouter, Hugging Face, Qwen: APIs
+// DeepSeek, GPT, Groq, OpenRouter, Hugging Face: APIs
 // OpenAI-compatibles que NO habilitan CORS → no se pueden llamar desde el
 // navegador. El edge function `ia-proxy` reenvía y agrega el CORS. La key del
 // usuario TRANSITA por el proxy (stateless, no se guarda) — se habilita con el
@@ -625,7 +606,6 @@ const UPSTREAM: Partial<Record<Proveedor, string>> = {
   groq: "groq",
   openrouter: "openrouter",
   huggingface: "huggingface",
-  qwen: "qwen",
 };
 function upstreamDe(proveedor: Proveedor): string {
   return UPSTREAM[proveedor] ?? proveedor;
@@ -851,7 +831,6 @@ export async function listarModelos(config: ConfigIA): Promise<string[]> {
     case "groq":
     case "openrouter":
     case "huggingface":
-    case "qwen":
       return listarModelosOpenAICompat(config);
     default:
       throw new ErrorIA(
