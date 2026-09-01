@@ -1045,6 +1045,46 @@ Spec completa y decisiones de alcance en `tasks/T16-spec.md`. Lo no obvio de la 
 
 ---
 
+## Fase 5 — el globo pasa a ser un *tramo* de la conversación
+
+> Spec completa: `tasks/fase5-spec.md`. **Cambio de arquitectura de la VISTA — el modelo de datos
+> no cambió, no hubo migración.**
+
+### F5-0. El swallower de click post-resize se comía cualquier click
+Ver F3-8 (actualizado) — `components/gestos.ts` `tragarClickSintetico()`.
+
+### F5-1. Un nodo del canvas = un TRAMO (cadena `main`), no un intercambio
+- **`calcularTramos(arbol)`** (`intercambio.ts`): agrupa cada cadena maximal de `rama: "main"`
+  (empezando en la raíz o en el destino de una rama) en un `Tramo { cabezaId, intercambios[] }`.
+  El intercambio sigue siendo la unidad de datos; el tramo es **derivado**. Helpers:
+  `tramoDesde(a, cabezaId)`, `cabezaDeTramo(a, intercambioId)`.
+- **`arbolAVista`** reescrito: 1 nodo por tramo, `id` = id de la cabeza, `position` = x/y de la
+  cabeza. `data` lleva `intercambios` (el tramo entero, para `MessageNode`) + `n`, `pending`/
+  `error` (de la punta), `adjuntosN` (suma), `rev` (firma corta del tramo). Los edges van del
+  tramo padre a la cabeza del tramo hijo (solo las cabezas tienen edge de entrada), con
+  `data.desdeId` = el intercambio del que se ramificó.
+- **`datosIguales`** (`FlowCanvas`) **ignora `intercambios`** (array recreado en cada
+  `arbolAVista`) y confía en `data.rev`. Sin esto, todos los nodos se re-medían en cada rebuild
+  (parpadeo — decisiones §3).
+- **`MessageNode`** renderiza `data.intercambios` como transcripción scrolleable (overview);
+  header "N mensajes" + "📎 N"; colapso por cantidad/largo; el resize / STOP / Rehacer operan
+  sobre la **punta** del tramo (`data.intercambios.at(-1).id`), `Eliminar` sobre la cabeza (borra
+  el tramo + sub-ramas).
+- **`FlowCanvas`**: `transcriptNodeId` ahora es la **punta** del tramo abierto (así
+  `caminoRaizA(punta)` = raíz→acá completo). `verGloboEnPanel(id)` resuelve cualquier id →
+  cabeza (para seleccionar el nodo) + punta (para el panel). `nav`, `activeNodeId` al cargar,
+  `deleteNode` → todos resueltos a cabeza vía `cabezaDeTramo` / `cabezaUltimo`.
+- **`handleSubmit` con `kind === "main"`**: NO crea un globo — agrega un hijo `main` a la **punta**
+  del tramo del padre (Enter continúa desde la punta). Solo "ramificar" busca lugar
+  (`ubicarNuevoGlobo`) y crea un nodo. → F5-2 quedó casi resuelto acá.
+- **Cero migración**: un mapa de fase 1-4 (N globos de 1 intercambio en cadena `main`) se agrupa
+  solo → 1 tramo. Verificado en el pane (6 intercambios → 2 globos; Enter → "5 mensajes" sin
+  globo nuevo; el panel de una rama muestra raíz→b→x→y sin la continuación hermana `c`).
+- **Revertir**: volvés a `arbolAVista` 1:1 + `MessageNode` de un solo intercambio. `datosIguales`
+  vuelve a comparar todo.
+
+---
+
 ## Build / deploy
 
 ### 21. `output: "export"` + `basePath: "/3maps"` **condicional a `NEXT_PUBLIC_PAGES === "1"`**

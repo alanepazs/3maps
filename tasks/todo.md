@@ -89,10 +89,18 @@
 **Spec: `tasks/fase5-spec.md`** (decisiones cerradas con Alan 02-09, esperando "dale"). Cambio
 **solo de vista** (el modelo de datos no cambia; cero migración). Enter agrega al mismo globo;
 globo nuevo solo al ramificar; el globo crece unos px por mensaje (slider en "Lienzo").
-Sub-tareas: **F5-0 ✅** (fix del `⌄` del Composer — `tragarClickSintetico` en `gestos.ts`; el
-`{once:true}` de las manijas de resize se comía cualquier click posterior) → F5-1 (`arbolAVista` agrupa tramos) →
-F5-2 (Enter a la punta) → F5-3 (ramificar desde cualquier intercambio) → F5-4 (slider) →
-F5-5 (adaptar layout/nav/delete/stop) → F5-6 (docs + invariante de `CLAUDE.md`).
+Sub-tareas:
+- **F5-0 ✅** — fix del `⌄` del Composer (`tragarClickSintetico` en `gestos.ts`; el `{once:true}`
+  de las manijas de resize se comía cualquier click posterior).
+- **F5-1 ✅** — `calcularTramos`/`tramoDesde`/`cabezaDeTramo` + `arbolAVista` reescrito (1 nodo =
+  1 tramo = cadena `main`) + `MessageNode` renderiza el tramo + `datosIguales` usa `data.rev` +
+  `FlowCanvas` resuelve todo a cabeza/punta. `handleSubmit` main → agrega a la punta (no crea
+  globo). Cero migración. Decisiones F5-1. 18 asserts + pane.
+- **F5-2 ~** — Enter a la punta: casi hecho en F5-1. Falta verificar el mini-composer del panel.
+- **F5-3** — ramificar desde cualquier intercambio (affordance "⑂" por intercambio en el panel).
+- **F5-4** — slider "px por mensaje" + tope en "Lienzo"; el globo crece.
+- **F5-5** — adaptar `calcularLayout` ("Ordenar"), `resolverSolapes`, streaming del globo.
+- **F5-6** — docs (CLAUDE.md invariante ✅ ya) + `arquitectura.md` + `historia.md` + renombres.
 
 ## Fuera de este plan (más adelante — pedidos de Alan 01-09)
 - **B1** — color por globo: marcar la esquina sup-derecha del título con un color a elección.

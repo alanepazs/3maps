@@ -25,6 +25,7 @@ import {
   guardarExpandido,
   leerExpandido,
 } from "./vista";
+import type { Intercambio } from "@/model/intercambio";
 
 // Límites y default del redimensionado manual (px, coords del lienzo).
 type Tamano = { w: number; h: number };
@@ -32,91 +33,80 @@ const TAMANO_MIN: Tamano = { w: 200, h: 80 };
 const TAMANO_MAX: Tamano = { w: 900, h: 1200 };
 const ANCHO_POR_DEFECTO = 260;
 
-// Un globo = un intercambio completo: la pregunta (encabezado) + la respuesta
-// de la IA (cuerpo).
+// Un globo = un TRAMO de la conversación (Fase 5): una cadena de intercambios
+// unidos por `rama: "main"`. `data.intercambios` es el tramo en orden. El
+// intercambio sigue siendo la unidad de datos; el globo es la unidad visual.
 //
-// Estados del cuerpo:
-//   - pending   → "escribiendo…" + lo que va llegando (streaming)
-//   - error     → recuadro rojo + botón "↻ Reintentar"
-//   - respuesta → el texto
-//   - nada      → "Respuesta pendiente"
+// El globo es un OVERVIEW: muestra la transcripción del tramo (scrolleable). La
+// lectura/escritura completa (raíz→acá) va en el panel lateral.
 //
 // Handles (el nodo raíz no tiene ninguno de entrada):
-//   - target "t-top"               : entra el tronco (main), siempre vertical
-//   - target "t-left" / "t-right"  : entra una rama, por el costado opuesto al padre
-//   - source "main" (abajo)        : continuar el hilo principal, siempre vertical
-//   - source "branch-right/-left"  : ramificar por un costado (se elige al arrastrar)
-//
-// Tamaño (fase 3.10): manija ◢ abajo a la derecha para redimensionar; el tamaño
-// (`data.ancho/alto`) va al `.md` → sincroniza entre dispositivos. Redimensionar
-// a mano desactiva el colapso automático de 3.1 para ese globo (doble clic en la
-// manija o botón "↔ Auto" para volver al tamaño automático).
+//   - target "t-top"               : entra el tronco (`main`), vertical
+//   - target "t-left" / "t-right"  : entra una rama, por el costado opuesto
+//   - source "main" (abajo)        : continuación / rama por abajo
+//   - source "branch-right/-left"  : ramificar por un costado
 export default function MessageNode({
   id,
   data,
   selected,
   isConnectable,
 }: NodeProps) {
+  const intercambios = (
+    Array.isArray(data.intercambios) ? data.intercambios : []
+  ) as Intercambio[];
+  const n = intercambios.length;
+  const ultimo: Intercambio | undefined = intercambios[n - 1];
+  const puntaId = ultimo?.id ?? id;
+
   const isRoot = Boolean(data.isRoot);
   const sinHijos = Boolean(data.sinHijos);
-  const pregunta = String(data.pregunta ?? "");
-  const respuesta = data.respuesta ? String(data.respuesta) : null;
-  const pending = Boolean(data.pending);
-  const error = data.error ? String(data.error) : null;
-  const adjuntosN =
-    typeof data.adjuntosN === "number" ? data.adjuntosN : 0;
+  const adjuntosN = typeof data.adjuntosN === "number" ? data.adjuntosN : 0;
+  const rev = String(data.rev ?? "");
+  const pending = Boolean(ultimo?.pending); // la punta del tramo está streameando
+
   const { deleteNode, retryNode, stopNode, openNode, resizeNode, readOnly } =
     useContext(NodeActionsContext);
   const { getZoom } = useReactFlow();
-  // Zoom del lienzo (re-render solo al cambiar el zoom, no al panear). Se usa
-  // para contra-escalar la manija de resize: con zoom out el globo se achica en
-  // pantalla y la manija quedaría sub-píxel e imposible de agarrar.
+  // Zoom del lienzo (re-render solo al cambiar el zoom, no al panear) para
+  // contra-escalar la manija de resize (con zoom out quedaría sub-píxel).
   const zoomLienzo = useStore((s) => s.transform[2]);
   const escalaManija = Math.min(4, Math.max(1, 1 / (zoomLienzo || 1)));
 
-  // Vista colapsada / expandida (fase 3.1). Preferencia por globo, no va al `.md`.
-  const largoRespuesta = respuesta?.length ?? 0;
-  const colapsable = !pending && largoRespuesta > LIMITE_COLAPSO;
+  // Colapso (fase 3.1): un tramo largo (varios mensajes o mucho texto) arranca
+  // clampeado con "⌄ ver más". Preferencia por globo, no va al `.md`.
+  const largoTotal = intercambios.reduce(
+    (s, ic) => s + (ic.respuesta?.length ?? 0),
+    0,
+  );
+  const colapsable = !pending && (n > 3 || largoTotal > LIMITE_COLAPSO * 2);
   const [override, setOverride] = useState<boolean | undefined>(() =>
     leerExpandido(id),
   );
   const expandido = override ?? !colapsable;
 
-  // Tamaño manual (fase 3.10). Guardado en `data.ancho/alto` (va al `.md`). Durante
-  // el arrastre se usa `drag` (estado local, fluido); al soltar → `resizeNode`.
+  // Tamaño manual (fase 3.10) — guardado en la CABEZA del tramo (`data.ancho/alto`
+  // → `.md`). `id` (prop) = id de la cabeza.
   const anchoData = typeof data.ancho === "number" ? data.ancho : null;
   const altoData = typeof data.alto === "number" ? data.alto : null;
   const [drag, setDrag] = useState<Tamano | null>(null);
   const tamano: Tamano | undefined =
     drag ?? (anchoData && altoData ? { w: anchoData, h: altoData } : undefined);
-  const hayTamano = Boolean(tamano);
   const rootRef = useRef<HTMLDivElement>(null);
-
-  // Mientras streamea, el globo arranca chico (no crece con el texto, no empuja
-  // el layout) y scrollea solo al fondo. El usuario puede expandirlo (override).
-  const modoStream = pending && !tamano && override !== true;
-  const modoColapsadoFinal = colapsable && !expandido && !tamano;
-  const mostrarColapsado = modoStream || modoColapsadoFinal;
-  const alternarExpandido = () => {
-    const nuevo = !expandido;
-    setOverride(nuevo);
-    guardarExpandido(id, nuevo);
-  };
-
-  // Auto-scroll al fondo mientras entra texto. El contenedor scrolleable depende
-  // del modo: en streaming sin tamaño manual es `cuerpoRef` (clamp 220px); con
-  // tamaño manual es el wrapper externo `scrollExtRef` (`overflow-auto`). Solo se
-  // fuerza si el usuario ya está cerca del fondo (si scrolleó arriba a leer, no).
   const cuerpoRef = useRef<HTMLDivElement>(null);
-  const scrollExtRef = useRef<HTMLDivElement>(null);
+
+  const modoStream = pending && !tamano && override !== true;
+  const modoColapsado = colapsable && !expandido && !tamano;
+  const clampAlto = modoStream || modoColapsado;
+
+  // Auto-scroll al fondo mientras la punta streamea (si estás cerca del fondo).
   useEffect(() => {
     if (!pending) return;
-    const el = hayTamano ? scrollExtRef.current : cuerpoRef.current;
+    const el = cuerpoRef.current;
     if (!el) return;
-    if (el.scrollHeight - el.scrollTop - el.clientHeight < 200) {
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 240) {
       el.scrollTop = el.scrollHeight;
     }
-  }, [respuesta, pending, hayTamano]);
+  }, [rev, pending]);
 
   const onResizeStart = useCallback(
     (e: ReactPointerEvent) => {
@@ -129,7 +119,7 @@ export default function MessageNode({
       const startY = e.clientY;
       const startW = rect.width / zoom;
       const startH = rect.height / zoom;
-      let ultimo: Tamano | undefined;
+      let ultimoT: Tamano | undefined;
       const onMove = (ev: PointerEvent) => {
         const w = Math.min(
           TAMANO_MAX.w,
@@ -139,15 +129,15 @@ export default function MessageNode({
           TAMANO_MAX.h,
           Math.max(TAMANO_MIN.h, startH + (ev.clientY - startY) / zoom),
         );
-        ultimo = { w: Math.round(w), h: Math.round(h) };
-        setDrag(ultimo);
+        ultimoT = { w: Math.round(w), h: Math.round(h) };
+        setDrag(ultimoT);
       };
       const onUp = () => {
         window.removeEventListener("pointermove", onMove);
         window.removeEventListener("pointerup", onUp);
-        if (ultimo) resizeNode(id, ultimo.w, ultimo.h);
+        if (ultimoT) resizeNode(id, ultimoT.w, ultimoT.h);
         setDrag(null);
-        tragarClickSintetico(); // si no, el click post-drag deselecciona el globo
+        tragarClickSintetico();
       };
       window.addEventListener("pointermove", onMove);
       window.addEventListener("pointerup", onUp);
@@ -160,6 +150,12 @@ export default function MessageNode({
     resizeNode(id, null, null);
   }, [id, resizeNode]);
 
+  const alternarExpandido = () => {
+    const nuevo = !expandido;
+    setOverride(nuevo);
+    guardarExpandido(id, nuevo);
+  };
+
   return (
     <div
       ref={rootRef}
@@ -168,10 +164,8 @@ export default function MessageNode({
         selected ? "border-sky-400 ring-2 ring-sky-400/40" : "border-white/20"
       }`}
     >
-      {/* Mientras streamea: badge de lápiz "escribiendo" + STOP, flotando a la
-          IZQUIERDA del globo (el globo tiene overflow-hidden → NodeToolbar, que
-          se renderiza afuera). A la izquierda para no chocar con la barra de
-          acciones de arriba ni con la manija de resize abajo-derecha. */}
+      {/* Mientras la punta streamea: badge de lápiz + STOP, flotando a la
+          izquierda (el globo tiene overflow-hidden → NodeToolbar se renderiza afuera). */}
       <NodeToolbar isVisible={pending && !readOnly} position={Position.Left}>
         <div className="flex items-center gap-1 rounded-md border border-white/15 bg-neutral-900 px-1.5 py-1 shadow-lg">
           <span className="lapiz-escribiendo text-sm leading-none" aria-hidden>
@@ -179,7 +173,7 @@ export default function MessageNode({
           </span>
           <button
             type="button"
-            onClick={() => stopNode(id)}
+            onClick={() => stopNode(puntaId)}
             title="Detener la respuesta"
             aria-label="Detener la respuesta"
             className="flex h-5 w-5 items-center justify-center rounded border border-white/20 text-[10px] text-white/80 hover:bg-white/10"
@@ -198,14 +192,12 @@ export default function MessageNode({
           >
             ⤢ Abrir
           </button>
-          {/* Volver a pedir la respuesta — para regenerar, o para recuperar una
-              llamada que quedó a medias / estática (fase 3). */}
           {!readOnly && (
             <button
               type="button"
-              onClick={() => retryNode(id)}
+              onClick={() => retryNode(puntaId)}
               className="rounded border border-white/20 bg-neutral-900 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
-              title="Volver a pedir la respuesta"
+              title="Volver a pedir la última respuesta"
             >
               ↻ Rehacer
             </button>
@@ -229,9 +221,6 @@ export default function MessageNode({
               ↔ Auto
             </button>
           )}
-          {/* La raíz solo se puede borrar si ya no le cuelga nada (fase 3.6):
-              borrarla con hijos dejaría todo huérfano. En árbol compartido
-              (readOnly) no se borra nada. */}
           {!readOnly && (!isRoot || sinHijos) && (
             <button
               type="button"
@@ -244,9 +233,6 @@ export default function MessageNode({
         </div>
       </NodeToolbar>
 
-      {/* Entrada del edge. `t-top` = tronco (main); `t-left`/`t-right` = rama
-          entrando por el costado (se solapan con los handles source del mismo
-          lado, así no agregan puntos visibles). `arbolAVista` elige cuál. */}
       {!isRoot && (
         <>
           <Handle
@@ -270,114 +256,92 @@ export default function MessageNode({
         </>
       )}
 
-      {pregunta && (
-        <div className="relative z-10 shrink-0 border-b border-white/10 bg-neutral-900 px-3 py-1.5 text-left font-medium text-white">
-          {adjuntosN > 0 && (
-            <span
-              className="mr-1.5 rounded bg-white/10 px-1 text-xs font-normal text-white/60"
-              title={`${adjuntosN} archivo${adjuntosN > 1 ? "s" : ""} adjunto${adjuntosN > 1 ? "s" : ""}`}
-            >
-              📎 {adjuntosN}
-            </span>
-          )}
-          {pregunta}
-        </div>
-      )}
+      <div className="relative z-10 flex shrink-0 items-center gap-1.5 border-b border-white/10 bg-neutral-900 px-3 py-1 text-left text-[11px] font-medium text-white/55">
+        {adjuntosN > 0 && (
+          <span
+            className="rounded bg-white/10 px-1 font-normal text-white/50"
+            title={`${adjuntosN} archivo${adjuntosN > 1 ? "s" : ""} adjunto${adjuntosN > 1 ? "s" : ""}`}
+          >
+            📎 {adjuntosN}
+          </span>
+        )}
+        <span>
+          {n} {n === 1 ? "mensaje" : "mensajes"}
+        </span>
+      </div>
 
       <div
-        ref={scrollExtRef}
+        ref={cuerpoRef}
         className={
           tamano
-            ? "nowheel scroll-fino min-h-0 flex-1 overflow-auto pb-3"
-            : "min-h-0"
+            ? "nowheel scroll-fino min-h-0 flex-1 overflow-auto pb-2"
+            : clampAlto
+              ? "scroll-fino nowheel min-h-0 overflow-y-auto"
+              : "min-h-0"
         }
+        style={clampAlto ? { maxHeight: ALTO_COLAPSADO * (n > 1 ? 2 : 1) } : undefined}
       >
-       <LimiteError
-        resetKey={respuesta}
-        fallback={
-          <div className="px-3 py-2 text-left">
-            <p className="text-xs text-red-300">
-              ⚠ No se pudo mostrar esta respuesta.
-            </p>
-            {!readOnly && (
-              <button
-                type="button"
-                onClick={() => retryNode(id)}
-                className="mt-2 rounded border border-white/20 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
-              >
-                ↻ Rehacer
-              </button>
-            )}
-          </div>
-        }
-       >
-        {error ? (
-          <div className="px-3 py-2 text-left">
-            <p className="whitespace-pre-wrap text-xs text-red-300">⚠ {error}</p>
-            {respuesta && (
-              <div className="mt-1.5 text-white/70">
-                <Markdown>{respuesta}</Markdown>
-              </div>
-            )}
-            {!readOnly && (
-              <button
-                type="button"
-                onClick={() => retryNode(id)}
-                className="mt-2 rounded border border-white/20 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
-              >
-                ↻ Reintentar
-              </button>
-            )}
-          </div>
-        ) : (
-          <div
-            className={`relative px-3 py-2 text-left ${
-              respuesta || pending ? "text-white/90" : "italic text-white/40"
-            }`}
-          >
-            <div
-              ref={cuerpoRef}
-              className={
-                modoStream
-                  ? "scroll-fino nowheel overflow-y-auto"
-                  : modoColapsadoFinal
-                    ? "overflow-hidden"
-                    : undefined
-              }
-              style={
-                mostrarColapsado ? { maxHeight: ALTO_COLAPSADO } : undefined
-              }
-            >
-              {respuesta != null && <Markdown>{respuesta}</Markdown>}
-              {pending &&
-                (respuesta ? (
-                  <span className="italic text-white/40"> ▍</span>
-                ) : (
-                  <span className="italic text-white/40">escribiendo…</span>
-                ))}
-              {respuesta == null && !pending && "Respuesta pendiente"}
+        <LimiteError
+          resetKey={rev}
+          fallback={
+            <div className="px-3 py-2 text-left">
+              <p className="text-xs text-red-300">
+                ⚠ No se pudo mostrar esta conversación.
+              </p>
+              {!readOnly && (
+                <button
+                  type="button"
+                  onClick={() => retryNode(puntaId)}
+                  className="mt-2 rounded border border-white/20 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
+                >
+                  ↻ Rehacer
+                </button>
+              )}
             </div>
-            {modoColapsadoFinal && (
-              <button
-                type="button"
-                onClick={alternarExpandido}
-                className="nodrag absolute inset-x-0 bottom-0 flex items-end justify-center bg-gradient-to-t from-neutral-900 via-neutral-900/85 to-transparent pb-1 pt-10 text-xs text-sky-300 hover:text-sky-200"
-              >
-                ⌄ ver más
-              </button>
-            )}
-            {modoStream && respuesta != null && (
-              <button
-                type="button"
-                onClick={() => setOverride(true)}
-                className="nodrag mt-1 text-[11px] text-sky-300 hover:text-sky-200"
-              >
-                ⌄ ver todo mientras escribe
-              </button>
-            )}
-          </div>
+          }
+        >
+          {intercambios.map((ic) => (
+            <div
+              key={ic.id}
+              className="border-b border-white/5 px-3 py-1.5 text-left last:border-0"
+            >
+              {ic.pregunta && (
+                <p className="whitespace-pre-wrap text-xs font-semibold text-white/90">
+                  {ic.pregunta}
+                </p>
+              )}
+              <div className="mt-0.5 text-white/70">
+                {ic.error ? (
+                  <p className="whitespace-pre-wrap text-xs text-red-300">
+                    ⚠ {ic.error}
+                  </p>
+                ) : ic.respuesta != null ? (
+                  <>
+                    <Markdown>{ic.respuesta}</Markdown>
+                    {ic.pending && (
+                      <span className="italic text-white/40"> ▍</span>
+                    )}
+                  </>
+                ) : ic.pending ? (
+                  <span className="text-xs italic text-white/40">escribiendo…</span>
+                ) : (
+                  <span className="text-xs italic text-white/40">
+                    respuesta pendiente
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+        </LimiteError>
+        {modoColapsado && (
+          <button
+            type="button"
+            onClick={alternarExpandido}
+            className="nodrag sticky bottom-0 flex w-full items-end justify-center bg-gradient-to-t from-neutral-900 via-neutral-900/85 to-transparent pb-1 pt-8 text-xs text-sky-300 hover:text-sky-200"
+          >
+            ⌄ ver más
+          </button>
         )}
-       </LimiteError>
       </div>
 
       {!readOnly && (

@@ -57,16 +57,21 @@ freelance. Repo público: https://github.com/alanepazs/3maps
 - Canvas de nodos: React Flow (`@xyflow/react` v12)
 - Supabase (backend **opcional**): login, compartir por link, sync, proxy de IA (`ia-proxy`).
 - Deploy: **GitHub Pages** (`output: "export"`, estático). Todo el canvas + la IA corren client-side.
-- Fase 1 + 2 + 3 shippeadas y en prod. Estado y pendientes: `docs/estado.md`.
+- Fase 1-4 en prod. Fase 5 (globo = tramo) en curso. Estado y pendientes: `docs/estado.md`.
 
 ## Invariantes — NO romper
 
 ### Modelo de datos
-- **Un globo = un intercambio** (una pregunta + su respuesta), no un mensaje suelto.
-- Cada intercambio se guardará como un `.md` con frontmatter (`id`, `padre_id`, `rama`, `x`, `y`,
-  `proveedor`, `fecha`) + secciones `## Pregunta` / `## Respuesta`. Una carpeta = un árbol.
-  El `padre_id` define las flechas. Exportar = `.zip` de la carpeta.
-- Lo que importa es **ramificar respuestas**; la pregunta que abre una rama es solo el disparador.
+- **El intercambio (una pregunta + su respuesta) es la unidad de DATOS.** Cada uno es un `.md`
+  con frontmatter (`id`, `padre_id`, `rama`, `x`, `y`, `proveedor`, `fecha`, `tokens_in/out`,
+  `adjuntos`) + secciones `## Pregunta` / `## Respuesta`. Una carpeta = un árbol. El `padre_id`
+  define las flechas. Exportar = `.zip` de la carpeta.
+- **Un globo (nodo del canvas) = un TRAMO: una cadena maximal de intercambios unidos por
+  `rama: "main"`** (Fase 5, decisiones F5-1). Enter agrega al mismo tramo; un globo nuevo se crea
+  solo al **ramificar** (`rama != "main"`). El tramo es una agrupación **derivada** en
+  `arbolAVista` (`calcularTramos`) — el modelo de datos no cambió, no hubo migración.
+- Lo que importa es **ramificar respuestas** desde cualquier intercambio del tramo; la pregunta
+  que abre una rama es solo el disparador.
 
 ### Contexto y costos de tokens
 1. Al armar el contexto para la IA, usar **solo el camino raíz→nodo actual**, nunca el árbol

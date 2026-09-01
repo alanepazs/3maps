@@ -42,10 +42,11 @@ src/
   model/
     intercambio.ts       ★ Modelo de datos (fuente de la verdad). Tipos Intercambio/Arbol/Rama/
                          Proveedor. Funciones puras: consultas (buscar, hijos, descendientes,
-                         caminoRaizA, padre, raices), mutaciones (agregar, quitarSubarbol,
-                         conPosicion, conRama, conRespuesta, reparentar), arbolAVista (deriva
-                         nodes/edges de React Flow), toMarkdown / parseMarkdown, arbolInicial
-                         (= { intercambios: [] }, árbol vacío — el 1er submit crea la raíz).
+                         caminoRaizA, padre, raices), **tramos (Fase 5): calcularTramos(a) →
+                         Tramo[] (agrupa cadenas `main`), tramoDesde(a,cabezaId), cabezaDeTramo(a,
+                         id)**, mutaciones (agregar, quitarSubarbol, conPosicion, conRama,
+                         conRespuesta, reparentar), arbolAVista (deriva nodes/edges — 1 nodo = 1
+                         tramo), toMarkdown / parseMarkdown, arbolInicial.
     adjuntos.ts          Archivos adjuntos (T16). tipoDeArchivo(File)→"texto"|"imagen"|"pdf"|null
                          (MIME + extensión), leerArchivo(File,pesoActual)→{ok,adjunto|error}:
                          texto vía FileReader; imagen vía comprimirImagen (canvas, achica a 1568px,
@@ -130,15 +131,18 @@ src/
                          limpiarSlugDeLaUrl / linkCompartir. Topes: 50 intercambios / ~1 MB.
   components/
     FlowCanvas.tsx      ★ El componente central (~500 líneas). Ver detalle abajo.
-    MessageNode.tsx     Nodo custom. Estados del cuerpo: pending ("escribiendo…" + texto + ▍),
-                        error (recuadro rojo + "↻ Reintentar"), respuesta (markdown), o vacío.
-                        Respuesta > 400 chars → cuerpo colapsado a 220px con degradado + pill
-                        "⌄ ver más" y toggle Expandir/Colapsar en el toolbar (fase 3.1, ver vista.ts).
-                        Manija ◢ abajo-derecha para redimensionar (fase 3.10): pointermove/up en
-                        window, deltas / getZoom(); durante el arrastre estado local `drag`, al
-                        soltar → `resizeNode` (NodeActionsContext) → `conTamano` → `.md`
-                        (`data.ancho/alto`, sincroniza). Tamaño manual desactiva el colapso auto y
-                        muestra "↔ Auto". Cuerpo `flex-1 overflow-auto` → scrollea si queda chico.
+    MessageNode.tsx     Nodo custom = un TRAMO (Fase 5, decisiones F5-1). `data.intercambios` = la
+                        cadena `main`; se renderiza como transcripción scrolleable (overview).
+                        Header "N mensajes" + "📎 N". Colapso por cantidad (>3) o largo total, con
+                        "⌄ ver más" + toggle (fase 3.1, vista.ts). STOP / "↻ Rehacer" operan sobre
+                        la PUNTA (`data.intercambios.at(-1).id`); "🗑 Eliminar" sobre la cabeza (=
+                        el tramo + sub-ramas). Manija ◢ abajo-derecha para redimensionar (fase
+                        3.10): pointermove/up en window, deltas / getZoom(); al soltar → `resizeNode`
+                        (NodeActionsContext) → `conTamano` → `.md` (`data.ancho/alto` de la CABEZA,
+                        sincroniza). `tragarClickSintetico()` tras soltar (F5-0).
+    gestos.ts           `tragarClickSintetico()` — traga el `click` sintético post-drag SIN comerse
+                        un click real posterior (se desarma en el 1er `pointerdown`; timeout 500ms).
+                        F5-0. Lo usan `MessageNode` y `BranchTranscript`.
     vista.ts            SOLO el colapsado/expandido por globo (`expandidos:{[id]:bool}` en
                         localStorage["3maps:vista"], per-navegador, NO sincroniza). LIMITE_COLAPSO
                         =400, ALTO_COLAPSADO=220. leer/guardarExpandido. (El tamaño manual pasó al
@@ -429,13 +433,16 @@ Props de `<ReactFlow>` que importan:
 
 ## MessageNode.tsx
 
-`data`: `{ pregunta, respuesta, pending?, error?, isRoot?, sinHijos?, ancho, alto, adjuntosN }`.
-`adjuntosN` > 0 → badge "📎 N" en el header (T16, F3-22).
+`data` (Fase 5): `{ intercambios: Intercambio[], n, pregunta, respuesta, pending?, error?, isRoot?,
+sinHijos?, ancho, alto, adjuntosN, rev }`. `intercambios` = el tramo entero; `rev` = firma corta
+(los demás lo derivan). `datosIguales` en `FlowCanvas` ignora `intercambios` y compara por `rev`.
+`adjuntosN` = suma del tramo → badge "📎 N".
 - Ancho por defecto 260px; **redimensionable** con la manija ◢ abajo-derecha (F3-8): tamaño en
-  `data.ancho/alto` (va al `.md`, sincroniza), cuerpo `flex-1 overflow-auto nowheel scroll-fino`.
-- Cuerpo: `pending` ("escribiendo…" + texto + ▍) · `error` (recuadro rojo + "↻ Reintentar") ·
-  respuesta (`<Markdown>`) · "Respuesta pendiente". Respuesta > 400 chars y sin tamaño manual →
-  colapsado a 220px + degradado + "⌄ ver más" (F3-1, `vista.ts`).
+  `data.ancho/alto` de la CABEZA (va al `.md`, sincroniza).
+- Cuerpo (Fase 5): `data.intercambios.map(...)` — cada uno "pregunta (negrita) + respuesta
+  (`<Markdown>`)"; `pending` → texto parcial + ▍; `error` → recuadro rojo. Scrolleable. Tramo
+  largo (>3 mensajes o mucho texto) → colapsado + "⌄ ver más" (F3-1). STOP/Rehacer → punta;
+  Eliminar → cabeza.
 - Handles: `target` arriba (el raíz NO lo tiene) · `source id="main"` abajo ·
   `source id="branch-right"` derecha · `source id="branch-left"` izquierda (= los valores de `rama`).
 - `<NodeToolbar>` cuando `selected`: "⤢ Abrir" siempre · "↻ Rehacer" (`retryNode`) si `!readOnly` ·

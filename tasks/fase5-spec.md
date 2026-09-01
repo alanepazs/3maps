@@ -1,6 +1,6 @@
 # Fase 5 — El globo pasa a ser un *tramo* de la conversación
 
-> Spec. Estado: **decisiones cerradas con Alan (02-09), lista para implementar** (esperando "dale").
+> Spec. Estado: **EN CURSO** (02-09). F5-0 ✅ · F5-1 ✅ · F5-2 casi (folded en F5-1).
 > Es un cambio de arquitectura de la VISTA. **El modelo de datos NO cambia.**
 
 ## Objetivo
@@ -141,11 +141,14 @@ medio) — **eso no corta el tramo**, la rama es otro tramo que nace de al lado.
 ## Sub-tareas (implementación incremental)
 
 - **F5-0 ✅ — fix del `⌄` del Composer** (un solo clic). `tragarClickSintetico` en `gestos.ts`.
-- **F5-1 — `arbolAVista` agrupa tramos + `MessageNode` los renderiza** (read-only, sin
-  crecimiento, sin cambiar cómo se crean los globos). Los mapas viejos se ven agrupados. `_scratch`
-  de la función de agrupado (cadenas `main`, ramas del medio, punta). **El más importante.**
-- **F5-2 — Enter agrega a la punta** (no crea globo). `handleSubmit` "main" → hijo `main` de la
-  punta del tramo activo. El bottom Composer y el panel.
+- **F5-1 ✅ — `arbolAVista` agrupa tramos + `MessageNode` los renderiza** (decisiones F5-1).
+  `calcularTramos`/`tramoDesde`/`cabezaDeTramo` en `intercambio.ts`; `arbolAVista` reescrito;
+  `datosIguales` ignora `intercambios` (usa `data.rev`); `MessageNode` renderiza la transcripción
+  del tramo; `FlowCanvas` resuelve todo a cabeza/punta. 18 asserts + verificado en el pane
+  (mapa viejo se agrupa solo, cero migración).
+- **F5-2 ~ — Enter agrega a la punta** (no crea globo). **Casi hecho en F5-1**: `handleSubmit`
+  `kind === "main"` ya agrega a la punta del tramo sin crear nodo. Falta verificar el
+  mini-composer del panel (Enter / Ctrl+Enter) y pulir el `activeNodeLabel` del bottom Composer.
 - **F5-3 — Ramificar desde cualquier intercambio**. Affordance "⑂" por intercambio en la
   transcripción del panel + botón del composer (ramifica desde la punta).
 - **F5-4 — Setting de crecimiento + badge "N mensajes"**.

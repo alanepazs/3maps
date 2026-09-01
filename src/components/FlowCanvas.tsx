@@ -44,6 +44,7 @@ import {
   arbolAVista,
   arbolInicial,
   buscar,
+  cabezaDeTramo,
   caminoRaizA,
   conError,
   conPosicion,
@@ -56,6 +57,7 @@ import {
   nuevoId,
   quitarSubarbol,
   reparentar,
+  tramoDesde,
   type Adjunto,
   type Arbol,
   type Intercambio,
@@ -128,10 +130,19 @@ import {
 // un objeto nodeTypes nuevo en cada render, remonta todos los nodos.
 const nodeTypes: NodeTypes = { message: MessageNode };
 
-// Comparación shallow del `data` de un nodo (pregunta/respuesta/pending/isRoot).
+// La cabeza del tramo del último intercambio (para seleccionar/activar un nodo
+// al cargar / cambiar de mapa — los nodos son tramos, no intercambios).
+function cabezaUltimo(a: Arbol): string | null {
+  const u = a.intercambios.at(-1)?.id;
+  return u ? cabezaDeTramo(a, u) : null;
+}
+
+// Comparación shallow del `data` de un nodo. `intercambios` es un array que
+// `arbolAVista` recrea en cada llamada → se ignora acá y se confía en `data.rev`
+// (una firma corta del tramo). Si `rev` coincide, el nodo no cambió.
 function datosIguales(a: Node["data"], b: Node["data"]): boolean {
-  const ka = Object.keys(a);
-  const kb = Object.keys(b);
+  const ka = Object.keys(a).filter((k) => k !== "intercambios");
+  const kb = Object.keys(b).filter((k) => k !== "intercambios");
   return (
     ka.length === kb.length &&
     ka.every(
@@ -153,7 +164,7 @@ function Flow() {
   // montaje (`useEffect` de abajo) — leerlo durante el render rompería la
   // hidratación.
   const semilla = useMemo(() => arbolInicial(), []);
-  const activoIniId = semilla.intercambios.at(-1)?.id ?? null;
+  const activoIniId = cabezaUltimo(semilla);
   const vistaIni = useMemo(() => {
     const v = arbolAVista(semilla);
     return {
@@ -245,7 +256,7 @@ function Flow() {
       void cargarArbolCompartido(slugInicial).then((res) => {
         if (cancelado) return;
         if (res) {
-          const ultimo = res.arbol.intercambios.at(-1)?.id ?? null;
+          const ultimo = cabezaUltimo(res.arbol);
           setArbol(res.arbol);
           setActiveNodeId(ultimo);
           seleccionarLuegoRef.current = ultimo;
@@ -253,7 +264,7 @@ function Flow() {
         } else {
           limpiarSlugDeLaUrl();
           const guardado = cargarArbol(idActivo);
-          const ultimo = guardado.intercambios.at(-1)?.id ?? null;
+          const ultimo = cabezaUltimo(guardado);
           setArbol(guardado);
           setActiveNodeId(ultimo);
           seleccionarLuegoRef.current = ultimo;
@@ -266,7 +277,7 @@ function Flow() {
     }
 
     const guardado = cargarArbol(idActivo);
-    const ultimo = guardado.intercambios.at(-1)?.id ?? null;
+    const ultimo = cabezaUltimo(guardado);
     setArbol(guardado);
     setActiveNodeId((cur) =>
       guardado.intercambios.some((i) => i.id === cur) ? cur : ultimo,
@@ -719,6 +730,32 @@ function Flow() {
       const parent = buscar(arbol, parentId ?? activeNodeId ?? "");
       if (!parent) return null;
       const id = nuevoId();
+
+      // F5: "continuar hilo" (`main`) NO crea un globo — se suma al TRAMO del
+      // padre, siempre por la PUNTA (Enter solo continúa desde la punta). Solo
+      // "ramificar" crea un tramo nuevo.
+      if (kind === "main") {
+        const cab = cabezaDeTramo(arbol, parent.id);
+        const tramo = tramoDesde(arbol, cab);
+        const punta = tramo[tramo.length - 1] ?? parent;
+        const nuevo = crearIntercambio({
+          id,
+          padreId: punta.id,
+          rama: "main",
+          pregunta: text,
+          x: punta.x, // `arbolAVista` solo usa la x/y de la cabeza
+          y: punta.y,
+          pending: true,
+          adjuntos,
+        });
+        const arbolNuevo = agregar(arbol, nuevo);
+        seleccionarLuegoRef.current = cab;
+        setArbol(arbolNuevo);
+        setActiveNodeId(cab);
+        void responder(id, arbolNuevo);
+        return id;
+      }
+
       // Buscar un lugar libre cerca del padre (no pisa a ningún otro globo) y
       // el lado de la rama (alterna izq/der para un árbol parejo). Ver layout.ts.
       const medir = (nid: string) => {
@@ -728,12 +765,7 @@ function Flow() {
           h: n?.measured?.height ?? 160,
         };
       };
-      const { x, y, rama } = ubicarNuevoGlobo(
-        arbol,
-        parent.id,
-        kind === "main" ? "main" : "branch",
-        medir,
-      );
+      const { x, y, rama } = ubicarNuevoGlobo(arbol, parent.id, "branch", medir);
       const nuevo = crearIntercambio({
         id,
         padreId: parent.id,
@@ -926,7 +958,7 @@ function Flow() {
       if (
         desc.length > 0 &&
         !window.confirm(
-          `Se van a eliminar ${desc.length + 1} globos: este y todo lo que cuelga de él. ¿Seguir?`,
+          `Se van a eliminar ${desc.length + 1} intercambios: este tramo y todo lo que cuelga de él. ¿Seguir?`,
         )
       ) {
         return;
@@ -944,10 +976,11 @@ function Flow() {
         enVueloRef.current.get(q)?.abort();
         enVueloRef.current.delete(q);
       }
-      const padreId = buscar(arbol, id)?.padreId ?? null;
-      seleccionarLuegoRef.current = padreId;
+      const padreIc = buscar(arbol, id)?.padreId ?? null;
+      const padreCabeza = padreIc ? cabezaDeTramo(arbol, padreIc) : null;
+      seleccionarLuegoRef.current = padreCabeza;
       setArbol((a) => quitarSubarbol(a, id));
-      setActiveNodeId(padreId);
+      setActiveNodeId(padreCabeza);
     },
     [arbol, cancelInertia, cancelPanInertia, readOnly],
   );
@@ -955,15 +988,24 @@ function Flow() {
   // Panel de transcripción de la rama (doble-click en un globo o botón ⤢).
   const [transcriptNodeId, setTranscriptNodeId] = useState<string | null>(null);
 
-  // Abrir el panel en un globo Y dejarlo seleccionado en el canvas (borde azul),
-  // igual que al clickearlo — así al navegar con `‹`/`›` se ve dónde estás.
+  // Abrir el panel en un globo Y dejarlo seleccionado en el canvas (borde azul).
+  // `id` puede ser cualquier intercambio (una cabeza de tramo desde el canvas /
+  // `nav`, o el intercambio recién creado desde el mini-composer). Se resuelve al
+  // tramo: el panel apunta a su PUNTA (`transcriptNodeId`, así `caminoRaizA` da
+  // raíz→acá completo) y se selecciona el nodo cabeza.
   const verGloboEnPanel = useCallback(
     (id: string) => {
-      setTranscriptNodeId(id);
-      setActiveNodeId(id);
+      const a = arbolRef.current;
+      const cabeza = buscar(a, id) ? cabezaDeTramo(a, id) : id;
+      const tramo = tramoDesde(a, cabeza);
+      const punta = tramo.length ? tramo[tramo.length - 1].id : id;
+      setTranscriptNodeId(punta);
+      setActiveNodeId(cabeza);
       setNodes((nds) =>
         nds.map((n) =>
-          n.selected === (n.id === id) ? n : { ...n, selected: n.id === id },
+          n.selected === (n.id === cabeza)
+            ? n
+            : { ...n, selected: n.id === cabeza },
         ),
       );
     },
@@ -1016,23 +1058,29 @@ function Flow() {
   // ese orden. Si un globo se mueve, `nav` recalcula y las flechas se reordenan.
   const nav = useMemo(() => {
     if (!transcriptNodeId) return null;
-    const ic = buscar(arbol, transcriptNodeId);
-    if (!ic) return null;
+    const cabezaId = cabezaDeTramo(arbol, transcriptNodeId);
+    const cabeza = buscar(arbol, cabezaId);
+    if (!cabeza) return null;
+    const tramo = tramoDesde(arbol, cabezaId);
 
     const izq: Intercambio[] = [];
     const der: Intercambio[] = [];
 
-    // El padre, solo si el globo abierto es una rama: branch-left → el padre
-    // queda a la DERECHA (la línea entra por el costado derecho); branch-right
-    // → a la izquierda.
-    if (ic.rama === "branch-left" || ic.rama === "branch-right") {
-      const p = ic.padreId ? buscar(arbol, ic.padreId) : null;
-      if (p) (ic.rama === "branch-left" ? der : izq).push(p);
+    // El padre, solo si la CABEZA del tramo abierto es una rama: branch-left → el
+    // padre queda a la DERECHA (la línea entra por el costado derecho).
+    if (cabeza.rama === "branch-left" || cabeza.rama === "branch-right") {
+      const p = cabeza.padreId
+        ? buscar(arbol, cabezaDeTramo(arbol, cabeza.padreId))
+        : null;
+      if (p) (cabeza.rama === "branch-left" ? der : izq).push(p);
     }
-    // Los hijos que salen por un costado.
-    for (const h of hijos(arbol, transcriptNodeId)) {
-      if (h.rama === "branch-left") izq.push(h);
-      else if (h.rama === "branch-right") der.push(h);
+    // Ramas hijas que salen de CUALQUIER intercambio del tramo (cada una es
+    // cabeza de su propio tramo).
+    for (const ic of tramo) {
+      for (const h of hijos(arbol, ic.id)) {
+        if (h.rama === "branch-left") izq.push(h);
+        else if (h.rama === "branch-right") der.push(h);
+      }
     }
     const rotular = (n: Intercambio) => ({
       id: n.id,
@@ -1107,7 +1155,7 @@ function Flow() {
 
   // ── Mapas (fase 3.5): crear / cambiar / borrar / renombrar ────────────────
   const cargarEnMapa = useCallback((id: string, t: Arbol) => {
-    const ultimo = t.intercambios.at(-1)?.id ?? null;
+    const ultimo = cabezaUltimo(t);
     seleccionarLuegoRef.current = ultimo;
     setArbol(t);
     setActiveNodeId(ultimo);
@@ -1334,7 +1382,7 @@ function Flow() {
   // ── Sync entre dispositivos (fase 2.4, per-mapa desde 3.5) ────────────────
   // Solo con sesión y fuera del modo compartido. Last-write-wins.
   const aplicarArbolNube = useCallback((a: Arbol) => {
-    const ultimo = a.intercambios.at(-1)?.id ?? null;
+    const ultimo = cabezaUltimo(a);
     seleccionarLuegoRef.current = ultimo;
     setArbol(a);
     setActiveNodeId((cur) =>

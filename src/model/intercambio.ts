@@ -169,6 +169,75 @@ export function caminoRaizA(a: Arbol, id: string): Intercambio[] {
   return camino;
 }
 
+// ── Tramos (Fase 5) ────────────────────────────────────────────────────────
+// Un **tramo** = una cadena maximal de intercambios unidos por `rama: "main"`,
+// empezando en la raíz o en el destino de una rama. Es la unidad VISUAL (un
+// globo = un tramo); el intercambio sigue siendo la unidad de datos. Las ramas
+// (`rama != "main"`) salen de cualquier intercambio del tramo sin cortarlo.
+
+export type Tramo = { cabezaId: string; intercambios: Intercambio[] };
+
+// El primer hijo `main` de cada intercambio (la continuación del tramo). Si hay
+// 2+ hijos `main` del mismo padre (raro: "continuar" desde el medio), solo el
+// primero continúa; los demás quedan como cabeza de su propio tramo.
+function continuacionesMain(a: Arbol): Map<string, string> {
+  const cont = new Map<string, string>();
+  for (const ic of a.intercambios) {
+    if (ic.padreId && ic.rama === "main" && !cont.has(ic.padreId)) {
+      cont.set(ic.padreId, ic.id);
+    }
+  }
+  return cont;
+}
+
+export function calcularTramos(a: Arbol): Tramo[] {
+  const cont = continuacionesMain(a);
+  const esCont = new Set(cont.values());
+  const porId = new Map(a.intercambios.map((ic) => [ic.id, ic]));
+  const tramos: Tramo[] = [];
+  for (const ic of a.intercambios) {
+    if (esCont.has(ic.id)) continue; // no es cabeza
+    const chain: Intercambio[] = [];
+    const visto = new Set<string>();
+    let cur: Intercambio | undefined = ic;
+    while (cur && !visto.has(cur.id)) {
+      chain.push(cur);
+      visto.add(cur.id);
+      const sig = cont.get(cur.id);
+      cur = sig ? porId.get(sig) : undefined;
+    }
+    tramos.push({ cabezaId: ic.id, intercambios: chain });
+  }
+  return tramos;
+}
+
+// Los intercambios del tramo cuya cabeza es `cabezaId` (o `[]` si no existe).
+export function tramoDesde(a: Arbol, cabezaId: string): Intercambio[] {
+  const cont = continuacionesMain(a);
+  const porId = new Map(a.intercambios.map((ic) => [ic.id, ic]));
+  const chain: Intercambio[] = [];
+  const visto = new Set<string>();
+  let cur = porId.get(cabezaId);
+  while (cur && !visto.has(cur.id)) {
+    chain.push(cur);
+    visto.add(cur.id);
+    const sig = cont.get(cur.id);
+    cur = sig ? porId.get(sig) : undefined;
+  }
+  return chain;
+}
+
+// La cabeza del tramo que contiene `id` (subiendo mientras `rama === "main"`).
+export function cabezaDeTramo(a: Arbol, id: string): string {
+  let cur = buscar(a, id);
+  const visto = new Set<string>();
+  while (cur?.padreId && cur.rama === "main" && !visto.has(cur.id)) {
+    visto.add(cur.id);
+    cur = buscar(a, cur.padreId);
+  }
+  return cur?.id ?? id;
+}
+
 export function esDescendiente(
   a: Arbol,
   id: string,
@@ -270,47 +339,79 @@ export function reparentar(
 }
 
 // ── Derivación a React Flow ────────────────────────────────────────────────
+// Un nodo = un TRAMO (Fase 5). `id` del nodo = id del intercambio cabeza. El
+// `data` lleva `intercambios` (el tramo entero, para que `MessageNode` lo
+// renderice) + un `rev` que resume lo que afecta al render (para la
+// reconciliación de `FlowCanvas` — `datosIguales` ignora el array).
+
+// Firma corta del estado renderable de un intercambio.
+function revIc(ic: Intercambio): string {
+  return `${ic.id}~${ic.respuesta?.length ?? 0}${ic.pending ? "P" : ""}${
+    ic.error ? "E" : ""
+  }a${ic.adjuntos.length}`;
+}
 
 export function arbolAVista(a: Arbol): { nodes: Node[]; edges: Edge[] } {
-  const conPadre = new Set(
+  const tramos = calcularTramos(a);
+  const conHijos = new Set(
     a.intercambios.map((ic) => ic.padreId).filter((p): p is string => p !== null),
   );
-  const nodes: Node[] = a.intercambios.map((ic) => ({
-    id: ic.id,
-    type: "message",
-    position: { x: ic.x, y: ic.y },
-    data: {
-      pregunta: ic.pregunta,
-      respuesta: ic.respuesta,
-      pending: ic.pending,
-      error: ic.error,
-      isRoot: ic.padreId === null,
-      // Sin hijos → se puede borrar aunque sea la raíz (fase 3.6): borrar la
-      // raíz solo cuando ya no queda nada colgando de ella.
-      sinHijos: !conPadre.has(ic.id),
-      ancho: ic.ancho,
-      alto: ic.alto,
-      // Para el badge "📎 N" en el header del globo (T16).
-      adjuntosN: ic.adjuntos.length,
-    },
-  }));
-  const edges: Edge[] = a.intercambios
-    .filter((ic) => ic.padreId !== null)
-    .map((ic) => ({
+  // intercambio id → cabeza de su tramo
+  const cabezaDe = new Map<string, string>();
+  for (const t of tramos) {
+    for (const ic of t.intercambios) cabezaDe.set(ic.id, t.cabezaId);
+  }
+
+  const nodes: Node[] = tramos.map((t) => {
+    const cabeza = t.intercambios[0];
+    const ultimo = t.intercambios[t.intercambios.length - 1];
+    return {
+      id: t.cabezaId,
+      type: "message",
+      position: { x: cabeza.x, y: cabeza.y },
+      data: {
+        intercambios: t.intercambios,
+        n: t.intercambios.length,
+        // Para el label alejado y compat con lo que leía `pregunta`/`respuesta`.
+        pregunta: cabeza.pregunta,
+        respuesta: ultimo.respuesta,
+        pending: ultimo.pending,
+        error: ultimo.error,
+        isRoot: cabeza.padreId === null,
+        // Se puede borrar aunque sea raíz si nada cuelga de la punta (fase 3.6).
+        sinHijos: !conHijos.has(ultimo.id),
+        ancho: cabeza.ancho,
+        alto: cabeza.alto,
+        adjuntosN: t.intercambios.reduce((s, ic) => s + ic.adjuntos.length, 0),
+        rev: `${t.intercambios.map(revIc).join("|")}#${cabeza.ancho}x${cabeza.alto}`,
+      },
+    };
+  });
+
+  const edges: Edge[] = [];
+  for (const ic of a.intercambios) {
+    if (ic.padreId === null) continue;
+    if (cabezaDe.get(ic.id) !== ic.id) continue; // solo las cabezas tienen edge de entrada
+    const source = cabezaDe.get(ic.padreId);
+    if (!source) continue;
+    edges.push({
       id: `e-${ic.padreId}-${ic.id}`,
-      source: ic.padreId as string,
+      source,
       target: ic.id,
-      // SALE del padre por el handle que se llama igual que la rama.
+      // SALE del tramo padre por el handle que se llama igual que la rama.
       sourceHandle: ic.rama,
-      // ENTRA al hijo por el costado opuesto (la rama se lee de costado a
-      // costado); el tronco (`main`) entra por arriba, siempre vertical.
+      // ENTRA a la cabeza del tramo hijo por el costado opuesto; el tronco
+      // (`main` — una 2ª continuación) entra por arriba.
       targetHandle:
         ic.rama === "branch-right"
           ? "t-left"
           : ic.rama === "branch-left"
             ? "t-right"
             : "t-top",
-    }));
+      // El intercambio del que se ramificó (para anclar el edge más adelante).
+      data: { desdeId: ic.padreId },
+    });
+  }
   return { nodes, edges };
 }
 

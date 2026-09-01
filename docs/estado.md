@@ -6,10 +6,14 @@
 
 ## Dónde estamos
 
-**Fases 1-4 implementadas y en producción.** `https://alanepazs.github.io/3maps/`
+**Fases 1-4 en producción; Fase 5 EN CURSO.** `https://alanepazs.github.io/3maps/`
 (deploy automático en cada push a `main`). Repo `github.com/alanepazs/3maps`, local `D:\IA\3maps`.
-La **Fase 4** (rediseño del panel + contadores de tokens + adjuntos + copiar/guardar respuesta)
-está toda shippeada — falta solo la prueba de Alan en Chrome real con keys (ver "Qué falta").
+- **Fase 4** (panel rediseñado + contadores de tokens + adjuntos + copiar/guardar): shippeada,
+  probada con keys (Gemini imagen+PDF, Groq visión, pegar captura, T15). Claude bloqueado por saldo.
+- **Fase 5** (`tasks/fase5-spec.md`): el globo pasa de "un intercambio" a "un TRAMO" (cadena
+  `main`). Enter agrega al mismo globo; globo nuevo solo al ramificar. **Cambio solo de vista,
+  cero migración.** F5-0 ✅ (fix del `⌄`), F5-1 ✅ (`calcularTramos` + `arbolAVista` reescrito),
+  F5-2 casi (folded). Falta F5-3..F5-6.
 
 - **Canvas** (React Flow): árbol de globos, tronco vertical + ramas al costado, envión al soltar,
   2 modos (manito / selección con espacio), redimensionar globo y panel, auto-layout ("▤ Ordenar"),
