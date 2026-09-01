@@ -33,6 +33,10 @@ Runbook corto. Cosas que muerden si no las sabés. Leer antes de tocar.
 6. **Antes de codear leé** (orden en `CLAUDE.md`): `docs/estado.md`, `docs/arquitectura.md`,
    este archivo, `docs/decisiones.md`. `docs/historia.md` (qué shippeó cada fase) y
    `docs/spec-proyecto.md` solo si hace falta. No leas todo `src/`.
+6a. **agent-skills (IMPERATIVO, ver CLAUDE.md)**: las 25 skills viven en `.claude/skills/` pero
+   están **gitignoreadas** — un clon nuevo NO las trae. Restaurar:
+   `git clone --depth 1 https://github.com/addyosmani/agent-skills /tmp/as && cp -r /tmp/as/{skills,references,agents} .claude/`
+   (+ convertir `commands/*.toml` a `.md`). Se descubren al reiniciar la sesión de Claude Code.
 6b. **Grafo de conocimiento (`graphify-out/`, gitignoreado, local)**: antes de abrir varios
    archivos de `src/` para entender una dependencia, probá `graphify query "<pregunta>"` desde
    `D:\IA\3maps` — devuelve el subgrafo con `archivo:línea` de qué llama a qué. El intérprete está
