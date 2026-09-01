@@ -47,7 +47,7 @@ export const MODELO_POR_DEFECTO: Record<Proveedor, string> = {
   groq: "llama-3.3-70b-versatile",
   openrouter: "nvidia/nemotron-3-super-120b-a12b:free",
   huggingface: "Qwen/Qwen2.5-72B-Instruct",
-  qwen: "qwen-flash",
+  qwen: "qwen-plus",
 };
 
 // Modelos de Gemini que ya no sirven para una key free tier nueva y hay que
@@ -146,12 +146,15 @@ export const GUIA_API_KEY: Record<
     ],
   },
   qwen: {
-    url: "https://bailian.console.aliyun.com/?apiKey=1",
+    // Consola INTERNACIONAL en inglés (`.alibabacloud.com`, no `.aliyun.com` que
+    // es la china). El endpoint que usa el proxy ya es `dashscope-intl`. Free
+    // tier real sin tarjeta; pide verificación por teléfono (cualquier país).
+    url: "https://bailian.console.alibabacloud.com/?tab=api#/api-key",
     gratis: true,
     pasos: [
-      "Abrí el link y creá una cuenta de Alibaba Cloud.",
-      'Buscá "API-KEY" y creá una.',
-      "Copiá la clave (empieza con sk-) y pegala acá.",
+      "Abrí el link (consola internacional en inglés) y creá una cuenta de Alibaba Cloud (pide verificar un teléfono, cualquier país; sin tarjeta).",
+      'En "API Keys" → "Create API Key".',
+      "Copiá la clave (empieza con sk-) y pegala acá. Elegí un modelo gratis: qwen-plus, qwen-max o qwen3-coder-plus.",
     ],
   },
   deepseek: {

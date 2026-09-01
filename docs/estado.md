@@ -76,8 +76,9 @@
 ## Qué falta
 
 ### Prueba real pendiente (la hace el usuario, con key/login)
-- Faltan probar con key real: **Qwen** (gratis — ver si el signup de Alibaba Cloud es fluido),
-  **DeepSeek, GPT** (pagos).
+- Faltan probar con key real: **Qwen** (gratis vía consola INTERNACIONAL
+  `bailian.console.alibabacloud.com` en inglés — NO la `.aliyun.com` china; free tier sin tarjeta,
+  verificación por teléfono; default `qwen-plus`), **DeepSeek, GPT** (pagos).
 - Revalidar en vivo gpt-oss / qwen3 con el bundle F3-12: strip de `<think>` + `<br>` literal
   (el render `$…$` de Gemini ya está OK en local; primero forzar bundle nuevo con `?v=<algo>`).
 - Panel lateral redimensionable (3.11) + fixes de móvil (3.13) en Chrome real / celu.

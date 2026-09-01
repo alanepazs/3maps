@@ -93,7 +93,9 @@ Complementa a:
   `/chat/completions` y `/models`.
 - **Proveedores vía proxy** (6): `deepseek`, `gpt` (`openai`) — pagos; + free tiers →
   `groq`, `openrouter` (`:free`), `huggingface`, `qwen` (DashScope
-  `dashscope-intl…/compatible-mode/v1`, endpoint internacional). Todos OpenAI-compatibles
+  `dashscope-intl…/compatible-mode/v1` + consola internacional `bailian.console.alibabacloud.com`
+  en inglés — NO la `.aliyun.com` china; free tier sin tarjeta, solo verificación por teléfono).
+  Todos OpenAI-compatibles
   → mismo `llamarOpenAICompat` / `listarModelosOpenAICompat`. `upstreamDe` = mapa `Proveedor →
   clave del proxy`. **Descartados**: `cerebras`, `siliconflow`, `zhipu`, `moonshot`, `mistral`
   (§7d — free real gateado o inutilizable; no sirven para "gratis sin tarjeta"); Cloudflare
