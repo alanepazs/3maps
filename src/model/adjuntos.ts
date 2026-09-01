@@ -4,7 +4,8 @@ import type { Adjunto, TipoAdjunto } from "./intercambio";
 // guarda en el `.md` del intercambio (ver intercambio.ts) y se manda a la IA
 // (ver contexto.ts + ia.ts).
 //
-// T16a: texto. T16b: imágenes (se recomprimen). T16c (pendiente): PDF.
+// Texto (T16a), imágenes recomprimidas (T16b), PDF (T16c). El PDF solo lo leen
+// Gemini y Claude — con otros proveedores el adaptador lo ignora (aviso en la UI).
 
 // Topes (decididos con Alan, 02-09). El mapa entero sincroniza como UN JSON de
 // 5 MB máx (bucket `sync`), así que cada adjunto compite con eso.
@@ -90,8 +91,8 @@ export function descargarAdjunto(a: Adjunto): void {
 }
 
 export const AVISO_TIPO_NO_SOPORTADO =
-  "Acepto archivos de texto (.md, .txt, .csv, .json, código) e imágenes " +
-  "(PNG, JPEG, WebP). PDF: pronto.";
+  "Acepto archivos de texto (.md, .txt, .csv, .json, código), imágenes " +
+  "(PNG, JPEG, WebP) y PDF.";
 
 type Resultado =
   | { ok: true; adjunto: Adjunto }
@@ -202,12 +203,6 @@ export async function leerArchivo(
       error: `No puedo adjuntar “${file.name}”. ${AVISO_TIPO_NO_SOPORTADO}`,
     };
   }
-  if (tipo === "pdf") {
-    return {
-      ok: false,
-      error: `“${file.name}” es un PDF. Todavía no puedo con PDF — texto e imágenes sí.`,
-    };
-  }
 
   let adjunto: Adjunto;
   if (tipo === "imagen") {
@@ -218,6 +213,25 @@ export async function leerArchivo(
       tipo: "imagen",
       mime: c.mime,
       contenido: c.base64,
+    };
+  } else if (tipo === "pdf") {
+    if (file.size > LIMITE_BINARIO) {
+      return {
+        ok: false,
+        error: `“${file.name}” pesa ${fmtBytes(file.size)}; el máximo para un PDF es ${fmtBytes(LIMITE_BINARIO)}.`,
+      };
+    }
+    let base64: string;
+    try {
+      base64 = await blobABase64(file);
+    } catch {
+      return { ok: false, error: `No se pudo leer “${file.name}”.` };
+    }
+    adjunto = {
+      nombre: file.name || "documento.pdf",
+      tipo: "pdf",
+      mime: "application/pdf",
+      contenido: base64,
     };
   } else {
     if (file.size > LIMITE_TEXTO) {

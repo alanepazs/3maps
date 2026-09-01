@@ -53,6 +53,8 @@ export default function BranchTranscript({
   nav,
   onNavigate,
   contextoTokens,
+  proveedorNombre,
+  proveedorLeePdf = true,
   width,
   resizable = false,
   onResize,
@@ -75,6 +77,9 @@ export default function BranchTranscript({
   onNavigate?: (id: string) => void;
   // Estimación (≈ chars/4) de tokens de contexto para el globo abierto (T10).
   contextoTokens?: number | null;
+  // Para el aviso "el PDF solo lo leen Gemini/Claude" (T16c).
+  proveedorNombre?: string;
+  proveedorLeePdf?: boolean;
   width?: number;
   resizable?: boolean;
   onResize?: (px: number) => void;
@@ -511,6 +516,13 @@ export default function BranchTranscript({
                 {avisoAdj && (
                   <p className="text-[11px] text-amber-300/90">⚠ {avisoAdj}</p>
                 )}
+                {!proveedorLeePdf &&
+                  adjuntos.some((a) => a.tipo === "pdf") && (
+                    <p className="text-[11px] text-amber-300/90">
+                      ⚠ El PDF solo lo leen Gemini (gratis) o Claude
+                      {proveedorNombre ? ` — con ${proveedorNombre} se va a ignorar` : ""}.
+                    </p>
+                  )}
               </div>
             )}
             <textarea
@@ -534,7 +546,7 @@ export default function BranchTranscript({
               ref={inputArchRef}
               type="file"
               multiple
-              accept="text/*,image/png,image/jpeg,image/webp,.md,.markdown,.txt,.csv,.tsv,.json,.yaml,.yml,.toml,.xml,.html,.css,.js,.jsx,.ts,.tsx,.py,.rb,.go,.rs,.java,.kt,.c,.h,.cpp,.cs,.php,.sh,.sql,.log,.diff"
+              accept="text/*,image/png,image/jpeg,image/webp,application/pdf,.pdf,.md,.markdown,.txt,.csv,.tsv,.json,.yaml,.yml,.toml,.xml,.html,.css,.js,.jsx,.ts,.tsx,.py,.rb,.go,.rs,.java,.kt,.c,.h,.cpp,.cs,.php,.sh,.sql,.log,.diff"
               className="hidden"
               onChange={(e) => {
                 if (e.target.files) void agregarArchivos(e.target.files);
@@ -545,7 +557,7 @@ export default function BranchTranscript({
               <button
                 type="button"
                 onClick={() => inputArchRef.current?.click()}
-                title="Adjuntar un archivo (texto o imagen)"
+                title="Adjuntar un archivo (texto, imagen o PDF)"
                 className="rounded border border-white/15 px-2 py-1 text-xs text-white/60 hover:bg-white/10 hover:text-white"
               >
                 📎

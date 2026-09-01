@@ -100,7 +100,13 @@ import {
   intercambiosRelevantes,
   tramoAResumir,
 } from "@/model/contexto";
-import { llamarIA, resumir, MODELO_POR_DEFECTO, type ConfigIA } from "@/model/ia";
+import {
+  llamarIA,
+  resumir,
+  MODELO_POR_DEFECTO,
+  NOMBRE_PROVEEDOR,
+  type ConfigIA,
+} from "@/model/ia";
 import {
   borrarKeyProveedor,
   cambiarProveedorActivo,
@@ -1482,6 +1488,10 @@ function Flow() {
             nav={nav}
             onNavigate={verGloboEnPanel}
             contextoTokens={contextoTokens}
+            proveedorNombre={NOMBRE_PROVEEDOR[configIA.proveedor]}
+            proveedorLeePdf={
+              configIA.proveedor === "gemini" || configIA.proveedor === "claude"
+            }
             width={panelAncho}
             resizable={panelResizable}
             onResize={guardarAnchoPanel}

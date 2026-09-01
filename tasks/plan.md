@@ -81,8 +81,8 @@ Cada tarea = una rama/commit, con el ciclo `spec-driven` → `incremental-implem
 - [x] **T12 — Contador de tokens gastados por globo (usa T11).** [S] (decisiones F3-21)
 - [ ] **T14 — Auto-scroll del panel sigue el texto mientras streamea.** [S]
 - [ ] **T15 — Respuestas que son un documento entero (`.md`/código): UX.** [investigar]
-- [~] **T16 — Adjuntar archivos al mini-composer.** [L] Spec `tasks/T16-spec.md`. **T16a texto ✅**
-      (F3-22) · **T16b imágenes ✅** (F3-22b) · T16c PDF.
+- [x] **T16 — Adjuntar archivos al mini-composer.** [L] Spec `tasks/T16-spec.md`. **T16a texto ✅**
+      (F3-22) · **T16b imágenes ✅** (F3-22b) · **T16c PDF ✅** (F3-22c). Falta prueba de Alan con keys.
 - [ ] **T13 — Heurística de LaTeX crudo en `normalizarMath`.** [S] (independiente; adelantable)
 
 #### Checkpoint Fase 4
@@ -355,8 +355,19 @@ texto → imágenes → PDF.
 - **Falta prueba de Alan** (keys reales): imagen con Gemini/Claude/un modelo de visión de Groq;
   el aviso "sin visión"; pegar una captura de pantalla.
 
-**T16c — PDF** (pendiente): `tipo:"pdf"`, bloque `document` (Claude) / `inline_data` (Gemini),
-aviso ámbar "PDF solo Gemini (gratis) o Claude" con otros proveedores.
+**T16c — PDF ✅ (decisiones F3-22c)**
+- `leerArchivo` acepta PDF (base64 tal cual, tope 1MB). `multimediaDe(m)` = imágenes + PDF en
+  Claude (bloque `document`) y Gemini (`inline_data` application/pdf). OpenAI-compat: el PDF NO se
+  manda (solo el texto).
+- `BranchTranscript` recibe `proveedorLeePdf` / `proveedorNombre` → línea ámbar "El PDF solo lo
+  leen Gemini (gratis) o Claude — con {N} se va a ignorar" cuando el proveedor activo no es
+  gemini/claude. **No bloquea el envío.**
+- `estimarTokens` +3000/pdf.
+- Verificado: 11 asserts scratch (round-trip, `multimediaDe`, Gemini `inline_data`, OpenAI-compat
+  no-manda-pdf, `leerArchivo` pdf/tope) + pane (chip 📕, aviso con Groq, sin aviso con Gemini,
+  envío persiste). `tsc`/`lint`/`build` verde.
+
+**T16 completo (texto + imágenes + PDF).** Falta prueba de Alan con keys reales.
 
 **Dependencies:** `BranchTranscript.tsx`, `contexto.ts`, `intercambio.ts`, `adjuntos.ts`,
 `ia.ts` (T16b/c: mensajes multimodales). **Scope:** L.

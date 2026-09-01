@@ -969,6 +969,25 @@ Spec completa y decisiones de alcance en `tasks/T16-spec.md`. Lo no obvio de la 
 - **Falta** (prueba de Alan, keys reales): imagen real con Gemini / Claude / un modelo de visión
   de Groq; el aviso "sin visión"; pegar una captura.
 
+### F3-22c. Adjuntar PDF (T16c): nativo en Claude/Gemini, ignorado (con aviso) en los demás
+- **`leerArchivo`** para `tipo:"pdf"`: sin compresión, solo tope (`LIMITE_BINARIO` 1 MB) →
+  base64 sin prefijo. `mime` fijo `application/pdf`.
+- **`ia.ts` `multimediaDe(m)`** (imágenes + PDFs) reemplaza a `imagenesDe` en los adaptadores que
+  soportan PDF:
+  - **Claude**: bloque `{type:"document", source:{type:"base64", media_type:"application/pdf",
+    data}}` antes del texto. Sin beta header. Límite: 100 págs en modelos de 200k (Haiku 4.5, el
+    default).
+  - **Gemini**: `{inline_data:{mime_type:"application/pdf", data}}` — **gratis** en free tier.
+  - **OpenAI-compat**: sigue usando `imagenesDe` — **el PDF NO se manda** (no hay formato vía
+    proxy con modelos abiertos). El texto de la pregunta sí va.
+- **Aviso**: `BranchTranscript` recibe `proveedorLeePdf` (`= proveedor ∈ {gemini, claude}`) y
+  `proveedorNombre` desde `FlowCanvas`. Si hay un PDF adjunto y `!proveedorLeePdf` → línea ámbar
+  "El PDF solo lo leen Gemini (gratis) o Claude — con {N} se va a ignorar". **No bloquea el
+  envío** (decisión de la spec: Alan puede querer intentar; el texto se manda igual).
+- `estimarTokens`: +3000 por PDF (heurística; una estimación mejor necesitaría contar páginas).
+- **Con esto T16 queda completo** (texto + imágenes + PDF). El `.md` es la fuente de la verdad;
+  un árbol con adjuntos pesados no se puede compartir (tope ~1 MB) — el error lo dice.
+
 ---
 
 ## Build / deploy

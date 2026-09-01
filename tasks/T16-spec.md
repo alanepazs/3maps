@@ -240,8 +240,11 @@ OpenAI-compat `image_url`). `estimarTokens` +1300/imagen. `accept` ampliado; chi
 con thumbnail; lightbox `verImagen`. `mensajeError*` sugiere Gemini/Claude en un 400 con imágenes.
 `eslint.config.mjs` apaga `no-img-element`. 13 asserts + pane. Falta prueba de Alan con keys.
 
-**T16c — PDF.** `tipo:"pdf"`, bloque `document` (Claude) / `inline_data` (Gemini). Aviso ámbar
-"PDF solo Gemini/Claude" cuando el proveedor activo es otro. Chip 📕 + descarga. **Scope: S-M.**
+**T16c — PDF. ✅ HECHO (02-09, decisiones F3-22c).**
+`leerArchivo` acepta PDF (base64, tope 1MB). `multimediaDe(m)` en Claude (`document` block) y
+Gemini (`inline_data` application/pdf); OpenAI-compat NO manda el PDF (solo texto). Aviso ámbar
+"PDF solo Gemini/Claude" via props `proveedorLeePdf`/`proveedorNombre` (no bloquea). `estimarTokens`
++3000/pdf. Chip 📕 + descarga (ya andaba de T16a). 11 asserts + pane. **T16 completo.**
 
 ## Criterios de aceptación (globales)
 

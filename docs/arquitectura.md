@@ -50,7 +50,7 @@ src/
                          (MIME + extensión), leerArchivo(File,pesoActual)→{ok,adjunto|error}:
                          texto vía FileReader; imagen vía comprimirImagen (canvas, achica a 1568px,
                          re-encode JPEG q0.82/0.6 salvo PNG con transparencia; base64 sin prefijo);
-                         PDF todavía no. pesoAdjunto / fmtBytes / iconoAdjunto / dataUrl /
+                         PDF = base64 tal cual, tope 1MB. pesoAdjunto / fmtBytes / iconoAdjunto / dataUrl /
                          descargarAdjunto (base64→Blob para binarios). Topes LIMITE_TEXTO 128KB /
                          LIMITE_BINARIO 1MB / LIMITE_INTERCAMBIO 2MB. Decisiones F3-22 / F3-22b.
     persistencia.ts      guardarArbol(arbol, mapId) / cargarArbol(mapId) en localStorage
@@ -171,7 +171,8 @@ src/
                         muestra los adjuntos en modo lectura (imagen → thumbnail → lightbox
                         `verImagen`). `onSubmit(text, kind, adjuntos)`. F3-22 / F3-22b.
                         Props: {intercambios, side, onFlipSide, onClose, onSubmit?, onStop?,
-                        onRetry?, nav?, onNavigate?, contextoTokens?, width?, resizable?, onResize?}.
+                        onRetry?, nav?, onNavigate?, contextoTokens?, proveedorNombre?,
+                        proveedorLeePdf?, width?, resizable?, onResize?}.
     SharedBanner.tsx    Cartel arriba cuando se ve un árbol compartido (`?compartir=`). Props:
                         {titulo, onGuardar, onSalir}. "Guardar en mi 3maps" = pasa a local editable.
     LoginNudge.tsx      Pill arriba-centro para el usuario DESLOGUEADO (solo si `haySupabase()`):
@@ -368,10 +369,11 @@ Props de `<ReactFlow>` que importan:
   `Record<Proveedor,…>` + (si es OpenAI-compat) redeploy del `ia-proxy`. Cero cambios en el árbol
   (spec §6). `resumir()` usa el mismo proveedor (le pasa `usarProxy`) y devuelve `string` (tira
   el `uso`).
-- **Imágenes adjuntas** (T16b, F3-22b): `imagenesDe(m)` saca los adjuntos `tipo:"imagen"` de un
-  `Mensaje` y cada adaptador los mapea antes del texto — Claude `{type:"image",source:base64}`,
-  Gemini `{inline_data:{mime_type,data}}`, OpenAI-compat `{type:"image_url",image_url:{url:data-URI}}`.
-  Si el proveedor 400/415ea con imágenes, el mensaje de error sugiere Gemini/Claude.
+- **Adjuntos multimedia** (T16b/c, F3-22b/c): `multimediaDe(m)` (imágenes + PDF) / `imagenesDe(m)`.
+  Cada adaptador mapea antes del texto — Claude `image` / `document` block, Gemini `inline_data`
+  (mime de imagen o `application/pdf`), OpenAI-compat solo `image_url` (el PDF NO se manda por
+  proxy). Si el proveedor 400/415ea con imágenes, el error sugiere Gemini/Claude. El aviso "PDF
+  solo Gemini/Claude" lo muestra `BranchTranscript` (props `proveedorLeePdf`/`proveedorNombre`).
 - La key de Claude/Gemini va **directo del navegador al proveedor**. Las de los otros 11
   **transitan** el proxy stateless (opt-in `opts.usarProxy` / `settings.usarProxyIA`), nunca se
   almacenan. Ver §7a.

@@ -2,10 +2,16 @@ import type { Mensaje } from "./contexto";
 import type { Adjunto, Proveedor } from "./intercambio";
 import { proxyIAUrl } from "./supabase";
 
-// Imágenes adjuntas de un mensaje (T16b). Cada adaptador las mapea a su formato:
-// Claude → bloque `image`; Gemini → `inline_data`; OpenAI-compat → `image_url`.
+// Adjuntos multimedia de un mensaje (T16b/c). Cada adaptador los mapea a su
+// formato: Claude → bloque `image` / `document`; Gemini → `inline_data`;
+// OpenAI-compat → `image_url` (solo imágenes; el PDF no se manda por proxy).
 function imagenesDe(m: Mensaje): Adjunto[] {
   return (m.adjuntos ?? []).filter((a) => a.tipo === "imagen");
+}
+function multimediaDe(m: Mensaje): Adjunto[] {
+  return (m.adjuntos ?? []).filter(
+    (a) => a.tipo === "imagen" || a.tipo === "pdf",
+  );
 }
 function hayImagenes(mensajes: Mensaje[]): boolean {
   return mensajes.some((m) => imagenesDe(m).length > 0);
@@ -319,19 +325,33 @@ async function llamarClaude(
         max_tokens: opts.maxTokens ?? 4096,
         ...(opts.sistema ? { system: opts.sistema } : {}),
         messages: mensajes.map((m) => {
-          const imgs = imagenesDe(m);
-          if (imgs.length === 0) return { role: m.rol, content: m.texto };
+          const media = multimediaDe(m);
+          if (media.length === 0) return { role: m.rol, content: m.texto };
           return {
             role: m.rol,
             content: [
-              ...imgs.map((a) => ({
-                type: "image" as const,
-                source: {
-                  type: "base64" as const,
-                  media_type: a.mime as "image/png" | "image/jpeg" | "image/webp",
-                  data: a.contenido,
-                },
-              })),
+              ...media.map((a) =>
+                a.tipo === "pdf"
+                  ? {
+                      type: "document" as const,
+                      source: {
+                        type: "base64" as const,
+                        media_type: "application/pdf" as const,
+                        data: a.contenido,
+                      },
+                    }
+                  : {
+                      type: "image" as const,
+                      source: {
+                        type: "base64" as const,
+                        media_type: a.mime as
+                          | "image/png"
+                          | "image/jpeg"
+                          | "image/webp",
+                        data: a.contenido,
+                      },
+                    },
+              ),
               { type: "text" as const, text: m.texto },
             ],
           };
@@ -431,8 +451,11 @@ async function intentarGemini(
     contents: mensajes.map((m) => ({
       role: m.rol === "assistant" ? "model" : "user",
       parts: [
-        ...imagenesDe(m).map((a) => ({
-          inline_data: { mime_type: a.mime, data: a.contenido },
+        ...multimediaDe(m).map((a) => ({
+          inline_data: {
+            mime_type: a.tipo === "pdf" ? "application/pdf" : a.mime,
+            data: a.contenido,
+          },
         })),
         { text: m.texto },
       ],

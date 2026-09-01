@@ -49,9 +49,10 @@
 - [x] Bugfix — ramificar una rama en árbol ancho tiraba el globo lejos/suelto: `ubicarNuevoGlobo`
       búsqueda en anillos acotada + `resolverSolapes()` al crear (`layout.ts`, `FlowCanvas.tsx`; decisiones F3-7b)
 - [ ] T15 — Respuestas que SON un documento (`.md`, código largo): investigar UX — ¿bloque plegable + copiar/descargar? ¿mejor instrucción de sistema? (spec primero) [investigar]
-- [~] T16 — Adjuntar archivos al mini-composer del panel. Spec: `tasks/T16-spec.md` (decisiones
-      cerradas con Alan 02-09: texto+img+pdf, vive en el `.md`, solo el panel, texto obligatorio,
-      topes 128KB/1MB/2MB). Sub-tareas: **T16a texto ✅** · T16b imágenes · T16c PDF.
+- [x] T16 — Adjuntar archivos al mini-composer del panel (texto + imágenes + PDF). Spec:
+      `tasks/T16-spec.md`. **T16a texto ✅ · T16b imágenes ✅ · T16c PDF ✅** (F3-22/b/c). Falta
+      prueba de Alan con keys reales (imagen/PDF con Gemini/Claude, modelo de visión de Groq,
+      pegar captura).
   - [x] **T16a — texto punta a punta.** `Adjunto`/`Intercambio.adjuntos` + `.md` (frontmatter JSON
         1 línea) + `Mensaje.adjuntos` + `armarContexto` pega el texto adjunto a la pregunta (NO se
         re-manda a los hijos) + `src/model/adjuntos.ts` (leer/validar/topes) + dropzone/paste/📎 +
@@ -66,7 +67,13 @@
         `eslint.config.mjs`; decisiones F3-22b) — 13 asserts + verificado en el pane (compresión
         2000→1568px PNG→JPEG 87→29KB, transparencia queda PNG, envío persiste, lightbox).
         Falta prueba de Alan: imagen real con Gemini/Claude/Groq-vision + pegar captura.
-  - [ ] T16c — PDF (bloque `document`/`inline_data`, aviso "solo Gemini/Claude").
+  - [x] **T16c — PDF.** `leerArchivo` acepta PDF (base64, tope 1MB). `multimediaDe(m)` en Claude
+        (bloque `document`) y Gemini (`inline_data` application/pdf); OpenAI-compat NO manda el PDF
+        (solo el texto). `BranchTranscript` recibe `proveedorLeePdf`/`proveedorNombre` → aviso
+        ámbar "solo Gemini/Claude" cuando el proveedor activo es otro (no bloquea). `estimarTokens`
+        +3000/pdf. (`adjuntos.ts`, `ia.ts`, `contexto.ts`, `BranchTranscript.tsx`, `FlowCanvas.tsx`;
+        decisiones F3-22c) — 11 asserts + verificado en el pane (chip 📕, aviso con Groq / sin aviso
+        con Gemini, envío persiste). **T16 COMPLETO.**
 
 ### Checkpoint Fase 4
 - [ ] `tsc` + `lint` + `build` verde
