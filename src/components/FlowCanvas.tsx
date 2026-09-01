@@ -934,7 +934,22 @@ function Flow() {
 
   // Panel de transcripción de la rama (doble-click en un globo o botón ⤢).
   const [transcriptNodeId, setTranscriptNodeId] = useState<string | null>(null);
-  const openNode = useCallback((id: string) => setTranscriptNodeId(id), []);
+
+  // Abrir el panel en un globo Y dejarlo seleccionado en el canvas (borde azul),
+  // igual que al clickearlo — así al navegar con `‹`/`›` se ve dónde estás.
+  const verGloboEnPanel = useCallback(
+    (id: string) => {
+      setTranscriptNodeId(id);
+      setActiveNodeId(id);
+      setNodes((nds) =>
+        nds.map((n) =>
+          n.selected === (n.id === id) ? n : { ...n, selected: n.id === id },
+        ),
+      );
+    },
+    [setNodes],
+  );
+  const openNode = verGloboEnPanel;
 
   // Tamaño manual del globo → al árbol (`.md` → sincroniza). null = automático.
   const resizeNode = useCallback(
@@ -992,9 +1007,9 @@ function Flow() {
     (text: string, kind: BranchKind) => {
       if (!transcriptNodeId) return;
       const id = handleSubmit(text, kind, transcriptNodeId);
-      if (id) setTranscriptNodeId(id);
+      if (id) verGloboEnPanel(id);
     },
-    [handleSubmit, transcriptNodeId],
+    [handleSubmit, transcriptNodeId, verGloboEnPanel],
   );
 
   const nodeActions = useMemo(
@@ -1324,7 +1339,7 @@ function Flow() {
           onMove={onMove}
           onMoveEnd={onMoveEnd}
           onNodeClick={() => cancelInertia()}
-          onNodeDoubleClick={(_, node) => setTranscriptNodeId(node.id)}
+          onNodeDoubleClick={(_, node) => verGloboEnPanel(node.id)}
           onSelectionChange={onSelectionChange}
           panOnDrag={!spaceHeld}
           selectionOnDrag={spaceHeld}
@@ -1428,7 +1443,7 @@ function Flow() {
                 : () => retryNode(transcriptNodeId)
             }
             nav={nav}
-            onNavigate={(nid) => setTranscriptNodeId(nid)}
+            onNavigate={verGloboEnPanel}
             width={panelAncho}
             resizable={panelResizable}
             onResize={guardarAnchoPanel}

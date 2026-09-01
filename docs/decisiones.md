@@ -838,6 +838,11 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
     del alto). Cada flecha muestra la pregunta del destino al pasar el mouse (`aria-label` +
     `<span>` con `group-hover`). Si un globo se mueve, `nav` recalcula y las flechas se reordenan
     solas (ej: mové "metáforas" arriba de "1 intermedio" → su flecha sube). Verificado en el pane.
+  - **F3-18e (01-09)**: al navegar (o abrir el panel), el globo que se ve en el panel queda
+    **seleccionado en el canvas** (borde azul), igual que al clickearlo. `verGloboEnPanel(id)`
+    (en `FlowCanvas`) hace `setTranscriptNodeId` + `setActiveNodeId` + `setNodes` con
+    `selected: n.id === id`. Lo usan `openNode`, `onNodeDoubleClick`, `onNavigate` y el
+    mini-composer. Antes el borde azul quedaba en el globo de donde habías navegado.
 - **Abrir en "Vos"** (pedido de Alan): al abrir el panel o navegar, `scrollTop` se pone en el
   arranque del intercambio abierto (`inicioUltimoRef`, el `<div>` del último bloque), no al final
   de la respuesta — "así sabemos dónde estamos parados". Reemplaza el viejo `scrollIntoView(end)`
