@@ -309,9 +309,9 @@ export default function SettingsPanel({
     : modelosKey;
   // El filtro aparece solo cuando la lista es larga (OpenRouter ≈ 300 modelos).
   const mostrarFiltro = modelosKey.length > 12;
-  // Tope de chips renderizados: las listas normales entran enteras; solo las
-  // gigantes tipo agregador (OpenRouter ≈ 300) se truncan.
-  const MAX_CHIPS = 90;
+  // Tope de chips renderizados. Con listas largas el bloque va plegado en un
+  // <details> con filtro, así que 50 alcanza para hojear; el resto se filtra.
+  const MAX_CHIPS = modelosKey.length > 12 ? 50 : 90;
   const chipsVisibles = chipsModelo.slice(0, MAX_CHIPS);
   const chipsOcultos = chipsModelo.length - chipsVisibles.length;
 
@@ -535,49 +535,69 @@ export default function SettingsPanel({
             )
           )}
 
-          {modelosKey.length > 0 && (
-            <div className="mt-1.5">
-              <p className="mb-1 text-[11px] text-white/40">
-                Modelos de tu key (click para elegir):
-              </p>
-              {mostrarFiltro && (
-                <input
-                  type="text"
-                  value={filtroModelo}
-                  onChange={(e) => setFiltroModelo(e.target.value)}
-                  placeholder={`filtrar ${modelosKey.length} modelos…`}
-                  className="mb-1 w-full rounded border border-white/15 bg-neutral-950 px-2 py-1 text-[11px] placeholder:text-white/30 focus:border-sky-400 focus:outline-none"
-                />
-              )}
-              <div className="flex flex-wrap gap-1">
-                {chipsVisibles.map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => setModeloDraft(m)}
-                    className={`rounded px-1.5 py-0.5 text-[11px] ${
-                      m === modeloDraft.trim()
-                        ? "bg-sky-500 text-white"
-                        : "bg-white/10 text-white/70 hover:bg-white/20"
-                    }`}
-                  >
-                    {m}
-                  </button>
-                ))}
-              </div>
-              {chipsOcultos > 0 && (
-                <p className="mt-1 text-[11px] text-white/40">
-                  +{chipsOcultos} modelo{chipsOcultos > 1 ? "s" : ""} más — usá el
-                  filtro de arriba para acotar.
-                </p>
-              )}
-              {chipsModelo.length === 0 && (
-                <p className="text-[11px] text-white/40">
-                  Ningún modelo de tu key coincide con “{filtroModelo.trim()}”.
-                </p>
-              )}
-            </div>
-          )}
+          {modelosKey.length > 0 &&
+            (() => {
+              const chips = (
+                <>
+                  <div className="flex flex-wrap gap-1">
+                    {chipsVisibles.map((m) => (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => setModeloDraft(m)}
+                        className={`rounded px-1.5 py-0.5 text-[11px] ${
+                          m === modeloDraft.trim()
+                            ? "bg-sky-500 text-white"
+                            : "bg-white/10 text-white/70 hover:bg-white/20"
+                        }`}
+                      >
+                        {m}
+                      </button>
+                    ))}
+                  </div>
+                  {chipsOcultos > 0 && (
+                    <p className="mt-1 text-[11px] text-white/40">
+                      +{chipsOcultos} modelo{chipsOcultos > 1 ? "s" : ""} más — usá
+                      el filtro para acotar.
+                    </p>
+                  )}
+                  {chipsModelo.length === 0 && (
+                    <p className="text-[11px] text-white/40">
+                      Ningún modelo coincide con “{filtroModelo.trim()}”.
+                    </p>
+                  )}
+                </>
+              );
+              // Lista corta → chips inline. Lista larga (OpenRouter, HF) →
+              // <details> plegado + filtro adentro, para no tapar el panel.
+              return mostrarFiltro ? (
+                <details className="group mt-1.5 rounded border border-white/10 bg-white/5 text-xs">
+                  <summary className="cursor-pointer list-none px-2 py-1.5 text-white/70 marker:content-none hover:text-white">
+                    <span className="mr-1 inline-block transition-transform group-open:rotate-90">
+                      ▸
+                    </span>
+                    Elegir de tus {modelosKey.length} modelos
+                  </summary>
+                  <div className="space-y-1 px-2 pb-2 pt-0.5">
+                    <input
+                      type="text"
+                      value={filtroModelo}
+                      onChange={(e) => setFiltroModelo(e.target.value)}
+                      placeholder="filtrar…"
+                      className="w-full rounded border border-white/15 bg-neutral-950 px-2 py-1 text-[11px] placeholder:text-white/30 focus:border-sky-400 focus:outline-none"
+                    />
+                    {chips}
+                  </div>
+                </details>
+              ) : (
+                <div className="mt-1.5">
+                  <p className="mb-1 text-[11px] text-white/40">
+                    Modelos de tu key (click para elegir):
+                  </p>
+                  {chips}
+                </div>
+              );
+            })()}
 
           <div className="mt-2 flex items-center gap-3">
             <button

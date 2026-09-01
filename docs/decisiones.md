@@ -670,10 +670,11 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
   Cerebras mostraba `llama-3.3-70b` etc. que no existían para esa key → "¿aparecieron modelos
   nuevos?"). **Regla nueva**: nunca ofrecer un modelo que no salió de la key. El default por
   proveedor sigue en `MODELO_POR_DEFECTO`.
-- **Filtro de chips** (01-09): OpenRouter (agregador) devuelve ~300 modelos → un `<input>` de
-  filtro por substring aparece sobre los chips cuando la lista supera 12. Se renderizan máx. 90
-  chips (las listas normales entran enteras; solo un agregador tipo OpenRouter se trunca) +
-  "+N más — usá el filtro".
+- **Lista larga → `<details>` plegado** (01-09): con ≤12 modelos, chips inline como siempre.
+  Con más (OpenRouter ~300, HuggingFace ~90), el bloque va dentro de un `<details>` cerrado
+  ("Elegir de tus N modelos ▸") con un `<input>` de filtro por substring adentro — no tapa el
+  panel. Máx. 50 chips renderizados en ese modo (90 en el inline) + "+N más — usá el filtro".
+  Mismo patrón `<details>` que la mini-guía de API key del mismo panel.
 - **Revertir** (volver al datalist / a sugerir modelos adivinados): reaparece la flecha vacía /
   vuelve la confusión de "modelos que no son de mi key".
 

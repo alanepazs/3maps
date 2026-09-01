@@ -186,8 +186,8 @@ src/
                         tokens; 401 si la key es inválida). El modelo se elige por CHIPS clickeables
                         bajo el input = SOLO los que la key puede usar (tras verificar; antes: sin
                         chips). Nunca modelos adivinados (F3-13; `MODELOS_SUGERIDOS` se eliminó).
-                        Sin `<datalist>`. Filtro por substring sobre los chips si la lista > 12
-                        (OpenRouter ≈ 300). Los 8
+                        Sin `<datalist>`. Lista > 12 (OpenRouter ~300, HF ~90) → los chips van en
+                        un `<details>` plegado con filtro por substring adentro. Los 8
                         proveedores; commit() lo dispara al guardar. `<details>` con la mini-guía
                         de API key (`GUIA_API_KEY`, F3-12 aclara open-source).
                         Textarea "instrucción de sistema" → onChange({systemPrompt}) directo.
