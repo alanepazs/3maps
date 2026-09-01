@@ -76,7 +76,7 @@ Cada tarea = una rama/commit, con el ciclo `spec-driven` → `incremental-implem
 - [ ] **T7 — Diferenciación visual del turno usuario vs. turno IA.** [S]
 - [ ] **T8 — Botón STOP en el mini-composer del panel (reusa `stopNode`).** [S]
 - [ ] **T9 — Flechas para navegar hermanos / ramas de un globo desde el panel.** [M]
-- [ ] **T10 — Contador de contexto (estimado) por globo y del árbol.** [M]
+- [x] **T10 — Contador de contexto (estimado) en el panel.** [M] (decisiones F3-20)
 - [x] **T11 — `llamarIA` devuelve `{ texto, uso }`; `uso` → `.md`.** [M] (decisiones F3-19)
 - [ ] **T12 — Contador de tokens gastados por globo (usa T11).** [S]
 - [ ] **T14 — Auto-scroll del panel sigue el texto mientras streamea.** [S]
@@ -225,20 +225,26 @@ verificar que `transcriptNodeId` cambia.
 **Dependencies:** None. **Files:** `BranchTranscript.tsx`, `FlowCanvas.tsx`, `intercambio.ts`
 (helper `hermanos(a, id)` si no existe). **Scope:** M.
 
-### T10 — Contador de contexto estimado
-**Descripción:** Mostrar, por globo abierto en el panel y para el árbol/rama, una estimación de
-tokens de contexto (`≈ chars/4`). Por globo = lo que `armarContexto` mandaría para ESE globo.
+### T10 — Contador de contexto estimado ✅ (decisiones F3-20)
+**Hecho:** `contexto.ts` exporta `estimarTokens(mensajes) = Math.round(Σ texto.length / 4)`.
+`FlowCanvas` tiene un `useMemo` `contextoTokens` = `estimarTokens(armarContexto(arbol,
+transcriptNodeId, {ventana}, resumenCacheado, relevantes))` — usa el resumen SOLO si ya está en
+`resumenCacheRef` (de una llamada previa de esa rama), nunca lo dispara. Se pasa como prop
+`contextoTokens` a `BranchTranscript`, que lo muestra en el header: "N interc. · ≈ N tokens de
+contexto" (con `title` que aclara que es estimación y que la llamada real puede mandar menos).
+`fmtTokens` (exportado de `BranchTranscript.tsx`) formatea "1.2k". **Un solo número (el del globo
+abierto)** — no hay total del árbol entero (el panel es de una rama; iría al lado del
+`MapaSwitcher` si se quiere después).
 
 **Acceptance criteria:**
-- [ ] Número plausible (comparar contra un conteo real de un caso conocido, ±20%).
-- [ ] "≈" explícito (es estimación).
-- [ ] No dispara la llamada real ni el resumen (solo lee el árbol).
+- [x] Número plausible: caso conocido (2 interc., ~590 chars) → 150, verificado en el pane.
+- [x] "≈" explícito.
+- [x] No dispara la llamada ni el resumen (solo lee el árbol + el cache existente).
 
-**Verification:** `_scratch.mts`: `estimarTokens(armarContexto(...))` contra un caso a mano;
-`tsc`/`lint`/`build`.
+**Verificado:** `_scratch.mts` 7 asserts (`estimarTokens` + `estimarTokens(armarContexto(...))`);
+`tsc`/`lint`/`build` verde; pane: panel abierto muestra "2 interc. · ≈ 150 tokens de contexto".
 
-**Dependencies:** None. **Files:** `contexto.ts` (export `estimarTokens`), `BranchTranscript.tsx`.
-**Scope:** M.
+**Files:** `contexto.ts`, `FlowCanvas.tsx`, `BranchTranscript.tsx`. **Scope:** M.
 
 ### T11 — `llamarIA` devuelve `usage` ✅ (decisiones F3-19)
 **Hecho:** `llamarIA` → `Promise<{ texto: string; uso: UsoTokens | null }>` (`UsoTokens =

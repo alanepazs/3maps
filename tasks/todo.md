@@ -34,7 +34,10 @@
 - [x] T9 — Flechas de navegación (rediseñado, decisiones F3-18/b/c): 2 flechas laterales `‹` `›`
       que navegan SOLO a globos unidos por línea de costado (ramas hijas + padre si el abierto es
       rama). El panel abre en el "Vos". Drag ahora respetado (F3-18b). (`BranchTranscript.tsx`, `FlowCanvas.tsx`)
-- [ ] T10 — Contador de contexto estimado por globo y árbol (`contexto.ts`, `BranchTranscript.tsx`) [M]
+- [x] T10 — Contador de contexto estimado. `contexto.ts` `estimarTokens(mensajes)` = `Σ chars / 4`.
+      `FlowCanvas` calcula `estimarTokens(armarContexto(…))` para el globo abierto (usa resumen
+      cacheado si hay, nunca lo dispara) → prop `contextoTokens` → header del panel
+      "≈ N tokens de contexto". (`contexto.ts`, `FlowCanvas.tsx`, `BranchTranscript.tsx`; decisiones F3-20)
 - [x] T11 — `llamarIA` devuelve `{ texto, uso }`; `uso` (tokens in/out) → `.md` como `tokens_in`/`tokens_out`.
       Claude `final.usage` · Gemini `usageMetadata` (thoughts van a salida) · OpenAI-compat `stream_options:{include_usage:true}`
       → chunk final. Proveedor sin usage → `uso: null`, sin contador. (`ia.ts`, `intercambio.ts`, `FlowCanvas.tsx`; decisiones F3-19)

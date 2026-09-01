@@ -13,6 +13,12 @@ import { ANCHO_PANEL_MAX_FRAC, ANCHO_PANEL_MIN } from "./settings";
 import { NOMBRE_PROVEEDOR } from "@/model/ia";
 import type { Intercambio } from "@/model/intercambio";
 
+// 1234 → "1.2k", 950 → "950". Compartido por el contador de contexto (T10) y el
+// de tokens gastados (T12).
+export function fmtTokens(n: number): string {
+  return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
+}
+
 // Panel lateral read-only: el camino raíz→globo aplanado a preguntas y
 // respuestas, tipo chat normal. Es una vista derivada del árbol (no toca
 // estado). Se abre con doble-click en un globo o con el botón ⤢ de su barra. El
@@ -36,6 +42,7 @@ export default function BranchTranscript({
   onRetry,
   nav,
   onNavigate,
+  contextoTokens,
   width,
   resizable = false,
   onResize,
@@ -56,6 +63,8 @@ export default function BranchTranscript({
     right: { id: string; label: string }[];
   } | null;
   onNavigate?: (id: string) => void;
+  // Estimación (≈ chars/4) de tokens de contexto para el globo abierto (T10).
+  contextoTokens?: number | null;
   width?: number;
   resizable?: boolean;
   onResize?: (px: number) => void;
@@ -176,6 +185,13 @@ export default function BranchTranscript({
             Conversación hasta este globo
             <span className="ml-2 text-xs font-normal text-white/40">
               {intercambios.length} interc.
+              {typeof contextoTokens === "number" && (
+                <span
+                  title="Estimación (≈ 4 caracteres por token) de lo que se manda como contexto al preguntar desde este globo. La llamada real puede mandar menos si resume lo más viejo."
+                >
+                  {` · ≈ ${fmtTokens(contextoTokens)} tokens de contexto`}
+                </span>
+              )}
             </span>
           </span>
           <div className="flex items-center gap-1">

@@ -155,8 +155,10 @@ src/
                         Ancho (fase 3.11): si `resizable`, manija en el borde interno (arrastra
                         style.width por DOM, persiste al soltar vía `onResize`). Si no (móvil),
                         pantalla completa + botón "🗺 Ver mapa" en el header.
-                        Props: {intercambios, side, onFlipSide, onClose, onSubmit?, width?,
-                        resizable?, onResize?}.
+                        Header: "N interc. · ≈ N tokens de contexto" (T10, prop `contextoTokens`
+                        calculada en FlowCanvas; F3-20). `fmtTokens` exportado acá (lo reusa T12).
+                        Props: {intercambios, side, onFlipSide, onClose, onSubmit?, onStop?,
+                        onRetry?, nav?, onNavigate?, contextoTokens?, width?, resizable?, onResize?}.
     SharedBanner.tsx    Cartel arriba cuando se ve un árbol compartido (`?compartir=`). Props:
                         {titulo, onGuardar, onSalir}. "Guardar en mi 3maps" = pasa a local editable.
     LoginNudge.tsx      Pill arriba-centro para el usuario DESLOGUEADO (solo si `haySupabase()`):
@@ -451,6 +453,10 @@ globo, F3-8. `tokensEntrada`/`tokensSalida` = null si el proveedor no dio `usage
 
 `tramoAResumir(arbol, nodoId, opts?)` → los `Intercambio[]` fuera de la ventana. Lo llama
 `FlowCanvas.responder` → `resumir()` (cacheado por sesión en `resumenCacheRef`).
+
+`estimarTokens(mensajes)` → `Math.round(Σ texto.length / 4)`. Estimación local (≈ 4 chars/token,
+sin tokenizer real) del contexto. `FlowCanvas` lo corre sobre `armarContexto(...)` del globo
+abierto → prop `contextoTokens` del panel (T10, decisiones F3-20). No dispara `resumir()`.
 
 ## inertia.ts (física del envión)
 

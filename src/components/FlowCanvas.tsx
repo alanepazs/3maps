@@ -95,6 +95,7 @@ import { useSesion } from "./useSesion";
 import MapaSwitcher from "./MapaSwitcher";
 import {
   armarContexto,
+  estimarTokens,
   intercambiosRelevantes,
   tramoAResumir,
 } from "@/model/contexto";
@@ -968,6 +969,29 @@ function Flow() {
     [arbol, transcriptNodeId],
   );
 
+  // Estimación (≈ chars/4) de los tokens de contexto que mandaría una pregunta
+  // desde el globo abierto en el panel (T10). Usa el resumen del tramo viejo si
+  // ya está cacheado (de una llamada previa de esa rama); si no, cuenta el tramo
+  // viejo completo. NUNCA dispara el resumen — es solo lectura del árbol.
+  const contextoTokens = useMemo(() => {
+    if (!transcriptNodeId || !buscar(arbol, transcriptNodeId)) return null;
+    const ventana = settings.ventanaContexto;
+    const viejos = tramoAResumir(arbol, transcriptNodeId, { ventana });
+    const resumen =
+      viejos.length > 0
+        ? resumenCacheRef.current.get(viejos.map((i) => i.id).join("|")) ?? null
+        : null;
+    const relevantes = resumen
+      ? intercambiosRelevantes(
+          viejos,
+          buscar(arbol, transcriptNodeId)?.pregunta ?? "",
+        )
+      : [];
+    return estimarTokens(
+      armarContexto(arbol, transcriptNodeId, { ventana }, resumen, relevantes),
+    );
+  }, [arbol, transcriptNodeId, settings.ventanaContexto]);
+
   // Navegación del panel (`‹` `›`): saltar SOLO a los globos unidos al globo
   // abierto por una línea de COSTADO — sus ramas hijas, más el padre si el
   // globo abierto es una rama (ahí la línea al padre también sale de costado).
@@ -1449,6 +1473,7 @@ function Flow() {
             }
             nav={nav}
             onNavigate={verGloboEnPanel}
+            contextoTokens={contextoTokens}
             width={panelAncho}
             resizable={panelResizable}
             onResize={guardarAnchoPanel}

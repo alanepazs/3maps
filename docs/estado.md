@@ -113,10 +113,13 @@ Chrome real (agarrarla con zoom out).
   se guarda en el `.md` (`tokens_in`/`tokens_out`). `uso: null` si el proveedor no lo manda.
   Decisiones F3-19. ⚠️ **Falta prueba de Alan**: confirmar que `stream_options` no rompe
   Groq/OpenRouter/HuggingFace con key real.
-- **Falta**: T10 contador de contexto estimado (`≈ chars/4`) por globo y árbol · T12 contador de
-  tokens gastados por globo (lee `tokens_in/out` del `.md`, usa T11) · **T15** respuestas que son
-  un documento entero (`.md`/código): UX (spec) · **T16** drag & drop de archivos al
-  mini-composer (spec + scope con Alan).
+- **Hecho (01-09, cont.)**: **T10** contador de contexto — `estimarTokens(mensajes) = Σ chars/4`
+  en `contexto.ts`; el header del panel muestra "≈ N tokens de contexto" del globo abierto
+  (`estimarTokens(armarContexto(…))`, usa el resumen cacheado si hay, nunca lo dispara).
+  Decisiones F3-20. Verificado en el pane (2 interc. → ≈150).
+- **Falta**: T12 contador de tokens gastados por globo (lee `tokens_in/out` del `.md`, usa T11) ·
+  **T15** respuestas que son un documento entero (`.md`/código): UX (spec) · **T16** drag & drop
+  de archivos al mini-composer (spec + scope con Alan).
 - **Bugfix layout (01-09, decisiones F3-7b/c)**: ramificar una rama en un árbol ancho mandaba el
   globo nuevo lejísimo abajo ("suelto") o **pisando otro globo**. `ubicarNuevoGlobo`: `H_NUEVO`
   260 (real, nace colapsado), búsqueda en anillos ampliada, y fallback `bajarHastaLibre` que baja

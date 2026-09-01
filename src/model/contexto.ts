@@ -214,6 +214,15 @@ export function armarContexto(
   return normalizar(crudo);
 }
 
+// Estimación local y barata de cuántos tokens ocupa una lista de mensajes:
+// ~4 caracteres por token (regla de dedo de los tokenizers BPE para inglés y
+// español; error típico ±20 %). No baja ningún tokenizer real — sirve para
+// mostrar "cuánto contexto estoy mandando" sin costo ni red (T10).
+export function estimarTokens(mensajes: Mensaje[]): number {
+  const chars = mensajes.reduce((n, m) => n + m.texto.length, 0);
+  return Math.round(chars / 4);
+}
+
 // El tramo del camino que cae fuera de la ventana — lo que habría que resumir.
 // Vacío si el camino entra entero en la ventana. Lo usará la lógica de resumen.
 export function tramoAResumir(

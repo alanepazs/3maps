@@ -877,6 +877,23 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
   Groq/OpenRouter/HuggingFace.
 - **Revertir**: T12 (contador de tokens por globo) se queda sin datos; volvés a `Promise<string>`.
 
+### F3-20. Contador de contexto = estimación local `Σ chars / 4`, nunca dispara el resumen (T10)
+- **`estimarTokens(mensajes)`** en `contexto.ts`: `Math.round(Σ m.texto.length / 4)`. Regla de
+  dedo de los tokenizers BPE (inglés/español), error ~±20 %. No se baja ningún tokenizer real
+  (`js-tiktoken` pesa y no cubre a los proveedores no-OpenAI). Para "¿cuánto contexto mando?"
+  alcanza.
+- **Qué se cuenta**: `FlowCanvas` corre `estimarTokens(armarContexto(arbol, transcriptNodeId,
+  {ventana}, resumen, relevantes))` en un `useMemo`. `resumen` = SOLO lo que ya esté en
+  `resumenCacheRef` (de una llamada previa de esa rama); si no hay, `null` → `armarContexto`
+  cuenta el tramo viejo completo. **Nunca se llama a `resumir()`** — el contador es lectura pura.
+  Consecuencia: en una rama larga que todavía no preguntaste, el número es un **techo** (baja tras
+  la primera llamada, cuando el resumen entra al cache).
+- **Dónde**: header del panel `BranchTranscript`, junto a "N interc." → "· ≈ 3.2k tokens de
+  contexto" (`fmtTokens` formatea el "k"). `title` aclara que es estimación. **Un solo número**:
+  el del globo abierto. Se descartó un total del árbol entero — el panel es de una rama; si se
+  quiere un "tamaño del mapa" va al lado del `MapaSwitcher`, no acá.
+- **Revertir**: sacás `estimarTokens` + el `useMemo` + la prop → el panel no muestra el contexto.
+
 ---
 
 ## Build / deploy
