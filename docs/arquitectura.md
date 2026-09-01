@@ -74,7 +74,8 @@ src/
                          rescatados textuales JUSTO antes de la pregunta (no parte el prefijo).
                          tramoAResumir = fuera de la ventana. intercambiosRelevantes(viejos,
                          pregunta) = match por raíz de palabra + peso por rareza (fase 2.5 liviana).
-    ia.ts                llamarIA(config, mensajes, opts) → string. Punto único; switch(proveedor).
+    ia.ts                llamarIA(config, mensajes, opts) → { texto, uso }. `uso` = tokens
+                         {entrada,salida} del proveedor o null (T11, decisiones F3-19). Punto único; switch(proveedor).
                          Adaptadores: Claude (@anthropic-ai/sdk dinámico), Gemini (fetch + SSE), y
                          los OpenAI-compatibles vía llamarOpenAICompat (contra el edge function
                          ia-proxy; SSE estilo OpenAI). Streaming vía opts.onTexto. opts.usarProxy
@@ -345,9 +346,13 @@ Props de `<ReactFlow>` que importan:
   `ia-proxy`, decisiones §7a). `cerebras`/`siliconflow`/`zhipu`/`moonshot`/`mistral`/`qwen` se eliminaron (§7d).
   `MODELO_POR_DEFECTO`, `NOMBRE_PROVEEDOR`, `PISTA_API_KEY`, `GUIA_API_KEY` por proveedor
   (`MODELOS_SUGERIDOS` se eliminó — F3-13).
-- `llamarIA(config, mensajes, opts)` → `switch(config.proveedor)`. Sumar proveedor = un `case`
-  nuevo + entradas en los `Record<Proveedor,…>` + (si es OpenAI-compat) redeploy del `ia-proxy`.
-  Cero cambios en el árbol (spec §6). `resumir()` usa el mismo proveedor (le pasa `usarProxy`).
+- `llamarIA(config, mensajes, opts)` → `Promise<{ texto, uso }>`, `switch(config.proveedor)`.
+  `uso` (`UsoTokens = { entrada, salida }` | null) = tokens que reportó el proveedor: Claude
+  `final.usage`, Gemini `usageMetadata`, OpenAI-compat `stream_options:{include_usage:true}` →
+  chunk final (T11, decisiones F3-19). Sumar proveedor = un `case` nuevo + entradas en los
+  `Record<Proveedor,…>` + (si es OpenAI-compat) redeploy del `ia-proxy`. Cero cambios en el árbol
+  (spec §6). `resumir()` usa el mismo proveedor (le pasa `usarProxy`) y devuelve `string` (tira
+  el `uso`).
 - La key de Claude/Gemini va **directo del navegador al proveedor**. Las de los otros 11
   **transitan** el proxy stateless (opt-in `opts.usarProxy` / `settings.usarProxyIA`), nunca se
   almacenan. Ver §7a.
@@ -409,8 +414,9 @@ Props de `<ReactFlow>` que importan:
 
 ## model/intercambio.ts (modelo de datos)
 
-`Intercambio` = `{ id, padreId, rama, x, y, ancho, alto, proveedor, fecha, pregunta, respuesta,
-pending, error }` (`ancho`/`alto` = null → auto; tamaño manual del globo, F3-8).
+`Intercambio` = `{ id, padreId, rama, x, y, ancho, alto, tokensEntrada, tokensSalida, proveedor,
+fecha, pregunta, respuesta, pending, error }` (`ancho`/`alto` = null → auto; tamaño manual del
+globo, F3-8. `tokensEntrada`/`tokensSalida` = null si el proveedor no dio `usage`; T11, F3-19).
 `Arbol` = `{ intercambios: Intercambio[] }`. Coincide con el frontmatter del `.md` (spec §3).
 - `rama`: `"main"` (tronco, por abajo) | `"branch-left"` | `"branch-right"` (costado). Los ids de
   los handles `source` del `MessageNode` se llaman igual → `arbolAVista` hace `sourceHandle: ic.rama`
@@ -422,7 +428,8 @@ pending, error }` (`ancho`/`alto` = null → auto; tamaño manual del globo, F3-
 - `toMarkdown` / `parseMarkdown` — `---` frontmatter (`key: value`, parser mínimo sin YAML) +
   `## Pregunta` / `## Respuesta`. `padre_id` / `proveedor` vacíos → `null`. `pendiente: 1` (una
   llamada a medias) → al parsear se convierte en un `error` reintentable (`pending` nunca se
-  restaura como tal).
+  restaura como tal). `tokens_in` / `tokens_out` (T11): tokens del proveedor, vacío → `null`;
+  un `.md` viejo sin esas líneas parsea igual.
 
 ## model/contexto.ts (armado del contexto para la IA)
 

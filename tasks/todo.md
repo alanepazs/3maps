@@ -35,7 +35,10 @@
       que navegan SOLO a globos unidos por línea de costado (ramas hijas + padre si el abierto es
       rama). El panel abre en el "Vos". Drag ahora respetado (F3-18b). (`BranchTranscript.tsx`, `FlowCanvas.tsx`)
 - [ ] T10 — Contador de contexto estimado por globo y árbol (`contexto.ts`, `BranchTranscript.tsx`) [M]
-- [ ] T11 — `llamarIA` devuelve `usage`; se guarda en el `.md` (`ia.ts`, `intercambio.ts`, `FlowCanvas.tsx`, `contexto.ts`) [M]
+- [x] T11 — `llamarIA` devuelve `{ texto, uso }`; `uso` (tokens in/out) → `.md` como `tokens_in`/`tokens_out`.
+      Claude `final.usage` · Gemini `usageMetadata` (thoughts van a salida) · OpenAI-compat `stream_options:{include_usage:true}`
+      → chunk final. Proveedor sin usage → `uso: null`, sin contador. (`ia.ts`, `intercambio.ts`, `FlowCanvas.tsx`; decisiones F3-19)
+      ⚠️ Falta que Alan confirme e2e que `stream_options` no rompe Groq/OpenRouter/HuggingFace.
 - [ ] T12 — Contador de tokens gastados por globo (`BranchTranscript.tsx`) [S] — dep: T11
 - [x] T14 — Auto-scroll del `BranchTranscript` sigue el texto mientras streamea (hoy no lo hace bien) (`BranchTranscript.tsx`) [S]
 - [x] Bugfix — ramificar una rama en árbol ancho tiraba el globo lejos/suelto: `ubicarNuevoGlobo`

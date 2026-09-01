@@ -524,6 +524,9 @@ function Flow() {
         conRespuesta(conError(a, nodeId, null), nodeId, {
           respuesta: null,
           pending: true,
+          // Un reintento arranca sin el conteo de tokens de la respuesta vieja.
+          tokensEntrada: null,
+          tokensSalida: null,
         }),
       );
 
@@ -594,7 +597,7 @@ function Flow() {
 
         let ultimoRender = 0;
         const sistema = settings.systemPrompt.trim() || undefined;
-        const texto = await llamarIA(configIA, mensajes, {
+        const { texto, uso } = await llamarIA(configIA, mensajes, {
           signal: ctrl.signal,
           sistema,
           usarProxy: settings.usarProxyIA,
@@ -615,6 +618,8 @@ function Flow() {
             respuesta: texto,
             pending: false,
             proveedor: configIA.proveedor,
+            tokensEntrada: uso?.entrada ?? null,
+            tokensSalida: uso?.salida ?? null,
           }),
         );
         // La respuesta final puede ser más alta que el estimado → si el globo

@@ -108,10 +108,15 @@ Chrome real (agarrarla con zoom out).
   ordenadas por el `y` del destino; se reordenan si un globo se mueve. Muestran la pregunta del
   destino al hover. Hijos `main`, hermanos y contexto: por scroll o click. El panel **abre en el
   "Vos"** del globo, no al final.
-- **Falta**: T10 contador de contexto estimado (`≈ chars/4`) por globo y árbol · T11 `llamarIA`
-  devuelve `usage` → al `.md` · T12 contador de tokens gastados por globo (usa T11) · **T15**
-  respuestas que son un documento entero (`.md`/código): UX (spec) · **T16** drag & drop de
-  archivos al mini-composer (spec + scope con Alan).
+- **Hecho (01-09, cont.)**: **T11** `llamarIA` → `{ texto, uso }`; el `usage` del proveedor
+  (Claude `final.usage` · Gemini `usageMetadata` · OpenAI-compat `stream_options:{include_usage}`)
+  se guarda en el `.md` (`tokens_in`/`tokens_out`). `uso: null` si el proveedor no lo manda.
+  Decisiones F3-19. ⚠️ **Falta prueba de Alan**: confirmar que `stream_options` no rompe
+  Groq/OpenRouter/HuggingFace con key real.
+- **Falta**: T10 contador de contexto estimado (`≈ chars/4`) por globo y árbol · T12 contador de
+  tokens gastados por globo (lee `tokens_in/out` del `.md`, usa T11) · **T15** respuestas que son
+  un documento entero (`.md`/código): UX (spec) · **T16** drag & drop de archivos al
+  mini-composer (spec + scope con Alan).
 - **Bugfix layout (01-09, decisiones F3-7b/c)**: ramificar una rama en un árbol ancho mandaba el
   globo nuevo lejísimo abajo ("suelto") o **pisando otro globo**. `ubicarNuevoGlobo`: `H_NUEVO`
   260 (real, nace colapsado), búsqueda en anillos ampliada, y fallback `bajarHastaLibre` que baja

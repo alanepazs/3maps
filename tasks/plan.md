@@ -77,7 +77,7 @@ Cada tarea = una rama/commit, con el ciclo `spec-driven` → `incremental-implem
 - [ ] **T8 — Botón STOP en el mini-composer del panel (reusa `stopNode`).** [S]
 - [ ] **T9 — Flechas para navegar hermanos / ramas de un globo desde el panel.** [M]
 - [ ] **T10 — Contador de contexto (estimado) por globo y del árbol.** [M]
-- [ ] **T11 — `llamarIA` devuelve `usage`; se guarda en el `.md`.** [M]
+- [x] **T11 — `llamarIA` devuelve `{ texto, uso }`; `uso` → `.md`.** [M] (decisiones F3-19)
 - [ ] **T12 — Contador de tokens gastados por globo (usa T11).** [S]
 - [ ] **T14 — Auto-scroll del panel sigue el texto mientras streamea.** [S]
 - [ ] **T15 — Respuestas que son un documento entero (`.md`/código): UX.** [investigar]
@@ -240,23 +240,28 @@ tokens de contexto (`≈ chars/4`). Por globo = lo que `armarContexto` mandaría
 **Dependencies:** None. **Files:** `contexto.ts` (export `estimarTokens`), `BranchTranscript.tsx`.
 **Scope:** M.
 
-### T11 — `llamarIA` devuelve `usage`
-**Descripción:** Cambiar la firma de `llamarIA` (y los 3 adaptadores) para devolver
-`{ texto: string; usage?: { in: number; out: number } }`. Parsear el `usage` del último chunk SSE
-(OpenAI-compat), `usageMetadata` (Gemini), `message.usage` (Claude). `FlowCanvas.responder` guarda
-`usage` en el intercambio; `intercambio.ts` `toMarkdown`/`parseMarkdown` suman el campo.
+### T11 — `llamarIA` devuelve `usage` ✅ (decisiones F3-19)
+**Hecho:** `llamarIA` → `Promise<{ texto: string; uso: UsoTokens | null }>` (`UsoTokens =
+{ entrada, salida }`). Claude: `final.usage` (entrada suma cache read/creation). Gemini:
+`usageMetadata` del último chunk (`thoughtsTokenCount` → salida). OpenAI-compat: se agrega
+`stream_options: { include_usage: true }` al body → el chunk final trae `usage` (`choices: []`).
+`resumir()` sigue devolviendo `string` (desenvuelve `.texto` internamente — `contexto.ts` NO se
+tocó). `FlowCanvas.responder`: destructura `{ texto, uso }`, pasa `tokensEntrada/Salida` a
+`conRespuesta` en la escritura final y `null` en el reset del reintento. `intercambio.ts`:
+`Intercambio.tokensEntrada/tokensSalida` (`number | null`), frontmatter `tokens_in`/`tokens_out`.
 
 **Acceptance criteria:**
-- [ ] `llamarIA` compila con la nueva firma; todos los call sites actualizados (`responder`,
-      `resumir`).
-- [ ] Un `.md` con `usage` hace round-trip (`toMarkdown` → `parseMarkdown`).
-- [ ] Un provider sin `usage` → `usage` undefined, nada rompe.
+- [x] `llamarIA` compila con la nueva firma; call sites (`responder`, `resumir`) actualizados.
+- [x] `.md` con y sin tokens hace round-trip; `.md` viejo (sin las líneas) → `null`.
+- [x] Provider sin `usage` → `uso: null`, nada rompe (scratch con SSE sin `usage`).
+- [ ] **Alan (Chrome real):** `stream_options` no rompe Groq/OpenRouter/HuggingFace; el `.md`
+      del globo guarda `tokens_in`/`tokens_out` tras una llamada real.
 
-**Verification:** `_scratch.mts` para el round-trip del `.md`; `tsc`/`lint`/`build`; pane con SSE
-mockeado que incluye `usage`.
+**Verificado:** `_scratch.mts` con 14 asserts (round-trip + `conRespuesta`) + 6 asserts (fetch
+stub: Gemini `usageMetadata`, OpenAI-compat `usage` en chunk final, sin-usage → null).
+`tsc`/`lint`/`build` verde.
 
-**Dependencies:** None (pero es la más invasiva de la Fase 4). **Files:** `ia.ts`, `intercambio.ts`,
-`FlowCanvas.tsx`, `contexto.ts` (firma de `resumir`). **Scope:** M.
+**Files:** `ia.ts`, `intercambio.ts`, `FlowCanvas.tsx`. **Scope:** M.
 
 ### T12 — Contador de tokens gastados
 **Descripción:** En el panel, por globo, mostrar `usage.in` / `usage.out` / total si el `.md` lo

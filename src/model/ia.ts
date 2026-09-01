@@ -195,6 +195,15 @@ export function avisoFormatoKey(
   }
 }
 
+// Tokens que reportó el proveedor para una llamada. `entrada` = prompt/input
+// (incluye lo servido de caché, si el proveedor lo desglosa); `salida` =
+// completion/output (incluye el "thinking" que se factura como salida).
+export type UsoTokens = { entrada: number; salida: number };
+
+// Lo que devuelve `llamarIA`: el texto de la respuesta + el `usage` si el
+// proveedor lo mandó (`null` si no — no todos los free/proxy lo hacen).
+export type RespuestaIA = { texto: string; uso: UsoTokens | null };
+
 export type LlamadaOpts = {
   sistema?: string;
   maxTokens?: number;
@@ -220,7 +229,7 @@ export async function llamarIA(
   config: ConfigIA,
   mensajes: Mensaje[],
   opts: LlamadaOpts = {},
-): Promise<string> {
+): Promise<RespuestaIA> {
   if (!config.apiKey.trim()) {
     throw new ErrorIA("Falta la API key. Cargala en ⚙️.");
   }
@@ -260,7 +269,8 @@ export async function resumir(
         `Pregunta: ${i.pregunta}\nRespuesta: ${i.respuesta ?? "(sin respuesta)"}`,
     )
     .join("\n\n");
-  return llamarIA(
+  // El `usage` del resumen (llamada interna) no se usa hoy — solo el texto.
+  const r = await llamarIA(
     config,
     [
       {
@@ -274,6 +284,7 @@ export async function resumir(
     ],
     { maxTokens: 2048, usarProxy: opts.usarProxy },
   );
+  return r.texto;
 }
 
 // ── Adaptador: Claude / Anthropic ──────────────────────────────────────────
@@ -284,7 +295,7 @@ async function llamarClaude(
   config: ConfigIA,
   mensajes: Mensaje[],
   opts: LlamadaOpts,
-): Promise<string> {
+): Promise<RespuestaIA> {
   const { default: Anthropic } = await import("@anthropic-ai/sdk");
   const client = new Anthropic({
     apiKey: config.apiKey,
@@ -317,7 +328,17 @@ async function llamarClaude(
         if (b.type === "text") acumulado += b.text;
       }
     }
-    return acumulado;
+    const u = final.usage;
+    const uso: UsoTokens | null = u
+      ? {
+          entrada:
+            (u.input_tokens ?? 0) +
+            (u.cache_read_input_tokens ?? 0) +
+            (u.cache_creation_input_tokens ?? 0),
+          salida: u.output_tokens ?? 0,
+        }
+      : null;
+    return { texto: acumulado, uso };
   } catch (e) {
     if (e instanceof ErrorIA) throw e;
     if (esAbort(e)) throw e; // cancelación deliberada — la maneja quien llama
@@ -335,6 +356,12 @@ type GeminiChunk = {
     finishReason?: string;
   }>;
   promptFeedback?: { blockReason?: string };
+  usageMetadata?: {
+    promptTokenCount?: number;
+    candidatesTokenCount?: number;
+    thoughtsTokenCount?: number;
+    totalTokenCount?: number;
+  };
 };
 
 // Google satura los flash 3.x de a ratos y devuelve 503 (en el fetch inicial o
@@ -348,7 +375,7 @@ async function llamarGemini(
   config: ConfigIA,
   mensajes: Mensaje[],
   opts: LlamadaOpts,
-): Promise<string> {
+): Promise<RespuestaIA> {
   const modelo = config.modelo || MODELO_POR_DEFECTO.gemini;
   for (let intento = 0; ; intento++) {
     try {
@@ -369,7 +396,7 @@ async function intentarGemini(
   modelo: string,
   mensajes: Mensaje[],
   opts: LlamadaOpts,
-): Promise<string> {
+): Promise<RespuestaIA> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
     modelo,
   )}:streamGenerateContent?alt=sse`;
@@ -426,6 +453,7 @@ async function intentarGemini(
   let huboThoughts = false;
   let errorEnStream: string | null = null;
   let error503EnStream = false;
+  let uso: UsoTokens | null = null;
 
   type GeminiPayload = GeminiChunk & {
     error?: { message?: string; code?: number; status?: string };
@@ -468,6 +496,15 @@ async function intentarGemini(
     if (chunk.promptFeedback?.blockReason) {
       bloqueo = chunk.promptFeedback.blockReason;
     }
+    // `usageMetadata` llega acumulativo; el último visto es el bueno. El thinking
+    // se factura como salida → se suma a `candidatesTokenCount`.
+    if (chunk.usageMetadata) {
+      const um = chunk.usageMetadata;
+      uso = {
+        entrada: um.promptTokenCount ?? 0,
+        salida: (um.candidatesTokenCount ?? 0) + (um.thoughtsTokenCount ?? 0),
+      };
+    }
   };
 
   const reader = res.body.getReader();
@@ -492,7 +529,7 @@ async function intentarGemini(
   } catch (e) {
     if (esAbort(e)) throw e;
     // Si ya llegó texto, lo devolvemos igual (stream cortado a mitad).
-    if (acumulado) return acumulado;
+    if (acumulado) return { texto: acumulado, uso };
     throw new ErrorIA(mensajeLegible(e), e);
   }
 
@@ -517,7 +554,7 @@ async function intentarGemini(
     throw new ErrorIA("Gemini bloqueó la respuesta por seguridad.");
   }
   // Con texto parcial: lo devolvemos aunque el stream se haya cortado con error.
-  if (acumulado) return acumulado;
+  if (acumulado) return { texto: acumulado, uso };
 
   if (errorEnStream) {
     const msg = `Gemini (${modelo}): ${errorEnStream}`;
@@ -617,6 +654,12 @@ type OpenAIChunk = {
     finish_reason?: string | null;
   }>;
   error?: { message?: string };
+  // Con `stream_options.include_usage` el chunk final trae esto (y `choices: []`).
+  usage?: {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    total_tokens?: number;
+  } | null;
 };
 
 // Los modelos "reasoning" (gpt-oss, qwen3, DeepSeek-R1…) mandan su cadena de
@@ -648,7 +691,7 @@ async function llamarOpenAICompat(
   config: ConfigIA,
   mensajes: Mensaje[],
   opts: LlamadaOpts,
-): Promise<string> {
+): Promise<RespuestaIA> {
   const nombre = NOMBRE_PROVEEDOR[config.proveedor];
   if (!opts.usarProxy) {
     throw new ErrorIA(
@@ -667,6 +710,10 @@ async function llamarOpenAICompat(
   const body = {
     model: config.modelo,
     stream: true,
+    // Pide que el chunk final del SSE incluya el `usage` (tokens in/out). Groq,
+    // OpenRouter, DeepSeek y OpenAI lo soportan; si algún proveedor lo rechaza,
+    // simplemente no viene el `usage` (o habría que gatearlo por proveedor).
+    stream_options: { include_usage: true },
     messages: [
       ...(opts.sistema ? [{ role: "system", content: opts.sistema }] : []),
       ...mensajes.map((m) => ({ role: m.rol, content: m.texto })),
@@ -705,6 +752,7 @@ async function llamarOpenAICompat(
   let crudo = ""; // contenido tal cual llega (puede traer <think>…)
   let acumulado = ""; // lo mismo pero ya sin la cadena de pensamiento
   let errorEnStream: string | null = null;
+  let uso: UsoTokens | null = null;
   const reader = res.body.getReader();
   const dec = new TextDecoder();
   let buf = "";
@@ -723,6 +771,12 @@ async function llamarOpenAICompat(
     if (chunk.error?.message) {
       errorEnStream = chunk.error.message;
       return;
+    }
+    if (chunk.usage) {
+      uso = {
+        entrada: chunk.usage.prompt_tokens ?? 0,
+        salida: chunk.usage.completion_tokens ?? 0,
+      };
     }
     const trozo = chunk.choices?.[0]?.delta?.content;
     if (!trozo) return; // `reasoning` / `reasoning_content` se ignoran
@@ -748,11 +802,11 @@ async function llamarOpenAICompat(
     if (buf) procesarLinea(buf);
   } catch (e) {
     if (esAbort(e)) throw e;
-    if (acumulado) return acumulado; // stream cortado a mitad
+    if (acumulado) return { texto: acumulado, uso }; // stream cortado a mitad
     throw new ErrorIA(mensajeLegible(e), e);
   }
 
-  if (acumulado) return acumulado;
+  if (acumulado) return { texto: acumulado, uso };
   if (errorEnStream) throw new ErrorIA(`${nombre}: ${errorEnStream}`);
   // Llegó contenido pero quedó vacío tras limpiar: era TODO cadena de pensamiento
   // (nunca cerró el `<think>` / gastó el presupuesto) o TODO tokens internos

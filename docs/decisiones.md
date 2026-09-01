@@ -849,6 +849,34 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
   on `[intercambios.length]`. El follow del streaming (T14) queda igual.
 - **Revertir**: vuelve la fila de 4 flechas ▲◀▶▼ + "hermano N/M" y el panel abre scrolleado al final.
 
+### F3-19. `llamarIA` devuelve `{ texto, uso }`; el `usage` del proveedor va al `.md` (T11)
+- **Qué cambió**: `llamarIA` pasó de `Promise<string>` a `Promise<{ texto: string; uso: UsoTokens
+  | null }>` (`UsoTokens = { entrada, salida }`). Los 3 adaptadores devuelven ese shape.
+- **De dónde sale el `usage`**:
+  - **Claude**: `final.usage` del `stream.finalMessage()`. `entrada = input_tokens +
+    cache_read_input_tokens + cache_creation_input_tokens` (todo lo que entró como contexto,
+    comparable con los otros proveedores); `salida = output_tokens`.
+  - **Gemini**: `usageMetadata` del stream — llega **acumulativo**, nos quedamos con el último.
+    `salida = candidatesTokenCount + thoughtsTokenCount` (el "thinking" se factura como salida).
+  - **OpenAI-compat** (vía `ia-proxy`): hay que **pedirlo** — se agregó `stream_options: {
+    include_usage: true }` al body. El proxy reenvía el body tal cual, así que no hubo que tocar
+    el edge function. El chunk final del SSE trae `usage` con `choices: []` (el guard
+    `if (!trozo) return` ya lo saltea para el texto). Groq/OpenRouter/DeepSeek/OpenAI lo soportan;
+    si un proveedor lo rechazara habría que gatearlo por proveedor.
+- **`uso: null` si el proveedor no lo manda** → sin contador para ese globo (nunca un "0" falso).
+- **`resumir()` sigue devolviendo `string`** — desenvuelve `.texto` internamente. **`contexto.ts`
+  NO se tocó** (no llama a `llamarIA` ni a `resumir`; `plan.md` decía "firma de resumir en
+  contexto.ts" — era un error, `resumir` vive en `ia.ts`).
+- **Persistencia**: `Intercambio.tokensEntrada` / `tokensSalida` (`number | null`), frontmatter
+  `tokens_in:` / `tokens_out:` (flat, como `ancho`/`alto` — el parser de frontmatter no es YAML).
+  `parseMarkdown` de un `.md` viejo sin esas líneas → `null` (`Number("") || null`).
+- **`conRespuesta`** acepta `tokensEntrada?` / `tokensSalida?` **opcionales**: se pasan solo en la
+  escritura final (con el `usage`); durante el streaming se omiten → se preservan; `FlowCanvas`
+  pasa `null` explícito en el reset del reintento para no dejar el conteo viejo.
+- **Falta**: que Alan confirme e2e (Chrome real, keys free) que `stream_options` no rompe
+  Groq/OpenRouter/HuggingFace.
+- **Revertir**: T12 (contador de tokens por globo) se queda sin datos; volvés a `Promise<string>`.
+
 ---
 
 ## Build / deploy

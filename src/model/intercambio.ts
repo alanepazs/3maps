@@ -52,6 +52,10 @@ export type Intercambio = {
   pending: boolean;
   // Último error al intentar responder este intercambio (para poder reintentar).
   error: string | null;
+  // Tokens que reportó el proveedor en la última respuesta (T11). `null` si el
+  // proveedor no devolvió `usage`. Van al `.md` como `tokens_in` / `tokens_out`.
+  tokensEntrada: number | null;
+  tokensSalida: number | null;
 };
 
 export type Arbol = {
@@ -99,6 +103,8 @@ export function crearIntercambio(campos: {
     respuesta: campos.respuesta ?? null,
     pending: campos.pending ?? false,
     error: campos.error ?? null,
+    tokensEntrada: null,
+    tokensSalida: null,
   };
 }
 
@@ -207,6 +213,11 @@ export function conRespuesta(
     respuesta: string | null;
     proveedor?: Proveedor | null;
     pending?: boolean;
+    // Solo se pasan en la escritura final (con el `usage` del proveedor). Durante
+    // el streaming se omiten → se preservan los que ya había. `null` explícito
+    // los limpia (reintento).
+    tokensEntrada?: number | null;
+    tokensSalida?: number | null;
   },
 ): Arbol {
   return mapear(a, id, (i) => ({
@@ -216,6 +227,10 @@ export function conRespuesta(
     pending: campos.pending ?? false,
     // Una respuesta (aunque sea parcial en streaming) limpia el error previo.
     error: campos.pending ? i.error : null,
+    tokensEntrada:
+      campos.tokensEntrada !== undefined ? campos.tokensEntrada : i.tokensEntrada,
+    tokensSalida:
+      campos.tokensSalida !== undefined ? campos.tokensSalida : i.tokensSalida,
   }));
 }
 
@@ -291,6 +306,9 @@ export function toMarkdown(ic: Intercambio): string {
     `y: ${ic.y}`,
     `ancho: ${ic.ancho ?? ""}`,
     `alto: ${ic.alto ?? ""}`,
+    // Tokens reportados por el proveedor (T11). Vacío si no los devolvió.
+    `tokens_in: ${ic.tokensEntrada ?? ""}`,
+    `tokens_out: ${ic.tokensSalida ?? ""}`,
     `proveedor: ${ic.proveedor ?? ""}`,
     `fecha: ${ic.fecha}`,
     // El error va en el frontmatter (JSON en una línea) y no como sección del
@@ -365,6 +383,8 @@ export function parseMarkdown(
     y: Number(meta.y) || 0,
     ancho: Number(meta.ancho) || null,
     alto: Number(meta.alto) || null,
+    tokensEntrada: Number(meta.tokens_in) || null,
+    tokensSalida: Number(meta.tokens_out) || null,
     proveedor: (PROVEEDORES as string[]).includes(meta.proveedor)
       ? (meta.proveedor as Proveedor)
       : null,
