@@ -18,8 +18,8 @@ Una web app donde el usuario conversa con una IA (Claude, GPT, Gemini, DeepSeek 
 - **Un globo = un intercambio completo**: la pregunta del usuario (arriba, como encabezado) y la respuesta de la IA (abajo, como cuerpo) viven en el mismo nodo. Se busca la menor cantidad de globos posible para que el árbol no crezca visualmente de más.
 - Cada globo se mueve libremente por el canvas (posición manual, no un layout fijo — fluidez tipo Obsidian).
 - Desde cualquier globo (no solo el último) se puede abrir una pregunta nueva → nace una rama nueva, sin tocar la rama principal. **Lo que importa es ramificar respuestas**: la pregunta que origina la rama es solo el disparador, no un nodo aparte.
-- El "tronco" es la conversación principal y siempre baja en **vertical** (arriba → abajo). Cada desvío es una **rama** que sale por un **costado** del globo.
-- **Lado de la rama**: al crearse, la rama nace por la derecha. El usuario puede arrastrar el globo ramificado al lado izquierdo del tronco; al soltarlo, la flecha se reconecta sola al costado (izquierda o derecha) que corresponda según dónde quedó.
+- El "tronco" es la conversación principal y siempre baja en **vertical**: la línea sale de **abajo** del padre y entra por **arriba** del hijo. Cada desvío es una **rama** que sale por un **costado** del padre y **entra por el costado opuesto** del hijo (rama a la derecha → sale por la derecha del padre, entra por la izquierda del hijo). Rama = costado ↔ costado; tronco = abajo ↔ arriba.
+- **Lado de la rama**: al crearse, la rama nace por la derecha. El usuario puede arrastrar el globo ramificado al lado izquierdo del tronco; al soltarlo, la flecha se reconecta sola a los costados (izquierda o derecha) que correspondan según dónde quedó.
 - **Envión al soltar**: al soltar un globo (o un grupo, o el propio lienzo al panear) con velocidad, sigue de largo un poco y frena solo, tipo Obsidian Canvas. La intensidad se regula desde la tuerquita de ajustes (arriba a la izquierda).
 - **Modos de interacción del lienzo**:
   - Por defecto (sin teclas): manito. Arrastrar el fondo hace **pan** (con envión).
@@ -53,7 +53,7 @@ fecha: 2026-08-29T14:30:00
 
 - Un **árbol completo** = una carpeta con todos sus nodos `.md` adentro.
 - La relación padre-hijo (el `padre_id`) ya define las flechas — no hace falta una tabla/archivo aparte de "edges".
-- `rama` indica de qué lado del padre sale la flecha: `main` para el tronco (sale por abajo del padre) y `branch-left` / `branch-right` para las ramas (salen por un costado). El usuario lo cambia arrastrando el globo.
+- `rama` indica cómo se conecta la flecha: `main` = tronco (sale por abajo del padre, entra por arriba del hijo) y `branch-left` / `branch-right` = ramas (salen por ese costado del padre y entran por el costado **opuesto** del hijo). El usuario lo cambia arrastrando el globo. En React Flow: `sourceHandle` = `rama`; `targetHandle` = `t-top` / `t-left` / `t-right` (ver `arbolAVista`).
 - Las posiciones `x, y` se guardan porque el usuario los mueve a mano; solo se genera una posición automática sugerida cuando el nodo se crea por primera vez.
 - El nodo **raíz** no tiene `padre_id`. Puede tener `## Pregunta` vacía si el árbol arranca de una consigna del sistema, o contener el primer intercambio real.
 

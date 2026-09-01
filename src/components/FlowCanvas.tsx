@@ -445,7 +445,8 @@ function Flow() {
           antes &&
           antes.source === fresco.source &&
           antes.target === fresco.target &&
-          antes.sourceHandle === fresco.sourceHandle
+          antes.sourceHandle === fresco.sourceHandle &&
+          antes.targetHandle === fresco.targetHandle
         ) {
           return antes;
         }
@@ -805,12 +806,20 @@ function Flow() {
       if (!padre) return;
       const lado: Rama =
         node.position.x < padre.position.x ? "branch-left" : "branch-right";
+      // La rama entra al hijo por el costado opuesto (mismo criterio que
+      // `arbolAVista`).
+      const tgt = lado === "branch-right" ? "t-left" : "t-right";
       const edgeId = `e-${ic.padreId}-${node.id}`;
       setEdges((eds) => {
         const i = eds.findIndex((e) => e.id === edgeId);
-        if (i === -1 || eds[i].sourceHandle === lado) return eds;
+        if (
+          i === -1 ||
+          (eds[i].sourceHandle === lado && eds[i].targetHandle === tgt)
+        ) {
+          return eds;
+        }
         const next = eds.slice();
-        next[i] = { ...next[i], sourceHandle: lado };
+        next[i] = { ...next[i], sourceHandle: lado, targetHandle: tgt };
         return next;
       });
     },

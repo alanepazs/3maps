@@ -40,8 +40,9 @@ const ANCHO_POR_DEFECTO = 260;
 //   - respuesta → el texto
 //   - nada      → "Respuesta pendiente"
 //
-// Handles:
-//   - target (arriba)              : de dónde viene (el nodo raíz no lo tiene)
+// Handles (el nodo raíz no tiene ninguno de entrada):
+//   - target "t-top"               : entra el tronco (main), siempre vertical
+//   - target "t-left" / "t-right"  : entra una rama, por el costado opuesto al padre
 //   - source "main" (abajo)        : continuar el hilo principal, siempre vertical
 //   - source "branch-right/-left"  : ramificar por un costado (se elige al arrastrar)
 //
@@ -248,8 +249,30 @@ export default function MessageNode({
         </div>
       </NodeToolbar>
 
+      {/* Entrada del edge. `t-top` = tronco (main); `t-left`/`t-right` = rama
+          entrando por el costado (se solapan con los handles source del mismo
+          lado, así no agregan puntos visibles). `arbolAVista` elige cuál. */}
       {!isRoot && (
-        <Handle type="target" position={Position.Top} isConnectable={isConnectable} />
+        <>
+          <Handle
+            type="target"
+            id="t-top"
+            position={Position.Top}
+            isConnectable={isConnectable}
+          />
+          <Handle
+            type="target"
+            id="t-left"
+            position={Position.Left}
+            isConnectable={isConnectable}
+          />
+          <Handle
+            type="target"
+            id="t-right"
+            position={Position.Right}
+            isConnectable={isConnectable}
+          />
+        </>
       )}
 
       {pregunta && (

@@ -118,6 +118,9 @@ Chrome real (agarrarla con zoom out).
 - **Bugfix drag (01-09, decisiones F3-18b)**: al mover un globo, la flecha `‹`/`›` (y la posición
   guardada) a veces quedaban en la ubicación de creación — `asentar` leía `getNode`, un commit
   atrasado. Ahora usa la posición autoritativa del `onNodeDragStop` + envión acumulado.
+- **Flechas de enlace (01-09, decisiones F3-2b)**: la rama entraba por ARRIBA del hijo (solo el
+  lado del padre era costado). Ahora `MessageNode` tiene handles `target` `t-top`/`t-left`/`t-right`
+  y `arbolAVista` conecta la rama costado↔costado (opuestos); el tronco sigue abajo↔arriba.
 - **Auto-switch de proveedor** al pegar una key de otro (hoy `avisoFormatoKey` solo avisa).
 - **Export/import** `.zip` de la carpeta de `.md` + File System Access API (spec §7).
 - **2.5b — embeddings** (`transformers.js`) si `intercambiosRelevantes` (match por palabras) se

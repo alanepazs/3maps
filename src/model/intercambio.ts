@@ -266,8 +266,16 @@ export function arbolAVista(a: Arbol): { nodes: Node[]; edges: Edge[] } {
       id: `e-${ic.padreId}-${ic.id}`,
       source: ic.padreId as string,
       target: ic.id,
-      // Los handles del MessageNode se llaman igual que la rama.
+      // SALE del padre por el handle que se llama igual que la rama.
       sourceHandle: ic.rama,
+      // ENTRA al hijo por el costado opuesto (la rama se lee de costado a
+      // costado); el tronco (`main`) entra por arriba, siempre vertical.
+      targetHandle:
+        ic.rama === "branch-right"
+          ? "t-left"
+          : ic.rama === "branch-left"
+            ? "t-right"
+            : "t-top",
     }));
   return { nodes, edges };
 }

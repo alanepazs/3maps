@@ -413,7 +413,8 @@ Props de `<ReactFlow>` que importan:
 pending, error }` (`ancho`/`alto` = null → auto; tamaño manual del globo, F3-8).
 `Arbol` = `{ intercambios: Intercambio[] }`. Coincide con el frontmatter del `.md` (spec §3).
 - `rama`: `"main"` (tronco, por abajo) | `"branch-left"` | `"branch-right"` (costado). Los ids de
-  los handles del `MessageNode` se llaman igual → `arbolAVista` hace `sourceHandle: ic.rama`.
+  los handles `source` del `MessageNode` se llaman igual → `arbolAVista` hace `sourceHandle: ic.rama`
+  + `targetHandle` al costado opuesto del hijo (`t-left`/`t-right`; `main` → `t-top`). F3-2b.
 - `nuevoId()` → `"nodo-" + 8 hex` (crypto). `arbolInicial()` = `{ intercambios: [] }` (vacío,
   determinístico → SSR-safe; el 1er submit del `Composer` crea la raíz).
 - Todas las funciones son **puras**: las mutaciones devuelven un `Arbol` nuevo.

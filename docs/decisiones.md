@@ -463,8 +463,25 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
 
 ### F3-2. La flecha rama↔tronco salta de lado DURANTE el drag, no al soltar
 - `FlowCanvas` envuelve el `onNodeDrag` de `useNodeInertia`: si el nodo es rama, actualiza el
-  `sourceHandle` del edge en el estado `edges` en vivo (un `findIndex` + copia por frame, sin
-  tocar el árbol). `asentar` sigue fijando `rama` al soltar. Es solo cosmético.
+  `sourceHandle` (y el `targetHandle`, ver F3-2b) del edge en el estado `edges` en vivo (un
+  `findIndex` + copia por frame, sin tocar el árbol). `asentar` sigue fijando `rama` al soltar.
+  Es solo cosmético.
+
+### F3-2b. La rama entra al hijo por el COSTADO, no por arriba (01-09-2026, pedido de Alan)
+- **Antes**: el `MessageNode` tenía UN handle de entrada, arriba (`Position.Top`), y `arbolAVista`
+  solo seteaba `sourceHandle` → toda rama salía del costado del padre pero **entraba por arriba
+  del hijo**. El spec solo decía "la rama sale por un costado *del padre*" — nunca aclaró el lado
+  del hijo → **nunca quedó implementado de las dos puntas** (no era un bug, quedó a medias).
+- **Ahora**: `MessageNode` tiene 3 handles `type="target"` — `t-top` (`Position.Top`),
+  `t-left` (`Position.Left`), `t-right` (`Position.Right`). Los de costado **se solapan** con los
+  handles `source` del mismo lado (`branch-left`/`branch-right`) → no agregan puntos visibles.
+- `arbolAVista` setea `targetHandle` según la rama: `branch-right` → `t-left` (sale por la derecha
+  del padre, entra por la izquierda del hijo), `branch-left` → `t-right`, `main` → `t-top`.
+- **Regla**: rama = costado ↔ costado; tronco (`main`) = abajo del padre ↔ arriba del hijo,
+  siempre vertical.
+- El root no tiene ningún handle `target` (no recibe edge).
+- **Revertir**: sacar los handles `t-left`/`t-right` y el `targetHandle` de `arbolAVista` → la
+  rama vuelve a entrar por arriba del hijo.
 
 ### F3-3. Auto-layout ("Ordenar") = layout propio, no dagre/elk
 - El modelo tronco (`main` vertical) + ramas (`branch-*` en columnas al costado con su propio
