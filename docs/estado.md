@@ -111,10 +111,13 @@ Chrome real (agarrarla con zoom out).
   devuelve `usage` → al `.md` · T12 contador de tokens gastados por globo (usa T11) · **T15**
   respuestas que son un documento entero (`.md`/código): UX (spec) · **T16** drag & drop de
   archivos al mini-composer (spec + scope con Alan).
-- **Bugfix layout (01-09, decisiones F3-7b)**: ramificar una rama en un árbol ancho mandaba el
-  globo nuevo lejísimo abajo ("suelto"). `ubicarNuevoGlobo` ahora busca en anillos acotados
-  alrededor del padre (prefiere salir 1 columna al costado a la altura del padre antes que bajar
-  mucho por su columna); `handleSubmit` llama `resolverSolapes()` al crear.
+- **Bugfix layout (01-09, decisiones F3-7b/c)**: ramificar una rama en un árbol ancho mandaba el
+  globo nuevo lejísimo abajo ("suelto") o **pisando otro globo**. `ubicarNuevoGlobo`: `H_NUEVO`
+  260 (real, nace colapsado), búsqueda en anillos ampliada, y fallback `bajarHastaLibre` que baja
+  por la columna hasta un hueco que **no pisa a nadie** (prioridad de Alan). 31 asserts → 0 solapes.
+- **Bugfix drag (01-09, decisiones F3-18b)**: al mover un globo, la flecha `‹`/`›` (y la posición
+  guardada) a veces quedaban en la ubicación de creación — `asentar` leía `getNode`, un commit
+  atrasado. Ahora usa la posición autoritativa del `onNodeDragStop` + envión acumulado.
 - **Auto-switch de proveedor** al pegar una key de otro (hoy `avisoFormatoKey` solo avisa).
 - **Export/import** `.zip` de la carpeta de `.md` + File System Access API (spec §7).
 - **2.5b — embeddings** (`transformers.js`) si `intercambiosRelevantes` (match por palabras) se

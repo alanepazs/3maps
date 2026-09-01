@@ -578,6 +578,15 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
   la baja por su columna. `handleSubmit` ahora llama `resolverSolapes()` al crear (no solo al
   terminar la respuesta) para asentar ese caso enseguida. Verificado con scratch (8 asserts) +
   repro en el pane (rama de un nodo medio en árbol denso → queda a `Δy=0` del padre, no a +2700).
+- **F3-7c (01-09-2026, "que no pisen NINGÚN globo" — Alan)**: seguía pisando porque (a) `H_NUEVO`
+  era 150 y el globo nace colapsado a ~260 → se ubicaba en un hueco donde no entraba; (b) el
+  fallback (búsqueda acotada sin resultado) quedaba *pegado al padre, pisándolo*. Ahora `H_NUEVO`
+  = 260 (real), la búsqueda en anillos se amplió (0-3 columnas × filas −2..+5), y el fallback es
+  **`bajarHastaLibre`**: baja por la columna del lado preferido (o el opuesto, el que caiga más
+  cerca) en pasos de 44px hasta el primer lugar que **no pisa a nadie** — la columna es finita,
+  siempre termina. Puede quedar más abajo, pero nunca encima de otro globo (prioridad de Alan
+  sobre la cercanía). Igual para el fallback de `main`. Verificado: batería de 31 asserts (árbol
+  ancho, respuestas largas, nudo de 22 globos) → 0 solapes.
 
 ### F3-6. La llamada a la IA tiene watchdog + `pending` se persiste
 - **Por qué**: al ramificar varias ramas en paralelo, si el stream de un proveedor se queda
@@ -796,6 +805,12 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
     su centro X en el canvas y toma el anterior / siguiente al globo abierto. Si arrastrás un
     hermano al otro lado, la flecha que lo alcanza **cambia de lado sola** (`nav` depende de
     `arbol`, y `asentar` escribe la X nueva). `‹`/`›` desaparecen si no hay hermano de ese lado.
+  - **F3-18b (01-09, "la flecha no respeta el cambio al mover el globo")**: `asentar` leía la
+    posición final de `getNode(id)`, que en modo controlado va **un commit atrasado** respecto del
+    `nodes` prop → a veces persistía una posición vieja (casi la de creación) y `nav` la usaba.
+    Ahora `useNodeInertia` pasa la posición **autoritativa**: `onNodeDragStop(_, node)` → la del
+    `node` de React Flow (drop), + lo que acumula el envión frame a frame (no `getNode`). `asentar`
+    la recibe como 2º arg. Verificado en el pane: tras un drag, el `x` guardado == el `transform`.
   - **Solo hermanos** (no hijos): "navegar entre globos/ramas". A un hijo se va por el mapa o por
     el mini-composer. Fácil de ampliar si hiciera falta.
 - **Abrir en "Vos"** (pedido de Alan): al abrir el panel o navegar, `scrollTop` se pone en el

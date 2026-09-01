@@ -83,7 +83,10 @@ export function calcularLayout(
 
 export type Medida = { w: number; h: number };
 const W_NUEVO = ANCHO;
-const H_NUEVO = 150;
+// El globo nace colapsado (`ALTO_COLAPSADO` 220 + pregunta + chrome ≈ 240-280).
+// Estimar de menos hace que se ubique en un hueco donde después no entra y pisa
+// al vecino de abajo — mejor sobreestimar y dejar aire.
+const H_NUEVO = 260;
 const MARGEN = 28;
 
 export function ubicarNuevoGlobo(
@@ -113,6 +116,18 @@ export function ubicarNuevoGlobo(
   const libre = (x: number, y: number) =>
     !choca({ x, y, w: W_NUEVO, h: H_NUEVO });
 
+  // Baja por la columna `x` desde `desdeY` hasta el primer lugar que no pisa a
+  // NADIE. La columna del canvas es finita, así que siempre termina. Es el
+  // fallback: cuando la búsqueda linda al padre no encontró hueco, esto
+  // garantiza "que no pise ningún globo" (pedido de Alan), aunque quede más abajo.
+  const bajarHastaLibre = (x: number, desdeY: number): number => {
+    for (let k = 0; k < 240; k++) {
+      const y = desdeY + k * 44;
+      if (libre(x, y)) return y;
+    }
+    return desdeY + 240 * 44;
+  };
+
   if (kind === "main") {
     const baseY = parent.y + pm.h + GAP_Y;
     const cols = [0, 1, -1, 2, -2, 3, -3, 4, -4];
@@ -123,7 +138,8 @@ export function ubicarNuevoGlobo(
         if (libre(x, y)) return { x, y, rama: "main" };
       }
     }
-    return { x: parent.x, y: baseY, rama: "main" };
+    // Nada libre en la grilla → bajar derecho por la columna del padre.
+    return { x: parent.x, y: bajarHastaLibre(parent.x, baseY), rama: "main" };
   }
 
   // ── Rama: a un costado del padre ────────────────────────────────────────
@@ -147,14 +163,14 @@ export function ubicarNuevoGlobo(
       ? parent.x + pm.w + GAP_X + afuera
       : parent.x - (W_NUEVO + GAP_X) - afuera;
   };
-  const PASO_Y = H_NUEVO + 40;
+  const PASO_Y = H_NUEVO + MARGEN;
 
   let mejor: { x: number; y: number; rama: Rama } | null = null;
   let mejorCosto = Infinity;
-  for (let anillo = 0; anillo <= 2; anillo++) {
+  for (let anillo = 0; anillo <= 3; anillo++) {
     for (const rama of [preferido, opuesto]) {
       const x = xLado(rama, anillo);
-      for (const fila of [0, 1, -1, 2, -2, 3, -3]) {
+      for (const fila of [0, 1, -1, 2, -2, 3, -3, 4, 5]) {
         const y = parent.y + fila * PASO_Y;
         if (!libre(x, y)) continue;
         // Bajar mucho por la columna del padre (fila grande) lo deja "suelto"
@@ -173,8 +189,14 @@ export function ubicarNuevoGlobo(
     }
   }
   if (mejor) return mejor;
-  // Todo ocupado cerca: pegada al lado preferido; el solapador la baja.
-  return { x: xLado(preferido, 0), y: parent.y, rama: preferido };
+  // La búsqueda acotada no encontró NADA libre → bajar por la columna de cada
+  // lado hasta un hueco real y quedarse con la que caiga más cerca del padre.
+  // Garantiza que no pisa a nadie (aunque quede lejos hacia abajo).
+  const yPref = bajarHastaLibre(xLado(preferido, 0), parent.y);
+  const yOpu = bajarHastaLibre(xLado(opuesto, 0), parent.y);
+  return yOpu < yPref
+    ? { x: xLado(opuesto, 0), y: yOpu, rama: opuesto }
+    : { x: xLado(preferido, 0), y: yPref, rama: preferido };
 }
 
 // ── Empujar los globos que se PISAN, mínimamente (fase 3) ──────────────────

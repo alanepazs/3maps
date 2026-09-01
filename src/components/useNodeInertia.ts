@@ -16,11 +16,15 @@ import {
 const MAX_SPEED = 2;
 
 type SetNodes = (updater: (nds: Node[]) => Node[]) => void;
+type Pos = { x: number; y: number };
 
 // `strength` es el multiplicador configurable del envión (0 = desactivado).
+// `onSettle` recibe la posición FINAL autoritativa (la del drop + lo que sumó
+// el envión) — no depender de `getNode`, que puede ir un frame atrasado y
+// persistir una posición vieja (bug: "la flecha no respeta el cambio").
 export function useNodeInertia(
   setNodes: SetNodes,
-  onSettle: (nodeId: string) => void,
+  onSettle: (nodeId: string, pos: Pos) => void,
   strength: number,
 ) {
   const sampleRef = useRef<VelSample | null>(null);
@@ -47,28 +51,36 @@ export function useNodeInertia(
   }, []);
 
   const glide = useCallback(
-    (ids: string[]) => {
+    (items: { id: string; pos: Pos }[]) => {
       const v = launchVelocity(sampleRef.current, strength, MAX_SPEED);
       sampleRef.current = null;
       if (!v) {
-        ids.forEach(onSettle);
+        items.forEach((it) => onSettle(it.id, it.pos));
         return;
       }
-      const moving = new Set(ids);
+      const moving = new Set(items.map((it) => it.id));
+      // Posición final = la del drop + lo que vaya sumando el envión, acumulado
+      // acá (no leído de `getNode`).
+      const acc = new Map(items.map((it) => [it.id, { ...it.pos }]));
       stopRef.current = runGlide(
         v.vx,
         v.vy,
-        (dx, dy) =>
+        (dx, dy) => {
+          for (const p of acc.values()) {
+            p.x += dx;
+            p.y += dy;
+          }
           setNodes((nds) =>
             nds.map((n) =>
               moving.has(n.id)
                 ? { ...n, position: { x: n.position.x + dx, y: n.position.y + dy } }
                 : n,
             ),
-          ),
+          );
+        },
         () => {
           stopRef.current = null;
-          ids.forEach(onSettle);
+          items.forEach((it) => onSettle(it.id, acc.get(it.id) ?? it.pos));
         },
       );
     },
@@ -78,7 +90,8 @@ export function useNodeInertia(
   const onNodeDragStart = beginDrag;
   const onNodeDrag = useCallback((_evt: unknown, node: Node) => track(node), [track]);
   const onNodeDragStop = useCallback(
-    (_evt: unknown, node: Node) => glide([node.id]),
+    (_evt: unknown, node: Node) =>
+      glide([{ id: node.id, pos: { x: node.position.x, y: node.position.y } }]),
     [glide],
   );
 
@@ -90,7 +103,13 @@ export function useNodeInertia(
     [track],
   );
   const onSelectionDragStop = useCallback(
-    (_evt: unknown, nodes: Node[]) => glide(nodes.map((n) => n.id)),
+    (_evt: unknown, nodes: Node[]) =>
+      glide(
+        nodes.map((n) => ({
+          id: n.id,
+          pos: { x: n.position.x, y: n.position.y },
+        })),
+      ),
     [glide],
   );
 

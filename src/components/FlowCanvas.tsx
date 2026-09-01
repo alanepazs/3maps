@@ -764,10 +764,10 @@ function Flow() {
   // Al soltar / frenar el envión: escribir la posición final al árbol y, si es
   // una rama, fijar el lado (izq/der) según dónde quedó respecto del padre.
   const asentar = useCallback(
-    (id: string) => {
-      const n = getNode(id);
-      if (!n) return;
-      const { x, y } = n.position;
+    (id: string, pos?: { x: number; y: number }) => {
+      const p = pos ?? getNode(id)?.position;
+      if (!p) return;
+      const { x, y } = p;
       setArbol((a) => {
         const ic = buscar(a, id);
         if (!ic) return a;
