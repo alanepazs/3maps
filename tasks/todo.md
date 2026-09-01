@@ -79,11 +79,22 @@
         decisiones F3-22c) — 11 asserts + verificado en el pane (chip 📕, aviso con Groq / sin aviso
         con Gemini, envío persiste). **T16 COMPLETO.**
 
-### Checkpoint Fase 4 — **TODO IMPLEMENTADO (T7-T16 + T13)**. Falta solo la prueba de Alan.
+### Checkpoint Fase 4 — **TODO IMPLEMENTADO (T7-T16 + T13)**. Probado por Alan (02-09):
 - [x] `tsc` + `lint` + `build` verde (en cada tarea)
-- [ ] Chrome real (Alan): turnos diferenciados; STOP corta; flechas navegan; contadores
-      plausibles; adjuntos texto/imagen/PDF con keys reales (Gemini/Claude/Groq-vision); pegar
-      captura; copiar/guardar respuesta
+- [x] Gemini imagen+PDF · Groq visión (`qwen3.6/3.8`) + avisos · pegar captura · T15 copiar/guardar
+- [ ] Claude/DeepSeek/GPT (bloqueado por saldo) · turnos/STOP/flechas/contadores · `\frac` · resize zoom out
+
+## Fase 5 — el globo pasa a ser un TRAMO de la conversación
+
+**Spec: `tasks/fase5-spec.md`** (decisiones cerradas con Alan 02-09, esperando "dale"). Cambio
+**solo de vista** (el modelo de datos no cambia; cero migración). Enter agrega al mismo globo;
+globo nuevo solo al ramificar; el globo crece unos px por mensaje (slider en "Lienzo").
+Sub-tareas: F5-0 (fix del `⌄` del Composer, un clic) → F5-1 (`arbolAVista` agrupa tramos) →
+F5-2 (Enter a la punta) → F5-3 (ramificar desde cualquier intercambio) → F5-4 (slider) →
+F5-5 (adaptar layout/nav/delete/stop) → F5-6 (docs + invariante de `CLAUDE.md`).
+
+## Fuera de este plan (más adelante — pedidos de Alan 01-09)
+- **B1** — color por globo: marcar la esquina sup-derecha del título con un color a elección.
 
 ## Fuera de este plan (más adelante — pedidos de Alan 01-09)
 - **B1** — color por globo: marcar la esquina sup-derecha del título con un color a elección.
