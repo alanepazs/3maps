@@ -211,15 +211,16 @@ export default function BranchTranscript({
           </div>
         </div>
 
-        {/* Flechas laterales: saltar al globo de al lado en el MAPA (izq/der).
-            Van en el margen, a media altura del chat. Para ir al padre /
-            contexto se scrollea el panel hacia arriba (no hay flecha ↑). */}
+        {/* Flechas laterales: saltar a la rama unida por ese costado (rama hija,
+            o el padre si este globo es una rama). Van en el margen, a media
+            altura del chat. El resto (hijos de continuación, hermanos, contexto)
+            se ve scrolleando el panel o clickeando el globo en el mapa. */}
         {nav && onNavigate && nav.left && (
           <button
             type="button"
             onClick={() => onNavigate(nav.left!)}
-            title="Ir al globo de la izquierda en el mapa"
-            aria-label="Ir al globo de la izquierda en el mapa"
+            title="Ir a la rama unida por la izquierda"
+            aria-label="Ir a la rama unida por la izquierda"
             className="absolute left-3 top-1/2 z-30 flex h-11 w-6 -translate-y-1/2 items-center justify-center rounded-md border border-white/15 bg-neutral-900/90 text-lg leading-none text-white/60 shadow-lg hover:bg-white/10 hover:text-white"
           >
             ‹
@@ -229,8 +230,8 @@ export default function BranchTranscript({
           <button
             type="button"
             onClick={() => onNavigate(nav.right!)}
-            title="Ir al globo de la derecha en el mapa"
-            aria-label="Ir al globo de la derecha en el mapa"
+            title="Ir a la rama unida por la derecha"
+            aria-label="Ir a la rama unida por la derecha"
             className="absolute right-3 top-1/2 z-30 flex h-11 w-6 -translate-y-1/2 items-center justify-center rounded-md border border-white/15 bg-neutral-900/90 text-lg leading-none text-white/60 shadow-lg hover:bg-white/10 hover:text-white"
           >
             ›

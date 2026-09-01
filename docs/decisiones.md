@@ -816,20 +816,24 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
   un hijo-rama también → las flechas no se correspondían con el mapa. Ahora:
   - **2 flechas** (`‹` `›`), a media altura del panel, en el **margen** (padding `px-10`) entre el
     chat y el borde — con lugar para agarrar el borde a redimensionar.
-  - **Sin flecha ↑**: al padre / contexto se llega **scrolleando el panel hacia arriba** (el panel
-    ya muestra todo el camino raíz→globo).
-  - **Espaciales**: `nav` (en `FlowCanvas`) ordena los **hermanos** (mismo padre, o las raíces) por
-    su centro X en el canvas y toma el anterior / siguiente al globo abierto. Si arrastrás un
-    hermano al otro lado, la flecha que lo alcanza **cambia de lado sola** (`nav` depende de
-    `arbol`, y `asentar` escribe la X nueva). `‹`/`›` desaparecen si no hay hermano de ese lado.
+  - **Sin flecha ↑**: al contexto (padre por tronco `main`, abuelos) se llega **scrolleando el
+    panel hacia arriba** (ya muestra todo el camino raíz→globo). El padre por RAMA sí tiene flecha
+    (ver F3-18c).
   - **F3-18b (01-09, "la flecha no respeta el cambio al mover el globo")**: `asentar` leía la
     posición final de `getNode(id)`, que en modo controlado va **un commit atrasado** respecto del
     `nodes` prop → a veces persistía una posición vieja (casi la de creación) y `nav` la usaba.
     Ahora `useNodeInertia` pasa la posición **autoritativa**: `onNodeDragStop(_, node)` → la del
     `node` de React Flow (drop), + lo que acumula el envión frame a frame (no `getNode`). `asentar`
     la recibe como 2º arg. Verificado en el pane: tras un drag, el `x` guardado == el `transform`.
-  - **Solo hermanos** (no hijos): "navegar entre globos/ramas". A un hijo se va por el mapa o por
-    el mini-composer. Fácil de ampliar si hiciera falta.
+  - **F3-18c (01-09, "navegan a hermanos y no al padre / rama de la que vengo")**. La versión
+    "hermanos ordenados por X" confundía: `›` desde un globo saltaba a un hermano `main` en vez de
+    al padre del que ramificó. **Regla final**: `nav` navega SOLO a los globos unidos al abierto
+    por una **línea de costado** (F3-2b) — sus **ramas hijas**, más el **padre si el globo abierto
+    es una rama** (`branch-left` → padre a la derecha `›`; `branch-right` → padre a la izquierda
+    `‹`). Los hijos `main`, los hermanos y el contexto NO: a esos se llega por scroll del panel o
+    click en el mapa. Si un lado tiene varios (padre + varias ramas hijas), la flecha va al más
+    arriba (`sort` por Y); al resto, por el mapa. Verificado con scratch (7 asserts) + pane (árbol
+    de los screenshots de Alan: `dame › ensename › Analisis`, y `Analisis ‹ ensename` reversible).
 - **Abrir en "Vos"** (pedido de Alan): al abrir el panel o navegar, `scrollTop` se pone en el
   arranque del intercambio abierto (`inicioUltimoRef`, el `<div>` del último bloque), no al final
   de la respuesta — "así sabemos dónde estamos parados". Reemplaza el viejo `scrollIntoView(end)`

@@ -55,7 +55,6 @@ import {
   hijos,
   nuevoId,
   quitarSubarbol,
-  raices,
   reparentar,
   type Arbol,
   type Intercambio,
@@ -949,28 +948,35 @@ function Flow() {
     [arbol, transcriptNodeId],
   );
 
-  // Navegación del panel: saltar al globo hermano de al lado (izq / der) según
-  // dónde está en el MAPA, no en el árbol. Hermanos = globos que salen del
-  // mismo padre (o las raíces, si el abierto es raíz). Se ordenan por su X en
-  // el canvas y se toma el anterior / siguiente — si arrastrás un hermano de
-  // lado, la flecha que lo alcanza cambia sola. Al padre se llega scrolleando
-  // el panel hacia arriba (no hay flecha ↑).
+  // Navegación del panel (`‹` `›`): saltar SOLO a los globos unidos al globo
+  // abierto por una línea de COSTADO — sus ramas hijas, más el padre si el
+  // globo abierto es una rama (ahí la línea al padre también sale de costado).
+  // Cada flecha = el lado por el que sale esa línea. Los hijos `main` (línea
+  // por abajo) y los hermanos no entran: a esos se llega por scroll o click.
   const nav = useMemo(() => {
     if (!transcriptNodeId) return null;
     const ic = buscar(arbol, transcriptNodeId);
     if (!ic) return null;
-    const centroX = (n: Intercambio) => n.x + (n.ancho ?? 260) / 2;
-    const hermanos = (
-      ic.padreId === null ? raices(arbol) : hijos(arbol, ic.padreId)
-    )
-      .slice()
-      .sort((a, b) => centroX(a) - centroX(b) || a.y - b.y);
-    const i = hermanos.findIndex((h) => h.id === transcriptNodeId);
-    if (i === -1) return { left: null, right: null };
-    return {
-      left: i > 0 ? hermanos[i - 1].id : null,
-      right: i < hermanos.length - 1 ? hermanos[i + 1].id : null,
-    };
+
+    const izq: Intercambio[] = [];
+    const der: Intercambio[] = [];
+
+    // El padre, solo si el globo abierto es una rama: branch-left → el padre
+    // queda a la DERECHA (la línea entra por el costado derecho); branch-right
+    // → a la izquierda.
+    if (ic.rama === "branch-left" || ic.rama === "branch-right") {
+      const p = ic.padreId ? buscar(arbol, ic.padreId) : null;
+      if (p) (ic.rama === "branch-left" ? der : izq).push(p);
+    }
+    // Los hijos que salen por un costado.
+    for (const h of hijos(arbol, transcriptNodeId)) {
+      if (h.rama === "branch-left") izq.push(h);
+      else if (h.rama === "branch-right") der.push(h);
+    }
+    // El más arriba de cada lado; si hay varios, al resto se llega por el mapa.
+    izq.sort((a, b) => a.y - b.y);
+    der.sort((a, b) => a.y - b.y);
+    return { left: izq[0]?.id ?? null, right: der[0]?.id ?? null };
   }, [arbol, transcriptNodeId]);
 
   // Composer del panel lateral (fase 3.9): crea un hijo del globo abierto y mueve
