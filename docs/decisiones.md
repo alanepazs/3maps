@@ -678,6 +678,26 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
 - **Revertir** (volver al datalist / a sugerir modelos adivinados): reaparece la flecha vacía /
   vuelve la confusión de "modelos que no son de mi key".
 
+### F3-14. `Markdown.tsx` no crashea con tokens especiales de modelos (`<PAD>` × miles)
+- **El crash** (encontrado por el usuario, 01-09): un modelo de HuggingFace devolvió una respuesta
+  = `<PAD>` repetido ~2800 veces (token de padding filtrado). `rehype-raw` toma cada `<PAD>` como
+  un tag HTML **sin cerrar** → ~2800 niveles de anidado → `RangeError: Maximum call stack size
+  exceeded` al parsear → **crashea el render de TODO el canvas** (Brave: "This page couldn't
+  load"). La respuesta quedó guardada y sincronizada → crasheaba en cada carga. Reproducido con
+  `renderToStaticMarkup` (2766 `<PAD>` = RangeError; con el fix = OK; una tabla con 40 `<br>`
+  sigue funcionando).
+- **Fix (`Markdown.tsx`)**, dos capas:
+  1. `sanitizarCrudo()` antes de parsear: borra tokens especiales conocidos (`<pad>`, `<unk>`,
+     `<s>`/`</s>`, `<bos>`, `<eos>`, `<|…|>`, `<eot_id>`, `<end_of_turn>`, …). Backstop: si aún
+     quedan >120 aperturas de tag, escapa **todo** `<` → `&lt;` (el texto se ve crudo pero no
+     explota). Una tabla grande ronda 50 `<br>`; 120 deja margen.
+  2. `<LimiteMarkdown>` (error boundary de clase) envuelve `<ReactMarkdown>`: si el pipeline
+     igual tira por un input que no previmos, muestra el texto crudo en un `<pre>` en vez de
+     tumbar el canvas. Se resetea cuando cambia el texto (streaming).
+- **No hace falta migración**: el sanitizado corre en cada render, así arregla el contenido ya
+  guardado sin tocarlo.
+- **Revertir**: una respuesta con basura de tokens vuelve a poder crashear toda la app.
+
 ---
 
 ## Build / deploy

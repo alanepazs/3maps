@@ -1,3 +1,4 @@
+import { Component, type ReactNode } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
@@ -24,6 +25,50 @@ function normalizarMath(texto: string): string {
   return texto
     .replace(/\\\[\s*([\s\S]+?)\s*\\\]/g, (_, m) => `\n\n$$\n${m}\n$$\n\n`)
     .replace(/\\\(\s*([\s\S]+?)\s*\\\)/g, (_, m) => `$${m}$`);
+}
+
+// Tokens especiales que largan algunos modelos (padding, BOS/EOS, plantillas de
+// chat). Nunca son contenido, y `rehype-raw` los toma como tags HTML SIN CERRAR:
+// unos miles de `<PAD>` seguidos = unos miles de niveles de anidado = `RangeError:
+// Maximum call stack size exceeded` al parsear (crashea el render). Visto con un
+// modelo de HuggingFace. Ver decisiones F3-14.
+const TOKENS_BASURA =
+  /<\/?(?:pad|unk|mask|cls|sep|s|bos|eos|eot_id|end_of_turn|start_of_turn|begin_of_text|end_of_text|\|[^>]*\|)>/gi;
+
+function sanitizarCrudo(texto: string): string {
+  const limpio = texto.replace(TOKENS_BASURA, "");
+  // Backstop: si aún quedan cientos de aperturas de tag, es basura de token
+  // (`<foo><foo>…`). Escapamos TODO `<` → el texto se ve crudo pero no crashea.
+  // Una tabla grande con `<br>` ronda las 50; 120 deja margen de sobra.
+  const aperturas = (limpio.match(/<[a-z!/]/gi) ?? []).length;
+  return aperturas > 120 ? limpio.replace(/</g, "&lt;") : limpio;
+}
+
+// Si el pipeline de markdown igual tira (input que no previmos), mostramos el
+// texto crudo en vez de tumbar todo el canvas.
+class LimiteMarkdown extends Component<
+  { crudo: string; children: ReactNode },
+  { rota: boolean }
+> {
+  state = { rota: false };
+  static getDerivedStateFromError() {
+    return { rota: true };
+  }
+  componentDidUpdate(prev: { crudo: string }) {
+    if (prev.crudo !== this.props.crudo && this.state.rota) {
+      this.setState({ rota: false });
+    }
+  }
+  render() {
+    if (this.state.rota) {
+      return (
+        <pre className="whitespace-pre-wrap break-words font-mono text-[11px] text-white/70">
+          {this.props.crudo}
+        </pre>
+      );
+    }
+    return this.props.children;
+  }
 }
 
 // Schema de sanitización = el default + lo que necesita remark-math/katex:
@@ -122,15 +167,18 @@ const components: Components = {
 };
 
 export default function Markdown({ children }: { children: string }) {
+  const texto = normalizarMath(sanitizarCrudo(children));
   return (
     <div className="katex-compacto break-words text-left [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm, remarkMath]}
-        rehypePlugins={[rehypeRaw, [rehypeSanitize, schema], rehypeKatex]}
-        components={components}
-      >
-        {normalizarMath(children)}
-      </ReactMarkdown>
+      <LimiteMarkdown crudo={texto}>
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm, remarkMath]}
+          rehypePlugins={[rehypeRaw, [rehypeSanitize, schema], rehypeKatex]}
+          components={components}
+        >
+          {texto}
+        </ReactMarkdown>
+      </LimiteMarkdown>
     </div>
   );
 }

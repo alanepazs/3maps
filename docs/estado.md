@@ -111,7 +111,7 @@
 - **2.5b — embeddings** (`transformers.js`) si `intercambiosRelevantes` (match por palabras) se
   queda corto. Misma firma → drop-in.
 - Modelos locales tipo Ollama (spec §10) — descartado por ahora (mixed-content/CORS + el celu no
-  llega a `localhost`); los modelos abiertos ya se sirven online vía Groq/Cerebras/etc.
+  llega a `localhost`); los modelos abiertos ya se sirven online vía Groq/OpenRouter/etc.
 
 ## Issues conocidos / gotchas
 
@@ -119,6 +119,9 @@
   **no corre transiciones CSS**, a veces reporta viewport 0; los gestos sintéticos de teclado/drag
   no disparan. **No es bug de la app.** En el pane se verifica **lógica/datos**; render, inercia y
   animaciones los prueba el usuario en Chrome real. (napkin §2-3.)
+- **Respuesta con `<PAD>` × miles (u otro token especial) crasheaba TODO el canvas** (`RangeError`
+  en `rehype-raw`). Arreglado 01-09 en `Markdown.tsx` (`sanitizarCrudo` + error boundary). Ver
+  decisiones F3-14. Si vuelve a pasar con otro token, sumar el patrón a `TOKENS_BASURA`.
 - **CDN de GitHub Pages cachea `index.html` ~10 min.** Deploy nuevo ya: `?v=<algo>`. (3maps NO
   es una PWA — no hay `manifest.json` ni service worker; "agregar a pantalla de inicio" es solo
   un atajo con el caché normal del navegador. El `?v=` alcanza.)
