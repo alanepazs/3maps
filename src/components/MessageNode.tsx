@@ -172,14 +172,11 @@ export default function MessageNode({
         selected ? "border-sky-400 ring-2 ring-sky-400/40" : "border-white/20"
       }`}
     >
-      {/* Mientras streamea: badge de lápiz "escribiendo" + STOP, flotando sobre
-          el borde del globo (el globo tiene overflow-hidden → va en un
-          NodeToolbar, que se renderiza afuera). */}
-      <NodeToolbar
-        isVisible={pending && !readOnly}
-        position={Position.Top}
-        align="start"
-      >
+      {/* Mientras streamea: badge de lápiz "escribiendo" + STOP, flotando a la
+          IZQUIERDA del globo (el globo tiene overflow-hidden → NodeToolbar, que
+          se renderiza afuera). A la izquierda para no chocar con la barra de
+          acciones de arriba ni con la manija de resize abajo-derecha. */}
+      <NodeToolbar isVisible={pending && !readOnly} position={Position.Left}>
         <div className="flex items-center gap-1 rounded-md border border-white/15 bg-neutral-900 px-1.5 py-1 shadow-lg">
           <span className="lapiz-escribiendo text-sm leading-none" aria-hidden>
             ✏️
