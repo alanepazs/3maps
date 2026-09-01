@@ -102,12 +102,16 @@ ni llamadas con key):
   (thumbnail en el turno "Vos"). `3.1-pro-preview(-customtools)` = solo rate-limit (429).
   - `gemini-2.5-flash-lite` y `gemini-2.5-pro` → 404 "no longer available to new users" →
     **agregados a `GEMINI_MODELOS_MUERTOS`** (Alan). El `2.5-flash` a secas sigue. Decisiones §7b.
-- **02-09 — Groq visión + pegar captura CONFIRMADO** ✅: `qwen/qwen3.6-27b` y `qwen3.8-27b` leen
-  la imagen (`image_url` OK); el aviso "¿acepta imágenes?" sale bien con los que no. **Ctrl+V de
-  una captura** adjunta bien (chip + thumbnail, se envía y se muestra). Modelos junk escondidos +
-  migrados (ver arriba).
-- **Falta probar**: copiar/guardar respuesta (T15); turnos/STOP/flechas/contadores del panel;
-  `\frac` suelto de gpt-oss; manija de resize con zoom out.
+- **02-09 — Groq visión + pegar captura + T15 CONFIRMADO** ✅: `qwen/qwen3.6-27b` y `qwen3.8-27b`
+  leen la imagen (`image_url` OK); el aviso "¿acepta imágenes?" sale bien con los que no. **Ctrl+V
+  de una captura** adjunta bien. **T15**: "⧉ Copiar" (respuesta entera) + "⬇ Guardar" + "⧉" por
+  bloque de código — los tres andan. Modelos junk escondidos + migrados (ver arriba).
+- **Falta probar**: turnos/STOP/flechas/contadores del panel; `\frac` suelto de gpt-oss; manija
+  de resize con zoom out. (Claude/DeepSeek/GPT: bloqueado por saldo.)
+
+**Pedido de Alan (02-09) — NO tocar todavía**: quiere los botones "⧉ Copiar" / "⬇ Guardar" en
+**cada** respuesta del panel, no solo la última. Está **evaluando un rediseño grande de los globos**
+→ **no arrancar B1-B7 ni nada de globos/panel hasta que decida.**
 - **Bloqueado por saldo** (Alan no tiene, 02-09): imagen/PDF con **Claude** (código igual al de
   Gemini — bloques `image`/`document` nativos, sin beta header; debería andar). Idem DeepSeek/GPT.
 - `stream_options.include_usage` (T11) — asumido que anda en Groq/OpenRouter/HuggingFace; si
