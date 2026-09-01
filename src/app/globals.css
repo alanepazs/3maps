@@ -77,22 +77,35 @@ body {
   }
 }
 
-/* Lápiz "escribiendo" sobre el globo mientras la IA streamea (MessageNode). */
+/* Lápiz "escribiendo" sobre el globo mientras la IA streamea (MessageNode).
+   Con `prefers-reduced-motion` no se saca la animación del todo (sigue
+   indicando actividad) — solo se cambia el meneo por un pulso de opacidad,
+   que no es una animación vestibular. */
 @keyframes lapiz-escribe {
   0%,
   100% {
-    transform: rotate(-12deg) translateY(0);
+    transform: rotate(-14deg) translateY(0.5px);
   }
   50% {
-    transform: rotate(6deg) translateY(-1px);
+    transform: rotate(8deg) translateY(-1.5px);
+  }
+}
+@keyframes lapiz-pulso {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
   }
 }
 .lapiz-escribiendo {
   display: inline-block;
-  animation: lapiz-escribe 0.9s ease-in-out infinite;
+  transform-origin: 70% 90%;
+  animation: lapiz-escribe 0.85s ease-in-out infinite;
 }
 @media (prefers-reduced-motion: reduce) {
   .lapiz-escribiendo {
-    animation: none;
+    animation: lapiz-pulso 1.4s ease-in-out infinite;
   }
 }
