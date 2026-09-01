@@ -119,14 +119,16 @@ Chrome real (agarrarla con zoom out).
   (`estimarTokens(armarContexto(…))`, usa el resumen cacheado si hay, nunca lo dispara).
   Decisiones F3-20. · **T12** cada turno IA del panel muestra "N → N tok" de `tokensEntrada/Salida`
   del `.md` (nada si no los tiene). Decisiones F3-21. Los dos verificados en el pane.
-- **Hecho (02-09)**: **T16a** (adjuntar archivos de texto al mini-composer del panel). Spec en
-  `tasks/T16-spec.md` (decisiones cerradas con Alan). `Adjunto` en el `.md` (frontmatter JSON 1
-  línea); `armarContexto` pega el texto adjunto a la pregunta y NO lo re-manda a los hijos;
-  `src/model/adjuntos.ts` (leer/validar, topes 128KB/1MB/2MB); dropzone + paste + 📎 + chips;
-  badge "📎 N" en el globo y chips en el panel. Decisiones F3-22. 25 asserts + verificado en el
-  pane. **Falta T16b (imágenes) y T16c (PDF)** — misma spec, sub-tareas.
-- **Falta**: **T15** respuestas que son un documento entero (`.md`/código): UX (spec) · **T16b/c**
-  imágenes y PDF. Con T15 + T16 completo se cierra la Fase 4.
+- **Hecho (02-09)**: **T16a + T16b** (adjuntar texto + imágenes al mini-composer del panel). Spec
+  `tasks/T16-spec.md`. `Adjunto` en el `.md` (frontmatter JSON 1 línea); `armarContexto` pega el
+  texto adjunto a la pregunta y NO lo re-manda a los hijos; imágenes → `comprimirImagen`
+  (`<canvas>`, 1568px, JPEG salvo PNG con transparencia) → bloques nativos por proveedor en
+  `ia.ts`. `src/model/adjuntos.ts` (leer/validar/comprimir, topes 128KB/1MB/2MB). Dropzone + paste
+  + 📎 + chips (thumbnail si es imagen) + lightbox; badge "📎 N" en el globo. Decisiones F3-22 /
+  F3-22b. 25 + 13 asserts + verificado en el pane. **Falta T16c (PDF)** + prueba de Alan con keys
+  reales (imagen con Gemini/Claude/Groq-vision, pegar captura).
+- **Falta**: **T15** respuestas que son un documento entero (`.md`/código): UX (spec) · **T16c**
+  PDF. Con T15 + T16c se cierra la Fase 4.
 - **Bugfix layout (01-09, decisiones F3-7b/c)**: ramificar una rama en un árbol ancho mandaba el
   globo nuevo lejísimo abajo ("suelto") o **pisando otro globo**. `ubicarNuevoGlobo`: `H_NUEVO`
   260 (real, nace colapsado), búsqueda en anillos ampliada, y fallback `bajarHastaLibre` que baja

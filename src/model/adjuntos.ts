@@ -4,14 +4,16 @@ import type { Adjunto, TipoAdjunto } from "./intercambio";
 // guarda en el `.md` del intercambio (ver intercambio.ts) y se manda a la IA
 // (ver contexto.ts + ia.ts).
 //
-// T16a: solo archivos de TEXTO. Imágenes y PDF llegan en T16b / T16c — hasta
-// entonces `leerArchivo` los rechaza con un aviso.
+// T16a: texto. T16b: imágenes (se recomprimen). T16c (pendiente): PDF.
 
 // Topes (decididos con Alan, 02-09). El mapa entero sincroniza como UN JSON de
 // 5 MB máx (bucket `sync`), así que cada adjunto compite con eso.
 export const LIMITE_TEXTO = 128 * 1024; // 128 KB por archivo de texto
-export const LIMITE_BINARIO = 1024 * 1024; // 1 MB por imagen / PDF (T16b/c)
+export const LIMITE_BINARIO = 1024 * 1024; // 1 MB por imagen / PDF (ya comprimida)
 export const LIMITE_INTERCAMBIO = 2 * 1024 * 1024; // 2 MB sumando todos los adjuntos
+
+// Máximo lado útil para la visión de Claude / Gemini: agrandar más no aporta.
+const MAX_LADO_IMG = 1568;
 
 // Extensiones que tratamos como texto aunque el `type` del File venga vacío o raro.
 const EXT_TEXTO = new Set([
@@ -34,12 +36,12 @@ function extensionDe(nombre: string): string {
 export function tipoDeArchivo(file: File): TipoAdjunto | null {
   const mime = (file.type || "").toLowerCase();
   const ext = extensionDe(file.name);
-  if (mime.startsWith("text/") || EXT_TEXTO.has(ext)) return "texto";
-  if (mime === "application/json" || mime === "application/xml") return "texto";
   if (mime === "image/png" || mime === "image/jpeg" || mime === "image/webp") {
     return "imagen";
   }
   if (mime === "application/pdf" || ext === "pdf") return "pdf";
+  if (mime.startsWith("text/") || EXT_TEXTO.has(ext)) return "texto";
+  if (mime === "application/json" || mime === "application/xml") return "texto";
   return null;
 }
 
@@ -61,9 +63,24 @@ export function iconoAdjunto(tipo: TipoAdjunto): string {
   return tipo === "imagen" ? "🖼" : tipo === "pdf" ? "📕" : "📄";
 }
 
-// Descarga un adjunto ya guardado (chip en modo lectura del panel). T16a: texto.
+// `data:` URL de un adjunto binario (para thumbnails y descarga).
+export function dataUrl(a: Adjunto): string {
+  return `data:${a.mime};base64,${a.contenido}`;
+}
+
+const base64ABlob = (b64: string, mime: string): Blob => {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new Blob([bytes], { type: mime });
+};
+
+// Descarga un adjunto ya guardado (chip en modo lectura del panel).
 export function descargarAdjunto(a: Adjunto): void {
-  const blob = new Blob([a.contenido], { type: a.mime || "text/plain" });
+  const blob =
+    a.tipo === "texto"
+      ? new Blob([a.contenido], { type: a.mime || "text/plain" })
+      : base64ABlob(a.contenido, a.mime);
   const url = URL.createObjectURL(blob);
   const el = document.createElement("a");
   el.href = url;
@@ -72,14 +89,15 @@ export function descargarAdjunto(a: Adjunto): void {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-// Mensaje para cuando el usuario suelta algo que no admitimos (T16a: solo texto).
 export const AVISO_TIPO_NO_SOPORTADO =
-  "Por ahora solo puedo adjuntar archivos de texto (.md, .txt, .csv, .json, " +
-  "código). Imágenes y PDF: pronto.";
+  "Acepto archivos de texto (.md, .txt, .csv, .json, código) e imágenes " +
+  "(PNG, JPEG, WebP). PDF: pronto.";
 
 type Resultado =
   | { ok: true; adjunto: Adjunto }
   | { ok: false; error: string };
+
+// ── Lectura de texto ──────────────────────────────────────────────────────
 
 const leerTexto = (file: File): Promise<string> =>
   new Promise((resolve, reject) => {
@@ -89,6 +107,88 @@ const leerTexto = (file: File): Promise<string> =>
     r.readAsText(file);
   });
 
+// ── Lectura + compresión de imágenes (T16b) ───────────────────────────────
+
+const blobABase64 = (b: Blob): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => {
+      const s = String(r.result ?? "");
+      resolve(s.slice(s.indexOf(",") + 1)); // saca el `data:...;base64,`
+    };
+    r.onerror = () => reject(r.error ?? new Error("no se pudo codificar"));
+    r.readAsDataURL(b);
+  });
+
+function tieneTransparencia(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+): boolean {
+  const { data } = ctx.getImageData(0, 0, w, h);
+  for (let i = 3; i < data.length; i += 4) if (data[i] < 255) return true;
+  return false;
+}
+
+// Achica a `MAX_LADO_IMG` y recomprime a JPEG (o PNG si el original es PNG con
+// transparencia). Si el original ya entra en el tope y no hay que achicar, se
+// usa tal cual. Devuelve base64 sin prefijo.
+async function comprimirImagen(
+  file: File,
+): Promise<{ ok: true; mime: string; base64: string } | { ok: false; error: string }> {
+  const url = URL.createObjectURL(file);
+  let img: HTMLImageElement;
+  try {
+    img = await new Promise((res, rej) => {
+      const el = new Image();
+      el.onload = () => res(el);
+      el.onerror = () => rej(new Error("decode"));
+      el.src = url;
+    });
+  } catch {
+    URL.revokeObjectURL(url);
+    return { ok: false, error: `No pude leer la imagen “${file.name}”.` };
+  }
+
+  const lado = Math.max(img.naturalWidth, img.naturalHeight);
+  const escala = Math.min(1, MAX_LADO_IMG / lado);
+
+  if (escala === 1 && file.size <= LIMITE_BINARIO) {
+    URL.revokeObjectURL(url);
+    return { ok: true, mime: file.type, base64: await blobABase64(file) };
+  }
+
+  const w = Math.max(1, Math.round(img.naturalWidth * escala));
+  const h = Math.max(1, Math.round(img.naturalHeight * escala));
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    URL.revokeObjectURL(url);
+    return { ok: false, error: "El navegador no pudo procesar la imagen." };
+  }
+  ctx.drawImage(img, 0, 0, w, h);
+  URL.revokeObjectURL(url);
+
+  const png = file.type === "image/png" && tieneTransparencia(ctx, w, h);
+  const mime = png ? "image/png" : "image/jpeg";
+  const calidades = png ? [undefined] : [0.82, 0.6];
+
+  for (const q of calidades) {
+    const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, mime, q));
+    if (blob && blob.size <= LIMITE_BINARIO) {
+      return { ok: true, mime, base64: await blobABase64(blob) };
+    }
+  }
+  return {
+    ok: false,
+    error: `“${file.name}” sigue pesando más de ${fmtBytes(LIMITE_BINARIO)} después de comprimirla. Probá recortarla.`,
+  };
+}
+
+// ── Entrada única ─────────────────────────────────────────────────────────
+
 // Lee UN archivo y devuelve el `Adjunto` o un error legible. `pesoActual` = la
 // suma de los adjuntos que ya tiene el intercambio (para el tope de 2 MB).
 export async function leerArchivo(
@@ -97,34 +197,48 @@ export async function leerArchivo(
 ): Promise<Resultado> {
   const tipo = tipoDeArchivo(file);
   if (tipo === null) {
-    return { ok: false, error: `No puedo adjuntar “${file.name}”. ${AVISO_TIPO_NO_SOPORTADO}` };
-  }
-  if (tipo !== "texto") {
     return {
       ok: false,
-      error: `“${file.name}” es ${tipo === "imagen" ? "una imagen" : "un PDF"}. ${AVISO_TIPO_NO_SOPORTADO}`,
+      error: `No puedo adjuntar “${file.name}”. ${AVISO_TIPO_NO_SOPORTADO}`,
     };
   }
-  if (file.size > LIMITE_TEXTO) {
+  if (tipo === "pdf") {
     return {
       ok: false,
-      error: `“${file.name}” pesa ${fmtBytes(file.size)}; el máximo para un archivo de texto es ${fmtBytes(LIMITE_TEXTO)}.`,
+      error: `“${file.name}” es un PDF. Todavía no puedo con PDF — texto e imágenes sí.`,
     };
   }
 
-  let contenido: string;
-  try {
-    contenido = await leerTexto(file);
-  } catch {
-    return { ok: false, error: `No se pudo leer “${file.name}”.` };
+  let adjunto: Adjunto;
+  if (tipo === "imagen") {
+    const c = await comprimirImagen(file);
+    if (!c.ok) return c;
+    adjunto = {
+      nombre: file.name || "imagen.jpg",
+      tipo: "imagen",
+      mime: c.mime,
+      contenido: c.base64,
+    };
+  } else {
+    if (file.size > LIMITE_TEXTO) {
+      return {
+        ok: false,
+        error: `“${file.name}” pesa ${fmtBytes(file.size)}; el máximo para un archivo de texto es ${fmtBytes(LIMITE_TEXTO)}.`,
+      };
+    }
+    let contenido: string;
+    try {
+      contenido = await leerTexto(file);
+    } catch {
+      return { ok: false, error: `No se pudo leer “${file.name}”.` };
+    }
+    adjunto = {
+      nombre: file.name || "archivo.txt",
+      tipo: "texto",
+      mime: file.type || "text/plain",
+      contenido,
+    };
   }
-
-  const adjunto: Adjunto = {
-    nombre: file.name || "archivo.txt",
-    tipo: "texto",
-    mime: file.type || "text/plain",
-    contenido,
-  };
 
   if (pesoActual + pesoAdjunto(adjunto) > LIMITE_INTERCAMBIO) {
     return {
@@ -132,6 +246,5 @@ export async function leerArchivo(
       error: `Con “${file.name}” los adjuntos de esta pregunta superan el máximo (${fmtBytes(LIMITE_INTERCAMBIO)}).`,
     };
   }
-
   return { ok: true, adjunto };
 }

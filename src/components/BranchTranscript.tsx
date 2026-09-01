@@ -13,6 +13,7 @@ import type { BranchKind } from "./Composer";
 import Markdown from "./Markdown";
 import { ANCHO_PANEL_MAX_FRAC, ANCHO_PANEL_MIN } from "./settings";
 import {
+  dataUrl,
   descargarAdjunto,
   fmtBytes,
   iconoAdjunto,
@@ -83,6 +84,8 @@ export default function BranchTranscript({
   const [adjuntos, setAdjuntos] = useState<Adjunto[]>([]);
   const [avisoAdj, setAvisoAdj] = useState<string | null>(null);
   const [arrastrando, setArrastrando] = useState(false);
+  // Imagen abierta a tamaño completo (lightbox).
+  const [verImagen, setVerImagen] = useState<Adjunto | null>(null);
   const arrastreDepth = useRef(0);
   const inputArchRef = useRef<HTMLInputElement>(null);
   const finRef = useRef<HTMLDivElement>(null);
@@ -134,11 +137,13 @@ export default function BranchTranscript({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key !== "Escape") return;
+      if (verImagen) setVerImagen(null);
+      else onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, [onClose, verImagen]);
 
   // Al abrir el panel o navegar a otro globo: mostrar el arranque de ESE
   // intercambio ("Vos: …") arriba de todo — no el final de la respuesta. Para
@@ -357,22 +362,38 @@ export default function BranchTranscript({
                     {ic.pregunta}
                   </div>
                   {ic.adjuntos.length > 0 && (
-                    <div className="mt-1.5 flex flex-wrap gap-1.5">
-                      {ic.adjuntos.map((a, j) => (
-                        <button
-                          key={j}
-                          type="button"
-                          onClick={() => descargarAdjunto(a)}
-                          title={`Descargar ${a.nombre}`}
-                          className="flex items-center gap-1 rounded border border-white/15 bg-white/[0.04] px-2 py-1 text-[11px] text-white/70 hover:bg-white/10"
-                        >
-                          <span aria-hidden>{iconoAdjunto(a.tipo)}</span>
-                          <span className="max-w-[12rem] truncate">{a.nombre}</span>
-                          <span className="text-white/40">
-                            {fmtBytes(pesoAdjunto(a))}
-                          </span>
-                        </button>
-                      ))}
+                    <div className="mt-1.5 flex flex-wrap items-start gap-1.5">
+                      {ic.adjuntos.map((a, j) =>
+                        a.tipo === "imagen" ? (
+                          <button
+                            key={j}
+                            type="button"
+                            onClick={() => setVerImagen(a)}
+                            title={`${a.nombre} — ver`}
+                            className="overflow-hidden rounded border border-white/15 hover:border-sky-400/60"
+                          >
+                            <img
+                              src={dataUrl(a)}
+                              alt={a.nombre}
+                              className="h-16 w-16 object-cover"
+                            />
+                          </button>
+                        ) : (
+                          <button
+                            key={j}
+                            type="button"
+                            onClick={() => descargarAdjunto(a)}
+                            title={`Descargar ${a.nombre}`}
+                            className="flex items-center gap-1 rounded border border-white/15 bg-white/[0.04] px-2 py-1 text-[11px] text-white/70 hover:bg-white/10"
+                          >
+                            <span aria-hidden>{iconoAdjunto(a.tipo)}</span>
+                            <span className="max-w-[12rem] truncate">{a.nombre}</span>
+                            <span className="text-white/40">
+                              {fmtBytes(pesoAdjunto(a))}
+                            </span>
+                          </button>
+                        ),
+                      )}
                     </div>
                   )}
                 </div>
@@ -460,9 +481,19 @@ export default function BranchTranscript({
                     {adjuntos.map((a, i) => (
                       <span
                         key={i}
-                        className="flex items-center gap-1 rounded border border-white/15 bg-white/[0.04] px-2 py-1 text-[11px] text-white/80"
+                        className="flex items-center gap-1 rounded border border-white/15 bg-white/[0.04] py-1 pl-1 pr-2 text-[11px] text-white/80"
                       >
-                        <span aria-hidden>{iconoAdjunto(a.tipo)}</span>
+                        {a.tipo === "imagen" ? (
+                          <img
+                            src={dataUrl(a)}
+                            alt=""
+                            className="h-5 w-5 rounded-sm object-cover"
+                          />
+                        ) : (
+                          <span aria-hidden className="px-0.5">
+                            {iconoAdjunto(a.tipo)}
+                          </span>
+                        )}
                         <span className="max-w-[12rem] truncate">{a.nombre}</span>
                         <span className="text-white/40">{fmtBytes(pesoAdjunto(a))}</span>
                         <button
@@ -503,7 +534,7 @@ export default function BranchTranscript({
               ref={inputArchRef}
               type="file"
               multiple
-              accept=".md,.markdown,.txt,.text,.csv,.tsv,.json,.jsonl,.yaml,.yml,.toml,.xml,.html,.css,.js,.jsx,.ts,.tsx,.py,.rb,.go,.rs,.java,.kt,.c,.h,.cpp,.cs,.php,.sh,.sql,.log,.diff,text/*"
+              accept="text/*,image/png,image/jpeg,image/webp,.md,.markdown,.txt,.csv,.tsv,.json,.yaml,.yml,.toml,.xml,.html,.css,.js,.jsx,.ts,.tsx,.py,.rb,.go,.rs,.java,.kt,.c,.h,.cpp,.cs,.php,.sh,.sql,.log,.diff"
               className="hidden"
               onChange={(e) => {
                 if (e.target.files) void agregarArchivos(e.target.files);
@@ -514,7 +545,7 @@ export default function BranchTranscript({
               <button
                 type="button"
                 onClick={() => inputArchRef.current?.click()}
-                title="Adjuntar un archivo de texto"
+                title="Adjuntar un archivo (texto o imagen)"
                 className="rounded border border-white/15 px-2 py-1 text-xs text-white/60 hover:bg-white/10 hover:text-white"
               >
                 📎
@@ -544,6 +575,33 @@ export default function BranchTranscript({
           </div>
         ) : null}
       </div>
+
+      {verImagen && (
+        <div
+          className="absolute inset-0 z-40 flex items-center justify-center bg-black/85 p-6"
+          onClick={(e) => {
+            e.stopPropagation();
+            setVerImagen(null);
+          }}
+        >
+          <img
+            src={dataUrl(verImagen)}
+            alt={verImagen.nombre}
+            className="max-h-full max-w-full object-contain"
+          />
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setVerImagen(null);
+            }}
+            aria-label="Cerrar"
+            className="absolute right-4 top-4 rounded px-2 py-1 text-white/70 hover:bg-white/10 hover:text-white"
+          >
+            ✕
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -82,7 +82,7 @@ Cada tarea = una rama/commit, con el ciclo `spec-driven` → `incremental-implem
 - [ ] **T14 — Auto-scroll del panel sigue el texto mientras streamea.** [S]
 - [ ] **T15 — Respuestas que son un documento entero (`.md`/código): UX.** [investigar]
 - [~] **T16 — Adjuntar archivos al mini-composer.** [L] Spec `tasks/T16-spec.md`. **T16a texto ✅**
-      (F3-22) · T16b imágenes · T16c PDF.
+      (F3-22) · **T16b imágenes ✅** (F3-22b) · T16c PDF.
 - [ ] **T13 — Heurística de LaTeX crudo en `normalizarMath`.** [S] (independiente; adelantable)
 
 #### Checkpoint Fase 4
@@ -339,9 +339,21 @@ texto → imágenes → PDF.
 - **Falta que Alan pruebe en Brave**: paste de una captura (rechaza, "solo texto"), ✕ para quitar
   un chip, descarga de un adjunto desde el panel.
 
-**T16b — imágenes** (pendiente): compresión `<canvas>` (JPEG ~0.8, máx 1568px), `tipo:"imagen"` en
-los 3 adaptadores (bloques nativos Claude/Gemini, `image_url` OpenAI-compat), thumbnails en el
-panel, aviso cuando el modelo no tiene visión. Widen el `accept` + `leerArchivo`.
+**T16b — imágenes ✅ (decisiones F3-22b)**
+- `comprimirImagen` (`adjuntos.ts`): `<canvas>`, achica a 1568px, re-encode JPEG q0.82 (baja a
+  0.6 si sigue > 1MB), salvo PNG con transparencia → PNG. base64 sin prefijo.
+- 3 adaptadores mapean `tipo:"imagen"` antes del texto (Claude `image` block / Gemini
+  `inline_data` / OpenAI-compat `image_url` data-URI). Si el proveedor 400/415/422ea con
+  imágenes → el error sugiere Gemini/Claude.
+- `estimarTokens`: +1300 por imagen, +3000 por pdf.
+- UI: `accept` suma png/jpeg/webp; chip con thumbnail 20px; turno "Vos" thumbnail 64px → lightbox
+  (`verImagen`, overlay z-40, Esc cierra el lightbox antes que el panel).
+- `eslint.config.mjs`: apaga `@next/next/no-img-element` (`next/image` no va con `output:export`).
+- Verificado: 13 asserts scratch (estimarTokens, `armarContexto` imagen en `.adjuntos`, shaping
+  Gemini/OpenAI-compat via fetch stub) + pane (2000px PNG → 1568px JPEG 87→29KB, transparencia
+  queda PNG, envío persiste, thumbnail + lightbox). `tsc`/`lint`/`build` verde.
+- **Falta prueba de Alan** (keys reales): imagen con Gemini/Claude/un modelo de visión de Groq;
+  el aviso "sin visión"; pegar una captura de pantalla.
 
 **T16c — PDF** (pendiente): `tipo:"pdf"`, bloque `document` (Claude) / `inline_data` (Gemini),
 aviso ámbar "PDF solo Gemini (gratis) o Claude" con otros proveedores.

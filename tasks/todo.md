@@ -58,7 +58,14 @@
         chips + badge "📎 N" en el globo + chip lectura en el panel. (`intercambio.ts`, `contexto.ts`,
         `adjuntos.ts`, `BranchTranscript.tsx`, `FlowCanvas.tsx`, `MessageNode.tsx`, `compartir.ts`;
         decisiones F3-22) — 25 asserts scratch + verificado en el pane (drop, reject, send, reload).
-  - [ ] T16b — imágenes (compresión `<canvas>`, bloques nativos Claude/Gemini + `image_url`, thumbnails).
+  - [x] **T16b — imágenes.** `comprimirImagen` (`<canvas>`, 1568px, JPEG q0.82/0.6 salvo PNG con
+        transparencia). 3 adaptadores mapean `tipo:"imagen"` (Claude `image` / Gemini `inline_data`
+        / OpenAI-compat `image_url`); error sugiere Gemini/Claude si el modelo no tiene visión.
+        `estimarTokens` +1300/imagen. Thumbnails en chips y turno "Vos" + lightbox. eslint apaga
+        `no-img-element`. (`adjuntos.ts`, `ia.ts`, `contexto.ts`, `BranchTranscript.tsx`,
+        `eslint.config.mjs`; decisiones F3-22b) — 13 asserts + verificado en el pane (compresión
+        2000→1568px PNG→JPEG 87→29KB, transparencia queda PNG, envío persiste, lightbox).
+        Falta prueba de Alan: imagen real con Gemini/Claude/Groq-vision + pegar captura.
   - [ ] T16c — PDF (bloque `document`/`inline_data`, aviso "solo Gemini/Claude").
 
 ### Checkpoint Fase 4

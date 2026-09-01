@@ -1,6 +1,15 @@
 import type { Mensaje } from "./contexto";
-import type { Proveedor } from "./intercambio";
+import type { Adjunto, Proveedor } from "./intercambio";
 import { proxyIAUrl } from "./supabase";
+
+// Imágenes adjuntas de un mensaje (T16b). Cada adaptador las mapea a su formato:
+// Claude → bloque `image`; Gemini → `inline_data`; OpenAI-compat → `image_url`.
+function imagenesDe(m: Mensaje): Adjunto[] {
+  return (m.adjuntos ?? []).filter((a) => a.tipo === "imagen");
+}
+function hayImagenes(mensajes: Mensaje[]): boolean {
+  return mensajes.some((m) => imagenesDe(m).length > 0);
+}
 
 // Punto único de entrada a la IA. Adentro decide el proveedor (spec §6): sumar
 // otro proveedor = un `case` nuevo acá, sin tocar la lógica del árbol.
@@ -309,7 +318,24 @@ async function llamarClaude(
         model: config.modelo,
         max_tokens: opts.maxTokens ?? 4096,
         ...(opts.sistema ? { system: opts.sistema } : {}),
-        messages: mensajes.map((m) => ({ role: m.rol, content: m.texto })),
+        messages: mensajes.map((m) => {
+          const imgs = imagenesDe(m);
+          if (imgs.length === 0) return { role: m.rol, content: m.texto };
+          return {
+            role: m.rol,
+            content: [
+              ...imgs.map((a) => ({
+                type: "image" as const,
+                source: {
+                  type: "base64" as const,
+                  media_type: a.mime as "image/png" | "image/jpeg" | "image/webp",
+                  data: a.contenido,
+                },
+              })),
+              { type: "text" as const, text: m.texto },
+            ],
+          };
+        }),
       },
       { signal: opts.signal },
     );
@@ -404,7 +430,12 @@ async function intentarGemini(
   const body: Record<string, unknown> = {
     contents: mensajes.map((m) => ({
       role: m.rol === "assistant" ? "model" : "user",
-      parts: [{ text: m.texto }],
+      parts: [
+        ...imagenesDe(m).map((a) => ({
+          inline_data: { mime_type: a.mime, data: a.contenido },
+        })),
+        { text: m.texto },
+      ],
     })),
     generationConfig: {
       // Headroom generoso: los flash de Gemini "piensan" y el thinking cuenta
@@ -442,7 +473,7 @@ async function intentarGemini(
   }
 
   if (!res.ok || !res.body) {
-    const msg = await mensajeErrorGemini(res, modelo);
+    const msg = await mensajeErrorGemini(res, modelo, hayImagenes(mensajes));
     if (res.status === 503) throw new ErrorGemini503(msg);
     throw new ErrorIA(msg);
   }
@@ -574,7 +605,11 @@ async function intentarGemini(
 }
 
 // Traduce una respuesta de error de Gemini (cualquier endpoint) a texto legible.
-async function mensajeErrorGemini(res: Response, modelo?: string): Promise<string> {
+async function mensajeErrorGemini(
+  res: Response,
+  modelo?: string,
+  conImagenes = false,
+): Promise<string> {
   let m: string | undefined;
   let estado: string | undefined;
   try {
@@ -625,7 +660,11 @@ async function mensajeErrorGemini(res: Response, modelo?: string): Promise<strin
       "El modelo de Gemini está saturado (503). Probá de nuevo o cambiá de modelo."
     );
   }
-  return m ?? `Error ${res.status} de Gemini.`;
+  const cola =
+    conImagenes && res.status === 400
+      ? " · Si adjuntaste una imagen: puede ser el problema (formato/tamaño)."
+      : "";
+  return (m ?? `Error ${res.status} de Gemini.`) + cola;
 }
 
 // ── Adaptador: OpenAI-compatible vía el proxy de 3maps ────────────────────
@@ -687,6 +726,14 @@ function sinTokensBasura(s: string): string {
   return s.replace(TOKENS_BASURA, "");
 }
 
+// `content` de un mensaje OpenAI-compat: texto plano, o bloques (con imágenes).
+type ContenidoOpenAI =
+  | string
+  | Array<
+      | { type: "text"; text: string }
+      | { type: "image_url"; image_url: { url: string } }
+    >;
+
 async function llamarOpenAICompat(
   config: ConfigIA,
   mensajes: Mensaje[],
@@ -715,8 +762,23 @@ async function llamarOpenAICompat(
     // simplemente no viene el `usage` (o habría que gatearlo por proveedor).
     stream_options: { include_usage: true },
     messages: [
-      ...(opts.sistema ? [{ role: "system", content: opts.sistema }] : []),
-      ...mensajes.map((m) => ({ role: m.rol, content: m.texto })),
+      ...(opts.sistema
+        ? [{ role: "system", content: opts.sistema as ContenidoOpenAI }]
+        : []),
+      ...mensajes.map((m) => {
+        const imgs = imagenesDe(m);
+        const content: ContenidoOpenAI =
+          imgs.length === 0
+            ? m.texto
+            : [
+                ...imgs.map((a) => ({
+                  type: "image_url" as const,
+                  image_url: { url: `data:${a.mime};base64,${a.contenido}` },
+                })),
+                { type: "text" as const, text: m.texto },
+              ];
+        return { role: m.rol, content };
+      }),
     ],
     // OpenAI (modelos nuevos) renombró `max_tokens` → `max_completion_tokens`;
     // DeepSeek sigue con `max_tokens`.
@@ -746,7 +808,9 @@ async function llamarOpenAICompat(
   }
 
   if (!res.ok || !res.body) {
-    throw new ErrorIA(await mensajeErrorOpenAICompat(res, nombre));
+    throw new ErrorIA(
+      await mensajeErrorOpenAICompat(res, nombre, hayImagenes(mensajes)),
+    );
   }
 
   let crudo = ""; // contenido tal cual llega (puede traer <think>…)
@@ -823,6 +887,7 @@ async function llamarOpenAICompat(
 async function mensajeErrorOpenAICompat(
   res: Response,
   nombre: string,
+  conImagenes = false,
 ): Promise<string> {
   let m: string | undefined;
   try {
@@ -865,7 +930,11 @@ async function mensajeErrorOpenAICompat(
   if (res.status === 502 || res.status === 503) {
     return `${nombre} está caído o saturado. Probá de nuevo.`;
   }
-  return m ? `${nombre}: ${m}` : `Error ${res.status} de ${nombre}.`;
+  const pistaImg =
+    conImagenes && [400, 415, 422].includes(res.status)
+      ? ` · ¿Este modelo acepta imágenes? Muchos modelos abiertos no — probá Gemini o Claude.`
+      : "";
+  return (m ? `${nombre}: ${m}` : `Error ${res.status} de ${nombre}.`) + pistaImg;
 }
 
 // ── Listar modelos disponibles para la key del usuario ────────────────────

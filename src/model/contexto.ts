@@ -258,8 +258,16 @@ export function armarContexto(
 // español; error típico ±20 %). No baja ningún tokenizer real — sirve para
 // mostrar "cuánto contexto estoy mandando" sin costo ni red (T10).
 export function estimarTokens(mensajes: Mensaje[]): number {
-  const chars = mensajes.reduce((n, m) => n + m.texto.length, 0);
-  return Math.round(chars / 4);
+  let chars = 0;
+  let extra = 0; // adjuntos no textuales: costo fijo aproximado por archivo
+  for (const m of mensajes) {
+    chars += m.texto.length;
+    for (const a of m.adjuntos ?? []) {
+      if (a.tipo === "imagen") extra += 1300;
+      else if (a.tipo === "pdf") extra += 3000;
+    }
+  }
+  return Math.round(chars / 4) + extra;
 }
 
 // El tramo del camino que cae fuera de la ventana — lo que habría que resumir.

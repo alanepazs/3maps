@@ -233,10 +233,12 @@ en T16a. Badge "📎 N" en el globo (`arbolAVista` → `MessageNode`). Chip lect
 **Los adaptadores de `ia.ts` NO se tocaron** — el texto adjunto se pega dentro del `Mensaje.texto`
 en `armarContexto`; `Mensaje.adjuntos` (imagen/pdf) recién lo consumen los adaptadores en T16b/c.
 
-**T16b — Imágenes.** Compresión con `<canvas>`. `tipo:"imagen"` en los 3 adaptadores (bloques
-nativos Claude/Gemini, `image_url` OpenAI-compat). Thumbnails en el panel. Aviso cuando el
-proveedor/modelo no tiene visión (best-effort: mostrar el error del proveedor). Verificar con
-Gemini real (Alan) — o con fetch stub. **Scope: M.**
+**T16b — Imágenes. ✅ HECHO (02-09, decisiones F3-22b).**
+`comprimirImagen` (`<canvas>` sin librería, 1568px, JPEG q0.82/0.6 salvo PNG con transparencia).
+`imagenesDe(m)` + mapeo por adaptador en `ia.ts` (Claude `image` / Gemini `inline_data` /
+OpenAI-compat `image_url`). `estimarTokens` +1300/imagen. `accept` ampliado; chips y turno "Vos"
+con thumbnail; lightbox `verImagen`. `mensajeError*` sugiere Gemini/Claude en un 400 con imágenes.
+`eslint.config.mjs` apaga `no-img-element`. 13 asserts + pane. Falta prueba de Alan con keys.
 
 **T16c — PDF.** `tipo:"pdf"`, bloque `document` (Claude) / `inline_data` (Gemini). Aviso ámbar
 "PDF solo Gemini/Claude" cuando el proveedor activo es otro. Chip 📕 + descarga. **Scope: S-M.**

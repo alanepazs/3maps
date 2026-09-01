@@ -47,10 +47,12 @@ src/
                          nodes/edges de React Flow), toMarkdown / parseMarkdown, arbolInicial
                          (= { intercambios: [] }, árbol vacío — el 1er submit crea la raíz).
     adjuntos.ts          Archivos adjuntos (T16). tipoDeArchivo(File)→"texto"|"imagen"|"pdf"|null
-                         (MIME + extensión), leerArchivo(File,pesoActual)→{ok,adjunto|error}
-                         (T16a: solo texto, con FileReader), pesoAdjunto / fmtBytes / iconoAdjunto /
-                         descargarAdjunto, topes LIMITE_TEXTO 128KB / LIMITE_BINARIO 1MB /
-                         LIMITE_INTERCAMBIO 2MB. Decisiones F3-22.
+                         (MIME + extensión), leerArchivo(File,pesoActual)→{ok,adjunto|error}:
+                         texto vía FileReader; imagen vía comprimirImagen (canvas, achica a 1568px,
+                         re-encode JPEG q0.82/0.6 salvo PNG con transparencia; base64 sin prefijo);
+                         PDF todavía no. pesoAdjunto / fmtBytes / iconoAdjunto / dataUrl /
+                         descargarAdjunto (base64→Blob para binarios). Topes LIMITE_TEXTO 128KB /
+                         LIMITE_BINARIO 1MB / LIMITE_INTERCAMBIO 2MB. Decisiones F3-22 / F3-22b.
     persistencia.ts      guardarArbol(arbol, mapId) / cargarArbol(mapId) en localStorage
                          ("3maps:arbol:<mapId>"), un string .md por intercambio. Cae a
                          arbolInicial() si no hay nada.
@@ -164,9 +166,10 @@ src/
                         calculada en FlowCanvas; F3-20). Cada turno IA: "N → N tok" de
                         `Intercambio.tokensEntrada/Salida` si los tiene (T12, F3-21). `fmtTokens`
                         exportado acá (lo usan los dos contadores).
-                        Mini-composer (T16a): dropzone + onPaste + botón 📎 → adjuntar archivos de
-                        texto; chips con ✕; el turno "Vos" muestra los adjuntos en modo lectura.
-                        `onSubmit(text, kind, adjuntos)`. F3-22.
+                        Mini-composer (T16): dropzone + onPaste + botón 📎 → adjuntar archivos de
+                        texto e imágenes; chips con ✕ (thumbnail si es imagen); el turno "Vos"
+                        muestra los adjuntos en modo lectura (imagen → thumbnail → lightbox
+                        `verImagen`). `onSubmit(text, kind, adjuntos)`. F3-22 / F3-22b.
                         Props: {intercambios, side, onFlipSide, onClose, onSubmit?, onStop?,
                         onRetry?, nav?, onNavigate?, contextoTokens?, width?, resizable?, onResize?}.
     SharedBanner.tsx    Cartel arriba cuando se ve un árbol compartido (`?compartir=`). Props:
@@ -365,6 +368,10 @@ Props de `<ReactFlow>` que importan:
   `Record<Proveedor,…>` + (si es OpenAI-compat) redeploy del `ia-proxy`. Cero cambios en el árbol
   (spec §6). `resumir()` usa el mismo proveedor (le pasa `usarProxy`) y devuelve `string` (tira
   el `uso`).
+- **Imágenes adjuntas** (T16b, F3-22b): `imagenesDe(m)` saca los adjuntos `tipo:"imagen"` de un
+  `Mensaje` y cada adaptador los mapea antes del texto — Claude `{type:"image",source:base64}`,
+  Gemini `{inline_data:{mime_type,data}}`, OpenAI-compat `{type:"image_url",image_url:{url:data-URI}}`.
+  Si el proveedor 400/415ea con imágenes, el mensaje de error sugiere Gemini/Claude.
 - La key de Claude/Gemini va **directo del navegador al proveedor**. Las de los otros 11
   **transitan** el proxy stateless (opt-in `opts.usarProxy` / `settings.usarProxyIA`), nunca se
   almacenan. Ver §7a.

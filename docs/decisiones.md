@@ -937,6 +937,38 @@ Spec completa y decisiones de alcance en `tasks/T16-spec.md`. Lo no obvio de la 
 - **Revertir**: sacás el campo `adjuntos` del modelo + `adjuntos.ts` + la UI del panel. Un `.md`
   con `adjuntos:` seguiría parseando (la línea se ignora).
 
+### F3-22b. Adjuntar imágenes (T16b): compresión en el cliente + bloques nativos por proveedor
+- **`comprimirImagen` (`adjuntos.ts`)**: decodifica el `File` a `<img>`, lo dibuja en un `<canvas>`
+  achicado a **1568 px** de lado máximo (el máximo útil para la visión de Claude/Gemini) y lo
+  re-encodea. Sin librería.
+  - Formato de salida: **JPEG q0.82** (baja a 0.6 si sigue > `LIMITE_BINARIO` 1 MB), **salvo** que
+    el original sea PNG **y** tenga transparencia (`getImageData` → algún alpha < 255) → PNG.
+  - Si no hay que achicar y el original ya entra en el tope → se usa tal cual (sin re-encode).
+  - Si tras comprimir sigue > 1 MB → error "probá recortarla".
+  - `contenido` = base64 **sin** el prefijo `data:...;base64,`.
+- **`ia.ts`, un mapeo por adaptador** (`imagenesDe(m)` = adjuntos `tipo:"imagen"` del mensaje;
+  el bloque de imagen va **antes** del texto):
+  - **Claude**: `content` pasa de `string` a `[{type:"image",source:{type:"base64",media_type,data}},
+    {type:"text",text}]`. Todos los modelos Claude actuales tienen visión.
+  - **Gemini**: `parts: [{inline_data:{mime_type,data}}, {text}]`. Todos los Gemini (flash incluido)
+    aceptan imagen **gratis**. ⚠️ si Gemini 400ea la imagen, probar `inlineData`/`mimeType`
+    (camelCase) — se eligió snake_case (`inline_data`/`mime_type`) por los curl históricos de Google.
+  - **OpenAI-compat**: `content: [{type:"image_url",image_url:{url:"data:<mime>;base64,<data>"}},
+    {type:"text",text}]`. Solo funciona en modelos con visión (Groq llama-4/3.2-vision, algunos de
+    OpenRouter; HF casi ninguno). **No sabemos de antemano** cuál soporta → se manda igual y, si el
+    proveedor devuelve 400/415/422, `mensajeErrorOpenAICompat` agrega "¿este modelo acepta
+    imágenes? probá Gemini o Claude". Idem `mensajeErrorGemini` para un 400 con imágenes.
+- **`estimarTokens`** (T10): suma un fijo por adjunto no textual — imagen ~1300, pdf ~3000
+  (heurística grosera; es estimación).
+- **UI**: el `accept` del `<input file>` suma `image/png,image/jpeg,image/webp`. Chip del composer
+  con thumbnail 20 px; en el turno "Vos" un thumbnail 64 px que abre un **lightbox** (`verImagen`
+  state, overlay `z-40` con `stopPropagation` para no cerrar el panel; Esc cierra el lightbox
+  antes que el panel).
+- **`eslint.config.mjs`**: se apagó `@next/next/no-img-element` — `next/image` no sirve con
+  `output: "export"` para data-URIs; el canvas es todo estático/client-side.
+- **Falta** (prueba de Alan, keys reales): imagen real con Gemini / Claude / un modelo de visión
+  de Groq; el aviso "sin visión"; pegar una captura.
+
 ---
 
 ## Build / deploy
