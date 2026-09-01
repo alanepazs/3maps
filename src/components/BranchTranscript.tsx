@@ -34,6 +34,8 @@ export default function BranchTranscript({
   onSubmit,
   onStop,
   onRetry,
+  nav,
+  onNavigate,
   width,
   resizable = false,
   onResize,
@@ -47,6 +49,16 @@ export default function BranchTranscript({
   onStop?: () => void;
   // Vuelve a pedir la respuesta del globo abierto en el panel.
   onRetry?: () => void;
+  // Navegación por el árbol desde el globo abierto (ids destino o null).
+  nav?: {
+    prev: string | null;
+    next: string | null;
+    up: string | null;
+    down: string | null;
+    pos: number;
+    total: number;
+  } | null;
+  onNavigate?: (id: string) => void;
   width?: number;
   resizable?: boolean;
   onResize?: (px: number) => void;
@@ -196,6 +208,36 @@ export default function BranchTranscript({
             </button>
           </div>
         </div>
+
+        {nav && onNavigate && (
+          <div className="flex items-center gap-1 border-b border-white/10 px-4 py-1.5 text-white/60">
+            {(
+              [
+                ["up", "▲", "Ir al globo padre"],
+                ["prev", "◀", "Hermano anterior"],
+                ["next", "▶", "Hermano siguiente"],
+                ["down", "▼", "Ir al primer hijo"],
+              ] as const
+            ).map(([dir, icon, label]) => (
+              <button
+                key={dir}
+                type="button"
+                onClick={() => nav[dir] && onNavigate(nav[dir]!)}
+                disabled={!nav[dir]}
+                title={label}
+                aria-label={label}
+                className="rounded px-1.5 py-0.5 text-xs enabled:hover:bg-white/10 enabled:hover:text-white disabled:opacity-25"
+              >
+                {icon}
+              </button>
+            ))}
+            {nav.total > 1 && (
+              <span className="ml-1 text-[11px] text-white/40">
+                hermano {nav.pos} / {nav.total}
+              </span>
+            )}
+          </div>
+        )}
 
         <div
           ref={scrollRef}

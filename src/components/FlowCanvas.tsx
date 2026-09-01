@@ -52,8 +52,10 @@ import {
   conTamano,
   crearIntercambio,
   descendientes,
+  hijos,
   nuevoId,
   quitarSubarbol,
+  raices,
   reparentar,
   type Arbol,
   type Proveedor,
@@ -926,6 +928,26 @@ function Flow() {
     [arbol, transcriptNodeId],
   );
 
+  // Navegación del panel: hermanos (◀▶), padre (▲), primer hijo (▼) del globo
+  // abierto. `null` = no hay a dónde ir en esa dirección.
+  const nav = useMemo(() => {
+    if (!transcriptNodeId) return null;
+    const ic = buscar(arbol, transcriptNodeId);
+    if (!ic) return null;
+    const hermanos =
+      ic.padreId === null ? raices(arbol) : hijos(arbol, ic.padreId);
+    const idx = hermanos.findIndex((h) => h.id === transcriptNodeId);
+    const kids = hijos(arbol, transcriptNodeId);
+    return {
+      prev: idx > 0 ? hermanos[idx - 1].id : null,
+      next: idx >= 0 && idx < hermanos.length - 1 ? hermanos[idx + 1].id : null,
+      up: ic.padreId,
+      down: kids[0]?.id ?? null,
+      pos: idx + 1,
+      total: hermanos.length,
+    };
+  }, [arbol, transcriptNodeId]);
+
   // Composer del panel lateral (fase 3.9): crea un hijo del globo abierto y mueve
   // el panel a ese hijo, así se ve su respuesta sin cerrar el panel. Enter =
   // continúa el hilo ("main"), Ctrl/Cmd+Enter o botón = ramifica (fase 3.12).
@@ -1368,6 +1390,8 @@ function Flow() {
                 ? undefined
                 : () => retryNode(transcriptNodeId)
             }
+            nav={nav}
+            onNavigate={(nid) => setTranscriptNodeId(nid)}
             width={panelAncho}
             resizable={panelResizable}
             onResize={guardarAnchoPanel}

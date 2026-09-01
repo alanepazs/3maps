@@ -31,7 +31,7 @@
 ## Fase 4 — Rediseño de `BranchTranscript`
 - [x] T7 — Turno usuario vs. IA diferenciados (`BranchTranscript.tsx`) [S]
 - [x] T8 — STOP en el mini-composer del panel (`BranchTranscript.tsx`, `FlowCanvas.tsx`) [S] — dep: T1
-- [ ] T9 — Flechas de navegación: hermanos + subir al padre + bajar al primer hijo (`BranchTranscript.tsx`, `FlowCanvas.tsx`, `intercambio.ts`) [M]
+- [x] T9 — Flechas de navegación: hermanos + subir al padre + bajar al primer hijo (`BranchTranscript.tsx`, `FlowCanvas.tsx`, `intercambio.ts`) [M]
 - [ ] T10 — Contador de contexto estimado por globo y árbol (`contexto.ts`, `BranchTranscript.tsx`) [M]
 - [ ] T11 — `llamarIA` devuelve `usage`; se guarda en el `.md` (`ia.ts`, `intercambio.ts`, `FlowCanvas.tsx`, `contexto.ts`) [M]
 - [ ] T12 — Contador de tokens gastados por globo (`BranchTranscript.tsx`) [S] — dep: T11
@@ -59,6 +59,10 @@
 - **B6** — preparar el código para un fondo del mapa con el logo de 3maps (o usar la marca en
   algún lado). Abrir a sugerencias cuando se llegue. Probablemente un `<Background>` custom de
   React Flow o un div de fondo con el SVG del logo, opacidad baja.
+- **B7** — "zoom de lupa": los globos reaccionan al mouse y se agrandan al pasar por encima
+  (hover → `transform: scale()` o lente). Setting en la pestaña "Lienzo": `Settings.hoverZoom`
+  (on/off). Cuidar: no romper el drag/selección, ni el layout de los vecinos (¿scale desde el
+  centro? ¿z-index alto en hover?).
 
 ## Fuera de este plan (más adelante — pre-existentes)
 - Auto-switch de proveedor al pegar una key de otro

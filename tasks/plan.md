@@ -364,3 +364,7 @@ Falla típica de gpt-oss-120b (`\frac{a}{b}` entre paréntesis normales).
 - **B6 — marca 3maps en el mapa**: preparar el código para un fondo con el logo (un `<Background>`
   custom de React Flow, o un div de fondo con el SVG a opacidad baja, detrás del `<ReactFlow>`).
   Sugerir opciones cuando se llegue (watermark esquina vs. fondo tenue vs. logo en el header). [M]
+- **B7 — zoom de lupa (hover)**: al pasar el mouse por un globo, se agranda para leerlo mejor.
+  `Settings.hoverZoom` (on/off) en la pestaña "Lienzo". `transform: scale()` en `:hover` con
+  `z-index` alto y origen centrado; que no interfiera con drag/selección ni empuje a los vecinos.
+  [M]
