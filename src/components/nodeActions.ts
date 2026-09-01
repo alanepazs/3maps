@@ -19,6 +19,10 @@ export type NodeActions = {
   resizeNode: (id: string, ancho: number | null, alto: number | null) => void;
   // `true` cuando se ve un árbol compartido: se esconden eliminar / reintentar.
   readOnly: boolean;
+  // Crecimiento del globo por mensaje (Fase 5, F5-4). Sin tamaño manual, el alto
+  // del tramo = ALTO_BASE_GLOBO + min(n * crecimientoPx, crecimientoTope).
+  crecimientoPx: number;
+  crecimientoTope: number;
 };
 
 export const NodeActionsContext = createContext<NodeActions>({
@@ -28,4 +32,6 @@ export const NodeActionsContext = createContext<NodeActions>({
   openNode: () => {},
   resizeNode: () => {},
   readOnly: false,
+  crecimientoPx: 9,
+  crecimientoTope: 320,
 });

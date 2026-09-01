@@ -1102,6 +1102,20 @@ Ver F3-8 (actualizado) — `components/gestos.ts` `tragarClickSintetico()`.
 - Verificado: 8 asserts (rama desde el medio, tramo original intacto, `edge.data.desdeId`, camino
   sin la continuación) + pane (chip, ramifica desde `b` no desde la punta `c`).
 
+### F5-4. El globo crece con la conversación (slider en "Lienzo") + se saca "expandir/colapsar"
+- **`Settings`**: `crecimientoPxPorMensaje` (0-24, default 9) y `crecimientoTope` (px, default 320).
+  `ALTO_BASE_GLOBO` = 108. Sliders en la pestaña "Lienzo" de ⚙️ (el de tope se esconde si px=0).
+- **`MessageNode`**: sin tamaño manual, `height = ALTO_BASE_GLOBO + min(n * px, tope)`. El cuerpo
+  scrollea adentro. Los valores llegan por `NodeActionsContext` (`crecimientoPx`/`crecimientoTope`,
+  clampeados en `FlowCanvas`) — no por `data`, así que cambiar el slider re-renderiza los nodos sin
+  reconstruir la vista.
+- **Se sacó el "expandir/colapsar" por globo (F3-1)**: con el alto configurable + scroll interno
+  ya no aporta. Se borró `vista.ts` (`leerExpandido`/`guardarExpandido`/`ALTO_COLAPSADO`), el
+  botón "⌄ ver más" y el toggle del toolbar. Para leer todo → se abre el panel. La clave
+  `localStorage["3maps:vista"]` queda muerta (inofensiva).
+- Verificado en el pane: 2 msgs → 126px, 12 msgs → 216px (px=9); slider a 20 → 348px; px=0 →
+  todos 108px.
+
 ---
 
 ## Build / deploy

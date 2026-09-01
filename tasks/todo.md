@@ -101,7 +101,9 @@ Sub-tareas:
   panel → chip "Ramificando desde: «...»" + Enter/botón ramifican desde ese punto. `onSubmit`
   gana `desdeId?`. `ubicarNuevoGlobo` ahora es tramo-aware (`layout.ts`). Decisiones F5-3.
   8 asserts + pane.
-- **F5-4** — slider "px por mensaje" + tope en "Lienzo"; el globo crece.
+- **F5-4 ✅** — `Settings.crecimientoPxPorMensaje` (0-24, def 9) + `crecimientoTope` (def 320);
+  sliders en "Lienzo". `MessageNode` alto = `ALTO_BASE_GLOBO(108) + min(n*px, tope)` (por
+  `NodeActionsContext`). Se sacó "expandir/colapsar" del globo (F3-1) + `vista.ts`. Decisiones F5-4.
 - **F5-5** — adaptar `calcularLayout` ("Ordenar"), `resolverSolapes`, streaming del globo.
 - **F5-6** — docs (CLAUDE.md invariante ✅ ya) + `arquitectura.md` + `historia.md` + renombres.
 

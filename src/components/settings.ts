@@ -26,12 +26,20 @@ export type Settings = {
   // El usuario escondió la barra de escribir (se desliza hacia abajo; queda un
   // botón "✎ Escribir" para traerla). Fase 3.13.
   composerOculto: boolean;
+  // Cuánto crece el globo (tramo) por mensaje, para que se vea de lejos cuánto
+  // conversaste ahí (Fase 5). Alto = ALTO_BASE + min(n * px, tope). px = 0 → no
+  // crece. En px de canvas.
+  crecimientoPxPorMensaje: number; // 0-24
+  crecimientoTope: number; // máximo que crece por encima del base
 };
 
 export const ANCHO_PANEL_DEFECTO = 460;
 export const ANCHO_PANEL_MIN = 320;
 // Fracción máxima del viewport que puede ocupar el panel en desktop.
 export const ANCHO_PANEL_MAX_FRAC = 0.75;
+
+// Alto del globo (tramo) sin crecimiento: header + un cachito de cuerpo.
+export const ALTO_BASE_GLOBO = 108;
 
 export const DEFAULT_SETTINGS: Settings = {
   inertia: 1,
@@ -41,6 +49,8 @@ export const DEFAULT_SETTINGS: Settings = {
   transcriptWidth: { mobile: ANCHO_PANEL_DEFECTO, desktop: ANCHO_PANEL_DEFECTO },
   usarProxyIA: false,
   composerOculto: false,
+  crecimientoPxPorMensaje: 9,
+  crecimientoTope: 320,
 };
 
 export const SETTINGS_STORAGE_KEY = "3maps:settings";

@@ -19,12 +19,7 @@ import { tragarClickSintetico } from "./gestos";
 import LimiteError from "./LimiteError";
 import Markdown from "./Markdown";
 import { NodeActionsContext } from "./nodeActions";
-import {
-  ALTO_COLAPSADO,
-  LIMITE_COLAPSO,
-  guardarExpandido,
-  leerExpandido,
-} from "./vista";
+import { ALTO_BASE_GLOBO } from "./settings";
 import type { Intercambio } from "@/model/intercambio";
 
 // Límites y default del redimensionado manual (px, coords del lienzo).
@@ -64,25 +59,21 @@ export default function MessageNode({
   const rev = String(data.rev ?? "");
   const pending = Boolean(ultimo?.pending); // la punta del tramo está streameando
 
-  const { deleteNode, retryNode, stopNode, openNode, resizeNode, readOnly } =
-    useContext(NodeActionsContext);
+  const {
+    deleteNode,
+    retryNode,
+    stopNode,
+    openNode,
+    resizeNode,
+    readOnly,
+    crecimientoPx,
+    crecimientoTope,
+  } = useContext(NodeActionsContext);
   const { getZoom } = useReactFlow();
   // Zoom del lienzo (re-render solo al cambiar el zoom, no al panear) para
   // contra-escalar la manija de resize (con zoom out quedaría sub-píxel).
   const zoomLienzo = useStore((s) => s.transform[2]);
   const escalaManija = Math.min(4, Math.max(1, 1 / (zoomLienzo || 1)));
-
-  // Colapso (fase 3.1): un tramo largo (varios mensajes o mucho texto) arranca
-  // clampeado con "⌄ ver más". Preferencia por globo, no va al `.md`.
-  const largoTotal = intercambios.reduce(
-    (s, ic) => s + (ic.respuesta?.length ?? 0),
-    0,
-  );
-  const colapsable = !pending && (n > 3 || largoTotal > LIMITE_COLAPSO * 2);
-  const [override, setOverride] = useState<boolean | undefined>(() =>
-    leerExpandido(id),
-  );
-  const expandido = override ?? !colapsable;
 
   // Tamaño manual (fase 3.10) — guardado en la CABEZA del tramo (`data.ancho/alto`
   // → `.md`). `id` (prop) = id de la cabeza.
@@ -94,9 +85,11 @@ export default function MessageNode({
   const rootRef = useRef<HTMLDivElement>(null);
   const cuerpoRef = useRef<HTMLDivElement>(null);
 
-  const modoStream = pending && !tamano && override !== true;
-  const modoColapsado = colapsable && !expandido && !tamano;
-  const clampAlto = modoStream || modoColapsado;
+  // Fase 5 (F5-4): sin tamaño manual, el globo tiene un alto FIJO que crece unos
+  // px por mensaje (para verlo de lejos). El cuerpo scrollea adentro. Ya no hay
+  // "expandir/colapsar" — para leer todo se abre el panel.
+  const altoTramo =
+    ALTO_BASE_GLOBO + Math.min(n * crecimientoPx, crecimientoTope);
 
   // Auto-scroll al fondo mientras la punta streamea (si estás cerca del fondo).
   useEffect(() => {
@@ -150,16 +143,13 @@ export default function MessageNode({
     resizeNode(id, null, null);
   }, [id, resizeNode]);
 
-  const alternarExpandido = () => {
-    const nuevo = !expandido;
-    setOverride(nuevo);
-    guardarExpandido(id, nuevo);
-  };
-
   return (
     <div
       ref={rootRef}
-      style={{ width: tamano?.w ?? ANCHO_POR_DEFECTO, height: tamano?.h }}
+      style={{
+        width: tamano?.w ?? ANCHO_POR_DEFECTO,
+        height: tamano?.h ?? altoTramo,
+      }}
       className={`relative flex flex-col overflow-hidden rounded-md border bg-neutral-900 text-sm ${
         selected ? "border-sky-400 ring-2 ring-sky-400/40" : "border-white/20"
       }`}
@@ -200,15 +190,6 @@ export default function MessageNode({
               title="Volver a pedir la última respuesta"
             >
               ↻ Rehacer
-            </button>
-          )}
-          {colapsable && !tamano && (
-            <button
-              type="button"
-              onClick={alternarExpandido}
-              className="rounded border border-white/20 bg-neutral-900 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
-            >
-              {expandido ? "⌃ Colapsar" : "⌄ Expandir"}
             </button>
           )}
           {tamano && (
@@ -272,14 +253,7 @@ export default function MessageNode({
 
       <div
         ref={cuerpoRef}
-        className={
-          tamano
-            ? "nowheel scroll-fino min-h-0 flex-1 overflow-auto pb-2"
-            : clampAlto
-              ? "scroll-fino nowheel min-h-0 overflow-y-auto"
-              : "min-h-0"
-        }
-        style={clampAlto ? { maxHeight: ALTO_COLAPSADO * (n > 1 ? 2 : 1) } : undefined}
+        className="nowheel scroll-fino min-h-0 flex-1 overflow-y-auto pb-2"
       >
         <LimiteError
           resetKey={rev}
@@ -333,15 +307,6 @@ export default function MessageNode({
             </div>
           ))}
         </LimiteError>
-        {modoColapsado && (
-          <button
-            type="button"
-            onClick={alternarExpandido}
-            className="nodrag sticky bottom-0 flex w-full items-end justify-center bg-gradient-to-t from-neutral-900 via-neutral-900/85 to-transparent pb-1 pt-8 text-xs text-sky-300 hover:text-sky-200"
-          >
-            ⌄ ver más
-          </button>
-        )}
       </div>
 
       {!readOnly && (

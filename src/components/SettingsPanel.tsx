@@ -391,6 +391,56 @@ export default function SettingsPanel({
               </label>
 
               <label className="mt-3 block text-sm">
+                <span className="flex items-center justify-between">
+                  <span className="text-white/70">Crecimiento del globo</span>
+                  <span className="text-white/50">
+                    {settings.crecimientoPxPorMensaje <= 0
+                      ? "no crece"
+                      : `+${settings.crecimientoPxPorMensaje}px / mensaje`}
+                  </span>
+                </span>
+                <input
+                  type="range"
+                  min={0}
+                  max={24}
+                  step={1}
+                  value={settings.crecimientoPxPorMensaje}
+                  onChange={(e) =>
+                    onChange({
+                      crecimientoPxPorMensaje: Number(e.target.value),
+                    })
+                  }
+                  className="mt-2 w-full accent-sky-500"
+                />
+                <span className="mt-1 block text-[11px] text-white/40">
+                  El globo se hace más alto según cuántos mensajes tenga la
+                  conversación — para verlo de lejos. Máx +{settings.crecimientoTope}px.
+                </span>
+              </label>
+
+              {settings.crecimientoPxPorMensaje > 0 && (
+                <label className="mt-3 block text-sm">
+                  <span className="flex items-center justify-between">
+                    <span className="text-white/70">Tope de crecimiento</span>
+                    <span className="text-white/50">
+                      +{settings.crecimientoTope}px
+                    </span>
+                  </span>
+                  <input
+                    type="range"
+                    min={80}
+                    max={600}
+                    step={40}
+                    value={settings.crecimientoTope}
+                    onChange={(e) =>
+                      onChange({ crecimientoTope: Number(e.target.value) })
+                    }
+                    className="mt-2 w-full accent-sky-500"
+                  />
+                </label>
+              )}
+
+              <label className="mt-3 block text-sm">
                 <span className="text-white/70">
                   Instrucción de sistema (opcional)
                 </span>

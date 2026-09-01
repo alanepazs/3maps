@@ -1107,9 +1107,32 @@ function Flow() {
     [handleSubmit, transcriptNodeId, verGloboEnPanel],
   );
 
+  const crecimientoPx = Math.max(
+    0,
+    Math.min(24, settings.crecimientoPxPorMensaje ?? 9),
+  );
+  const crecimientoTope = Math.max(0, settings.crecimientoTope ?? 320);
   const nodeActions = useMemo(
-    () => ({ deleteNode, retryNode, stopNode, openNode, resizeNode, readOnly }),
-    [deleteNode, retryNode, stopNode, openNode, resizeNode, readOnly],
+    () => ({
+      deleteNode,
+      retryNode,
+      stopNode,
+      openNode,
+      resizeNode,
+      readOnly,
+      crecimientoPx,
+      crecimientoTope,
+    }),
+    [
+      deleteNode,
+      retryNode,
+      stopNode,
+      openNode,
+      resizeNode,
+      readOnly,
+      crecimientoPx,
+      crecimientoTope,
+    ],
   );
 
   // Ancho del panel lateral (fase 3.11): bucket por ancho de viewport. En móvil

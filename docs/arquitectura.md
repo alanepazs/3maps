@@ -133,20 +133,18 @@ src/
     FlowCanvas.tsx      ★ El componente central (~500 líneas). Ver detalle abajo.
     MessageNode.tsx     Nodo custom = un TRAMO (Fase 5, decisiones F5-1). `data.intercambios` = la
                         cadena `main`; se renderiza como transcripción scrolleable (overview).
-                        Header "N mensajes" + "📎 N". Colapso por cantidad (>3) o largo total, con
-                        "⌄ ver más" + toggle (fase 3.1, vista.ts). STOP / "↻ Rehacer" operan sobre
-                        la PUNTA (`data.intercambios.at(-1).id`); "🗑 Eliminar" sobre la cabeza (=
-                        el tramo + sub-ramas). Manija ◢ abajo-derecha para redimensionar (fase
-                        3.10): pointermove/up en window, deltas / getZoom(); al soltar → `resizeNode`
-                        (NodeActionsContext) → `conTamano` → `.md` (`data.ancho/alto` de la CABEZA,
-                        sincroniza). `tragarClickSintetico()` tras soltar (F5-0).
+                        Header "N mensajes" + "📎 N". Alto = `ALTO_BASE_GLOBO(108) + min(n*px, tope)`
+                        (F5-4, `settings.crecimientoPxPorMensaje`/`Tope` vía `NodeActionsContext`);
+                        el cuerpo scrollea. Sin "expandir/colapsar" (se sacó F3-1). STOP / "↻
+                        Rehacer" → PUNTA (`data.intercambios.at(-1).id`); "🗑 Eliminar" → cabeza
+                        (= el tramo + sub-ramas). Manija ◢ para redimensionar a mano (F3-8): al
+                        soltar → `resizeNode` (NodeActionsContext) → `.md` (`ancho/alto` de la
+                        CABEZA). `tragarClickSintetico()` tras soltar (F5-0).
     gestos.ts           `tragarClickSintetico()` — traga el `click` sintético post-drag SIN comerse
                         un click real posterior (se desarma en el 1er `pointerdown`; timeout 500ms).
                         F5-0. Lo usan `MessageNode` y `BranchTranscript`.
-    vista.ts            SOLO el colapsado/expandido por globo (`expandidos:{[id]:bool}` en
-                        localStorage["3maps:vista"], per-navegador, NO sincroniza). LIMITE_COLAPSO
-                        =400, ALTO_COLAPSADO=220. leer/guardarExpandido. (El tamaño manual pasó al
-                        `.md` — F3-8.)
+    (vista.ts borrado en F5-4 — el "expandir/colapsar" del globo se reemplazó por el alto
+     configurable. La clave `localStorage["3maps:vista"]` quedó muerta.)
     Markdown.tsx        <Markdown>{texto}</Markdown> — react-markdown con estilos compactos para el
                         globo. remark-gfm + remark-math + rehype-katex (matemática: `$…$`, `$$…$$`,
                         y `\[ \]`/`\( \)` normalizados a `$` antes de parsear). rehype-raw +
@@ -228,14 +226,12 @@ src/
                         de API key (`GUIA_API_KEY`, F3-12 aclara open-source).
                         Textarea "instrucción de sistema" → onChange({systemPrompt}) directo.
     settings.ts         Settings = {inertia, ventanaContexto, systemPrompt, transcriptSide,
-                        transcriptWidth, usarProxyIA}. DEFAULT_SETTINGS, storage key. systemPrompt
-                        "" = ninguna; se antepone a la respuesta, no al resumen. transcriptSide
-                        "left"|"right" (default "right"). transcriptWidth = {mobile, desktop} px
-                        del panel lateral por bucket de viewport (fase 3.11; ANCHO_PANEL_MIN 320,
-                        ANCHO_PANEL_MAX_FRAC 0.75, ANCHO_PANEL_DEFECTO 460). usarProxyIA = opt-in
-                        para los proveedores vía proxy (default false).
-    nodeActions.ts       NodeActionsContext: deleteNode + retryNode + openNode + readOnly (hacia
-                         FlowCanvas). readOnly=true (árbol compartido) esconde Eliminar/Reintentar.
+                        transcriptWidth, usarProxyIA, composerOculto, crecimientoPxPorMensaje (0-24,
+                        def 9), crecimientoTope (def 320)}. `ALTO_BASE_GLOBO` = 108. DEFAULT_SETTINGS,
+                        storage key. Los sliders de crecimiento están en la pestaña "Lienzo" (F5-4).
+    nodeActions.ts       NodeActionsContext: deleteNode / retryNode / stopNode / openNode /
+                         resizeNode + readOnly + crecimientoPx / crecimientoTope (F5-4, clampeados
+                         en FlowCanvas). readOnly=true (árbol compartido) esconde Eliminar/Reintentar.
     inertia.ts           Física compartida del "envión": constantes + sampleVelocity / launchVelocity / runGlide.
     useNodeInertia.ts    Hook: envión al soltar un globo o una selección.
     usePanInertia.ts     Hook: envión al soltar el pan del lienzo.
@@ -437,17 +433,16 @@ Props de `<ReactFlow>` que importan:
 sinHijos?, ancho, alto, adjuntosN, rev }`. `intercambios` = el tramo entero; `rev` = firma corta
 (los demás lo derivan). `datosIguales` en `FlowCanvas` ignora `intercambios` y compara por `rev`.
 `adjuntosN` = suma del tramo → badge "📎 N".
-- Ancho por defecto 260px; **redimensionable** con la manija ◢ abajo-derecha (F3-8): tamaño en
-  `data.ancho/alto` de la CABEZA (va al `.md`, sincroniza).
+- Ancho por defecto 260px. Alto = `ALTO_BASE_GLOBO(108) + min(n*crecimientoPx, crecimientoTope)`
+  (F5-4) salvo tamaño manual (manija ◢, F3-8, en `data.ancho/alto` de la CABEZA → `.md`).
 - Cuerpo (Fase 5): `data.intercambios.map(...)` — cada uno "pregunta (negrita) + respuesta
-  (`<Markdown>`)"; `pending` → texto parcial + ▍; `error` → recuadro rojo. Scrolleable. Tramo
-  largo (>3 mensajes o mucho texto) → colapsado + "⌄ ver más" (F3-1). STOP/Rehacer → punta;
-  Eliminar → cabeza.
+  (`<Markdown>`)"; `pending` → texto parcial + ▍; `error` → recuadro rojo. **Scrolleable siempre**
+  (`flex-1 overflow-y-auto`); auto-scroll al fondo mientras la punta streamea. STOP/Rehacer →
+  punta; Eliminar → cabeza.
 - Handles: `target` arriba (el raíz NO lo tiene) · `source id="main"` abajo ·
   `source id="branch-right"` derecha · `source id="branch-left"` izquierda (= los valores de `rama`).
-- `<NodeToolbar>` cuando `selected`: "⤢ Abrir" siempre · "↻ Rehacer" (`retryNode`) si `!readOnly` ·
-  "⌄ Expandir/⌃ Colapsar" si colapsable y sin tamaño manual · "↔ Auto" si hay tamaño manual ·
-  "🗑 Eliminar" (`deleteNode`) si `!isRoot || sinHijos`. Todos del `NodeActionsContext`.
+- `<NodeToolbar>` cuando `selected`: "⤢ Abrir" · "↻ Rehacer" (`retryNode(punta)`) si `!readOnly` ·
+  "↔ Auto" si hay tamaño manual · "🗑 Eliminar" (`deleteNode(cabeza)`) si `!isRoot || sinHijos`.
 
 ## model/intercambio.ts (modelo de datos)
 

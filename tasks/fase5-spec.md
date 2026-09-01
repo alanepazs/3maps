@@ -1,6 +1,6 @@
 # Fase 5 — El globo pasa a ser un *tramo* de la conversación
 
-> Spec. Estado: **EN CURSO** (02-09). F5-0 ✅ · F5-1 ✅ · F5-2 casi (folded) · F5-3 ✅.
+> Spec. Estado: **EN CURSO** (02-09). F5-0 ✅ · F5-1 ✅ · F5-2 casi · F5-3 ✅ · F5-4 ✅. Falta F5-5, F5-6.
 > Es un cambio de arquitectura de la VISTA. **El modelo de datos NO cambia.**
 
 ## Objetivo
