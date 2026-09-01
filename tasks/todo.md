@@ -1,0 +1,48 @@
+# TODO — próximos cambios (ver `tasks/plan.md` para el detalle)
+
+## Fase 1 — Cancelación + UX del globo pendiente
+- [ ] T1 — `stopNode`: cortar el stream conservando lo parcial (`nodeActions.ts`, `FlowCanvas.tsx`) [S]
+- [ ] T2 — Globo `pending`: ícono de lápiz animado + botón STOP cuadrado (`MessageNode.tsx`, `globals.css`) [S] — dep: T1
+- [ ] T3 — Globo nace colapsado mientras streamea + auto-scroll (`MessageNode.tsx`, `vista.ts`) [S]
+
+### Checkpoint Fase 1
+- [ ] `tsc` + `lint` + `build` verde
+- [ ] Chrome real: lápiz + STOP aparecen; STOP deja lo parcial sin spinner ni error; "↻ Rehacer" ok
+- [ ] Globo `pending` no crece; auto-scroll del texto entrante ok
+
+## Fase 2 — ⚙️ SettingsPanel en 2 pestañas
+- [ ] T4 — Reestructurar en pestañas "Mapa" / "Conectividad" (`SettingsPanel.tsx`) [M]
+- [ ] T5 — Colapsar la caja ámbar del proxy en `<details>` (`SettingsPanel.tsx`) [S] — dep: T4
+
+### Checkpoint Fase 2
+- [ ] `tsc` + `lint` + `build` verde
+- [ ] Pane: cada pestaña muestra sus secciones; checkbox del proxy visible sin abrir el `<details>`
+- [ ] Guardar la key sigue andando; ningún control se perdió
+
+## Fase 3 — Manija de resize con zoom out
+- [ ] T6 — `cursor: nwse-resize` + tooltip + contra-escala `1/zoom` (`MessageNode.tsx`) [S]
+
+### Checkpoint Fase 3
+- [ ] `tsc` + `lint` + `build` verde
+- [ ] Chrome real: con zoom out la manija sigue agarrable; cursor cambia al pasar por encima
+
+## Fase 4 — Rediseño de `BranchTranscript`
+- [ ] T7 — Turno usuario vs. IA diferenciados (`BranchTranscript.tsx`) [S]
+- [ ] T8 — STOP en el mini-composer del panel (`BranchTranscript.tsx`, `FlowCanvas.tsx`) [S] — dep: T1
+- [ ] T9 — Flechas para navegar hermanos/ramas (`BranchTranscript.tsx`, `FlowCanvas.tsx`, `intercambio.ts`) [M]
+- [ ] T10 — Contador de contexto estimado por globo y árbol (`contexto.ts`, `BranchTranscript.tsx`) [M]
+- [ ] T11 — `llamarIA` devuelve `usage`; se guarda en el `.md` (`ia.ts`, `intercambio.ts`, `FlowCanvas.tsx`, `contexto.ts`) [M]
+- [ ] T12 — Contador de tokens gastados por globo (`BranchTranscript.tsx`) [S] — dep: T11
+- [ ] T13 — Heurística de LaTeX crudo en `normalizarMath` (`Markdown.tsx`) [S] — independiente, adelantable
+
+### Checkpoint Fase 4
+- [ ] `tsc` + `lint` + `build` verde; `_scratch.mts` de `normalizarMath` (T13) con asserts
+- [ ] Chrome real: turnos diferenciados; STOP corta; flechas navegan; contadores plausibles;
+      `\frac{...}` suelto de gpt-oss ahora renderiza
+
+## Fuera de este plan (más adelante)
+- Auto-switch de proveedor al pegar una key de otro
+- Export/import `.zip` de la carpeta de `.md` + File System Access API
+- Embeddings 2.5b (`transformers.js`) si el match por palabras se queda corto
+- Fixes de móvil (3.13) en Chrome real / celu
+- Watchdog de 45s que no corte un stream lento-pero-vivo
