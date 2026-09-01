@@ -35,29 +35,31 @@ Cada tarea = una rama/commit, con el ciclo `spec-driven` → `incremental-implem
 
 ## Task List
 
-### Fase 1 — Cancelación + UX del globo pendiente
+### Fase 1 — LaTeX crudo + cancelación + UX del globo pendiente
 
+- [ ] **T13 — Heurística de LaTeX crudo en `normalizarMath`.** [S] (adelantada; independiente)
 - [ ] **T1 — `stopNode`: cortar el stream de un globo conservando lo parcial.** [S]
-- [ ] **T2 — Globo `pending`: ícono de lápiz (animado) + botón cuadrado STOP.** [S]
+- [ ] **T2 — Globo `pending`: badge de lápiz (animado) FUERA del globo + botón cuadrado STOP.** [S]
 - [ ] **T3 — Globo nace colapsado mientras streamea.** [S]
 
 #### Checkpoint Fase 1
-- [ ] `tsc` + `lint` + `build` verde.
-- [ ] En Chrome real: mando una pregunta, aparece el lápiz + STOP; clic en STOP → el globo se
-      queda con lo que llegó, sin spinner, sin error rojo, y "↻ Rehacer" sigue disponible.
+- [ ] `tsc` + `lint` + `build` verde; `_scratch.mts` de `normalizarMath` (T13) con asserts.
+- [ ] En Chrome real: `\frac{...}` suelto renderiza; mando una pregunta, aparece el badge de lápiz
+      + STOP; clic en STOP → el globo se queda con lo que llegó, sin spinner, sin error rojo, y
+      "↻ Rehacer" sigue disponible.
 - [ ] El globo `pending` no crece con el stream (arranca a `ALTO_COLAPSADO`), y el auto-scroll
       del texto entrante sigue funcionando.
 
-### Fase 2 — ⚙️ `SettingsPanel` en 2 pestañas
+### Fase 2 — ⚙️ `SettingsPanel` en 2 pestañas ("Lienzo" / "IA")
 
-- [ ] **T4 — Reestructurar `SettingsPanel` en pestañas "Mapa" / "Conectividad".** [M]
+- [ ] **T4 — Reestructurar `SettingsPanel` en pestañas "Lienzo" / "IA".** [M]
 - [ ] **T5 — Colapsar la caja ámbar del proxy en un `<details>`.** [S]
 
 #### Checkpoint Fase 2
 - [ ] `tsc` + `lint` + `build` verde.
-- [ ] Pane: la pestaña "Mapa" muestra envión + ventana de contexto + instrucción de sistema; la
-      pestaña "Conectividad" muestra proveedor + key + modelo + proxy + Cuenta + Compartir. El
-      checkbox del opt-in del proxy sigue visible sin abrir el `<details>`.
+- [ ] Pane: la pestaña "Lienzo" muestra envión + ventana de contexto + instrucción de sistema; la
+      pestaña "IA" muestra proveedor + key + modelo + proxy + Cuenta + Compartir. El checkbox del
+      opt-in del proxy sigue visible sin abrir el `<details>`.
 - [ ] Nada de lo que había se perdió; guardar la key sigue andando.
 
 ### Fase 3 — Manija de resize usable con zoom out
@@ -104,12 +106,14 @@ el flujo completo.
 
 **Dependencies:** None. **Files:** `nodeActions.ts`, `FlowCanvas.tsx`. **Scope:** S.
 
-### T2 — Lápiz + STOP en el globo pendiente
-**Descripción:** Mientras `data.pending`, `MessageNode` muestra un ícono de lápiz (con animación
-CSS sutil si se puede) al lado de "escribiendo…", y un botón cuadrado STOP que llama `stopNode(id)`.
+### T2 — Badge de lápiz + STOP en el globo pendiente
+**Descripción:** Mientras `data.pending`, `MessageNode` muestra un **badge de lápiz FUERA del
+globo** (sobresaliendo del borde superior, tipo el `<NodeToolbar>`) con animación CSS sutil, y un
+**botón cuadrado STOP** al lado que llama `stopNode(id)`.
 
 **Acceptance criteria:**
 - [ ] Solo aparece con `pending === true` y `!readOnly`.
+- [ ] El badge sobresale del borde del globo (no tapa el cuerpo).
 - [ ] El botón STOP es cuadrado, chico, con `title="Detener"`, y dispara `stopNode`.
 - [ ] La animación del lápiz respeta `prefers-reduced-motion`.
 
@@ -134,15 +138,15 @@ con scroll, y auto-scrollea al final a medida que entra texto.
 
 **Dependencies:** None (se lleva bien con T2). **Files:** `MessageNode.tsx`, `vista.ts`. **Scope:** S.
 
-### T4 — `SettingsPanel` en 2 pestañas
-**Descripción:** Header con 2 tabs ("Mapa" / "Conectividad"). "Mapa": envión, ventana de contexto,
-instrucción de sistema. "Conectividad": proveedor, API key + guía, modelo + chips, toggle proxy,
-sección Cuenta, sección Compartir. Estado del tab en `useState` (no persiste), arranca en "Mapa".
+### T4 — `SettingsPanel` en 2 pestañas ("Lienzo" / "IA")
+**Descripción:** Header con 2 tabs: **"Lienzo"** (envión, ventana de contexto, instrucción de
+sistema) y **"IA"** (proveedor, API key + guía, modelo + chips, toggle proxy, sección Cuenta,
+sección Compartir). Estado del tab en `useState` (no persiste), arranca en "Lienzo".
 
 **Acceptance criteria:**
 - [ ] Las dos pestañas renderizan sus secciones; ningún control se perdió.
 - [ ] El panel no crece más que hoy (`max-h` + scroll se mantienen por pestaña).
-- [ ] `commit()` / guardar key / cambiar proveedor siguen funcionando desde "Conectividad".
+- [ ] `commit()` / guardar key / cambiar proveedor siguen funcionando desde "IA".
 
 **Verification:** `tsc`/`lint`/`build`; pane: click en cada tab, contar los controles; verificar
 que guardar una key (con fetch mockeado) sigue andando.
@@ -203,14 +207,14 @@ STOP que llama `stopNode(transcriptNodeId)`.
 
 **Dependencies:** T1. **Files:** `BranchTranscript.tsx`, `FlowCanvas.tsx` (pasar la prop). **Scope:** S.
 
-### T9 — Flechas de navegación hermanos/ramas
-**Descripción:** En el header del panel (o al pie), flechas para saltar entre los hijos de un
-globo (hermanos del actual) y entre ramas. Mueve `transcriptNodeId`.
+### T9 — Flechas de navegación (todas las direcciones)
+**Descripción:** En el header del panel, flechas para moverse por el árbol desde el globo abierto:
+**◀▶** entre hermanos (mismo `padreId`), **▲** al padre, **▼** al primer hijo. Mueve `transcriptNodeId`.
 
 **Acceptance criteria:**
-- [ ] "◀ / ▶" entre hermanos (mismo `padreId`); deshabilitadas en los extremos.
-- [ ] Indicador "2 / 4" del hermano actual.
-- [ ] Nada rompe si el globo no tiene hermanos.
+- [ ] ◀▶ entre hermanos; deshabilitadas en los extremos. Indicador "2 / 4".
+- [ ] ▲ va al `padreId` (deshabilitada en la raíz). ▼ va al primer hijo (deshabilitada si no tiene).
+- [ ] Nada rompe si el globo no tiene hermanos / padre / hijos.
 
 **Verification:** `tsc`/`lint`/`build`; pane: árbol con 3 hijos de un padre, click en las flechas,
 verificar que `transcriptNodeId` cambia.
@@ -276,7 +280,7 @@ Falla típica de gpt-oss-120b (`\frac{a}{b}` entre paréntesis normales).
 **Verification:** `_scratch.mts` con ~8 casos (positivos y negativos) por `renderToStaticMarkup`;
 `tsc`/`lint`/`build`.
 
-**Dependencies:** None (independiente de la Fase 4). **Files:** `Markdown.tsx`. **Scope:** S.
+**Dependencies:** None. Adelantada a la **Fase 1**. **Files:** `Markdown.tsx`. **Scope:** S.
 
 ## Risks and Mitigations
 
@@ -289,12 +293,16 @@ Falla típica de gpt-oss-120b (`\frac{a}{b}` entre paréntesis normales).
 | Reestructurar `SettingsPanel` (745 líneas) y romper algo | Medio (T4) | Solo mover JSX a 2 contenedores + un `useState` de tab; no tocar la lógica de `commit`/`verModelos`/`snap`. Diff review con `code-reviewer`. |
 | La contra-escala de la manija (T6) desincroniza el cálculo del drag | Bajo | El `onResizeStart` ya divide por `zoom`; la escala visual es CSS aparte, no toca el cálculo. |
 
-## Open Questions
+## Decisiones del usuario (01-09)
 
-- **T2**: ¿el lápiz va sobre el globo (fuera del borde, tipo badge) o dentro del cuerpo junto a
-  "escribiendo…"? (el usuario dijo "sobre el globo"). Confirmar al implementar.
-- **T9**: ¿las flechas navegan solo hermanos, o también "subir al padre" / "bajar al primer hijo"?
+- **T2**: el lápiz va **como badge FUERA del globo** (no dentro del cuerpo). `<NodeToolbar>` o un
+  absolute que sobresale del borde superior.
+- **T9**: las flechas navegan **a todo** — hermanos (◀▶), subir al padre (▲), bajar al primer
+  hijo (▼).
+- **T4**: pestañas **"Lienzo" / "IA"**.
+- **T13**: **adelantada a la Fase 1** (chica, independiente, destraba el render de gpt-oss).
+
+## Open Questions (menores, decidir al diseñar)
+
 - **T10/T12**: ¿los contadores van en el header del panel, al pie, o por-globo inline? Decidir con
   el diseño de T7.
-- **T4**: nombre exacto de las pestañas — "Mapa" / "Conectividad" vs "Lienzo" / "IA". El usuario
-  dijo "mapa" y "conectividad".

@@ -1,13 +1,15 @@
 # TODO — próximos cambios (ver `tasks/plan.md` para el detalle)
 
 ## Fase 1 — Cancelación + UX del globo pendiente
+- [ ] T13 — Heurística de LaTeX crudo en `normalizarMath` (`Markdown.tsx`) [S] — adelantada; independiente
 - [ ] T1 — `stopNode`: cortar el stream conservando lo parcial (`nodeActions.ts`, `FlowCanvas.tsx`) [S]
-- [ ] T2 — Globo `pending`: ícono de lápiz animado + botón STOP cuadrado (`MessageNode.tsx`, `globals.css`) [S] — dep: T1
+- [ ] T2 — Globo `pending`: badge de lápiz animado FUERA del globo + botón STOP cuadrado (`MessageNode.tsx`, `globals.css`) [S] — dep: T1
 - [ ] T3 — Globo nace colapsado mientras streamea + auto-scroll (`MessageNode.tsx`, `vista.ts`) [S]
 
 ### Checkpoint Fase 1
-- [ ] `tsc` + `lint` + `build` verde
-- [ ] Chrome real: lápiz + STOP aparecen; STOP deja lo parcial sin spinner ni error; "↻ Rehacer" ok
+- [ ] `tsc` + `lint` + `build` verde; `_scratch.mts` de `normalizarMath` con asserts
+- [ ] Chrome real: `\frac{...}` suelto renderiza; badge de lápiz + STOP aparecen; STOP deja lo
+      parcial sin spinner ni error; "↻ Rehacer" ok
 - [ ] Globo `pending` no crece; auto-scroll del texto entrante ok
 
 ## Fase 2 — ⚙️ SettingsPanel en 2 pestañas
@@ -29,16 +31,14 @@
 ## Fase 4 — Rediseño de `BranchTranscript`
 - [ ] T7 — Turno usuario vs. IA diferenciados (`BranchTranscript.tsx`) [S]
 - [ ] T8 — STOP en el mini-composer del panel (`BranchTranscript.tsx`, `FlowCanvas.tsx`) [S] — dep: T1
-- [ ] T9 — Flechas para navegar hermanos/ramas (`BranchTranscript.tsx`, `FlowCanvas.tsx`, `intercambio.ts`) [M]
+- [ ] T9 — Flechas de navegación: hermanos + subir al padre + bajar al primer hijo (`BranchTranscript.tsx`, `FlowCanvas.tsx`, `intercambio.ts`) [M]
 - [ ] T10 — Contador de contexto estimado por globo y árbol (`contexto.ts`, `BranchTranscript.tsx`) [M]
 - [ ] T11 — `llamarIA` devuelve `usage`; se guarda en el `.md` (`ia.ts`, `intercambio.ts`, `FlowCanvas.tsx`, `contexto.ts`) [M]
 - [ ] T12 — Contador de tokens gastados por globo (`BranchTranscript.tsx`) [S] — dep: T11
-- [ ] T13 — Heurística de LaTeX crudo en `normalizarMath` (`Markdown.tsx`) [S] — independiente, adelantable
 
 ### Checkpoint Fase 4
-- [ ] `tsc` + `lint` + `build` verde; `_scratch.mts` de `normalizarMath` (T13) con asserts
-- [ ] Chrome real: turnos diferenciados; STOP corta; flechas navegan; contadores plausibles;
-      `\frac{...}` suelto de gpt-oss ahora renderiza
+- [ ] `tsc` + `lint` + `build` verde
+- [ ] Chrome real: turnos diferenciados; STOP corta; flechas navegan; contadores plausibles
 
 ## Fuera de este plan (más adelante)
 - Auto-switch de proveedor al pegar una key de otro
