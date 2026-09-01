@@ -91,6 +91,14 @@
   parcial). Pedido: que arranque colapsado a `ALTO_COLAPSADO` (220px, cuerpo scrolleable) apenas
   se crea, y que el usuario lo expanda si quiere. Ojo: no romper el auto-scroll del texto que
   entra, ni el tamaño manual (F3-8) que gana sobre el colapso.
+- **Manija de redimensionar del globo (◢) — más usable con zoom out.** Hoy (`MessageNode.tsx`,
+  F3-8/F3-10) es un elemento chico absoluto abajo-derecha: (a) el cursor no cambia (queda la
+  manito de React Flow) y no hay tooltip; (b) con zoom out el globo se achica en pantalla → la
+  manija queda sub-píxel e imposible de agarrar sin acercar mucho. Pedido: `cursor: nwse-resize`
+  + `title="Arrastrá para redimensionar"`, y **contra-escalar la manija por `1/zoom`** (o mínimo
+  en px de pantalla, vía `useViewport()`) para que mantenga tamaño de click constante. Alternativa:
+  reevaluar `<NodeResizeControl>` de React Flow con `onResize` → árbol (F3-8 lo descartó por
+  reinyectar width/height en cada rebuild — ver decisiones F3-8).
 - **Auto-switch de proveedor** al pegar una key de otro (hoy `avisoFormatoKey` solo avisa).
 - **Export/import** `.zip` de la carpeta de `.md` + File System Access API (spec §7).
 - **2.5b — embeddings** (`transformers.js`) si `intercambiosRelevantes` (match por palabras) se
