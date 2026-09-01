@@ -193,7 +193,8 @@ src/
                         bajo el input = SOLO los que la key puede usar (tras verificar; antes: sin
                         chips). Nunca modelos adivinados (F3-13; `MODELOS_SUGERIDOS` se eliminó).
                         Sin `<datalist>`. Lista > 12 (OpenRouter ~300, HF ~90) → los chips van en
-                        un `<details>` plegado con filtro por substring adentro. Los 7
+                        un `<details>` plegado con filtro por substring adentro (se muestran TODOS
+                        los modelos de la key; el contenedor scrollea). Los 7
                         proveedores; commit() lo dispara al guardar. `<details>` con la mini-guía
                         de API key (`GUIA_API_KEY`, F3-12 aclara open-source).
                         Textarea "instrucción de sistema" → onChange({systemPrompt}) directo.

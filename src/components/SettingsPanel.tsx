@@ -304,16 +304,12 @@ export default function SettingsPanel({
   // uno que la key no tiene (reemplazó al viejo <datalist> y a MODELOS_SUGERIDOS).
   const modelosKey = modelos ?? [];
   const f = filtroModelo.trim().toLowerCase();
+  // Se muestran TODOS los modelos de la key (sin tope). El filtro y el <details>
+  // plegable hacen manejable una lista larga (OpenRouter ≈ 300).
   const chipsModelo = f
     ? modelosKey.filter((m) => m.toLowerCase().includes(f))
     : modelosKey;
-  // El filtro aparece solo cuando la lista es larga (OpenRouter ≈ 300 modelos).
   const mostrarFiltro = modelosKey.length > 12;
-  // Tope de chips renderizados. Con listas largas el bloque va plegado en un
-  // <details> con filtro, así que 50 alcanza para hojear; el resto se filtra.
-  const MAX_CHIPS = modelosKey.length > 12 ? 50 : 90;
-  const chipsVisibles = chipsModelo.slice(0, MAX_CHIPS);
-  const chipsOcultos = chipsModelo.length - chipsVisibles.length;
 
   return (
     <div ref={contenedorRef} className="absolute left-4 top-4 z-10">
@@ -539,8 +535,8 @@ export default function SettingsPanel({
             (() => {
               const chips = (
                 <>
-                  <div className="flex flex-wrap gap-1">
-                    {chipsVisibles.map((m) => (
+                  <div className="scroll-fino flex max-h-52 flex-wrap gap-1 overflow-y-auto">
+                    {chipsModelo.map((m) => (
                       <button
                         key={m}
                         type="button"
@@ -555,12 +551,6 @@ export default function SettingsPanel({
                       </button>
                     ))}
                   </div>
-                  {chipsOcultos > 0 && (
-                    <p className="mt-1 text-[11px] text-white/40">
-                      +{chipsOcultos} modelo{chipsOcultos > 1 ? "s" : ""} más — usá
-                      el filtro para acotar.
-                    </p>
-                  )}
                   {chipsModelo.length === 0 && (
                     <p className="text-[11px] text-white/40">
                       Ningún modelo coincide con “{filtroModelo.trim()}”.

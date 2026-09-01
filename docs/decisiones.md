@@ -674,10 +674,11 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
   nuevos?"). **Regla nueva**: nunca ofrecer un modelo que no salió de la key. El default por
   proveedor sigue en `MODELO_POR_DEFECTO`.
 - **Lista larga → `<details>` plegado** (01-09): con ≤12 modelos, chips inline como siempre.
-  Con más (OpenRouter ~300, HuggingFace ~90), el bloque va dentro de un `<details>` cerrado
-  ("Elegir de tus N modelos ▸") con un `<input>` de filtro por substring adentro — no tapa el
-  panel. Máx. 50 chips renderizados en ese modo (90 en el inline) + "+N más — usá el filtro".
-  Mismo patrón `<details>` que la mini-guía de API key del mismo panel.
+  Con más (OpenRouter ~300, HuggingFace ~130), el bloque va dentro de un `<details>` cerrado
+  ("Elegir de tus N modelos ▸") con un `<input>` de filtro por substring adentro. Se muestran
+  **TODOS** los modelos de la key (sin tope — pedido del usuario); el contenedor de chips es
+  `max-h-52 overflow-y-auto` (scroll propio) para no empujar el resto del panel. Mismo patrón
+  `<details>` que la mini-guía de API key.
 - **Revertir** (volver al datalist / a sugerir modelos adivinados): reaparece la flecha vacía /
   vuelve la confusión de "modelos que no son de mi key".
 
