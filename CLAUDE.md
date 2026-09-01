@@ -17,6 +17,30 @@
 **Para navegar el código sin leer archivos enteros**: `graphify query "<pregunta>"` desde
 `D:\IA\3maps` (napkin §6b) — devuelve el subgrafo con `archivo:línea`.
 
+## Método de trabajo — IMPERATIVO (agent-skills)
+
+Antes de cualquier tarea no trivial (implementar, arreglar un bug, cambiar comportamiento,
+diseñar, revisar, shippear), **invocá el skill `using-agent-skills`** y seguí el skill de la fase
+que corresponda. No es opcional. Las 25 skills viven en `.claude/skills/` (gitignoreado, vendorizado
+de github.com/addyosmani/agent-skills MIT — ver `.claude/AGENT-SKILLS.md`; actualizar re-clonando).
+
+- **Ciclo**: `spec-driven-development` → `planning-and-task-breakdown` → `incremental-implementation`
+  + `test-driven-development` → `debugging-and-error-recovery` → `code-review-and-quality` /
+  `code-simplification` → `git-workflow-and-versioning` / `shipping-and-launch`.
+- **Activación por contexto**: API/interfaces → `api-and-interface-design`; UI → `frontend-ui-engineering`;
+  perf → `performance-optimization`; seguridad → `security-and-hardening`; migraciones →
+  `deprecation-and-migration`; docs/ADRs → `documentation-and-adrs`.
+- **Slash commands** (en `.claude/commands/`): `/spec` `/plan` `/build` `/test` `/constraints`
+  `/review` `/code-simplify` `/webperf` `/ship`. **Subagents** (`.claude/agents/`): `code-reviewer`,
+  `security-auditor`, `test-engineer`, `web-performance-auditor`.
+- **Principios no negociables del meta-skill**: enunciar supuestos antes de implementar; frenar ante
+  inconsistencias en vez de adivinar; pushback con impacto concreto; preferir la solución aburrida;
+  disciplina de scope (solo lo pedido); **verificar, no asumir** (una tarea no está lista hasta que
+  la verificación pasa).
+
+Esto convive con las convenciones de abajo y el modo caveman; ante conflicto, las invariantes de
+este archivo ganan.
+
 ## Qué es
 
 Web app para conversar con una IA (Claude/GPT/Gemini/DeepSeek, vía API, con la clave del propio

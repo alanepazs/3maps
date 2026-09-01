@@ -36,6 +36,13 @@ yarn-error.log*
 # claude code local settings (keep launch.json, ignore personal settings)
 .claude/settings.local.json
 
+# agent-skills vendorizado local (github.com/addyosmani/agent-skills, MIT) — ver .claude/AGENT-SKILLS.md
+/.claude/skills/
+/.claude/references/
+/.claude/agents/
+/.claude/commands/
+/.claude/AGENT-SKILLS.md
+
 # vercel
 .vercel
 
