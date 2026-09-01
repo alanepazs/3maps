@@ -159,11 +159,18 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
 4. **`GEMINI_MODELOS_MUERTOS`** (`ia.ts`, `configIA.ts` lo re-exporta como `MODELOS_MUERTOS`):
    `gemini-2.0-flash` / `-1.5-flash` / `-pro` (retirados) + alias `*-latest`
    (`gemini-flash-latest`, `-pro-latest`, `-flash-lite-latest` → paid / "invalid argument" en
-   free tier). Efecto triple: (a) `configIA` los migra al default al cargar; (b)
+   free tier) + **`gemini-2.5-flash-lite` / `gemini-2.5-pro`** (02-09: "no longer available to new
+   users" → 404). Efecto triple: (a) `configIA` los migra al default al cargar; (b)
    `listarModelosGemini` los esconde de los chips de "ver modelos"; (c) si el usuario igual
    tipea uno, `SettingsPanel` avisa en ámbar ("no anda en free tier, se usa `gemini-3.7-flash`")
-   en vez de swappear en silencio (antes: "¿por qué me cambió el modelo?"). Los `2.5-*` **NO**
-   van acá (una cuenta vieja/con billing sí los llama; Google devuelve su propio mensaje claro).
+   en vez de swappear en silencio (antes: "¿por qué me cambió el modelo?").
+   - **`gemini-2.5-flash` a secas SÍ anda** — no va acá.
+   - **Cambio de criterio (02-09, Alan)**: antes los `2.5-*` NO se escondían "porque una cuenta
+     vieja/con billing sí los llama". Pero `ListModels` de Google los ofrece a keys que **no**
+     pueden usarlos → aparecían en los chips, el user los elegía, y 404. Confunden más de lo que
+     sirven al usuario regular (probado 02-09 con imagen adjunta: 404 en `2.5-flash-lite` y
+     `2.5-pro`; los 8 modelos `3.x` leen la imagen bien). Se aceptó perder el acceso de las
+     cuentas viejas a esos 2 desde los chips (igual pueden tipearlos y verán el aviso ámbar).
 5. **`mensajeErrorGemini(res, modelo?)`** — helper único de errores para todos los endpoints. 404
    con modelo → sugiere el botón; 503 → texto de Google; **401 `ACCESS_TOKEN_TYPE_UNSUPPORTED`** →
    la cuenta emite keys `AQ.…` que en algunas cuentas todavía no andan en la REST API (bug de Google).

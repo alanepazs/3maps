@@ -30,12 +30,12 @@ está toda shippeada — falta solo la prueba de Alan en Chrome real con keys (v
        (clasificador, `max_tokens` ≤512), `whisper-*` (STT), `orpheus-*` (TTS, piden
        aceptar términos).
   - **Gemini** (directo):
-    1. **Andan bien**: `3.7-flash`, `3.6-flash`, `3.1-flash-lite` (+ `-preview`),
-       `3-flash-preview`, `2.5-flash`.
-    2. **Andan lentos**: `3.5-flash`, `3.5-flash-lite`.
-    3. **No andan en key/cuenta nueva** (free tier): `2.5-flash-lite`, `2.5-pro`
-       (deprecados; una cuenta vieja o con billing sí los llama). Aliases `*-latest`
-       resuelven a modelos paid → ocultos de los chips de modelos + aviso ámbar (decisiones §7b).
+    1. **Andan bien** (leen imagen adjunta, 02-09): `3.7-flash`, `3.6-flash`, `3.5-flash(-lite)`,
+       `3.1-flash-lite` (+ `-preview`), `3-flash-preview`, `2.5-flash`.
+    2. **Rate-limit** (429, no muertos): `3.1-pro-preview` (+ `-customtools`).
+    3. **404 "no longer available to new users"** → en `GEMINI_MODELOS_MUERTOS` (ocultos de los
+       chips + migrados + aviso ámbar): `2.5-flash-lite`, `2.5-pro`, `2.0-flash`, `1.5-flash`,
+       `pro`, aliases `*-latest`. Decisiones §7b.
   - **OpenRouter** (proxy) — ✅ **free real, probado 01-09**. Sin tarjeta, saldo $0. Límites:
     20 req/min + **50 req/día** ($0 gastado) → 1000/día si alguna vez cargás $10 (no vencen).
     Saldo negativo → 402 hasta en los `:free` (no pasa si nunca ponés plata). Modelos:
@@ -95,13 +95,12 @@ ni llamadas con key):
   **Groq** (llama-4/3.2-vision) + el aviso "sin visión"; **pegar una captura** de pantalla.
   Nota: los formatos de imagen/PDF de Gemini usan `inline_data`/`mime_type` (snake_case) — si
   Gemini 400ea, probar camelCase (decisiones F3-22b).
-  - **02-09 — 1er intento**: el adjunto de imagen SE ENVIÓ OK (thumbnail en el turno "Vos"), pero
-    la llamada falló con **`gemini-2.5-flash-lite` → 404 "no longer available to new users"**
-    (caso conocido §7b: los `2.5-*-lite`/`2.5-pro` no andan en keys nuevas; `ListModels` igual los
-    lista → aparecen en los chips). El mensaje de error salió claro. **La prueba de imagen sigue
-    sin confirmar — rehacer con `gemini-3.7-flash`.** ❓ evaluar meter `gemini-2.5-flash-lite` +
-    `gemini-2.5-pro` en `GEMINI_MODELOS_MUERTOS` (los esconde de los chips + migra + avisa) vs.
-    dejar el 404 claro (la decisión actual de §7b).
+  - **02-09 — imagen + Gemini CONFIRMADO** ✅: los 8 modelos `gemini-3.x` (`3-flash-preview`,
+    `3.1-flash-lite(-preview)`, `3.5-flash(-lite)`, `3.6-flash`, `3.7-flash`) leen la imagen bien.
+    El adjunto se envía OK (thumbnail en el turno "Vos"). `3.1-pro-preview` = solo rate-limit (429).
+  - **02-09 — `gemini-2.5-flash-lite` y `gemini-2.5-pro` → 404 "no longer available to new users"**
+    → **agregados a `GEMINI_MODELOS_MUERTOS`** (Alan: el usuario regular no los va a querer). El
+    `2.5-flash` a secas sigue andando. Decisiones §7b (cambio de criterio anotado).
 - `stream_options.include_usage` (T11) — asumido que anda en Groq/OpenRouter/HuggingFace; si
   alguno tira 400 habría que gatearlo por proveedor en `llamarOpenAICompat`.
 - Copiar/guardar respuesta (T15): copiar-pegar y descargar de verdad.

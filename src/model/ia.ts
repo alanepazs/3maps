@@ -64,14 +64,19 @@ export const MODELO_POR_DEFECTO: Record<Proveedor, string> = {
 
 // Modelos de Gemini que ya no sirven para una key free tier nueva y hay que
 // migrar al default (`configIA.ts`) + esconder de la lista (`listarModelosGemini`,
-// datalist de ⚙️). Ver decisiones §7b.
+// chips de ⚙️). Ver decisiones §7b.
 //  - retirados por Google → 404 "no existe el modelo"
 //  - alias `*-latest` → resuelven a un flash paid / "invalid argument" en free tier
-// Los `gemini-2.5-*` NO van acá a propósito: una cuenta vieja / con billing los usa.
+//  - `2.5-flash-lite` / `2.5-pro` → 404 "no longer available to new users" (una cuenta
+//    vieja / con billing todavía los llama, pero `ListModels` los ofrece a keys que NO
+//    pueden usarlos → confunden más de lo que sirven; Alan 02-09). El `2.5-flash` a secas
+//    sí anda, no va acá.
 export const GEMINI_MODELOS_MUERTOS = new Set([
   "gemini-2.0-flash",
   "gemini-1.5-flash",
   "gemini-pro",
+  "gemini-2.5-flash-lite",
+  "gemini-2.5-pro",
   "gemini-flash-latest",
   "gemini-pro-latest",
   "gemini-flash-lite-latest",
