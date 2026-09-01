@@ -144,10 +144,12 @@ experiencia fluida a un usuario nuevo:
 El `/models` de Groq (y de cualquier proveedor del proxy) mezcla en la misma lista modelos de
 chat con cosas que no sirven para 3maps: STT (`whisper-*`), TTS (`orpheus-*`), clasificadores
 (`llama-prompt-guard-2-*`, `max_tokens` ≤ 512), y modelos que responden en otro idioma
-(`allam-2-7b` → árabe, inútil para un usuario en español — Alan 02-09). `listarModelosOpenAICompat`
-los filtra (`MODELO_OCULTO_PATRON` regex + `MODELOS_OCULTOS_POR_PROVEEDOR` por id). Mismo criterio
-que `GEMINI_MODELOS_MUERTOS` (§7b) y la eliminación de `MODELOS_SUGERIDOS` (F3-13): **nunca ofrecer
-en los chips un modelo que va a fallar o confundir**. El usuario igual puede tiparlos a mano.
+(`allam-2-7b` → árabe, inútil para un usuario en español — Alan 02-09). `modeloListable(proveedor,
+id)` (`MODELO_OCULTO_PATRON` regex + `MODELOS_OCULTOS_POR_PROVEEDOR` por id) filtra
+`listarModelosOpenAICompat` (chips) **y** `configIA.modeloVigente` (una config vieja apuntando a
+`whisper-*` se cura sola al cargar → default del proveedor). Mismo criterio que
+`GEMINI_MODELOS_MUERTOS` (§7b) y la eliminación de `MODELOS_SUGERIDOS` (F3-13): **nunca ofrecer en
+los chips un modelo que va a fallar o confundir**. El usuario igual puede tiparlos a mano.
 - **Visión** (02-09): de Groq, solo `qwen/qwen3.6-27b` y `qwen3.8-27b` leen imágenes. El resto →
   400 `messages[N].content must be a string`; `mensajeErrorOpenAICompat` agrega "¿acepta
   imágenes? probá Gemini/Claude". El PDF **nunca** se manda por el proxy (solo Gemini/Claude

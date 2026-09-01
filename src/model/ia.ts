@@ -1000,7 +1000,10 @@ const MODELOS_OCULTOS_POR_PROVEEDOR: Partial<Record<Proveedor, Set<string>>> = {
   // `allam-2-7b` responde en árabe — inútil para un usuario en español (Alan 02-09).
   groq: new Set(["allam-2-7b"]),
 };
-function modeloListable(proveedor: Proveedor, id: string): boolean {
+// `false` para modelos que no son chat útil (STT/TTS/clasificador/idioma raro).
+// Lo usa `listarModelosOpenAICompat` para los chips y `configIA` para migrar una
+// config vieja que quedó apuntando a uno de estos.
+export function modeloListable(proveedor: Proveedor, id: string): boolean {
   if (MODELO_OCULTO_PATRON.test(id)) return false;
   return !MODELOS_OCULTOS_POR_PROVEEDOR[proveedor]?.has(id);
 }

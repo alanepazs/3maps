@@ -1,6 +1,11 @@
 "use client";
 
-import { GEMINI_MODELOS_MUERTOS, MODELO_POR_DEFECTO, type ConfigIA } from "./ia";
+import {
+  GEMINI_MODELOS_MUERTOS,
+  MODELO_POR_DEFECTO,
+  modeloListable,
+  type ConfigIA,
+} from "./ia";
 import { PROVEEDORES, type Proveedor } from "./intercambio";
 
 // La configuración de IA vive en el navegador (`localStorage["3maps:ia"]`, clave
@@ -97,7 +102,12 @@ function escribir(a: Almacen): void {
 }
 
 function modeloVigente(proveedor: Proveedor, modelo: string | undefined): string {
-  return modelo && !MODELOS_MUERTOS.has(modelo)
+  // `MODELOS_MUERTOS` = Gemini retirados (§7b). `modeloListable` = STT/TTS/
+  // clasificadores de los proveedores del proxy (§7e) — una config vieja apuntando
+  // a `whisper-*` etc. se cura sola al cargar.
+  return modelo &&
+    !MODELOS_MUERTOS.has(modelo) &&
+    modeloListable(proveedor, modelo)
     ? modelo
     : MODELO_POR_DEFECTO[proveedor];
 }

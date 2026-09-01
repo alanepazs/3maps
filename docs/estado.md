@@ -28,10 +28,10 @@ está toda shippeada — falta solo la prueba de Alan en Chrome real con keys (v
        `llama-3.3-70b-versatile`.
     2. **Con visión** (leen imagen adjunta, 02-09): `qwen/qwen3.6-27b`, `qwen/qwen3.8-27b`. Los
        demás → 400 `messages[N].content must be a string` + aviso "¿acepta imágenes?".
-    3. **Escondidos de los chips** (`MODELO_OCULTO_PATRON` / `MODELOS_OCULTOS_POR_PROVEEDOR` en
-       `ia.ts`, `listarModelosOpenAICompat`): `allam-2-7b` (responde en árabe, Alan 02-09),
-       `whisper-*` (STT), `orpheus-*` (TTS), `llama-prompt-guard-2-*` (clasificador, `max_tokens`
-       ≤512). Se pueden tipear a mano igual.
+    3. **Escondidos de los chips + migrados si estaban guardados** (`modeloListable` en `ia.ts`,
+       usado por `listarModelosOpenAICompat` y `configIA.modeloVigente`): `allam-2-7b` (árabe,
+       Alan 02-09), `whisper-*` (STT), `orpheus-*` (TTS), `llama-prompt-guard-2-*` (clasificador).
+       Se pueden tipear a mano igual.
     4. **PDF**: NO se manda a Groq a propósito (solo Gemini/Claude nativo) — el modelo recibe
        solo el texto y responde "no veo imagen". El aviso ámbar lo anticipa.
   - **Gemini** (directo):
@@ -102,11 +102,12 @@ ni llamadas con key):
   (thumbnail en el turno "Vos"). `3.1-pro-preview(-customtools)` = solo rate-limit (429).
   - `gemini-2.5-flash-lite` y `gemini-2.5-pro` → 404 "no longer available to new users" →
     **agregados a `GEMINI_MODELOS_MUERTOS`** (Alan). El `2.5-flash` a secas sigue. Decisiones §7b.
-- **02-09 — Groq visión CONFIRMADO** ✅: `qwen/qwen3.6-27b` y `qwen/qwen3.8-27b` leen la imagen
-  (path `image_url` OK); el aviso "¿acepta imágenes?" sale bien con los que no. Modelos junk
-  escondidos de los chips (ver arriba).
-- **Falta probar**: **pegar una captura** de pantalla; copiar/guardar respuesta (T15); turnos/
-  STOP/flechas/contadores del panel; `\frac` suelto de gpt-oss; manija de resize con zoom out.
+- **02-09 — Groq visión + pegar captura CONFIRMADO** ✅: `qwen/qwen3.6-27b` y `qwen3.8-27b` leen
+  la imagen (`image_url` OK); el aviso "¿acepta imágenes?" sale bien con los que no. **Ctrl+V de
+  una captura** adjunta bien (chip + thumbnail, se envía y se muestra). Modelos junk escondidos +
+  migrados (ver arriba).
+- **Falta probar**: copiar/guardar respuesta (T15); turnos/STOP/flechas/contadores del panel;
+  `\frac` suelto de gpt-oss; manija de resize con zoom out.
 - **Bloqueado por saldo** (Alan no tiene, 02-09): imagen/PDF con **Claude** (código igual al de
   Gemini — bloques `image`/`document` nativos, sin beta header; debería andar). Idem DeepSeek/GPT.
 - `stream_options.include_usage` (T11) — asumido que anda en Groq/OpenRouter/HuggingFace; si
