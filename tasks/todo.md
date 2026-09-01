@@ -13,13 +13,13 @@
 - [x] Globo `pending` no crece; auto-scroll del texto entrante ok
 
 ## Fase 2 — ⚙️ SettingsPanel en 2 pestañas
-- [ ] T4 — Reestructurar en pestañas "Lienzo" / "IA" (`SettingsPanel.tsx`) [M]
-- [ ] T5 — Colapsar la caja ámbar del proxy en `<details>` (`SettingsPanel.tsx`) [S] — dep: T4
+- [x] T4 — Reestructurar en pestañas "Lienzo" / "IA" (`SettingsPanel.tsx`) [M]
+- [x] T5 — Colapsar la caja ámbar del proxy en `<details>` (`SettingsPanel.tsx`) [S] — dep: T4
 
 ### Checkpoint Fase 2
-- [ ] `tsc` + `lint` + `build` verde
-- [ ] Pane: cada pestaña muestra sus secciones; checkbox del proxy visible sin abrir el `<details>`
-- [ ] Guardar la key sigue andando; ningún control se perdió
+- [x] `tsc` + `lint` + `build` verde
+- [x] Pane: cada pestaña muestra sus secciones; checkbox del proxy visible sin abrir el `<details>`
+- [x] Guardar la key sigue andando; ningún control se perdió
 
 ## Fase 3 — Manija de resize con zoom out
 - [ ] T6 — `cursor: nwse-resize` + tooltip + contra-escala `1/zoom` (`MessageNode.tsx`) [S]

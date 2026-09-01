@@ -57,6 +57,8 @@ export default function SettingsPanel({
   estadoSync,
 }: Props) {
   const [open, setOpen] = useState(false);
+  // Pestaña activa del panel. No persiste (preferencia de sesión).
+  const [tab, setTab] = useState<"lienzo" | "ia">("lienzo");
   const contenedorRef = useRef<HTMLDivElement>(null);
 
   // Cerrar al clickear afuera del panel o con Escape (fase 3.7). El botón ⚙️
@@ -325,35 +327,90 @@ export default function SettingsPanel({
 
       {open && (
         <div className="mt-2 max-h-[calc(100dvh-18rem)] w-72 overflow-y-auto overscroll-contain rounded-lg border border-white/15 bg-neutral-900/95 p-3 text-white shadow-xl backdrop-blur sm:max-h-[80vh]">
-          <p className="mb-3 text-[11px] font-medium uppercase tracking-wide text-white/40">
-            Lienzo
-          </p>
+          {/* Pestañas: "Lienzo" (comportamiento del mapa) / "IA" (conectividad). */}
+          <div className="mb-3 flex gap-1 rounded bg-white/5 p-0.5 text-xs">
+            {(["lienzo", "ia"] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setTab(t)}
+                className={`flex-1 rounded px-2 py-1 font-medium ${
+                  tab === t
+                    ? "bg-neutral-900 text-white"
+                    : "text-white/50 hover:text-white/80"
+                }`}
+              >
+                {t === "ia" ? "IA" : "Lienzo"}
+              </button>
+            ))}
+          </div>
 
-          <label className="block text-sm">
-            <span className="flex items-center justify-between">
-              <span>Envión al soltar</span>
-              <span className="text-white/50">
-                {settings.inertia <= 0
-                  ? "off"
-                  : `${settings.inertia.toFixed(2)}×`}
-              </span>
-            </span>
-            <input
-              type="range"
-              min={0}
-              max={2}
-              step={0.25}
-              value={settings.inertia}
-              onChange={(e) => onChange({ inertia: Number(e.target.value) })}
-              className="mt-2 w-full accent-sky-500"
-            />
-          </label>
+          {tab === "lienzo" && (
+            <>
+              <label className="block text-sm">
+                <span className="flex items-center justify-between">
+                  <span>Envión al soltar</span>
+                  <span className="text-white/50">
+                    {settings.inertia <= 0
+                      ? "off"
+                      : `${settings.inertia.toFixed(2)}×`}
+                  </span>
+                </span>
+                <input
+                  type="range"
+                  min={0}
+                  max={2}
+                  step={0.25}
+                  value={settings.inertia}
+                  onChange={(e) => onChange({ inertia: Number(e.target.value) })}
+                  className="mt-2 w-full accent-sky-500"
+                />
+              </label>
 
-          <hr className="my-3 border-white/10" />
-          <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-white/40">
-            IA
-          </p>
+              <label className="mt-3 block text-sm">
+                <span className="flex items-center justify-between">
+                  <span className="text-white/70">Ventana de contexto</span>
+                  <span className="text-white/50">
+                    {settings.ventanaContexto} interc.
+                  </span>
+                </span>
+                <input
+                  type="range"
+                  min={2}
+                  max={20}
+                  step={1}
+                  value={settings.ventanaContexto}
+                  onChange={(e) =>
+                    onChange({ ventanaContexto: Number(e.target.value) })
+                  }
+                  className="mt-2 w-full accent-sky-500"
+                />
+                <span className="mt-1 block text-[11px] text-white/40">
+                  Los más recientes van completos; los anteriores se resumen.
+                </span>
+              </label>
 
+              <label className="mt-3 block text-sm">
+                <span className="text-white/70">
+                  Instrucción de sistema (opcional)
+                </span>
+                <textarea
+                  value={settings.systemPrompt}
+                  onChange={(e) => onChange({ systemPrompt: e.target.value })}
+                  rows={3}
+                  placeholder="Ej: Respondé en español, conciso. Ecuaciones entre $$ … $$."
+                  className="mt-1.5 w-full resize-y rounded border border-white/15 bg-white/5 px-2 py-1 text-xs text-white/90 placeholder:text-white/30 focus:border-sky-500 focus:outline-none"
+                />
+                <span className="mt-1 block text-[11px] text-white/40">
+                  Se antepone a cada pregunta. No afecta el resumen del contexto
+                  viejo.
+                </span>
+              </label>
+            </>
+          )}
+
+          {tab === "ia" && (
+           <>
           <label className="block text-sm">
             <span className="text-white/70">Proveedor</span>
             <select
@@ -371,21 +428,14 @@ export default function SettingsPanel({
           </label>
 
           {proveedorViaProxy && (
-            <div className="mt-2 rounded border border-amber-400/30 bg-amber-400/5 p-2 text-[11px] text-white/70">
-              <p>
-                {NOMBRE_PROVEEDOR[proveedor]} no se puede llamar directo desde el
-                navegador (no habilita CORS). 3maps lo hace a través de un{" "}
-                <span className="text-white/90">proxy propio</span>: tu API key{" "}
-                <span className="text-white/90">pasa por el servidor de 3maps</span>,
-                que solo la reenvía — no la guarda ni la registra.
-              </p>
+            <div className="mt-2 rounded border border-amber-400/30 bg-amber-400/5 p-2 text-[11px] text-white/80">
               {!proxyDisponible ? (
-                <p className="mt-1.5 text-amber-300">
-                  Esta instancia de 3maps no tiene el proxy configurado. Usá
-                  Gemini o Claude.
+                <p className="text-amber-300">
+                  {NOMBRE_PROVEEDOR[proveedor]} necesita el proxy de 3maps y esta
+                  instancia no lo tiene configurado. Usá Gemini o Claude.
                 </p>
               ) : (
-                <label className="mt-1.5 flex items-start gap-1.5 text-white/80">
+                <label className="flex items-start gap-1.5">
                   <input
                     type="checkbox"
                     checked={settings.usarProxyIA}
@@ -395,11 +445,25 @@ export default function SettingsPanel({
                     className="mt-0.5 accent-sky-500"
                   />
                   <span>
-                    Entiendo y quiero usar el proxy de 3maps para{" "}
-                    {NOMBRE_PROVEEDOR[proveedor]}.
+                    Usar el proxy de 3maps para {NOMBRE_PROVEEDOR[proveedor]} (tu
+                    key pasa por el servidor de 3maps).
                   </span>
                 </label>
               )}
+              <details className="group mt-1">
+                <summary className="cursor-pointer list-none text-white/50 marker:content-none hover:text-white/80">
+                  <span className="mr-1 inline-block transition-transform group-open:rotate-90">
+                    ▸
+                  </span>
+                  ¿por qué pasa por un proxy?
+                </summary>
+                <p className="mt-1 text-white/60">
+                  {NOMBRE_PROVEEDOR[proveedor]} no habilita CORS, así que el
+                  navegador no puede llamarlo directo. El edge function{" "}
+                  <span className="text-white/80">ia-proxy</span> solo reenvía la
+                  request con tu key — no la guarda ni la registra (stateless).
+                </p>
+              </details>
             </div>
           )}
 
@@ -618,43 +682,6 @@ export default function SettingsPanel({
                   : "La key se guarda solo en este navegador; nunca a un servidor de 3maps."}
           </span>
 
-          <label className="mt-2 block text-sm">
-            <span className="flex items-center justify-between">
-              <span className="text-white/70">Ventana de contexto</span>
-              <span className="text-white/50">
-                {settings.ventanaContexto} interc.
-              </span>
-            </span>
-            <input
-              type="range"
-              min={2}
-              max={20}
-              step={1}
-              value={settings.ventanaContexto}
-              onChange={(e) =>
-                onChange({ ventanaContexto: Number(e.target.value) })
-              }
-              className="mt-2 w-full accent-sky-500"
-            />
-            <span className="mt-1 block text-[11px] text-white/40">
-              Los más recientes van completos; los anteriores se resumen.
-            </span>
-          </label>
-
-          <label className="mt-2 block text-sm">
-            <span className="text-white/70">Instrucción de sistema (opcional)</span>
-            <textarea
-              value={settings.systemPrompt}
-              onChange={(e) => onChange({ systemPrompt: e.target.value })}
-              rows={3}
-              placeholder="Ej: Respondé en español, conciso. Ecuaciones entre $$ … $$."
-              className="mt-1.5 w-full resize-y rounded border border-white/15 bg-white/5 px-2 py-1 text-xs text-white/90 placeholder:text-white/30 focus:border-sky-500 focus:outline-none"
-            />
-            <span className="mt-1 block text-[11px] text-white/40">
-              Se antepone a cada pregunta. No afecta el resumen del contexto viejo.
-            </span>
-          </label>
-
           {haySupabase() && (
             <>
               <hr className="my-3 border-white/10" />
@@ -835,6 +862,8 @@ export default function SettingsPanel({
                 </div>
               )}
             </>
+          )}
+          </>
           )}
         </div>
       )}
