@@ -29,13 +29,13 @@
 - [x] Chrome real: con zoom out la manija sigue agarrable; cursor cambia al pasar por encima
 
 ## Fase 4 — Rediseño de `BranchTranscript`
-- [ ] T7 — Turno usuario vs. IA diferenciados (`BranchTranscript.tsx`) [S]
-- [ ] T8 — STOP en el mini-composer del panel (`BranchTranscript.tsx`, `FlowCanvas.tsx`) [S] — dep: T1
+- [x] T7 — Turno usuario vs. IA diferenciados (`BranchTranscript.tsx`) [S]
+- [x] T8 — STOP en el mini-composer del panel (`BranchTranscript.tsx`, `FlowCanvas.tsx`) [S] — dep: T1
 - [ ] T9 — Flechas de navegación: hermanos + subir al padre + bajar al primer hijo (`BranchTranscript.tsx`, `FlowCanvas.tsx`, `intercambio.ts`) [M]
 - [ ] T10 — Contador de contexto estimado por globo y árbol (`contexto.ts`, `BranchTranscript.tsx`) [M]
 - [ ] T11 — `llamarIA` devuelve `usage`; se guarda en el `.md` (`ia.ts`, `intercambio.ts`, `FlowCanvas.tsx`, `contexto.ts`) [M]
 - [ ] T12 — Contador de tokens gastados por globo (`BranchTranscript.tsx`) [S] — dep: T11
-- [ ] T14 — Auto-scroll del `BranchTranscript` sigue el texto mientras streamea (hoy no lo hace bien) (`BranchTranscript.tsx`) [S]
+- [x] T14 — Auto-scroll del `BranchTranscript` sigue el texto mientras streamea (hoy no lo hace bien) (`BranchTranscript.tsx`) [S]
 - [ ] T15 — Respuestas que SON un documento (`.md`, código largo): investigar UX — ¿bloque plegable + copiar/descargar? ¿mejor instrucción de sistema? (spec primero) [investigar]
 - [ ] T16 — Drag & drop de archivos al mini-composer del panel (adjuntar al contexto) — investigar alcance: text/imagen, límites, qué proveedores lo soportan (spec primero) [L]
 

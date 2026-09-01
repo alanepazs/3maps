@@ -1358,6 +1358,11 @@ function Flow() {
             }
             onClose={() => setTranscriptNodeId(null)}
             onSubmit={readOnly ? undefined : responderDesdePanel}
+            onStop={
+              readOnly || !transcriptNodeId
+                ? undefined
+                : () => stopNode(transcriptNodeId)
+            }
             width={panelAncho}
             resizable={panelResizable}
             onResize={guardarAnchoPanel}

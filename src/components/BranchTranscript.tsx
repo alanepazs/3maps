@@ -10,6 +10,7 @@ import {
 import type { BranchKind } from "./Composer";
 import Markdown from "./Markdown";
 import { ANCHO_PANEL_MAX_FRAC, ANCHO_PANEL_MIN } from "./settings";
+import { NOMBRE_PROVEEDOR } from "@/model/ia";
 import type { Intercambio } from "@/model/intercambio";
 
 // Panel lateral read-only: el camino raíz→globo aplanado a preguntas y
@@ -31,6 +32,7 @@ export default function BranchTranscript({
   onFlipSide,
   onClose,
   onSubmit,
+  onStop,
   width,
   resizable = false,
   onResize,
@@ -40,13 +42,19 @@ export default function BranchTranscript({
   onFlipSide: () => void;
   onClose: () => void;
   onSubmit?: (text: string, kind: BranchKind) => void;
+  // Corta el stream del globo abierto en el panel (si está `pending`).
+  onStop?: () => void;
   width?: number;
   resizable?: boolean;
   onResize?: (px: number) => void;
 }) {
   const [borrador, setBorrador] = useState("");
   const finRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+
+  const ultimo = intercambios[intercambios.length - 1];
+  const streameando = Boolean(ultimo?.pending);
 
   // El arrastre del borde mueve el ancho por el DOM directamente (fluido, sin
   // re-render); al soltar se persiste vía `onResize` y el padre vuelve con
@@ -97,6 +105,17 @@ export default function BranchTranscript({
   useEffect(() => {
     finRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [intercambios.length]);
+
+  // Mientras el último globo streamea, seguir el texto — pero solo si el usuario
+  // ya está cerca del fondo (si scrolleó hacia arriba a leer, no lo forzamos).
+  useEffect(() => {
+    if (!streameando) return;
+    const cont = scrollRef.current;
+    if (!cont) return;
+    const cerca =
+      cont.scrollHeight - cont.scrollTop - cont.clientHeight < 120;
+    if (cerca) finRef.current?.scrollIntoView({ block: "end" });
+  }, [ultimo?.respuesta, streameando]);
 
   const enviar = (kind: BranchKind) => {
     const t = borrador.trim();
@@ -175,21 +194,32 @@ export default function BranchTranscript({
           </div>
         </div>
 
-        <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
+        <div
+          ref={scrollRef}
+          className="flex-1 space-y-5 overflow-y-auto px-4 py-4"
+        >
           {intercambios.map((ic) => (
-            <div key={ic.id} className="space-y-1.5">
+            <div key={ic.id} className="space-y-2">
               {ic.pregunta && (
-                <div className="rounded-md bg-white/10 px-3 py-2 text-white">
-                  {ic.pregunta}
+                <div className="border-l-2 border-sky-400/50 pl-2.5">
+                  <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-sky-300/70">
+                    Vos
+                  </p>
+                  <div className="whitespace-pre-wrap rounded-md rounded-tl-none bg-sky-500/10 px-3 py-2 text-white">
+                    {ic.pregunta}
+                  </div>
                 </div>
               )}
-              <div className="px-1">
+              <div className="border-l-2 border-white/15 pl-2.5">
+                <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-white/40">
+                  {ic.proveedor ? NOMBRE_PROVEEDOR[ic.proveedor] : "IA"}
+                </p>
                 {ic.error ? (
                   <p className="whitespace-pre-wrap text-xs text-red-300">
                     ⚠ {ic.error}
                   </p>
                 ) : ic.respuesta ? (
-                  <div className="text-white/90">
+                  <div className="rounded-md rounded-tl-none bg-white/[0.04] px-3 py-2 text-white/90">
                     <Markdown>{ic.respuesta}</Markdown>
                   </div>
                 ) : ic.pending ? (
@@ -203,7 +233,23 @@ export default function BranchTranscript({
           <div ref={finRef} />
         </div>
 
-        {onSubmit && (
+        {onSubmit && streameando && onStop ? (
+          <div className="flex items-center justify-between gap-2 border-t border-white/10 p-3">
+            <span className="flex items-center gap-1.5 text-[11px] text-white/40">
+              <span className="lapiz-escribiendo text-sm leading-none" aria-hidden>
+                ✏️
+              </span>
+              escribiendo…
+            </span>
+            <button
+              type="button"
+              onClick={onStop}
+              className="flex items-center gap-1.5 rounded-md border border-white/20 px-3 py-1.5 text-sm text-white/90 hover:bg-white/10"
+            >
+              <span className="block h-2.5 w-2.5 bg-current" /> Detener
+            </button>
+          </div>
+        ) : onSubmit ? (
           <div className="border-t border-white/10 p-3">
             <textarea
               value={borrador}
@@ -241,7 +287,7 @@ export default function BranchTranscript({
               </div>
             </div>
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
