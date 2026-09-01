@@ -7,13 +7,13 @@
 - [x] T3 — Globo nace colapsado mientras streamea + auto-scroll (`MessageNode.tsx`, `vista.ts`) [S]
 
 ### Checkpoint Fase 1
-- [ ] `tsc` + `lint` + `build` verde; `_scratch.mts` de `normalizarMath` con asserts
-- [ ] Chrome real: `\frac{...}` suelto renderiza; badge de lápiz + STOP aparecen; STOP deja lo
-      parcial sin spinner ni error; "↻ Rehacer" ok
-- [ ] Globo `pending` no crece; auto-scroll del texto entrante ok
+- [x] `tsc` + `lint` + `build` verde; `_scratch.mts` de `normalizarMath` con asserts
+- [x] Chrome real (Alan): `\frac{...}` renderiza; badge de lápiz anda (pulso con reduce-motion);
+      STOP deja lo parcial sin spinner ni error; "↻ Rehacer" ok
+- [x] Globo `pending` no crece; auto-scroll del texto entrante ok
 
 ## Fase 2 — ⚙️ SettingsPanel en 2 pestañas
-- [ ] T4 — Reestructurar en pestañas "Mapa" / "Conectividad" (`SettingsPanel.tsx`) [M]
+- [ ] T4 — Reestructurar en pestañas "Lienzo" / "IA" (`SettingsPanel.tsx`) [M]
 - [ ] T5 — Colapsar la caja ámbar del proxy en `<details>` (`SettingsPanel.tsx`) [S] — dep: T4
 
 ### Checkpoint Fase 2
@@ -35,6 +35,9 @@
 - [ ] T10 — Contador de contexto estimado por globo y árbol (`contexto.ts`, `BranchTranscript.tsx`) [M]
 - [ ] T11 — `llamarIA` devuelve `usage`; se guarda en el `.md` (`ia.ts`, `intercambio.ts`, `FlowCanvas.tsx`, `contexto.ts`) [M]
 - [ ] T12 — Contador de tokens gastados por globo (`BranchTranscript.tsx`) [S] — dep: T11
+- [ ] T14 — Auto-scroll del `BranchTranscript` sigue el texto mientras streamea (hoy no lo hace bien) (`BranchTranscript.tsx`) [S]
+- [ ] T15 — Respuestas que SON un documento (`.md`, código largo): investigar UX — ¿bloque plegable + copiar/descargar? ¿mejor instrucción de sistema? (spec primero) [investigar]
+- [ ] T16 — Drag & drop de archivos al mini-composer del panel (adjuntar al contexto) — investigar alcance: text/imagen, límites, qué proveedores lo soportan (spec primero) [L]
 
 ### Checkpoint Fase 4
 - [ ] `tsc` + `lint` + `build` verde

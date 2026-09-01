@@ -79,6 +79,9 @@ Cada tarea = una rama/commit, con el ciclo `spec-driven` → `incremental-implem
 - [ ] **T10 — Contador de contexto (estimado) por globo y del árbol.** [M]
 - [ ] **T11 — `llamarIA` devuelve `usage`; se guarda en el `.md`.** [M]
 - [ ] **T12 — Contador de tokens gastados por globo (usa T11).** [S]
+- [ ] **T14 — Auto-scroll del panel sigue el texto mientras streamea.** [S]
+- [ ] **T15 — Respuestas que son un documento entero (`.md`/código): UX.** [investigar]
+- [ ] **T16 — Drag & drop de archivos al mini-composer del panel.** [L — spec primero]
 - [ ] **T13 — Heurística de LaTeX crudo en `normalizarMath`.** [S] (independiente; adelantable)
 
 #### Checkpoint Fase 4
@@ -265,6 +268,43 @@ tiene. Opcional: total de la rama.
 **Verification:** `tsc`/`lint`/`build`; Chrome real con una llamada real que devuelve usage.
 
 **Dependencies:** T11. **Files:** `BranchTranscript.tsx`. **Scope:** S.
+
+### T14 — Auto-scroll del `BranchTranscript` (pedido de Alan, 01-09)
+**Descripción:** El panel lateral tiene "auto-scroll al último" pero NO sigue el texto que entra
+mientras un globo streamea. Arreglar: mientras el último intercambio del camino está `pending`,
+el panel scrollea al fondo en cada actualización de `respuesta` (mismo patrón que T3 en `MessageNode`).
+
+**Acceptance criteria:**
+- [ ] Con una respuesta larga en streaming, el panel se mantiene abajo siguiendo el texto.
+- [ ] Si el usuario scrollea hacia arriba a mano, no lo forzamos abajo (respetar el scroll manual).
+
+**Verification:** Chrome real con streaming.
+
+**Dependencies:** None. **Files:** `BranchTranscript.tsx`. **Scope:** S.
+
+### T15 — Respuestas que son un documento entero (pedido de Alan, 01-09)
+**Descripción:** Alan pidió a un globo un `.md` y el modelo devolvió texto suelto (no un archivo /
+bloque). Investigar la UX correcta: (a) reforzar la instrucción de sistema para que devuelva el
+documento en un fence ```` ```markdown ````; (b) en `MessageNode`/`Markdown`, un fence largo →
+bloque plegable + botón "copiar" / "descargar .md"; (c) ¿un botón "guardar como archivo" a nivel
+globo? Spec primero (decidir con Alan qué comportamiento).
+
+**Acceptance criteria:** por definir en la spec.
+
+**Dependencies:** puede tocar `settings.systemPrompt` default, `Markdown.tsx`, `MessageNode.tsx`.
+**Scope:** investigar → S/M.
+
+### T16 — Drag & drop de archivos al mini-composer del panel (pedido de Alan, 01-09)
+**Descripción:** Poder arrastrar y soltar archivos dentro del chat lateral y que se sumen al
+contexto de la próxima pregunta. Investigar alcance: ¿solo texto (`.md`, `.txt`, código) o también
+imágenes? Los proveedores difieren mucho (Claude/Gemini/GPT tienen visión + file API; los
+open-source vía proxy en general no). Límites de tamaño. Dónde vive el adjunto (¿en el `.md` del
+intercambio? ¿efímero?). Spec + decisión de scope con Alan antes de implementar.
+
+**Acceptance criteria:** por definir en la spec.
+
+**Dependencies:** `BranchTranscript.tsx` (mini-composer), `contexto.ts`, `ia.ts` (mensajes multimodales),
+`intercambio.ts` (persistir el adjunto). **Scope:** L — cortar en sub-tareas.
 
 ### T13 — Heurística de LaTeX crudo
 **Descripción:** En `normalizarMath` (`Markdown.tsx`): si una línea tiene `\frac{`, `\sqrt{`,
