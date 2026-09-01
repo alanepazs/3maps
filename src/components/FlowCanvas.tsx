@@ -1363,6 +1363,11 @@ function Flow() {
                 ? undefined
                 : () => stopNode(transcriptNodeId)
             }
+            onRetry={
+              readOnly || !transcriptNodeId
+                ? undefined
+                : () => retryNode(transcriptNodeId)
+            }
             width={panelAncho}
             resizable={panelResizable}
             onResize={guardarAnchoPanel}

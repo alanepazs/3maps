@@ -33,6 +33,7 @@ export default function BranchTranscript({
   onClose,
   onSubmit,
   onStop,
+  onRetry,
   width,
   resizable = false,
   onResize,
@@ -44,6 +45,8 @@ export default function BranchTranscript({
   onSubmit?: (text: string, kind: BranchKind) => void;
   // Corta el stream del globo abierto en el panel (si está `pending`).
   onStop?: () => void;
+  // Vuelve a pedir la respuesta del globo abierto en el panel.
+  onRetry?: () => void;
   width?: number;
   resizable?: boolean;
   onResize?: (px: number) => void;
@@ -198,7 +201,7 @@ export default function BranchTranscript({
           ref={scrollRef}
           className="flex-1 space-y-5 overflow-y-auto px-4 py-4"
         >
-          {intercambios.map((ic) => (
+          {intercambios.map((ic, i) => (
             <div key={ic.id} className="space-y-2">
               {ic.pregunta && (
                 <div className="border-l-2 border-sky-400/50 pl-2.5">
@@ -226,6 +229,17 @@ export default function BranchTranscript({
                   <p className="italic text-white/40">escribiendo…</p>
                 ) : (
                   <p className="italic text-white/40">Respuesta pendiente</p>
+                )}
+                {/* "Rehacer" en el último intercambio (el globo abierto). */}
+                {onRetry && !ic.pending && i === intercambios.length - 1 && (
+                  <button
+                    type="button"
+                    onClick={onRetry}
+                    className="mt-1.5 rounded border border-white/15 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
+                    title="Volver a pedir la respuesta"
+                  >
+                    ↻ {ic.error ? "Reintentar" : "Rehacer"}
+                  </button>
                 )}
               </div>
             </div>

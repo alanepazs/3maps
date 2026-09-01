@@ -85,6 +85,7 @@ export default function MessageNode({
   const [drag, setDrag] = useState<Tamano | null>(null);
   const tamano: Tamano | undefined =
     drag ?? (anchoData && altoData ? { w: anchoData, h: altoData } : undefined);
+  const hayTamano = Boolean(tamano);
   const rootRef = useRef<HTMLDivElement>(null);
 
   // Mientras streamea, el globo arranca chico (no crece con el texto, no empuja
@@ -98,13 +99,20 @@ export default function MessageNode({
     guardarExpandido(id, nuevo);
   };
 
-  // Auto-scroll al fondo del cuerpo mientras entra texto en modo streaming.
+  // Auto-scroll al fondo mientras entra texto. El contenedor scrolleable depende
+  // del modo: en streaming sin tamaño manual es `cuerpoRef` (clamp 220px); con
+  // tamaño manual es el wrapper externo `scrollExtRef` (`overflow-auto`). Solo se
+  // fuerza si el usuario ya está cerca del fondo (si scrolleó arriba a leer, no).
   const cuerpoRef = useRef<HTMLDivElement>(null);
+  const scrollExtRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (modoStream && cuerpoRef.current) {
-      cuerpoRef.current.scrollTop = cuerpoRef.current.scrollHeight;
+    if (!pending) return;
+    const el = hayTamano ? scrollExtRef.current : cuerpoRef.current;
+    if (!el) return;
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 200) {
+      el.scrollTop = el.scrollHeight;
     }
-  }, [respuesta, modoStream]);
+  }, [respuesta, pending, hayTamano]);
 
   const onResizeStart = useCallback(
     (e: ReactPointerEvent) => {
@@ -254,6 +262,7 @@ export default function MessageNode({
       )}
 
       <div
+        ref={scrollExtRef}
         className={
           tamano
             ? "nowheel scroll-fino min-h-0 flex-1 overflow-auto pb-3"
