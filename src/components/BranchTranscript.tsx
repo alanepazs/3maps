@@ -69,7 +69,13 @@ export default function BranchTranscript({
   side: "left" | "right";
   onFlipSide: () => void;
   onClose: () => void;
-  onSubmit?: (text: string, kind: BranchKind, adjuntos: Adjunto[]) => void;
+  // `desdeId` (T16/F5-3): ramificar desde ESE intercambio, no desde la punta.
+  onSubmit?: (
+    text: string,
+    kind: BranchKind,
+    adjuntos: Adjunto[],
+    desdeId?: string,
+  ) => void;
   // Corta el stream del globo abierto en el panel (si está `pending`).
   onStop?: () => void;
   // Vuelve a pedir la respuesta del globo abierto en el panel.
@@ -99,8 +105,11 @@ export default function BranchTranscript({
   const [verImagen, setVerImagen] = useState<Adjunto | null>(null);
   // Feedback "✓ Copiado" del botón de copiar la respuesta (T15).
   const [copiada, setCopiada] = useState(false);
+  // Ramificar desde un intercambio del medio (F5-3). `null` = desde la punta.
+  const [ramificarDesde, setRamificarDesde] = useState<string | null>(null);
   const arrastreDepth = useRef(0);
   const inputArchRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const finRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -223,11 +232,25 @@ export default function BranchTranscript({
   const enviar = (kind: BranchKind) => {
     const t = borrador.trim();
     if (!t || !onSubmit) return;
-    onSubmit(t, kind, adjuntos);
+    onSubmit(
+      t,
+      kind,
+      adjuntos,
+      kind === "branch" ? ramificarDesde ?? undefined : undefined,
+    );
     setBorrador("");
     setAdjuntos([]);
     setAvisoAdj(null);
+    setRamificarDesde(null);
   };
+
+  // La punta = el último del camino. Ramificar desde ahí es el default (no chip).
+  const puntaId = ultimo?.id ?? null;
+  const desdeActivo =
+    ramificarDesde && ramificarDesde !== puntaId ? ramificarDesde : null;
+  const preguntaDesde = desdeActivo
+    ? (intercambios.find((i) => i.id === desdeActivo)?.pregunta ?? "").slice(0, 40)
+    : null;
 
   return (
     <div
@@ -430,6 +453,25 @@ export default function BranchTranscript({
                 ) : (
                   <p className="italic text-white/40">Respuesta pendiente</p>
                 )}
+                {/* Ramificar desde ESTE intercambio (F5-3). En la punta es el
+                    default (lo hace el botón "⑂ Ramificar" del composer). */}
+                {onSubmit && ic.respuesta && !ic.pending && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRamificarDesde(ic.id);
+                      textareaRef.current?.focus();
+                    }}
+                    className={`mt-1 text-[11px] ${
+                      ramificarDesde === ic.id
+                        ? "font-medium text-sky-300"
+                        : "text-white/25 hover:text-white/60"
+                    }`}
+                    title="Ramificar una pregunta nueva desde este punto (sin tocar el hilo)"
+                  >
+                    ⑂ ramificar desde acá
+                  </button>
+                )}
                 {/* Acciones del globo abierto (el último del camino). */}
                 {!ic.pending && i === intercambios.length - 1 && (
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -511,6 +553,22 @@ export default function BranchTranscript({
                 Soltá los archivos acá
               </div>
             )}
+            {desdeActivo && (
+              <div className="mb-2 flex items-center gap-1.5 rounded border border-sky-400/40 bg-sky-500/10 px-2 py-1 text-[11px] text-sky-200">
+                <span aria-hidden>⑂</span>
+                <span className="min-w-0 flex-1 truncate">
+                  Ramificando desde: «{preguntaDesde}»
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setRamificarDesde(null)}
+                  aria-label="Ramificar desde la punta"
+                  className="text-sky-200/70 hover:text-white"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
             {(adjuntos.length > 0 || avisoAdj) && (
               <div className="mb-2 space-y-1.5">
                 {adjuntos.length > 0 && (
@@ -558,19 +616,24 @@ export default function BranchTranscript({
               </div>
             )}
             <textarea
+              ref={textareaRef}
               value={borrador}
               onChange={(e) => setBorrador(e.target.value)}
               onPaste={onPaste}
               onKeyDown={(e) => {
                 if (e.key !== "Enter" || e.shiftKey) return;
                 e.preventDefault();
-                enviar(e.ctrlKey || e.metaKey ? "branch" : "main");
+                enviar(
+                  e.ctrlKey || e.metaKey || desdeActivo ? "branch" : "main",
+                );
               }}
               rows={2}
               placeholder={
-                adjuntos.length > 0
-                  ? "Escribí qué hago con el archivo (ej: “explicá”, “resumí”)…"
-                  : "Seguí la conversación desde este globo…"
+                desdeActivo
+                  ? "Escribí la pregunta de la rama nueva…"
+                  : adjuntos.length > 0
+                    ? "Escribí qué hago con el archivo (ej: “explicá”, “resumí”)…"
+                    : "Seguí la conversación desde este globo…"
               }
               className="w-full resize-none rounded-md border border-white/15 bg-neutral-950 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-sky-400 focus:outline-none"
             />
@@ -596,23 +659,27 @@ export default function BranchTranscript({
               </button>
               <div className="flex items-center gap-2">
                 <span className="hidden text-[11px] text-white/30 sm:inline">
-                  Enter continúa · Ctrl+Enter ramifica
+                  {desdeActivo
+                    ? "Enter ramifica desde el punto elegido"
+                    : "Enter continúa · Ctrl+Enter ramifica"}
                 </span>
+                {!desdeActivo && (
+                  <button
+                    type="button"
+                    onClick={() => enviar("branch")}
+                    disabled={borrador.trim() === ""}
+                    className="rounded-md border border-white/15 px-3 py-1.5 text-sm text-white/90 enabled:hover:bg-white/10 disabled:opacity-40"
+                  >
+                    ⑂ Ramificar
+                  </button>
+                )}
                 <button
                   type="button"
-                  onClick={() => enviar("branch")}
-                  disabled={borrador.trim() === ""}
-                  className="rounded-md border border-white/15 px-3 py-1.5 text-sm text-white/90 enabled:hover:bg-white/10 disabled:opacity-40"
-                >
-                  ⑂ Ramificar
-                </button>
-                <button
-                  type="button"
-                  onClick={() => enviar("main")}
+                  onClick={() => enviar(desdeActivo ? "branch" : "main")}
                   disabled={borrador.trim() === ""}
                   className="rounded-md bg-sky-500 px-3 py-1.5 text-sm font-medium text-white enabled:hover:bg-sky-400 disabled:opacity-40"
                 >
-                  ↓ Enviar
+                  {desdeActivo ? "⑂ Ramificar" : "↓ Enviar"}
                 </button>
               </div>
             </div>

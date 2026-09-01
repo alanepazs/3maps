@@ -1,5 +1,12 @@
 import type { Arbol, Intercambio, Rama } from "./intercambio";
-import { buscar, hijos, raices } from "./intercambio";
+import {
+  buscar,
+  cabezaDeTramo,
+  calcularTramos,
+  hijos,
+  raices,
+  tramoDesde,
+} from "./intercambio";
 
 // Auto-layout del árbol a su forma canónica (fase 3.4, botón "Ordenar"):
 //
@@ -95,15 +102,19 @@ export function ubicarNuevoGlobo(
   kind: "main" | "branch",
   medir: (id: string) => Medida,
 ): { x: number; y: number; rama: Rama } {
-  const parent = buscar(a, parentId);
+  // Fase 5: los nodos del canvas son TRAMOS. Se ramifica desde cualquier
+  // intercambio del tramo, pero la posición y los choques se calculan contra el
+  // TRAMO (su cabeza tiene la x/y y el rect medido; los no-cabeza no).
+  const cabId = cabezaDeTramo(a, parentId);
+  const parent = buscar(a, cabId);
   if (!parent) return { x: 0, y: 0, rama: kind === "main" ? "main" : "branch-right" };
-  const pm = medir(parentId);
+  const pm = medir(cabId);
 
-  const rects = a.intercambios
-    .filter((i) => i.id !== parentId)
-    .map((i) => {
-      const m = medir(i.id);
-      return { x: i.x, y: i.y, w: m.w, h: m.h };
+  const rects = calcularTramos(a)
+    .filter((t) => t.cabezaId !== cabId)
+    .map((t) => {
+      const m = medir(t.cabezaId);
+      return { x: t.intercambios[0].x, y: t.intercambios[0].y, w: m.w, h: m.h };
     });
   const choca = (r: { x: number; y: number; w: number; h: number }) =>
     rects.some(
@@ -150,7 +161,9 @@ export function ubicarNuevoGlobo(
   // al lado preferido y `resolverSuperposiciones` / "Ordenar" la bajan por su
   // columna. (Antes caminaba hasta ~2700px hacia abajo buscando un hueco y el
   // globo quedaba suelto, lejísimo del padre — el bug de ramificar una rama.)
-  const ramasHijas = hijos(a, parentId).filter((h) => h.rama !== "main");
+  const ramasHijas = tramoDesde(a, cabId)
+    .flatMap((ic) => hijos(a, ic.id))
+    .filter((h) => h.rama !== "main");
   const nDer = ramasHijas.filter((h) => h.rama === "branch-right").length;
   const nIzq = ramasHijas.filter((h) => h.rama === "branch-left").length;
   const preferido: Rama = nDer <= nIzq ? "branch-right" : "branch-left";

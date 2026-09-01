@@ -1095,9 +1095,13 @@ function Flow() {
   // el panel a ese hijo, así se ve su respuesta sin cerrar el panel. Enter =
   // continúa el hilo ("main"), Ctrl/Cmd+Enter o botón = ramifica (fase 3.12).
   const responderDesdePanel = useCallback(
-    (text: string, kind: BranchKind, adjuntos: Adjunto[]) => {
+    (text: string, kind: BranchKind, adjuntos: Adjunto[], desdeId?: string) => {
       if (!transcriptNodeId) return;
-      const id = handleSubmit(text, kind, transcriptNodeId, adjuntos);
+      // "main" continúa desde la punta; "branch" desde `desdeId` (un intercambio
+      // del medio, F5-3) o desde la punta si no se eligió.
+      const padre =
+        kind === "branch" ? (desdeId ?? transcriptNodeId) : transcriptNodeId;
+      const id = handleSubmit(text, kind, padre, adjuntos);
       if (id) verGloboEnPanel(id);
     },
     [handleSubmit, transcriptNodeId, verGloboEnPanel],

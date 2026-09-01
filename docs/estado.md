@@ -13,7 +13,8 @@
 - **Fase 5** (`tasks/fase5-spec.md`): el globo pasa de "un intercambio" a "un TRAMO" (cadena
   `main`). Enter agrega al mismo globo; globo nuevo solo al ramificar. **Cambio solo de vista,
   cero migración.** F5-0 ✅ (fix del `⌄`), F5-1 ✅ (`calcularTramos` + `arbolAVista` reescrito),
-  F5-2 casi (folded). Falta F5-3..F5-6.
+  F5-2 casi (folded), F5-3 ✅ (ramificar desde cualquier intercambio del tramo). Falta F5-4
+  (slider de crecimiento), F5-5 (Ordenar/solapes), F5-6 (docs + renombres).
 
 - **Canvas** (React Flow): árbol de globos, tronco vertical + ramas al costado, envión al soltar,
   2 modos (manito / selección con espacio), redimensionar globo y panel, auto-layout ("▤ Ordenar"),

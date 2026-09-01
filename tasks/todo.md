@@ -97,7 +97,10 @@ Sub-tareas:
   `FlowCanvas` resuelve todo a cabeza/punta. `handleSubmit` main → agrega a la punta (no crea
   globo). Cero migración. Decisiones F5-1. 18 asserts + pane.
 - **F5-2 ~** — Enter a la punta: casi hecho en F5-1. Falta verificar el mini-composer del panel.
-- **F5-3** — ramificar desde cualquier intercambio (affordance "⑂" por intercambio en el panel).
+- **F5-3 ✅** — ramificar desde cualquier intercambio. "⑂ ramificar desde acá" por turno IA en el
+  panel → chip "Ramificando desde: «...»" + Enter/botón ramifican desde ese punto. `onSubmit`
+  gana `desdeId?`. `ubicarNuevoGlobo` ahora es tramo-aware (`layout.ts`). Decisiones F5-3.
+  8 asserts + pane.
 - **F5-4** — slider "px por mensaje" + tope en "Lienzo"; el globo crece.
 - **F5-5** — adaptar `calcularLayout` ("Ordenar"), `resolverSolapes`, streaming del globo.
 - **F5-6** — docs (CLAUDE.md invariante ✅ ya) + `arquitectura.md` + `historia.md` + renombres.

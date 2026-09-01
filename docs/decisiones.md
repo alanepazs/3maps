@@ -1083,6 +1083,25 @@ Ver F3-8 (actualizado) — `components/gestos.ts` `tragarClickSintetico()`.
 - **Revertir**: volvés a `arbolAVista` 1:1 + `MessageNode` de un solo intercambio. `datosIguales`
   vuelve a comparar todo.
 
+### F5-3. Ramificar desde cualquier intercambio del tramo
+- **`BranchTranscript`**: cada turno de la IA tiene un "⑂ ramificar desde acá" (atenuado; se
+  ilumina el elegido). Al clickearlo se setea `ramificarDesde` (id del intercambio) + focus al
+  textarea → aparece un chip "⑂ Ramificando desde: «pregunta» ✕", el placeholder cambia
+  ("Escribí la pregunta de la rama nueva…"), y **Enter + el botón ramifican desde ese punto** (no
+  continúan). El ✕ vuelve al default (ramificar desde la punta). `onSubmit` gana un 4º arg
+  `desdeId?`.
+- **`FlowCanvas.responderDesdePanel`**: `kind === "branch"` → `handleSubmit(text, "branch", desdeId
+  ?? transcriptNodeId, adjuntos)`. `handleSubmit` linkea `padreId = desdeId` (el intercambio del
+  medio) y posiciona la rama con `ubicarNuevoGlobo`.
+- **`ubicarNuevoGlobo` (`layout.ts`) — ahora tramo-aware**: resuelve `parentId` → cabeza
+  (`cabezaDeTramo`), calcula posición y choques contra los **tramos** (`calcularTramos` — la
+  cabeza tiene la x/y y el rect medido; los no-cabeza tienen x/y viejas). Cuenta las ramas de
+  TODO el tramo para el balance izq/der.
+- El contexto de la rama = raíz→intercambio-elegido + la rama (`caminoRaizA` ya lo hace — sigue
+  el `padreId`). NO incluye la continuación hermana del tramo original.
+- Verificado: 8 asserts (rama desde el medio, tramo original intacto, `edge.data.desdeId`, camino
+  sin la continuación) + pane (chip, ramifica desde `b` no desde la punta `c`).
+
 ---
 
 ## Build / deploy
