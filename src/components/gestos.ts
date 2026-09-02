@@ -1,35 +1,40 @@
 "use client";
 
-// Tras soltar un drag (manija de resize del globo o del panel), el navegador
-// dispara un `click` sintético cuyo `target` puede ser el fondo del canvas —
-// deseleccionaría el globo o cerraría el panel. Hay que tragarse **ese** click.
+// Tras soltar un drag de resize (manija ◢ del globo o borde del panel) el
+// navegador dispara un `click` sintético. Si ese click cae sobre el **fondo del
+// lienzo** (`.react-flow__pane`) o el **backdrop del panel**, deselecciona el
+// globo o cierra el panel sin que el usuario lo haya pedido. Hay que tragarse
+// **ese** click — y solo ese.
 //
-// El click sintético post-drag llega prácticamente pegado al `pointerup` (mismo
-// task / microtask). Un click REAL del usuario viene bastante después (bajar +
-// soltar el mouse, mover a otro control). Así que: se traga el primer `click`
-// solo si llega dentro de una ventana corta desde que se armó; después, o si no
-// llega ninguno, se desarma.
-//
-// F5-0 / re-fix: antes era un `{ once: true }` que se comía el PRÓXIMO click sin
-// importar cuándo → si redimensionabas algo y después clickeabas otra cosa (el
-// `⌄` que esconde el composer), ese click se perdía y parecía "no responde /
-// pide doble clic".
-export function tragarClickSintetico(): void {
-  const t0 =
-    typeof performance !== "undefined" ? performance.now() : Date.now();
-  const ahora = () =>
-    typeof performance !== "undefined" ? performance.now() : Date.now();
+// F5-4c: antes se distinguía "sintético" de "real" por TIEMPO (ventana de 150ms
+// desde que se armaba). Era frágil: un click real y rápido sobre otro control
+// (el `⌄` del composer, un botón del toolbar) caía dentro de la ventana y se
+// perdía → "el `⌄` pide doble clic" (F5-0 y F5-4b no lo terminaron de resolver).
+// Ahora el discriminante es DÓNDE cae el click: se traga solo si el `target` es
+// exactamente el fondo del lienzo o un backdrop marcado con `data-cierra-al-click`.
+// Un click sobre cualquier botón/textarea/nodo pasa intacto.
+const SELECTOR_DESCARTABLE = ".react-flow__pane, [data-cierra-al-click]";
 
-  const tragar = (ev: Event) => {
+export function tragarClickSintetico(): void {
+  const desarmar = () => {
     window.removeEventListener("click", tragar, true);
     clearTimeout(backstop);
-    if (ahora() - t0 < 150) {
-      // Es el sintético del drag: tragarlo.
+  };
+  const tragar = (ev: MouseEvent) => {
+    const t = ev.target as Element | null;
+    // `matches`, no `closest`: los nodos viven DENTRO de `.react-flow__pane`, y
+    // un click sobre el contenido de un nodo no debe tragarse. El click que
+    // deselecciona / cierra tiene como target el elemento de fondo en sí.
+    if (t && typeof t.matches === "function" && t.matches(SELECTOR_DESCARTABLE)) {
       ev.stopPropagation();
       ev.preventDefault();
+      desarmar();
     }
-    // Si llegó más tarde, es un click real → se deja pasar.
+    // Un click que NO cae en el fondo (p. ej. el sintético sobre la manija, o un
+    // click real sobre otro control) se deja pasar y NO desarma: el sintético
+    // "malo" sobre el fondo puede llegar justo después. El backstop corta igual.
   };
+  // Si el puntero no generó ningún click sintético, desarmar y listo.
   const backstop = setTimeout(
     () => window.removeEventListener("click", tragar, true),
     400,

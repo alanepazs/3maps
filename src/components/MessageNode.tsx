@@ -157,12 +157,10 @@ export default function MessageNode({
         width: tamano?.w ?? ANCHO_POR_DEFECTO,
         height: tamano?.h ?? altoTramo,
       }}
-      className={`relative flex flex-col overflow-hidden rounded-md border bg-neutral-900 text-sm ${
-        selected ? "border-sky-400 ring-2 ring-sky-400/40" : "border-white/20"
-      }`}
+      className="relative text-sm"
     >
       {/* Mientras la punta streamea: badge de lápiz + STOP, flotando a la
-          izquierda (el globo tiene overflow-hidden → NodeToolbar se renderiza afuera). */}
+          izquierda (la tarjeta tiene overflow-hidden → NodeToolbar se renderiza afuera). */}
       <NodeToolbar isVisible={pending && !readOnly} position={Position.Left}>
         <div className="flex items-center gap-1 rounded-md border border-white/15 bg-neutral-900 px-1.5 py-1 shadow-lg">
           <span className="lapiz-escribiendo text-sm leading-none" aria-hidden>
@@ -221,102 +219,134 @@ export default function MessageNode({
         </div>
       </NodeToolbar>
 
-      {!isRoot && (
-        <>
-          <Handle
-            type="target"
-            id="t-top"
-            position={Position.Top}
-            isConnectable={isConnectable}
-          />
-          <Handle
-            type="target"
-            id="t-left"
-            position={Position.Left}
-            isConnectable={isConnectable}
-          />
-          <Handle
-            type="target"
-            id="t-right"
-            position={Position.Right}
-            isConnectable={isConnectable}
-          />
-        </>
-      )}
-
-      <div className="relative z-10 flex shrink-0 items-center gap-1.5 border-b border-white/10 bg-neutral-900 px-3 py-1 text-left text-[11px] font-medium text-white/55">
-        {adjuntosN > 0 && (
-          <span
-            className="rounded bg-white/10 px-1 font-normal text-white/50"
-            title={`${adjuntosN} archivo${adjuntosN > 1 ? "s" : ""} adjunto${adjuntosN > 1 ? "s" : ""}`}
-          >
-            📎 {adjuntosN}
-          </span>
-        )}
-        <span>
-          {n} {n === 1 ? "mensaje" : "mensajes"}
-        </span>
-      </div>
-
+      {/* La tarjeta visible: se clippea a sí misma (rounded + overflow). La
+          manija de resize y las NodeToolbar viven FUERA de este clip. */}
       <div
-        ref={cuerpoRef}
-        onScroll={alScrollear}
-        className="nowheel scroll-fino min-h-0 flex-1 overflow-y-auto pb-2"
+        className={`absolute inset-0 flex flex-col overflow-hidden rounded-md border bg-neutral-900 ${
+          selected ? "border-sky-400 ring-2 ring-sky-400/40" : "border-white/20"
+        }`}
       >
-        <LimiteError
-          resetKey={rev}
-          fallback={
-            <div className="px-3 py-2 text-left">
-              <p className="text-xs text-red-300">
-                ⚠ No se pudo mostrar esta conversación.
-              </p>
-              {!readOnly && (
-                <button
-                  type="button"
-                  onClick={() => retryNode(puntaId)}
-                  className="mt-2 rounded border border-white/20 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
-                >
-                  ↻ Rehacer
-                </button>
-              )}
-            </div>
-          }
-        >
-          {intercambios.map((ic) => (
-            <div
-              key={ic.id}
-              className="border-b border-white/5 px-3 py-1.5 text-left last:border-0"
+        {!isRoot && (
+          <>
+            <Handle
+              type="target"
+              id="t-top"
+              position={Position.Top}
+              isConnectable={isConnectable}
+            />
+            <Handle
+              type="target"
+              id="t-left"
+              position={Position.Left}
+              isConnectable={isConnectable}
+            />
+            <Handle
+              type="target"
+              id="t-right"
+              position={Position.Right}
+              isConnectable={isConnectable}
+            />
+          </>
+        )}
+
+        <div className="relative z-10 flex shrink-0 items-center gap-1.5 border-b border-white/10 bg-neutral-900 px-3 py-1 text-left text-[11px] font-medium text-white/55">
+          {adjuntosN > 0 && (
+            <span
+              className="rounded bg-white/10 px-1 font-normal text-white/50"
+              title={`${adjuntosN} archivo${adjuntosN > 1 ? "s" : ""} adjunto${adjuntosN > 1 ? "s" : ""}`}
             >
-              {ic.pregunta && (
-                <p className="whitespace-pre-wrap text-xs font-semibold text-white/90">
-                  {ic.pregunta}
+              📎 {adjuntosN}
+            </span>
+          )}
+          <span>
+            {n} {n === 1 ? "mensaje" : "mensajes"}
+          </span>
+        </div>
+
+        <div
+          ref={cuerpoRef}
+          onScroll={alScrollear}
+          className="nowheel scroll-fino min-h-0 flex-1 overflow-y-auto pb-2"
+        >
+          <LimiteError
+            resetKey={rev}
+            fallback={
+              <div className="px-3 py-2 text-left">
+                <p className="text-xs text-red-300">
+                  ⚠ No se pudo mostrar esta conversación.
                 </p>
-              )}
-              <div className="mt-0.5 text-white/70">
-                {ic.error ? (
-                  <p className="whitespace-pre-wrap text-xs text-red-300">
-                    ⚠ {ic.error}
-                  </p>
-                ) : ic.respuesta != null ? (
-                  <>
-                    <Markdown>{ic.respuesta}</Markdown>
-                    {ic.pending && (
-                      <span className="italic text-white/40"> ▍</span>
-                    )}
-                  </>
-                ) : ic.pending ? (
-                  <span className="text-xs italic text-white/40">escribiendo…</span>
-                ) : (
-                  <span className="text-xs italic text-white/40">
-                    respuesta pendiente
-                  </span>
+                {!readOnly && (
+                  <button
+                    type="button"
+                    onClick={() => retryNode(puntaId)}
+                    className="mt-2 rounded border border-white/20 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
+                  >
+                    ↻ Rehacer
+                  </button>
                 )}
               </div>
-            </div>
-          ))}
-        </LimiteError>
+            }
+          >
+            {intercambios.map((ic) => (
+              <div
+                key={ic.id}
+                className="border-b border-white/5 px-3 py-1.5 text-left last:border-0"
+              >
+                {ic.pregunta && (
+                  <p className="whitespace-pre-wrap text-xs font-semibold text-white/90">
+                    {ic.pregunta}
+                  </p>
+                )}
+                <div className="mt-0.5 text-white/70">
+                  {ic.error ? (
+                    <p className="whitespace-pre-wrap text-xs text-red-300">
+                      ⚠ {ic.error}
+                    </p>
+                  ) : ic.respuesta != null ? (
+                    <>
+                      <Markdown>{ic.respuesta}</Markdown>
+                      {ic.pending && (
+                        <span className="italic text-white/40"> ▍</span>
+                      )}
+                    </>
+                  ) : ic.pending ? (
+                    <span className="text-xs italic text-white/40">escribiendo…</span>
+                  ) : (
+                    <span className="text-xs italic text-white/40">
+                      respuesta pendiente
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </LimiteError>
+        </div>
+
+        <Handle
+          type="source"
+          id="main"
+          position={Position.Bottom}
+          isConnectable={isConnectable}
+        />
+        <Handle
+          type="source"
+          id="branch-right"
+          position={Position.Right}
+          isConnectable={isConnectable}
+        />
+        <Handle
+          type="source"
+          id="branch-left"
+          position={Position.Left}
+          isConnectable={isConnectable}
+        />
       </div>
 
+      {/* Manija ◢ — FUERA de la tarjeta clippeada, y colgando unos px por fuera
+          de la esquina para que el cursor `nwse-resize` agarre justo en el borde
+          visible. Antes vivía dentro del `overflow-hidden` + `rounded-md` de la
+          tarjeta → el borde y la esquina redondeada dejaban una banda de ~2-6px
+          con cursor de pan ("manito") antes de llegar a la manija. */}
       {!readOnly && (
         <div
           onPointerDown={onResizeStart}
@@ -328,7 +358,7 @@ export default function MessageNode({
           }
           // Zona de agarre generosa (transparente) para que el cursor cambie a
           // tiempo al acercarse a la esquina; la manija visible va adentro.
-          className="nodrag nowheel absolute bottom-0 right-0 z-20 flex h-7 w-7 cursor-nwse-resize items-end justify-end"
+          className="nodrag nowheel absolute -bottom-1 -right-1 z-20 flex h-7 w-7 cursor-nwse-resize items-end justify-end"
           style={{ transform: `scale(${escalaManija})`, transformOrigin: "bottom right" }}
         >
           <span
@@ -340,25 +370,6 @@ export default function MessageNode({
           />
         </div>
       )}
-
-      <Handle
-        type="source"
-        id="main"
-        position={Position.Bottom}
-        isConnectable={isConnectable}
-      />
-      <Handle
-        type="source"
-        id="branch-right"
-        position={Position.Right}
-        isConnectable={isConnectable}
-      />
-      <Handle
-        type="source"
-        id="branch-left"
-        position={Position.Left}
-        isConnectable={isConnectable}
-      />
     </div>
   );
 }
