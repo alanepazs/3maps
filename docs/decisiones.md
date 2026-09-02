@@ -1320,6 +1320,29 @@ Tres bugs de la prueba de Alan en Chrome (02-09).
 - **Revertir** (volver a `onSelectionDrag*` en paralelo, o confiar en el 3er arg de
   `onNodeDragStop`): vuelve a glidear 1 solo globo, y los demás sin persistir.
 
+### B5. Fuente + tamaño de texto
+
+- **`Settings.fuenteTexto`** (`sistema` | `geist` | `serif` | `mono`, def `sistema`) +
+  **`escalaTexto`** (0.8–1.3, def 1). `FUENTES_TEXTO` (familias CSS) + los topes en `settings.ts`.
+- **Tamaño = escalar el `font-size` del `<html>`**, no un contenedor: `rem` es relativo a la raíz,
+  así que un `font-size` en un wrapper NO afecta a Tailwind (`text-sm`/`text-xs` = `rem`). Escalando
+  `<html>` crece **todo** parejo (contenido + chrome). Se descartó "solo los globos" — hubiera
+  requerido convertir a `em` cada clase de texto en `MessageNode`/`Markdown`/`PanelConversacion`
+  (3 archivos delicados) para una diferencia marginal.
+- **`FlowCanvas` un `useEffect`** (dep `escalaTexto`/`fuenteTexto`) hace
+  `document.documentElement.style.fontSize = esc===1 ? "" : "NN%"` y
+  `style.setProperty("--fuente-3maps", …)`. `globals.css`: `body { font-family: var(--fuente-3maps,
+  Arial…) }`. Imperativo post-montaje, sin mismatch de hidratación (igual que el resto de settings).
+- **`Markdown.tsx`**: los `text-[13px]` / `text-[11px]` / `text-[10px]` sueltos (h1/h2, code,
+  tabla, botón copiar) pasaron a `em` (`text-[1.08em]` / `text-[0.92em]` / `text-[0.82em]`) → antes
+  eran px fijos y no escalaban. El resto del contenido ya usa `text-xs`/`text-sm` (`rem`).
+- **`Lora`** (serif) se sumó a `layout.tsx` con `next/font` (`--font-lora`). "sistema" = el stack
+  Arial de siempre (el `body` ya renderiza en Arial, no en Geist — nadie aplica `font-sans`).
+- Verificado en el pane: `<html>` 125% → pregunta 15px, h1 18.9px, tabla 16.1px, `body`
+  font-family = Lora; escala 1 limpia el `font-size` inline; slider/`select` en vivo + persisten.
+- **Revertir**: el texto vuelve a tamaño/fuente fijos; las clases `em` de `Markdown` quedan (son
+  equivalentes a los px viejos a escala 1).
+
 ---
 
 ## Build / deploy

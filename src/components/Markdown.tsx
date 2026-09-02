@@ -151,7 +151,7 @@ function BotonCopiarBloque({ texto }: { texto: string }) {
         }
       }}
       title="Copiar este bloque"
-      className="absolute right-1 top-1 rounded border border-white/15 bg-neutral-900/90 px-1.5 py-0.5 text-[10px] text-white/60 opacity-0 transition-opacity hover:bg-white/10 hover:text-white group-hover:opacity-100"
+      className="absolute right-1 top-1 rounded border border-white/15 bg-neutral-900/90 px-1.5 py-0.5 text-[0.82em] text-white/60 opacity-0 transition-opacity hover:bg-white/10 hover:text-white group-hover:opacity-100"
     >
       {ok ? "✓" : "⧉"}
     </button>
@@ -178,10 +178,10 @@ const components: Components = {
   ),
   li: ({ children }) => <li className="my-0.5">{children}</li>,
   h1: ({ children }) => (
-    <h1 className="mb-1 mt-2 text-[13px] font-semibold">{children}</h1>
+    <h1 className="mb-1 mt-2 text-[1.08em] font-semibold">{children}</h1>
   ),
   h2: ({ children }) => (
-    <h2 className="mb-1 mt-2 text-[13px] font-semibold">{children}</h2>
+    <h2 className="mb-1 mt-2 text-[1.08em] font-semibold">{children}</h2>
   ),
   h3: ({ children }) => (
     <h3 className="mb-1 mt-2 text-xs font-semibold uppercase tracking-wide text-white/60">
@@ -204,9 +204,9 @@ const components: Components = {
   code: ({ children, className }) => {
     const enBloque = /\blanguage-/.test(className ?? "");
     return enBloque ? (
-      <code className="block font-mono text-[11px] leading-relaxed">{children}</code>
+      <code className="block font-mono text-[0.92em] leading-relaxed">{children}</code>
     ) : (
-      <code className="rounded bg-white/10 px-1 py-0.5 font-mono text-[11px]">
+      <code className="rounded bg-white/10 px-1 py-0.5 font-mono text-[0.92em]">
         {children}
       </code>
     );
@@ -222,7 +222,7 @@ const components: Components = {
   hr: () => <hr className="my-2 border-white/10" />,
   table: ({ children }) => (
     <div className="my-1.5 overflow-x-auto">
-      <table className="w-full border-collapse text-[11px]">{children}</table>
+      <table className="w-full border-collapse text-[0.92em]">{children}</table>
     </div>
   ),
   th: ({ children }) => (
@@ -272,7 +272,7 @@ function Markdown({
       <LimiteError
         resetKey={texto}
         fallback={
-          <pre className="whitespace-pre-wrap break-words font-mono text-[11px] text-white/70">
+          <pre className="whitespace-pre-wrap break-words font-mono text-[0.92em] text-white/70">
             {texto}
           </pre>
         }

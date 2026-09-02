@@ -32,11 +32,13 @@
 src/
   app/
     layout.tsx      Root layout. metadata.title = "3maps". <html> con suppressHydrationWarning
-                    (por Darkreader). body: `flex h-full flex-col overflow-hidden`.
+                    (por Darkreader). body: `flex h-full flex-col overflow-hidden`. next/font:
+                    Geist + Geist_Mono + Lora (`--font-*`; Lora = serif opcional de B5).
     page.tsx        Renderiza <FlowCanvas /> dentro de <main class="h-dvh w-full overflow-hidden">.
                     `dvh` (no `vh`) para que en móvil encuadre al área visible real, sin scroll.
     globals.css     Tailwind + tokens de color que siguen prefers-color-scheme (dark por defecto
-                    en el SO del usuario). `@media (max-width:640px)`: sube los `.react-flow__
+                    en el SO del usuario). `body { font-family: var(--fuente-3maps, Arial…) }` (B5;
+                    la var la setea FlowCanvas). `@media (max-width:640px)`: sube los `.react-flow__
                     controls` (los tapaba el composer) y oculta el `.react-flow__minimap`.
                     `.scroll-fino` = scrollbar de 8px para el cuerpo del globo redimensionado.
   model/
@@ -249,11 +251,17 @@ src/
                         Textarea "instrucción de sistema" → onChange({systemPrompt}) directo.
     settings.ts         Settings = {inertia, ventanaContexto, systemPrompt, transcriptSide,
                         transcriptWidth, usarProxyIA, composerOculto, crecimientoPxPorMensaje (0-24,
-                        def 9), crecimientoTope (def 320), grosorLineas (1-5, def 1.5; B4)}.
-                        `ALTO_BASE_GLOBO` = 108. DEFAULT_SETTINGS, storage key. Los sliders de
-                        crecimiento y de grosor de líneas están en la pestaña "Lienzo".
+                        def 9), crecimientoTope (def 320), grosorLineas (1-5, def 1.5; B4),
+                        fuenteTexto ("sistema"|"geist"|"serif"|"mono", def sistema; B5),
+                        escalaTexto (0.8-1.3, def 1; B5)}.
+                        `ALTO_BASE_GLOBO` = 108. `FUENTES_TEXTO` (familias CSS), `ESCALA_TEXTO_MIN/MAX`.
+                        DEFAULT_SETTINGS, storage key. Los sliders (crecimiento, grosor de líneas,
+                        fuente, tamaño de texto) están en la pestaña "Lienzo".
                         `grosorLineas` → `FlowCanvas` lo pone como `--xy-edge-stroke-width` (CSS var)
-                        en el contenedor; lo hereda `.react-flow__edge-path`.
+                        en el contenedor; lo hereda `.react-flow__edge-path`. `fuenteTexto`/`escalaTexto`
+                        → un `useEffect` de `FlowCanvas` escala `document.documentElement.style.fontSize`
+                        y setea `--fuente-3maps` (lo lee `body` en globals.css) — afecta a toda la app
+                        (todo lo `rem`). B5.
     nodeActions.ts       NodeActionsContext: deleteNode / retryNode / stopNode / openNode /
                          resizeNode / colorNode (B1) + readOnly + crecimientoPx / crecimientoTope
                          (F5-4, clampeados en FlowCanvas). readOnly=true (árbol compartido) esconde

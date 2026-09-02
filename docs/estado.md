@@ -6,9 +6,9 @@
 
 ## Dónde estamos
 
-**Fases 1-5 en producción.** Backlog B1/B4/B8/B9/B10 shippeado; **B3 codeado sin pushear** (ver
-Backlog abajo). `https://alanepazs.github.io/3maps/` (deploy automático en cada push a `main`).
-Repo `github.com/alanepazs/3maps`, local `D:\IA\3maps`.
+**Fases 1-5 en producción.** Backlog B1/B3/B4/B8/B9/B10 shippeado y pusheado. Queda B2/B5/B7
+(+ B6 bloqueado por assets). `https://alanepazs.github.io/3maps/` (deploy automático en cada
+push a `main`). Repo `github.com/alanepazs/3maps`, local `D:\IA\3maps`.
 - **Fase 4** (panel rediseñado + contadores de tokens + adjuntos + copiar/guardar): shippeada,
   probada con keys (Gemini imagen+PDF, Groq visión, pegar captura, T15). Claude bloqueado por saldo.
 - **Fase 5** — **un globo del canvas = un TRAMO** (cadena `main`), no un intercambio suelto. Enter
@@ -129,11 +129,9 @@ ni llamadas con key):
 - `stream_options.include_usage` (T11) — asumido que anda en Groq/OpenRouter/HuggingFace; si
   alguno tira 400 habría que gatearlo por proveedor en `llamarOpenAICompat`.
 
-### Fase 5 — codeada, pendiente prueba de Alan + push
+### Fase 5 — en producción
 
-F5-0..F5-6 ✅ (detalle: `historia.md` "Fase 5"). En `main`: F5-0/1/3/4/4b (commit `7079332`).
-**Sin commitear**: F5-4c (bugs `⌄`/cursor), F5-5 (layout tramo-aware), F5-6 (docs + rename +
-Copiar/Guardar por respuesta). Todo con `tsc`/`lint`/`build` verde + `_scratch`/e2e en el pane.
+F5-0..F5-6 ✅ y pusheado (detalle: `historia.md` "Fase 5").
 
 **Probado por Alan en Chrome real (02-09) ✅**: Enter 10-11× → 1 globo · ramificar desde el
 medio → OK · "▤ Ordenar" / solapes → nada se solapó · Copiar/Guardar por respuesta → OK · la
@@ -155,9 +153,14 @@ Fase 5 (moverse entre globos + ramificar al costado, no hacia abajo). Ya está h
   arg de RF no es confiable — según agarres globo o recuadro trae uno solo). `glide(grupo)` una
   velocidad; `onSettle` → `asentarVarios` (batch, persiste x/y + rama de todos en un `setArbol`).
   Tras un drag de grupo se deselecciona todo (si no, quedan las toolbars apiladas). 10 asserts +
-  tsc/lint/build verde + verificado en el pane con shim de rAF. **Falta**: commit + push.
-- **B2/B5/B7** (pedidos de Alan 01-09): ventana de contexto adaptativa (medir el gasto de
-  `resumir()` primero — se cruza con T11) · fuente + tamaño de texto · zoom de lupa en hover.
+  tsc/lint/build verde + pane con shim de rAF + Alan en Chrome. Pusheado (`afc1f4e`).
+- **B5 ✅ codeado** (decisiones B5) — fuente + tamaño de texto. `Settings.fuenteTexto`
+  (sistema/geist/serif/mono) + `escalaTexto` (0.8-1.3). `FlowCanvas` escala el `font-size` del
+  `<html>` (todo lo `rem`) + setea `--fuente-3maps` (lo lee `body`). `select` + slider en "Lienzo".
+  `Lora` sumada a `layout.tsx`. `Markdown.tsx` px sueltos → `em`. tsc/lint/build verde + pane.
+  **Falta**: prueba de Alan + push.
+- **B2/B7** (pedidos de Alan 01-09): ventana de contexto adaptativa (medir el gasto de
+  `resumir()` primero — se cruza con T11) · zoom de lupa en hover.
 - **B6 logo** — concepto elegido (02-09: árbol verde + copa de globos de diálogo naranjas/verdes +
   wordmark "3maps" naranja, sin "3" como tronco). **Falta que Alan suba los assets** a `public/`
   (`logo.svg` lockup / `logo-mark.svg` árbol solo / `favicon.svg` + `apple-touch-icon.png`). Ahí:

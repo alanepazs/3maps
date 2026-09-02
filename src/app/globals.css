@@ -22,7 +22,10 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  /* Familia configurable (B5). `--fuente-3maps` lo setea FlowCanvas sobre
+     `<html>` según `settings.fuenteTexto`; sin setear = el stack de siempre.
+     El tamaño se controla escalando el `font-size` del `<html>`. */
+  font-family: var(--fuente-3maps, Arial, Helvetica, sans-serif);
 }
 
 /* Scrollbar fino para el cuerpo del globo redimensionado (fase 3.10): así no

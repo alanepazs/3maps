@@ -2,7 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { Settings } from "./settings";
+import {
+  ESCALA_TEXTO_MAX,
+  ESCALA_TEXTO_MIN,
+  type Settings,
+} from "./settings";
 import {
   despublicarArbol,
   misArbolesCompartidos,
@@ -460,6 +464,48 @@ export default function SettingsPanel({
                 />
                 <span className="mt-1 block text-[11px] text-white/40">
                   Las flechas que conectan los globos.
+                </span>
+              </label>
+
+              <label className="mt-3 block text-sm">
+                <span className="text-white/70">Fuente</span>
+                <select
+                  value={settings.fuenteTexto ?? "sistema"}
+                  onChange={(e) =>
+                    onChange({
+                      fuenteTexto: e.target
+                        .value as Settings["fuenteTexto"],
+                    })
+                  }
+                  className="mt-1.5 w-full rounded border border-white/15 bg-neutral-950 px-2 py-1 text-sm text-white/80 focus:border-sky-400 focus:outline-none"
+                >
+                  <option value="sistema">Sistema (Arial)</option>
+                  <option value="geist">Geist (sans)</option>
+                  <option value="serif">Lora (serif)</option>
+                  <option value="mono">Mono</option>
+                </select>
+              </label>
+
+              <label className="mt-3 block text-sm">
+                <span className="flex items-center justify-between">
+                  <span className="text-white/70">Tamaño del texto</span>
+                  <span className="text-white/50">
+                    {Math.round((settings.escalaTexto ?? 1) * 100)}%
+                  </span>
+                </span>
+                <input
+                  type="range"
+                  min={ESCALA_TEXTO_MIN}
+                  max={ESCALA_TEXTO_MAX}
+                  step={0.05}
+                  value={settings.escalaTexto ?? 1}
+                  onChange={(e) =>
+                    onChange({ escalaTexto: Number(e.target.value) })
+                  }
+                  className="mt-2 w-full accent-sky-500"
+                />
+                <span className="mt-1 block text-[11px] text-white/40">
+                  Afecta a toda la app.
                 </span>
               </label>
 

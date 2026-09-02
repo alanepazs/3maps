@@ -34,6 +34,11 @@ export type Settings = {
   // Grosor de las flechas conectoras (B4). Se aplica como `--xy-edge-stroke-width`
   // sobre el contenedor del canvas (lo hereda `.react-flow__edge-path`). 1-5.
   grosorLineas: number;
+  // Fuente y tamaño del texto de toda la app (B5). `fuenteTexto` → familia
+  // (`FUENTES_TEXTO` en SettingsPanel); `escalaTexto` multiplica el `font-size`
+  // del `<html>` → escala todo lo que usa `rem`. 0.8–1.3.
+  fuenteTexto: "sistema" | "geist" | "serif" | "mono";
+  escalaTexto: number;
 };
 
 export const ANCHO_PANEL_DEFECTO = 460;
@@ -55,6 +60,20 @@ export const DEFAULT_SETTINGS: Settings = {
   crecimientoPxPorMensaje: 9,
   crecimientoTope: 320,
   grosorLineas: 1.5,
+  fuenteTexto: "sistema",
+  escalaTexto: 1,
 };
+
+// Familias CSS por opción de `Settings.fuenteTexto` (B5). "sistema" = el stack
+// actual (Arial). Las var `--font-*` las define `app/layout.tsx` (next/font).
+export const FUENTES_TEXTO: Record<Settings["fuenteTexto"], string> = {
+  sistema: "Arial, Helvetica, sans-serif",
+  geist: "var(--font-geist-sans), system-ui, sans-serif",
+  serif: "var(--font-lora), Georgia, serif",
+  mono: "var(--font-geist-mono), ui-monospace, monospace",
+};
+
+export const ESCALA_TEXTO_MIN = 0.8;
+export const ESCALA_TEXTO_MAX = 1.3;
 
 export const SETTINGS_STORAGE_KEY = "3maps:settings";

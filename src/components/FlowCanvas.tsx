@@ -41,6 +41,9 @@ import {
   ANCHO_PANEL_MAX_FRAC,
   ANCHO_PANEL_MIN,
   DEFAULT_SETTINGS,
+  ESCALA_TEXTO_MAX,
+  ESCALA_TEXTO_MIN,
+  FUENTES_TEXTO,
   SETTINGS_STORAGE_KEY,
   type Settings,
 } from "./settings";
@@ -331,6 +334,25 @@ function Flow() {
       return next;
     });
   }, []);
+
+  // Fuente + tamaño del texto (B5). Se aplica al `<html>`: la familia como
+  // `--fuente-3maps` (lo lee `body` en globals.css), el tamaño escalando su
+  // `font-size` → todo lo que usa `rem` (Tailwind `text-sm`/`text-xs`, etc.)
+  // crece parejo. Imperativo post-montaje, sin mismatch de hidratación (igual
+  // que el resto de settings). No se limpia al desmontar: FlowCanvas vive toda
+  // la sesión.
+  useEffect(() => {
+    const el = document.documentElement;
+    const esc = Math.min(
+      ESCALA_TEXTO_MAX,
+      Math.max(ESCALA_TEXTO_MIN, settings.escalaTexto ?? 1),
+    );
+    el.style.fontSize = esc === 1 ? "" : `${(esc * 100).toFixed(1)}%`;
+    el.style.setProperty(
+      "--fuente-3maps",
+      FUENTES_TEXTO[settings.fuenteTexto] ?? FUENTES_TEXTO.sistema,
+    );
+  }, [settings.escalaTexto, settings.fuenteTexto]);
 
   // Configuración de la IA (proveedor activo + su API key + modelo). Solo en
   // este navegador. `configIA.ts` guarda una key POR PROVEEDOR, así que cambiar
