@@ -1139,6 +1139,9 @@ Ver F3-8 (actualizado) — `components/gestos.ts` `tragarClickSintetico()`.
   abajo-derecha. El cursor `nwse-resize` cambia antes al acercarse a la esquina.
 - Verificado en el pane: `⌄` togglea en un click en los dos sentidos; grip `cursor: nwse-resize`
   con zona de 28px. El follow del stream lo prueba Alan con key real.
+- **02-09 (Alan, Chrome real)**: el follow **de los globos anda**. En el **panel** se planta a
+  mitad de la respuesta (largo o corto) — backlog **B9** (el `scrollTop = scrollHeight` propio
+  dispara `alScrollear` y apaga `pegado`).
 
 ### F5-4c. El `⌄` y el cursor de resize, de verdad (lo que F5-0/F5-4b no cerraron)
 Alan probó F5-4b en Chrome real: **el auto-scroll anda**; el `⌄` **seguía pidiendo doble click**

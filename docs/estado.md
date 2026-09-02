@@ -134,16 +134,12 @@ F5-0..F5-6 ✅ (detalle: `historia.md` "Fase 5"). En `main`: F5-0/1/3/4/4b (comm
 **Sin commitear**: F5-4c (bugs `⌄`/cursor), F5-5 (layout tramo-aware), F5-6 (docs + rename +
 Copiar/Guardar por respuesta). Todo con `tsc`/`lint`/`build` verde + `_scratch`/e2e en el pane.
 
-**Falta que Alan pruebe en Chrome real**:
-- Enter 10× seguidas → **1 globo** de 10 intercambios; ramificar desde el 3er intercambio de un
-  tramo largo → tramo nuevo al costado, el original intacto; un mapa de fase 1-4 se agrupa en 1
-  tramo sin migración; el globo crece según el slider; "▤ Ordenar" con tramos altos no los solapa.
-- El `⌄` de un click y el cursor de resize (F5-4c) — ya reproducidos y verificados con CDP, pero
-  conviene la pasada de Alan.
-- Copiar/Guardar en cada respuesta del panel (F5-6) — 3 botones por turno, "↻ Rehacer" solo en la
-  punta.
+**Probado por Alan en Chrome real (02-09) ✅**: Enter 10-11× → 1 globo · ramificar desde el
+medio → OK · "▤ Ordenar" / solapes → nada se solapó · Copiar/Guardar por respuesta → OK · la
+herramienta en general anda bien. (No probó "mapa viejo se agrupa" — es un caso interno, sin
+UI para gatillarlo.)
 
-**Sigue en pie**: Alan **evaluaba un rediseño grande de los globos** → confirmar antes de B1-B8.
+**Sigue en pie**: Alan **evaluaba un rediseño grande de los globos** → confirmar antes de B1-B10.
 
 ### Backlog (fuera del plan de fases) → `tasks/todo.md` "Fuera de este plan"
 
@@ -157,6 +153,17 @@ Copiar/Guardar por respuesta). Todo con `tsc`/`lint`/`build` verde + `_scratch`/
   transcripción (o `useMemo` keyed por `data.rev`) para que mover el globo no re-parsee el markdown;
   o render liviano en el globo y markdown completo solo en el panel. `nodeActions` ya está memoizado
   (no es eso).
+- **B9 — el scroll-follow del PANEL se queda por la mitad** (Alan 02-09). Al streamear en
+  `PanelConversacion` el follow arranca pero a veces se planta a mitad de la respuesta, largo o
+  corto. **Solo el panel** (los globos siguen bien). Hipótesis: `scrollTop = scrollHeight` se
+  setea sobre el `scrollHeight` viejo (antes de que el markdown crezca) → dispara el `scroll`
+  event → `alScrollear` ve que ya no está pegado al fondo (diff > 60) → apaga `pegado`. Fix:
+  ignorar los `scroll` events propios (flag), o solo apagar `pegado` ante scroll de usuario real
+  (wheel/touch), o re-scrollear en rAF tras el layout.
+- **B10 — la manija de resize del panel y el scrollbar de la conversación quedan pegados** (Alan
+  02-09, con `side` = izquierda: la manija va en el borde interno derecho, y el scrollbar de
+  `scrollRef` también). Separarlos: `scrollbar-gutter` o padding en el lado de la manija, o mover
+  la manija.
 - **T15 "doc card"** — tarjeta compacta cuando la respuesta ES un documento; si el núcleo de T15
   no alcanza.
 - **Auto-switch de proveedor** al pegar una key de otro (hoy `avisoFormatoKey` solo avisa).
