@@ -2,6 +2,12 @@
 
 **Nombre**: `3maps` — "3" = three = *tree* (árbol), y suena a "maps". Mapas de árbol.
 
+**Logo** (definido 02-09-2026): un árbol donde el **tronco + raíces son un "3" verde** y la **copa
+son globos de diálogo naranjas** (algunos verdes) = "la conversación es un árbol que ramifica".
+Paleta: naranja/ámbar cálido + verde. El asset todavía NO está en el repo (`public/`) — falta
+subir el mark en transparente + una versión plana simple para el favicon (hoy es emoji/genérico).
+Ver `tasks/todo.md` B6.
+
 ## Al arrancar una sesión, leé (en este orden)
 
 1. Este archivo (invariantes + convenciones que no se rompen).

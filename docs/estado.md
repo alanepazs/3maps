@@ -146,7 +146,9 @@ Fase 5 (moverse entre globos + ramificar al costado, no hacia abajo). Ya está h
 
 - **B1-B7** (pedidos de Alan 01-09): color por globo · ventana de contexto adaptativa (medir el
   gasto de `resumir()` primero — se cruza con T11) · multi-select move + envión · grosor de líneas
-  · fuente + tamaño de texto · logo de fondo · zoom de lupa en hover.
+  · fuente + tamaño de texto · **B6 logo** (definido 02-09: árbol "3" verde + globos de diálogo
+  naranjas; falta el asset en `public/` + favicon propio — ver `todo.md` B6 y `CLAUDE.md`) · zoom
+  de lupa en hover.
 - **B8 ✅** (decisiones F5-7) — arrastrar un globo iba a ~5 fps: `MessageNode` re-parseaba toda la
   transcripción del tramo por frame del drag. `Markdown` = `memo` + `useMemo` del texto; la
   transcripción sale a `CuerpoTramo` (`memo` por `rev`/`readOnly`). 0 mutaciones de DOM en zoom+drag.

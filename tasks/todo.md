@@ -139,9 +139,18 @@ Sub-tareas:
   → `arbolAVista` / CSS de `.react-flow__edge-path`).
 - **B5** — Settings "fuente" (un puñado de las conocidas) + "tamaño de texto". Toca `globals.css`
   / `layout.tsx` (cargar las fuentes) + `Settings`.
-- **B6** — preparar el código para un fondo del mapa con el logo de 3maps (o usar la marca en
-  algún lado). Abrir a sugerencias cuando se llegue. Probablemente un `<Background>` custom de
-  React Flow o un div de fondo con el SVG del logo, opacidad baja.
+- **B6** — logo de 3maps + usarlo en la app.
+  - **Logo definido (Alan, 02-09)**: árbol con **tronco/raíces = un "3" verde** y **copa = globos
+    de diálogo naranjas** (algunos verdes). Paleta naranja/ámbar + verde. Concepto = "la
+    conversación es un árbol que ramifica". La imagen que pasó Alan es un mockup (fondo oscuro
+    texturado tipo carbono + wordmark "3maps" + subtítulo "Paleta de Rendimiento Marrón & Naranja"
+    — ese subtítulo NO es tagline, es el generador describiendo su paleta, se ignora).
+  - **Falta el asset en el repo**: subir a `public/` (a) el mark en **transparente** (PNG/SVG),
+    (b) una versión **plana de 1 color** para el favicon (hoy no hay favicon propio) y usos chicos
+    — el logo tiene mucho detalle (gradientes, bevels, sombras) y a 16-32px se va a empastar.
+  - **Usarlo**: favicon (`app/layout.tsx` metadata / `public/favicon`), y fondo del canvas —
+    `<Background>` custom de React Flow o un `<div>` de fondo con el mark en opacidad baja
+    (probablemente solo la silueta del árbol, no la versión full).
 - **B7** — "zoom de lupa": los globos reaccionan al mouse y se agrandan al pasar por encima
   (hover → `transform: scale()` o lente). Setting en la pestaña "Lienzo": `Settings.hoverZoom`
   (on/off). Cuidar: no romper el drag/selección, ni el layout de los vecinos (¿scale desde el
