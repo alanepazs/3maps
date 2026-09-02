@@ -17,14 +17,18 @@ const MAX_SPEED = 2;
 
 type SetNodes = (updater: (nds: Node[]) => Node[]) => void;
 type Pos = { x: number; y: number };
+type Item = { id: string; pos: Pos };
 
 // `strength` es el multiplicador configurable del envión (0 = desactivado).
-// `onSettle` recibe la posición FINAL autoritativa (la del drop + lo que sumó
-// el envión) — no depender de `getNode`, que puede ir un frame atrasado y
-// persistir una posición vieja (bug: "la flecha no respeta el cambio").
+// `onSettle` recibe la posición FINAL autoritativa de CADA globo (la del drop +
+// lo que sumó el envión) — no depender de `getNode`, que puede ir un frame
+// atrasado y persistir una posición vieja (bug: "la flecha no respeta el
+// cambio"). Recibe siempre una lista: un globo suelto es `[globo]`, una
+// selección son todos (los arma `FlowCanvas`, ver `onNodeDragStop` abajo). Sin
+// `onSelectionDrag*`: un único handler cubre globo suelto y grupo (B3).
 export function useNodeInertia(
   setNodes: SetNodes,
-  onSettle: (nodeId: string, pos: Pos) => void,
+  onSettle: (items: Item[]) => void,
   strength: number,
 ) {
   const sampleRef = useRef<VelSample | null>(null);
@@ -51,14 +55,16 @@ export function useNodeInertia(
   }, []);
 
   const glide = useCallback(
-    (items: { id: string; pos: Pos }[]) => {
+    (items: Item[]) => {
       const v = launchVelocity(sampleRef.current, strength, MAX_SPEED);
       sampleRef.current = null;
-      if (!v) {
-        items.forEach((it) => onSettle(it.id, it.pos));
+      if (!v || items.length === 0) {
+        onSettle(items);
         return;
       }
       const moving = new Set(items.map((it) => it.id));
+      // Una sola velocidad para TODO el grupo: en un drag de selección los globos
+      // se mueven rígidos, así que la del que trackeamos es la de todos.
       // Posición final = la del drop + lo que vaya sumando el envión, acumulado
       // acá (no leído de `getNode`).
       const acc = new Map(items.map((it) => [it.id, { ...it.pos }]));
@@ -80,7 +86,7 @@ export function useNodeInertia(
         },
         () => {
           stopRef.current = null;
-          items.forEach((it) => onSettle(it.id, acc.get(it.id) ?? it.pos));
+          onSettle(items.map((it) => ({ id: it.id, pos: acc.get(it.id) ?? it.pos })));
         },
       );
     },
@@ -89,27 +95,22 @@ export function useNodeInertia(
 
   const onNodeDragStart = beginDrag;
   const onNodeDrag = useCallback((_evt: unknown, node: Node) => track(node), [track]);
-  const onNodeDragStop = useCallback(
-    (_evt: unknown, node: Node) =>
-      glide([{ id: node.id, pos: { x: node.position.x, y: node.position.y } }]),
-    [glide],
-  );
 
-  const onSelectionDragStart = beginDrag;
-  const onSelectionDrag = useCallback(
-    (_evt: unknown, nodes: Node[]) => {
-      if (nodes[0]) track(nodes[0]);
-    },
-    [track],
-  );
-  const onSelectionDragStop = useCallback(
-    (_evt: unknown, nodes: Node[]) =>
+  // `nodes` = todos los globos a glidear. Lo arma `FlowCanvas` a partir de SU
+  // selección (`getNodes().filter(selected)`), no del arg de React Flow: RF a
+  // veces pasa un solo nodo aunque haya varios seleccionados (según agarres un
+  // globo o el recuadro, y por `selectNodesOnDrag`) → antes solo 1 tenía
+  // envión (B3). Una sola velocidad para todos (en una selección van rígidos).
+  const onNodeDragStop = useCallback(
+    (_evt: unknown, node: Node, nodes?: Node[]) => {
+      const arrastrados = nodes && nodes.length > 0 ? nodes : [node];
       glide(
-        nodes.map((n) => ({
+        arrastrados.map((n) => ({
           id: n.id,
           pos: { x: n.position.x, y: n.position.y },
         })),
-      ),
+      );
+    },
     [glide],
   );
 
@@ -117,9 +118,6 @@ export function useNodeInertia(
     onNodeDragStart,
     onNodeDrag,
     onNodeDragStop,
-    onSelectionDragStart,
-    onSelectionDrag,
-    onSelectionDragStop,
     cancelInertia,
   };
 }

@@ -259,7 +259,7 @@ src/
                          (F5-4, clampeados en FlowCanvas). readOnly=true (árbol compartido) esconde
                          Eliminar/Reintentar y los swatches de color.
     inertia.ts           Física compartida del "envión": constantes + sampleVelocity / launchVelocity / runGlide.
-    useNodeInertia.ts    Hook: envión al soltar un globo o una selección.
+    useNodeInertia.ts    Hook: envión al soltar un globo o una selección (grupo parejo, B3).
     usePanInertia.ts     Hook: envión al soltar el pan del lienzo.
 
 .github/workflows/deploy.yml   Build estático (NEXT_PUBLIC_PAGES=1 → basePath /3maps) + deploy a
@@ -335,8 +335,9 @@ Handlers (todos operan sobre `arbol` vía `setArbol`):
   `handleSubmit(text, "main", transcriptNodeId)` + mueve el panel al hijo nuevo.
 - `onNodeDrag` (envuelve el de `useNodeInertia`) — además de trackear velocidad para el envión,
   si el nodo arrastrado es una rama, mueve el `sourceHandle` de su flecha al lado (izq/der) en
-  vivo mientras se arrastra, tocando solo el estado `edges` (fase 3.3). `asentar` fija la `rama`
-  al soltar.
+  vivo mientras se arrastra, tocando solo el estado `edges` (fase 3.3). `asentarVarios` fija la
+  `rama` al soltar. En un drag de grupo el flip en vivo es solo del globo de referencia; el resto
+  se corrige en el drop (B3).
 - `responder(nodeId, arbolBase)` — **la llamada a la IA**. Watchdog: aborta si no llega nada en
   45s o el total pasa 180s → error reintentable (deja la respuesta parcial). Si no hay API key →
   `conError`. Si no:
@@ -351,8 +352,10 @@ Handlers (todos operan sobre `arbol` vía `setArbol`):
 - `retryNode(id)` — `responder(id, arbolRef.current)`. Via NodeActionsContext.
 - `openNode(id)` — setea `transcriptNodeId`; `<PanelConversacion>` se renderiza con
   `caminoRaizA(arbol, transcriptNodeId)`. También lo dispara `onNodeDoubleClick`. Via NodeActionsContext.
-- `asentar(id)` — escribe la posición final al árbol (`conPosicion`) y, si es rama, fija el lado
-  (`conRama`) según dónde quedó respecto del padre. Es el `onSettle` de `useNodeInertia`.
+- `asentarVarios(items)` — escribe la posición final de cada globo al árbol (`conPosicion`) y, si
+  es rama, fija el lado (`conRama`) según dónde quedó respecto del padre, todo en **un** `setArbol`.
+  Es el `onSettle` de `useNodeInertia`; un globo suelto es una lista de uno, una selección son
+  todos (B3, decisiones B3).
 - `deleteNode(id)` (via NodeActionsContext) — `descendientes` para el conteo, `window.confirm` si
   borra >1, aborta las llamadas en vuelo de lo que se borra, `quitarSubarbol`, deja activo al
   padre. Borrar la raíz solo se permite sin hijos (fase 3.6) → confirma "el mapa queda vacío".
@@ -374,8 +377,10 @@ Config de IA: `configIA` (useState `ConfigIA`, lazy init desde `cargarConfigIA()
 `borrarKeyIA` (borra solo la activa) → pasan a `<SettingsPanel>`.
 Puede tener `apiKey: ""` en memoria (para editar el modelo antes de la key); `configIA.ts` no lo
 persiste sin key. `resumenCacheRef` (Map) cachea resúmenes del tramo viejo por sesión.
-- Envión: `useNodeInertia(setNodes, asentar, settings.inertia)` devuelve
-  `onNodeDragStart/Drag/Stop` + `onSelectionDrag*` + `cancelInertia`.
+- Envión: `useNodeInertia(setNodes, asentarVarios, settings.inertia)` devuelve
+  `onNodeDragStart/Drag/Stop` + `cancelInertia`. **Sin `onSelectionDrag*`**. `FlowCanvas` envuelve
+  `onNodeDragStop`: arma el grupo a glidear con `getNodes().filter(selected)` (su propia selección,
+  no el arg de RF que no es confiable) → un solo handler glidea todo el grupo parejo (B3).
   `usePanInertia(setViewport, getViewport, settings.inertia)` devuelve `onMoveStart/Move/MoveEnd`.
 
 Props de `<ReactFlow>` que importan:
@@ -534,7 +539,9 @@ abierto → prop `contextoTokens` del panel (T10, decisiones F3-20). No dispara 
 - `runGlide(vx, vy, apply, onDone)` — loop de `requestAnimationFrame` con decaimiento exponencial.
   `apply(dx, dy)` mueve lo que sea. Devuelve una función para cortar.
 
-`useNodeInertia`: `MAX_SPEED` 2, `onSettle` = `asentar` (persiste posición + lado de la rama).
+`useNodeInertia`: `MAX_SPEED` 2, `onSettle` = `asentarVarios` (persiste posición + lado de la rama
+de todos los globos soltados). `onNodeDragStop(evt, node, nodes)` glidea `nodes` (todo el grupo)
+con una velocidad compartida — ver decisiones B3.
 `usePanInertia`: `MAX_SPEED` 4 + guarda contra gestos de zoom + flag `applyingRef` (el glide
 llama `setViewport`, que React Flow traduce a un `d3-zoom.transform()` que dispara `start`
 reentrante — sin el flag el envión se cortaba en el primer frame).

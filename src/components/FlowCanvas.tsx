@@ -210,7 +210,7 @@ function Flow() {
   // Id a seleccionar tras la próxima reconstrucción de la vista (globo recién
   // creado, o el padre tras un borrado). null = mantener la selección actual.
   const seleccionarLuegoRef = useRef<string | null>(null);
-  const { getNode, getViewport, setViewport, setCenter, fitView } =
+  const { getNode, getNodes, getViewport, setViewport, setCenter, fitView } =
     useReactFlow();
 
   // Ancho de la ventana (para el bucket móvil/desktop del panel lateral — fase
@@ -823,36 +823,60 @@ function Flow() {
     enVueloRef.current.get(id)?.abort("usuario");
   }, []);
 
-  // Al soltar / frenar el envión: escribir la posición final al árbol y, si es
-  // una rama, fijar el lado (izq/der) según dónde quedó respecto del padre.
-  const asentar = useCallback(
-    (id: string, pos?: { x: number; y: number }) => {
-      const p = pos ?? getNode(id)?.position;
-      if (!p) return;
-      const { x, y } = p;
+  // Al soltar / frenar el envión: escribir la posición final de cada globo al
+  // árbol y, si es una rama, fijar el lado (izq/der) según dónde quedó respecto
+  // del padre. Batch: una selección entera se asienta en un solo `setArbol`
+  // (un globo suelto es una lista de uno).
+  const asentarVarios = useCallback(
+    (items: { id: string; pos: { x: number; y: number } }[]) => {
+      if (items.length === 0) return;
       setArbol((a) => {
-        const ic = buscar(a, id);
-        if (!ic) return a;
-        const conPos = conPosicion(a, id, x, y);
-        if (ic.padreId === null || ic.rama === "main") return conPos;
-        const p = buscar(a, ic.padreId);
-        const lado: Rama = p && x < p.x ? "branch-left" : "branch-right";
-        return conRama(conPos, id, lado);
+        let next = a;
+        for (const { id, pos } of items) {
+          const ic = buscar(next, id);
+          if (!ic) continue;
+          next = conPosicion(next, id, pos.x, pos.y);
+          if (ic.padreId === null || ic.rama === "main") continue;
+          const padre = buscar(next, ic.padreId);
+          const lado: Rama =
+            padre && pos.x < padre.x ? "branch-left" : "branch-right";
+          next = conRama(next, id, lado);
+        }
+        return next;
       });
     },
-    [getNode],
+    [],
   );
 
   // Envión / inercia al soltar, tipo Obsidian Canvas.
   const {
     onNodeDragStart: nodeInertiaDragStart,
     onNodeDrag: nodeInertiaDrag,
-    onNodeDragStop,
-    onSelectionDragStart,
-    onSelectionDrag,
-    onSelectionDragStop,
+    onNodeDragStop: nodeInertiaDragStop,
     cancelInertia,
-  } = useNodeInertia(setNodes, asentar, settings.inertia);
+  } = useNodeInertia(setNodes, asentarVarios, settings.inertia);
+
+  // Al soltar, glidear TODA la selección (no solo el globo agarrado). React Flow
+  // no es confiable para esto: según agarres un globo o el recuadro, y por
+  // `selectNodesOnDrag`, el 3er arg puede traer uno solo. Leemos la selección de
+  // NUESTRO estado. Si el globo soltado no está en la selección (o hay uno
+  // solo), es un drag individual (B3, decisiones B3).
+  const onNodeDragStop = useCallback(
+    (evt: unknown, node: Node) => {
+      const sel = getNodes().filter((n) => n.selected);
+      const enGrupo = sel.length > 1 && sel.some((n) => n.id === node.id);
+      nodeInertiaDragStop(evt, node, enGrupo ? sel : [node]);
+      // Tras mover un grupo, deseleccionar todo: si no, quedan las NodeToolbar
+      // de cada globo (Abrir/Rehacer/Eliminar + swatches) apiladas sobre el
+      // canvas (B3). El envión no depende de la selección — ya capturó sus ids.
+      if (enGrupo) {
+        setNodes((nds) =>
+          nds.map((n) => (n.selected ? { ...n, selected: false } : n)),
+        );
+      }
+    },
+    [getNodes, setNodes, nodeInertiaDragStop],
+  );
 
   // Mientras se arrastra una rama: mover el handle de su flecha al lado
   // (izq/der) donde va quedando, en vivo — sin esperar al `asentar` del drop
@@ -1478,9 +1502,6 @@ function Flow() {
           onNodeDragStart={onNodeDragStart}
           onNodeDrag={onNodeDrag}
           onNodeDragStop={onNodeDragStop}
-          onSelectionDragStart={onSelectionDragStart}
-          onSelectionDrag={onSelectionDrag}
-          onSelectionDragStop={onSelectionDragStop}
           onMoveStart={onMoveStart}
           onMove={onMove}
           onMoveEnd={onMoveEnd}

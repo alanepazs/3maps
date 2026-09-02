@@ -1274,6 +1274,52 @@ Tres bugs de la prueba de Alan en Chrome (02-09).
 - Verificado (CDP): slider 1/2/4/5 → `getComputedStyle('.react-flow__edge-path').strokeWidth` =
   1/2/4/5px en vivo; persiste.
 
+### B3. Multi-select move: envión parejo a todo el grupo, sin `onSelectionDrag*`
+
+- **El bug** (reporte de Alan, 02-09): al arrastrar varios globos seleccionados con flick, **solo
+  1 tenía envión** y el resto quedaba estático (y su posición nueva no persistía al `.md`).
+- **Causa** (leída del source de `@xyflow/system` 12.11.5, `XYDrag`): hay **dos** draggers y cuál
+  dispara depende de dónde agarrás:
+  - agarre **sobre un globo** → el `XYDrag` del `NodeWrapper` (con `nodeId`) → dispara **solo**
+    `onNodeDrag*`, con TODOS los seleccionados como 3er arg (`currentNodes`).
+  - agarre **sobre el recuadro de selección** → el `XYDrag` de `NodesSelection` (sin `nodeId`) →
+    dispara `onNodeDrag*` **y** `onSelectionDrag*` (el node primero).
+  El código viejo: `onNodeDragStop` ignoraba el 3er arg y hacía `glide([node])` (un globo);
+  `onSelectionDrag*` corría en paralelo y competía por el mismo `sampleRef` de velocidad. El que
+  perdía la carrera se comía la muestra → el otro `glide` recibía `!v` → asentaba estático.
+- **Complicación**: `onNodeDragStop` **debería** traer todos los nodos arrastrados como 3er arg
+  (`currentNodes`), pero en la práctica no es confiable — según agarres un globo o el recuadro de
+  selección, y por `selectNodesOnDrag` (default `true`) que dispara `handleNodeClick` al empezar,
+  a veces llega uno solo aunque haya varios `.selected`. Probado por Alan: seguía glideando 1.
+- **Fix**:
+  - `useNodeInertia` deja de exportar `onSelectionDrag*`; `<ReactFlow>` no los cablea.
+  - `FlowCanvas` **envuelve** `onNodeDragStop`: arma el grupo con **su propia** selección
+    (`getNodes().filter(n => n.selected)`) — no confía en el arg de RF. Si el globo soltado está
+    en esa selección y hay >1 → glidea todos; si no → `[node]` (drag individual).
+  - El hook `glide(items)` aplica **una sola velocidad** a todo el grupo (en una selección los
+    globos van rígidos, la del que trackeamos = la de todos).
+  - `onSettle` pasa de `(id, pos)` a `(items[])`. `FlowCanvas.asentar` → **`asentarVarios(items)`**:
+    un solo `setArbol` que aplica `conPosicion` + (`conRama` si es rama) a todos → persiste x/y y
+    lado de cada uno en un commit (antes: N `setArbol` / N `guardarArbol`, y solo del globo
+    agarrado → el resto no persistía).
+  - Tras un drag de **grupo** (`>1`), el wrapper **deselecciona todo** (`setNodes` → `selected:
+    false`) — si no, quedan las `NodeToolbar` de cada globo apiladas sobre el canvas. Un drag
+    individual mantiene la selección (default de RF). El envión ya capturó los ids, no depende de
+    la selección.
+- **Decisión** (Alan, tras probar): **envión parejo a todo el grupo** (no "sin envión de grupo",
+  que era la opción pre-elegida en `tasks/plan.md` — la sintió y le gustó).
+- **Lo que NO se tocó**: el flip de handle en vivo del `onNodeDrag` wrapper sigue siendo solo del
+  globo de referencia durante el drag; en un drag de grupo el resto de los edges se corrigen en el
+  drop (`conRama` → cambia la `firma` → `arbolAVista` redibuja). Cosmético, aceptado.
+- Verificado: 10 asserts en `_scratch.mts` (grupo de 3 persiste las 3 posiciones; rama izq/der del
+  padre; main/raíz nunca flipean; grupo rígido no flipea la rama; lista vacía no-op; id fantasma
+  se saltea) + `tsc`/`lint`/`build` verde. **En el pane** (con un shim de `requestAnimationFrame`
+  para saltear el freeze, napkin §2): grupo de 3 seleccionado → flick simulado → los 3 se mueven
+  **rígidos** (mismo delta), `asentarVarios` persiste los 3, y la selección se limpia (0
+  toolbars). **Confirmado por Alan en Chrome real (02-09): los 4 vuelan parejo.**
+- **Revertir** (volver a `onSelectionDrag*` en paralelo, o confiar en el 3er arg de
+  `onNodeDragStop`): vuelve a glidear 1 solo globo, y los demás sin persistir.
+
 ---
 
 ## Build / deploy

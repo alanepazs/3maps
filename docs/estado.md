@@ -6,15 +6,16 @@
 
 ## Dónde estamos
 
-**Fases 1-4 en producción; Fase 5 CODEADA (sin pushear).** `https://alanepazs.github.io/3maps/`
-(deploy automático en cada push a `main`). Repo `github.com/alanepazs/3maps`, local `D:\IA\3maps`.
+**Fases 1-5 en producción.** Backlog B1/B4/B8/B9/B10 shippeado; **B3 codeado sin pushear** (ver
+Backlog abajo). `https://alanepazs.github.io/3maps/` (deploy automático en cada push a `main`).
+Repo `github.com/alanepazs/3maps`, local `D:\IA\3maps`.
 - **Fase 4** (panel rediseñado + contadores de tokens + adjuntos + copiar/guardar): shippeada,
   probada con keys (Gemini imagen+PDF, Groq visión, pegar captura, T15). Claude bloqueado por saldo.
 - **Fase 5** — **un globo del canvas = un TRAMO** (cadena `main`), no un intercambio suelto. Enter
   agrega a la punta del mismo globo; globo nuevo solo al ramificar; el globo crece con la
   conversación (slider en "Lienzo"). **Cambio solo de vista, cero migración.** Detalle por
   sub-tarea: `docs/historia.md` "Fase 5"; el porqué: `decisiones.md` F5-0..F5-6.
-  - F5-0/1/2/3/4/4b/4c/5/6 ✅ (en `main`: F5-0/1/3/4/4b commit `7079332`; F5-4c/5/6 sin commitear).
+  - F5-0..F5-6 ✅ y **pusheado** (incl. F5-4c/5/6).
   - **F5-4c**: el `⌄` de un click y el cursor de resize — F5-0/F5-4b no los cerraron, reproducidos
     en Chrome real con CDP (el pane no los reproduce). `tragarClickSintetico` traga por target
     (`.react-flow__pane` / `[data-cierra-al-click]`); la manija de resize salió del `overflow-hidden`.
@@ -148,9 +149,15 @@ Fase 5 (moverse entre globos + ramificar al costado, no hacia abajo). Ya está h
   en la cabeza del tramo → `.md` → sync/compartir gratis. Punto en el header + swatches en el toolbar.
 - **B4 ✅** (decisiones B4) — Setting "grosor de líneas". `Settings.grosorLineas` (1-5, def 1.5),
   slider en "Lienzo", vía CSS var `--xy-edge-stroke-width`. En vivo.
-- **B2/B3/B5/B7** (pedidos de Alan 01-09): ventana de contexto adaptativa (medir el gasto de
-  `resumir()` primero — se cruza con T11) · multi-select move + envión · fuente + tamaño de texto ·
-  zoom de lupa en hover.
+- **B3 ✅** (decisiones B3) — multi-select move + envión parejo a todo el grupo. **Confirmado por
+  Alan en Chrome (02-09): los 4 vuelan parejo.** `useNodeInertia` sin `onSelectionDrag*`;
+  `FlowCanvas` envuelve `onNodeDragStop` y arma el grupo con `getNodes().filter(selected)` (el 3er
+  arg de RF no es confiable — según agarres globo o recuadro trae uno solo). `glide(grupo)` una
+  velocidad; `onSettle` → `asentarVarios` (batch, persiste x/y + rama de todos en un `setArbol`).
+  Tras un drag de grupo se deselecciona todo (si no, quedan las toolbars apiladas). 10 asserts +
+  tsc/lint/build verde + verificado en el pane con shim de rAF. **Falta**: commit + push.
+- **B2/B5/B7** (pedidos de Alan 01-09): ventana de contexto adaptativa (medir el gasto de
+  `resumir()` primero — se cruza con T11) · fuente + tamaño de texto · zoom de lupa en hover.
 - **B6 logo** — concepto elegido (02-09: árbol verde + copa de globos de diálogo naranjas/verdes +
   wordmark "3maps" naranja, sin "3" como tronco). **Falta que Alan suba los assets** a `public/`
   (`logo.svg` lockup / `logo-mark.svg` árbol solo / `favicon.svg` + `apple-touch-icon.png`). Ahí:
