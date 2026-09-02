@@ -142,18 +142,18 @@ Sub-tareas:
   por `arbolAVista`). En vivo, persiste. Decisiones B4.
 - **B5** — Settings "fuente" (un puñado de las conocidas) + "tamaño de texto". Toca `globals.css`
   / `layout.tsx` (cargar las fuentes) + `Settings`.
-- **B6** — logo de 3maps + usarlo en la app.
-  - **Logo definido (Alan, 02-09)**: árbol con **tronco/raíces = un "3" verde** y **copa = globos
-    de diálogo naranjas** (algunos verdes). Paleta naranja/ámbar + verde. Concepto = "la
-    conversación es un árbol que ramifica". La imagen que pasó Alan es un mockup (fondo oscuro
-    texturado tipo carbono + wordmark "3maps" + subtítulo "Paleta de Rendimiento Marrón & Naranja"
-    — ese subtítulo NO es tagline, es el generador describiendo su paleta, se ignora).
-  - **Falta el asset en el repo**: subir a `public/` (a) el mark en **transparente** (PNG/SVG),
-    (b) una versión **plana de 1 color** para el favicon (hoy no hay favicon propio) y usos chicos
-    — el logo tiene mucho detalle (gradientes, bevels, sombras) y a 16-32px se va a empastar.
-  - **Usarlo**: favicon (`app/layout.tsx` metadata / `public/favicon`), y fondo del canvas —
-    `<Background>` custom de React Flow o un `<div>` de fondo con el mark en opacidad baja
-    (probablemente solo la silueta del árbol, no la versión full).
+- **B6** — logo de 3maps + usarlo en la app. **Bloqueado hasta que Alan suba los assets buenos.**
+  - **Concepto elegido (Alan, 02-09)**: árbol **verde** de tronco/ramas simples (NO "3" — lo
+    descartó), copa de **globos de diálogo** naranjas/ámbar (algunos verdes), + wordmark "3maps"
+    naranja lowercase debajo. Plano, 3 colores (`#F5A524` ámbar, `#E8590C` naranja quemado,
+    `#57A639` verde). Se iteró en Recraft V4.1 Pro; la última versión (árbol + globos + wordmark,
+    transparente) está OK.
+  - **Falta**: Alan tiene que subir a `public/` los archivos BUENOS — **PNG con transparencia
+    real o SVG** (las capturas `.jpg` que subió tenían el damero quemado, no sirven, se sacaron).
+    Nombres sugeridos: `logo.png` (lockup) · `logo-mark.png` (solo el árbol) · `favicon.png`
+    (cuadrado, recortado ajustado, ~512px) · `apple-touch-icon.png` (180×180).
+  - **Cuando estén**: `<link rel="icon">` en `app/layout.tsx` (metadata `icons`) + fondo del canvas
+    con `logo-mark` en opacidad baja (`<div>` de fondo o `<Background>` custom de React Flow).
 - **B7** — "zoom de lupa": los globos reaccionan al mouse y se agrandan al pasar por encima
   (hover → `transform: scale()` o lente). Setting en la pestaña "Lienzo": `Settings.hoverZoom`
   (on/off). Cuidar: no romper el drag/selección, ni el layout de los vecinos (¿scale desde el
