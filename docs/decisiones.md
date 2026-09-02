@@ -1225,11 +1225,18 @@ Tres bugs de la prueba de Alan en Chrome (02-09).
   `alScrollear` sale temprano si está prendido. Así el scroll propio nunca apaga `pegado`; el
   scroll real del usuario (después del rAF) sí.
 - **B10 — la manija de resize del panel y el scrollbar de la conversación quedaban pegados.** Solo
-  con el panel a la **izquierda**: la manija va en el borde derecho (`right-0 -mr-1.5`) y el
-  scrollbar de `scrollRef` también (borde derecho, LTR). Fix: `scrollRef` gana `mr-4` cuando
-  `side === "left"` → 10px de aire entre el scrollbar y la manija. Con `side === "right"` la manija
-  va a la izquierda (mira al canvas) y no hay conflicto — sin margen.
-  - Verificado (CDP): side-left gap 10px (antes solapaban ~5px); side-right `marginRight: 0`.
+  con el panel a la **izquierda**: la manija va en el borde derecho y el scrollbar de `scrollRef`
+  también (borde derecho, LTR).
+  - **1er intento (mal)**: `scrollRef` con `mr-4` cuando `side === "left"`. Corría el scrollbar 16px
+    adentro y dejaba un hueco vacío entre el scrollbar y el borde — la flecha `›` de nav (`right-3`)
+    quedaba flotando en ese hueco, desconectada ("bugueada", reporte de Alan).
+  - **Fix**: sin margen; la **manija sale entera del panel** cuando `side === "left"`
+    (`left-full ml-1` = 4px afuera del borde) → despejada del scrollbar Y de la flecha `›`. Con
+    `side === "right"` la manija sigue en el borde izquierdo (mira al canvas, sin conflicto,
+    `left-0 -ml-1.5`). La `›` queda igual que con el panel a la derecha (que ya estaba bien).
+  - Verificado (CDP): side-left, manija [panel+3, panel+15] — 4px de aire respecto del scrollbar;
+    la `›` en la misma posición relativa que side-right (solape de ~3px con el scrollbar, igual que
+    side-right); el resize sigue andando (960→1050 al arrastrar).
 
 ---
 

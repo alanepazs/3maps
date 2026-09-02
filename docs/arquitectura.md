@@ -184,8 +184,9 @@ src/
                         (ignora el `scroll` propio → no se planta a mitad del stream; B9, F5-7).
                         Ancho (fase 3.11): si `resizable`, manija en el borde interno (arrastra
                         style.width por DOM, persiste al soltar vía `onResize`). Si no (móvil),
-                        pantalla completa + botón "🗺 Ver mapa" en el header. Con `side="left"` el
-                        `scrollRef` lleva `mr-4` para que el scrollbar no se pegue a la manija (B10).
+                        pantalla completa + botón "🗺 Ver mapa" en el header. Con `side="left"` la
+                        manija sale entera del panel (`left-full ml-1`) para no pisarse con el
+                        scrollbar de la conversación ni con la flecha `›` de nav (B10).
                         Header: "N interc. · ≈ N tokens de contexto" (T10, prop `contextoTokens`
                         calculada en FlowCanvas; F3-20). Cada turno IA: "N → N tok" de
                         `Intercambio.tokensEntrada/Salida` si los tiene (T12, F3-21). `fmtTokens`

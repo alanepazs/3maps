@@ -154,7 +154,9 @@ Fase 5 (moverse entre globos + ramificar al costado, no hacia abajo). Ya está h
   `scrollTop = scrollHeight` propio disparaba `alScrollear` y apagaba `pegado`. `useLayoutEffect` +
   ref `autoScroll` (prende antes del scroll propio, apaga en rAF). Aplicado también al globo.
 - **B10 ✅** (decisiones F5-7) — manija de resize + scrollbar del panel pegados con `side="left"`:
-  `scrollRef` gana `mr-4` en ese lado (10px de aire). `side="right"` sin cambio.
+  la manija sale entera del panel (`left-full ml-1`), despejada del scrollbar y de la flecha `›`.
+  (1er intento con `mr-4` en `scrollRef` dejaba la `›` flotando en un hueco → descartado.)
+  `side="right"` sin cambio.
 - **T15 "doc card"** — tarjeta compacta cuando la respuesta ES un documento; si el núcleo de T15
   no alcanza.
 - **Auto-switch de proveedor** al pegar una key de otro (hoy `avisoFormatoKey` solo avisa).

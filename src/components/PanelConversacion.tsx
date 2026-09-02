@@ -300,8 +300,13 @@ export default function PanelConversacion({
             onPointerDown={onResizeStart}
             onClick={(e) => e.stopPropagation()}
             title="Arrastrá para cambiar el ancho"
+            // Va en el borde que mira al canvas. `side="right"` → borde izquierdo,
+            // straddle (medio adentro / medio afuera). `side="left"` → borde
+            // derecho, pero ahí adentro está el scrollbar de la conversación
+            // (B10) → se saca 4px afuera del panel (`left-full ml-1`) para que
+            // no se pise con el scrollbar ni con la flecha `›` de nav.
             className={`absolute inset-y-0 z-30 w-3 cursor-ew-resize bg-white/5 hover:bg-sky-400/40 ${
-              side === "right" ? "left-0 -ml-1.5" : "right-0 -mr-1.5"
+              side === "right" ? "left-0 -ml-1.5" : "left-full ml-1"
             }`}
           />
         )}
@@ -399,12 +404,7 @@ export default function PanelConversacion({
         <div
           ref={scrollRef}
           onScroll={alScrollear}
-          // Con el panel a la izquierda, la manija de resize va en el borde
-          // derecho — el mismo lado que el scrollbar de la conversación. Se
-          // separan con un margen en ese lado (B10).
-          className={`relative flex-1 space-y-5 overflow-y-auto px-10 py-4 ${
-            side === "left" ? "mr-4" : ""
-          }`}
+          className="relative flex-1 space-y-5 overflow-y-auto px-10 py-4"
         >
           {intercambios.map((ic, i) => (
             <div

@@ -152,8 +152,9 @@ Sub-tareas:
 - **B9 ✅** — el scroll-follow del panel se plantaba a mitad del stream. `useLayoutEffect` + ref
   `autoScroll` (ignora el `scroll` event propio). Aplicado a `PanelConversacion` y `MessageNode`.
   Decisiones F5-7.
-- **B10 ✅** — manija de resize + scrollbar del panel pegados con `side="left"`. `scrollRef` gana
-  `mr-4` en ese lado. Decisiones F5-7.
+- **B10 ✅** — manija de resize + scrollbar del panel pegados con `side="left"`. La manija sale
+  entera del panel (`left-full ml-1`); el 1er intento con `mr-4` en `scrollRef` dejaba la flecha
+  `›` de nav flotando en un hueco (reporte de Alan) → descartado. Decisiones F5-7.
 
 ## Fuera de este plan (más adelante — pre-existentes)
 - Auto-switch de proveedor al pegar una key de otro
