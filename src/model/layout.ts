@@ -1,30 +1,52 @@
-import type { Arbol, Intercambio, Rama } from "./intercambio";
+import type { Arbol, Rama, Tramo } from "./intercambio";
 import {
   buscar,
   cabezaDeTramo,
   calcularTramos,
   hijos,
-  raices,
   tramoDesde,
 } from "./intercambio";
 
 // Auto-layout del árbol a su forma canónica (fase 3.4, botón "Ordenar"):
 //
-//   - Tronco principal (cadena de `rama: "main"` desde la raíz) en VERTICAL.
-//   - Cada rama (`branch-left` / `branch-right`) + su subárbol → en una COLUMNA
-//     al costado (izq / der según su `rama`), con su propio tronco `main`
+//   - Fase 5: **un globo = un TRAMO** (cadena `main`). El layout coloca TRAMOS,
+//     no intercambios sueltos. La `id` de la posición es la de la CABEZA del
+//     tramo (igual que el nodo de React Flow, ver `arbolAVista`).
+//   - Tronco principal (el tramo raíz) en VERTICAL.
+//   - Cada rama que sale de CUALQUIER intercambio del tramo (`branch-left` /
+//     `branch-right`) → columna al costado (izq / der), con su propio tramo
 //     bajando en vertical y sus sub-ramas más al costado todavía.
 //   - Varias ramas del mismo lado se apilan hacia abajo.
 //   - Varias raíces se apilan una debajo de la otra.
 //
 // Función pura: recibe el árbol + cómo medir el alto de cada globo (React Flow
-// mide los nodos → `getNode(id)?.measured?.height`) y devuelve las posiciones
-// nuevas. El caller las escribe al árbol y a los nodos.
+// mide los nodos → `getNode(cabezaId)?.measured?.height`, que ya es el alto del
+// TRAMO entero) y devuelve las posiciones nuevas (por cabeza de tramo). El caller
+// las escribe al árbol y a los nodos.
 
 const ANCHO = 260; // ancho fijo del globo (MessageNode)
 const GAP_X = 140; // separación horizontal entre un globo y su columna de rama
 const GAP_Y = 64; // separación vertical entre globos apilados
-const ALTO_FALLBACK = 130; // si el nodo todavía no fue medido
+const ALTO_FALLBACK = 130; // si el nodo todavía no fue medido (1 intercambio)
+const ALTO_FALLBACK_MSG = 40; // px extra por intercambio del tramo sin medir
+
+// Las ramas (y las 2ª continuaciones `main`) que nacen de CUALQUIER intercambio
+// de `t` y son cabeza de su propio tramo. `orden` = índice del intercambio del
+// que sale, para apilarlas de arriba a abajo como están en el tramo.
+function tramosHijos(
+  a: Arbol,
+  t: Tramo,
+  esCabeza: (id: string) => boolean,
+): { cabezaId: string; rama: Rama; orden: number }[] {
+  const out: { cabezaId: string; rama: Rama; orden: number }[] = [];
+  t.intercambios.forEach((ic, i) => {
+    for (const c of hijos(a, ic.id)) {
+      if (!esCabeza(c.id)) continue; // es la continuación de este mismo tramo
+      out.push({ cabezaId: c.id, rama: c.rama, orden: i });
+    }
+  });
+  return out.sort((p, q) => p.orden - q.orden);
+}
 
 export function calcularLayout(
   a: Arbol,
@@ -32,38 +54,51 @@ export function calcularLayout(
 ): Map<string, { x: number; y: number }> {
   const pos = new Map<string, { x: number; y: number }>();
   const vistos = new Set<string>();
-  const alto = (ic: Intercambio) => alturaDe(ic.id) ?? ALTO_FALLBACK;
+  const tramos = calcularTramos(a);
+  const porCabeza = new Map(tramos.map((t) => [t.cabezaId, t]));
+  const esCabeza = (id: string) => porCabeza.has(id);
+  const alto = (t: Tramo) =>
+    alturaDe(t.cabezaId) ??
+    ALTO_FALLBACK + (t.intercambios.length - 1) * ALTO_FALLBACK_MSG;
 
-  // Coloca `ic` en (x, y) y todo su subárbol. Devuelve el `y` inferior que
-  // ocupó el subárbol (para apilar lo que venga después).
-  function ubicar(ic: Intercambio, x: number, y: number): number {
-    if (vistos.has(ic.id)) return y; // guarda anti-ciclo
-    vistos.add(ic.id);
-    pos.set(ic.id, { x, y });
+  // Coloca el tramo `t` en (x, y) y todos sus tramos hijos. Devuelve el `y`
+  // inferior que ocupó (para apilar lo que venga después).
+  function ubicar(t: Tramo, x: number, y: number): number {
+    if (vistos.has(t.cabezaId)) return y; // guarda anti-ciclo
+    vistos.add(t.cabezaId);
+    pos.set(t.cabezaId, { x, y });
 
-    const hs = hijos(a, ic.id);
-    const izq = hs.filter((h) => h.rama === "branch-left");
-    const der = hs.filter((h) => h.rama === "branch-right");
-    const mains = hs.filter((h) => h.rama === "main");
+    const kids = tramosHijos(a, t, esCabeza);
+    const izq = kids.filter((k) => k.rama === "branch-left");
+    const der = kids.filter((k) => k.rama === "branch-right");
+    // 2ª continuación `main` desde el medio del tramo → otro tronco hacia abajo.
+    const troncos = kids.filter((k) => k.rama === "main");
 
-    let fondo = y + alto(ic);
+    const h = alto(t);
+    let fondo = y + h;
 
-    // Ramas: columnas al costado, alineadas arriba con este globo.
+    // Ramas: columnas al costado, alineadas arriba con este tramo.
     let yIzq = y;
-    for (const b of izq) {
-      yIzq = ubicar(b, x - (ANCHO + GAP_X), yIzq) + GAP_Y;
+    for (const k of izq) {
+      const ct = porCabeza.get(k.cabezaId);
+      if (!ct) continue;
+      yIzq = ubicar(ct, x - (ANCHO + GAP_X), yIzq) + GAP_Y;
       fondo = Math.max(fondo, yIzq - GAP_Y);
     }
     let yDer = y;
-    for (const b of der) {
-      yDer = ubicar(b, x + (ANCHO + GAP_X), yDer) + GAP_Y;
+    for (const k of der) {
+      const ct = porCabeza.get(k.cabezaId);
+      if (!ct) continue;
+      yDer = ubicar(ct, x + (ANCHO + GAP_X), yDer) + GAP_Y;
       fondo = Math.max(fondo, yDer - GAP_Y);
     }
 
-    // Tronco: sigue derecho hacia abajo, debajo del alto real de este globo.
-    let yMain = y + alto(ic) + GAP_Y;
-    for (const m of mains) {
-      yMain = ubicar(m, x, yMain) + GAP_Y;
+    // Tronco: sigue derecho hacia abajo, debajo del alto real de este tramo.
+    let yMain = y + h + GAP_Y;
+    for (const k of troncos) {
+      const ct = porCabeza.get(k.cabezaId);
+      if (!ct) continue;
+      yMain = ubicar(ct, x, yMain) + GAP_Y;
       fondo = Math.max(fondo, yMain - GAP_Y);
     }
 
@@ -71,8 +106,9 @@ export function calcularLayout(
   }
 
   let y = 0;
-  for (const r of raices(a)) {
-    y = ubicar(r, 0, y) + GAP_Y * 2;
+  for (const t of tramos) {
+    if (buscar(a, t.cabezaId)?.padreId != null) continue; // solo tramos raíz
+    y = ubicar(t, 0, y) + GAP_Y * 2;
   }
   return pos;
 }
@@ -219,6 +255,9 @@ export function ubicarNuevoGlobo(
 // posiciones son de otra pantalla. Esto empuja hacia abajo SOLO los que quedaron
 // solapados (respeta la posición manual del resto). No re-acomoda el árbol como
 // "Ordenar" — solo saca el solape. Pura.
+//
+// Fase 5: opera sobre TRAMOS (un globo = un tramo). Las posiciones son por
+// CABEZA de tramo; `medir(cabezaId)` da el rect del tramo entero.
 
 const MARGEN_SOLAPE = 24;
 
@@ -226,12 +265,22 @@ export function resolverSuperposiciones(
   a: Arbol,
   medir: (id: string) => Medida,
 ): Map<string, { x: number; y: number }> | null {
-  if (a.intercambios.length < 2) return null;
-  const raiz = new Set(raices(a).map((r) => r.id));
-  const pos = new Map(
-    a.intercambios.map((i) => [i.id, { x: i.x, y: i.y }] as const),
+  const tramos = calcularTramos(a);
+  if (tramos.length < 2) return null;
+  const raiz = new Set(
+    tramos
+      .filter((t) => buscar(a, t.cabezaId)?.padreId == null)
+      .map((t) => t.cabezaId),
   );
-  const dim = new Map(a.intercambios.map((i) => [i.id, medir(i.id)] as const));
+  const pos = new Map(
+    tramos.map((t) => {
+      const c = t.intercambios[0];
+      return [t.cabezaId, { x: c.x, y: c.y }] as const;
+    }),
+  );
+  const dim = new Map(
+    tramos.map((t) => [t.cabezaId, medir(t.cabezaId)] as const),
+  );
   const M = MARGEN_SOLAPE;
   let cambio = false;
 
