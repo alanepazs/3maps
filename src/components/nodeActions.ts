@@ -2,6 +2,8 @@
 
 import { createContext } from "react";
 
+import type { ColorGlobo } from "@/model/intercambio";
+
 // Acciones sobre un nodo que los nodos custom necesitan llamar hacia arriba
 // (el estado del árbol vive en FlowCanvas). Se pasa por contexto para no tener
 // que meter callbacks dentro de `data` de cada nodo.
@@ -17,6 +19,8 @@ export type NodeActions = {
   openNode: (id: string) => void;
   // Guarda el tamaño manual del globo (va al `.md` → sincroniza). null = auto.
   resizeNode: (id: string, ancho: number | null, alto: number | null) => void;
+  // Color del globo (B1). Va al `.md` de la cabeza → sincroniza. null = sin color.
+  colorNode: (id: string, color: ColorGlobo | null) => void;
   // `true` cuando se ve un árbol compartido: se esconden eliminar / reintentar.
   readOnly: boolean;
   // Crecimiento del globo por mensaje (Fase 5, F5-4). Sin tamaño manual, el alto
@@ -31,6 +35,7 @@ export const NodeActionsContext = createContext<NodeActions>({
   stopNode: () => {},
   openNode: () => {},
   resizeNode: () => {},
+  colorNode: () => {},
   readOnly: false,
   crecimientoPx: 9,
   crecimientoTope: 320,

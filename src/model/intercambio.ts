@@ -32,6 +32,20 @@ export type Proveedor =
   | "huggingface";
 
 export const RAMAS: readonly Rama[] = ["main", "branch-left", "branch-right"];
+
+// Color del globo (B1). Paleta fija de 6 slots + null (sin color). Se guarda por
+// SLUG en el `.md` (`color: ambar`) — legible y estable. El hex para pintar vive
+// en `MessageNode`. Se marca en la esquina del header del globo.
+export const COLORES_GLOBO = [
+  "ambar",
+  "verde",
+  "rojo",
+  "cian",
+  "violeta",
+  "rosa",
+] as const;
+export type ColorGlobo = (typeof COLORES_GLOBO)[number];
+
 export const PROVEEDORES: readonly Proveedor[] = [
   "claude",
   "deepseek",
@@ -56,6 +70,8 @@ export type Intercambio = {
   // `x`/`y` → sincroniza entre dispositivos.
   ancho: number | null;
   alto: number | null;
+  // Color del globo (B1). `null` = sin color. Se toma el de la CABEZA del tramo.
+  color: ColorGlobo | null;
   // null hasta que una IA responde de verdad.
   proveedor: Proveedor | null;
   fecha: string; // ISO
@@ -113,6 +129,7 @@ export function crearIntercambio(campos: {
     y: campos.y,
     ancho: null,
     alto: null,
+    color: null,
     proveedor: campos.proveedor ?? null,
     fecha: campos.fecha ?? new Date().toISOString(),
     pregunta: campos.pregunta,
@@ -292,6 +309,15 @@ export function conRama(a: Arbol, id: string, rama: Rama): Arbol {
   return mapear(a, id, (i) => (i.rama === rama ? i : { ...i, rama }));
 }
 
+// Color del globo (B1). `null` = sin color. Se aplica a la CABEZA del tramo.
+export function conColor(
+  a: Arbol,
+  id: string,
+  color: ColorGlobo | null,
+): Arbol {
+  return mapear(a, id, (i) => (i.color === color ? i : { ...i, color }));
+}
+
 export function conRespuesta(
   a: Arbol,
   id: string,
@@ -382,8 +408,9 @@ export function arbolAVista(a: Arbol): { nodes: Node[]; edges: Edge[] } {
         sinHijos: !conHijos.has(ultimo.id),
         ancho: cabeza.ancho,
         alto: cabeza.alto,
+        color: cabeza.color,
         adjuntosN: t.intercambios.reduce((s, ic) => s + ic.adjuntos.length, 0),
-        rev: `${t.intercambios.map(revIc).join("|")}#${cabeza.ancho}x${cabeza.alto}`,
+        rev: `${t.intercambios.map(revIc).join("|")}#${cabeza.ancho}x${cabeza.alto}x${cabeza.color}`,
       },
     };
   });
@@ -448,6 +475,9 @@ export function toMarkdown(ic: Intercambio): string {
     `y: ${ic.y}`,
     `ancho: ${ic.ancho ?? ""}`,
     `alto: ${ic.alto ?? ""}`,
+    // Color del globo (B1). Slug de la paleta o vacío. `.md` viejo sin la línea
+    // parsea igual (color = null).
+    `color: ${ic.color ?? ""}`,
     // Tokens reportados por el proveedor (T11). Vacío si no los devolvió.
     `tokens_in: ${ic.tokensEntrada ?? ""}`,
     `tokens_out: ${ic.tokensSalida ?? ""}`,
@@ -529,6 +559,9 @@ export function parseMarkdown(
     y: Number(meta.y) || 0,
     ancho: Number(meta.ancho) || null,
     alto: Number(meta.alto) || null,
+    color: (COLORES_GLOBO as readonly string[]).includes(meta.color)
+      ? (meta.color as ColorGlobo)
+      : null,
     tokensEntrada: Number(meta.tokens_in) || null,
     tokensSalida: Number(meta.tokens_out) || null,
     proveedor: (PROVEEDORES as string[]).includes(meta.proveedor)

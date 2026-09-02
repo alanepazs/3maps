@@ -45,8 +45,10 @@ src/
                          caminoRaizA, padre, raices), **tramos (Fase 5): calcularTramos(a) →
                          Tramo[] (agrupa cadenas `main`), tramoDesde(a,cabezaId), cabezaDeTramo(a,
                          id)**, mutaciones (agregar, quitarSubarbol, conPosicion, conRama,
-                         conRespuesta, reparentar), arbolAVista (deriva nodes/edges — 1 nodo = 1
-                         tramo), toMarkdown / parseMarkdown, arbolInicial.
+                         conRespuesta, conColor, reparentar), arbolAVista (deriva nodes/edges — 1
+                         nodo = 1 tramo), toMarkdown / parseMarkdown, arbolInicial. `COLORES_GLOBO`
+                         (6 slugs) + `ColorGlobo` = paleta del color por globo (B1); `Intercambio.color`
+                         en la cabeza del tramo → `.md` (`color:`).
     adjuntos.ts          Archivos adjuntos (T16). tipoDeArchivo(File)→"texto"|"imagen"|"pdf"|null
                          (MIME + extensión), leerArchivo(File,pesoActual)→{ok,adjunto|error}:
                          texto vía FileReader; imagen vía comprimirImagen (canvas, achica a 1568px,
@@ -135,7 +137,9 @@ src/
     FlowCanvas.tsx      ★ El componente central (~500 líneas). Ver detalle abajo.
     MessageNode.tsx     Nodo custom = un TRAMO (Fase 5, decisiones F5-1). `data.intercambios` = la
                         cadena `main`; se renderiza como transcripción scrolleable (overview).
-                        Header "N mensajes" + "📎 N". Alto = `ALTO_BASE_GLOBO(108) + min(n*px, tope)`
+                        Header "N mensajes" + "📎 N" + punto de color en la esquina si `data.color`
+                        (B1; `COLOR_GLOBO_HEX` acá, la fila de swatches va en el `NodeToolbar` →
+                        `colorNode`). Alto = `ALTO_BASE_GLOBO(108) + min(n*px, tope)`
                         (F5-4, `settings.crecimientoPxPorMensaje`/`Tope` vía `NodeActionsContext`);
                         el cuerpo scrollea. Sin "expandir/colapsar" (se sacó F3-1). STOP / "↻
                         Rehacer" → PUNTA (`data.intercambios.at(-1).id`); "🗑 Eliminar" → cabeza
@@ -248,8 +252,9 @@ src/
                         def 9), crecimientoTope (def 320)}. `ALTO_BASE_GLOBO` = 108. DEFAULT_SETTINGS,
                         storage key. Los sliders de crecimiento están en la pestaña "Lienzo" (F5-4).
     nodeActions.ts       NodeActionsContext: deleteNode / retryNode / stopNode / openNode /
-                         resizeNode + readOnly + crecimientoPx / crecimientoTope (F5-4, clampeados
-                         en FlowCanvas). readOnly=true (árbol compartido) esconde Eliminar/Reintentar.
+                         resizeNode / colorNode (B1) + readOnly + crecimientoPx / crecimientoTope
+                         (F5-4, clampeados en FlowCanvas). readOnly=true (árbol compartido) esconde
+                         Eliminar/Reintentar y los swatches de color.
     inertia.ts           Física compartida del "envión": constantes + sampleVelocity / launchVelocity / runGlide.
     useNodeInertia.ts    Hook: envión al soltar un globo o una selección.
     usePanInertia.ts     Hook: envión al soltar el pan del lienzo.
@@ -448,8 +453,9 @@ Props de `<ReactFlow>` que importan:
 ## MessageNode.tsx
 
 `data` (Fase 5): `{ intercambios: Intercambio[], n, pregunta, respuesta, pending?, error?, isRoot?,
-sinHijos?, ancho, alto, adjuntosN, rev }`. `intercambios` = el tramo entero; `rev` = firma corta
-(los demás lo derivan). `datosIguales` en `FlowCanvas` ignora `intercambios` y compara por `rev`.
+sinHijos?, ancho, alto, color, adjuntosN, rev }` (todos de la CABEZA). `intercambios` = el tramo
+entero; `rev` = firma corta (incluye `ancho`x`alto`x`color`; los demás lo derivan). `datosIguales`
+en `FlowCanvas` ignora `intercambios` y compara por `rev`.
 `adjuntosN` = suma del tramo → badge "📎 N".
 - Ancho por defecto 260px. Alto = `ALTO_BASE_GLOBO(108) + min(n*crecimientoPx, crecimientoTope)`
   (F5-4) salvo tamaño manual (manija ◢, F3-8, en `data.ancho/alto` de la CABEZA → `.md`).
@@ -466,9 +472,10 @@ sinHijos?, ancho, alto, adjuntosN, rev }`. `intercambios` = el tramo entero; `re
 
 ## model/intercambio.ts (modelo de datos)
 
-`Intercambio` = `{ id, padreId, rama, x, y, ancho, alto, tokensEntrada, tokensSalida, adjuntos,
-proveedor, fecha, pregunta, respuesta, pending, error }` (`ancho`/`alto` = null → auto; tamaño
-manual del globo, F3-8. `tokensEntrada`/`tokensSalida` = null si el proveedor no dio `usage`; T11,
+`Intercambio` = `{ id, padreId, rama, x, y, ancho, alto, color, tokensEntrada, tokensSalida,
+adjuntos, proveedor, fecha, pregunta, respuesta, pending, error }` (`ancho`/`alto` = null → auto;
+tamaño manual del globo, F3-8. `color: ColorGlobo | null` = color del globo, se toma el de la
+CABEZA del tramo; B1. `tokensEntrada`/`tokensSalida` = null si el proveedor no dio `usage`; T11,
 F3-19. `adjuntos: Adjunto[]` = archivos de la pregunta, `[]` = ninguno; T16, F3-22).
 `Adjunto` = `{ nombre, tipo: "texto"|"imagen"|"pdf", mime, contenido }`.
 `Arbol` = `{ intercambios: Intercambio[] }`. Coincide con el frontmatter del `.md` (spec §3).
@@ -483,8 +490,9 @@ F3-19. `adjuntos: Adjunto[]` = archivos de la pregunta, `[]` = ninguno; T16, F3-
   `## Pregunta` / `## Respuesta`. `padre_id` / `proveedor` vacíos → `null`. `pendiente: 1` (una
   llamada a medias) → al parsear se convierte en un `error` reintentable (`pending` nunca se
   restaura como tal). `tokens_in` / `tokens_out` (T11): tokens del proveedor, vacío → `null`;
-  un `.md` viejo sin esas líneas parsea igual. `adjuntos:` (T16) = JSON en 1 línea; JSON roto o
-  item inválido → `[]` (`parseAdjuntos`).
+  un `.md` viejo sin esas líneas parsea igual. `color:` (B1) = slug de la paleta; desconocido o
+  línea ausente → `null`. `adjuntos:` (T16) = JSON en 1 línea; JSON roto o item inválido → `[]`
+  (`parseAdjuntos`).
 
 ## model/contexto.ts (armado del contexto para la IA)
 

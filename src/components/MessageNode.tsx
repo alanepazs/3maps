@@ -22,7 +22,24 @@ import LimiteError from "./LimiteError";
 import Markdown from "./Markdown";
 import { NodeActionsContext } from "./nodeActions";
 import { ALTO_BASE_GLOBO } from "./settings";
-import type { Intercambio } from "@/model/intercambio";
+import {
+  COLORES_GLOBO,
+  type ColorGlobo,
+  type Intercambio,
+} from "@/model/intercambio";
+
+// Hex de cada slot de la paleta del globo (B1). Los slugs viven en el modelo
+// (`.md`); el color concreto es presentación → acá.
+const COLOR_GLOBO_HEX: Record<ColorGlobo, string> = {
+  ambar: "#f59e0b",
+  verde: "#22c55e",
+  rojo: "#ef4444",
+  cian: "#06b6d4",
+  violeta: "#a855f7",
+  rosa: "#ec4899",
+};
+const esColorGlobo = (v: unknown): v is ColorGlobo =>
+  typeof v === "string" && (COLORES_GLOBO as readonly string[]).includes(v);
 
 // Límites y default del redimensionado manual (px, coords del lienzo).
 type Tamano = { w: number; h: number };
@@ -133,6 +150,7 @@ export default function MessageNode({
   const adjuntosN = typeof data.adjuntosN === "number" ? data.adjuntosN : 0;
   const rev = String(data.rev ?? "");
   const pending = Boolean(ultimo?.pending); // la punta del tramo está streameando
+  const color: ColorGlobo | null = esColorGlobo(data.color) ? data.color : null;
 
   const {
     deleteNode,
@@ -140,6 +158,7 @@ export default function MessageNode({
     stopNode,
     openNode,
     resizeNode,
+    colorNode,
     readOnly,
     crecimientoPx,
     crecimientoTope,
@@ -271,42 +290,74 @@ export default function MessageNode({
       </NodeToolbar>
 
       <NodeToolbar isVisible={selected} position={Position.Top} align="end">
-        <div className="flex gap-1.5">
-          <button
-            type="button"
-            onClick={() => openNode(id)}
-            className="rounded border border-white/20 bg-neutral-900 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
-          >
-            ⤢ Abrir
-          </button>
+        <div className="flex flex-col items-end gap-1.5">
+          <div className="flex gap-1.5">
+            <button
+              type="button"
+              onClick={() => openNode(id)}
+              className="rounded border border-white/20 bg-neutral-900 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
+            >
+              ⤢ Abrir
+            </button>
+            {!readOnly && (
+              <button
+                type="button"
+                onClick={() => retryNode(puntaId)}
+                className="rounded border border-white/20 bg-neutral-900 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
+                title="Volver a pedir la última respuesta"
+              >
+                ↻ Rehacer
+              </button>
+            )}
+            {tamano && (
+              <button
+                type="button"
+                onClick={resetTamano}
+                className="rounded border border-white/20 bg-neutral-900 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
+                title="Volver al tamaño automático"
+              >
+                ↔ Auto
+              </button>
+            )}
+            {!readOnly && (!isRoot || sinHijos) && (
+              <button
+                type="button"
+                onClick={() => deleteNode(id)}
+                className="rounded border border-red-400/40 bg-neutral-900 px-2 py-1 text-xs text-red-300 hover:bg-red-500/20"
+              >
+                🗑 Eliminar
+              </button>
+            )}
+          </div>
+          {/* Paleta de color del globo (B1). Click en el color actual lo saca. */}
           {!readOnly && (
-            <button
-              type="button"
-              onClick={() => retryNode(puntaId)}
-              className="rounded border border-white/20 bg-neutral-900 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
-              title="Volver a pedir la última respuesta"
-            >
-              ↻ Rehacer
-            </button>
-          )}
-          {tamano && (
-            <button
-              type="button"
-              onClick={resetTamano}
-              className="rounded border border-white/20 bg-neutral-900 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
-              title="Volver al tamaño automático"
-            >
-              ↔ Auto
-            </button>
-          )}
-          {!readOnly && (!isRoot || sinHijos) && (
-            <button
-              type="button"
-              onClick={() => deleteNode(id)}
-              className="rounded border border-red-400/40 bg-neutral-900 px-2 py-1 text-xs text-red-300 hover:bg-red-500/20"
-            >
-              🗑 Eliminar
-            </button>
+            <div className="flex items-center gap-1 rounded border border-white/20 bg-neutral-900 px-1.5 py-1">
+              {COLORES_GLOBO.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => colorNode(id, color === c ? null : c)}
+                  title={color === c ? "Sacar el color" : `Marcar de ${c}`}
+                  aria-label={`Color ${c}`}
+                  aria-pressed={color === c}
+                  className={`h-3.5 w-3.5 rounded-full transition-transform ${
+                    color === c
+                      ? "ring-2 ring-white ring-offset-1 ring-offset-neutral-900"
+                      : "hover:scale-110"
+                  }`}
+                  style={{ backgroundColor: COLOR_GLOBO_HEX[c] }}
+                />
+              ))}
+              <button
+                type="button"
+                onClick={() => colorNode(id, null)}
+                title="Sin color"
+                aria-label="Sin color"
+                className="ml-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border border-white/25 text-[9px] leading-none text-white/45 hover:text-white/90"
+              >
+                ✕
+              </button>
+            </div>
           )}
         </div>
       </NodeToolbar>
@@ -353,6 +404,14 @@ export default function MessageNode({
           <span>
             {n} {n === 1 ? "mensaje" : "mensajes"}
           </span>
+          {/* Color del globo (B1): punto en la esquina sup-derecha del header. */}
+          {color && (
+            <span
+              aria-hidden
+              className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full ring-1 ring-black/40"
+              style={{ backgroundColor: COLOR_GLOBO_HEX[color] }}
+            />
+          )}
         </div>
 
         <div

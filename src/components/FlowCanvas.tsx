@@ -46,6 +46,7 @@ import {
   buscar,
   cabezaDeTramo,
   caminoRaizA,
+  conColor,
   conError,
   conPosicion,
   conRama,
@@ -60,6 +61,7 @@ import {
   tramoDesde,
   type Adjunto,
   type Arbol,
+  type ColorGlobo,
   type Intercambio,
   type Proveedor,
   type Rama,
@@ -419,6 +421,7 @@ function Flow() {
           i.error,
           i.ancho,
           i.alto,
+          i.color,
         ]),
       ),
     [arbol],
@@ -1020,6 +1023,11 @@ function Flow() {
     },
     [],
   );
+
+  const colorNode = useCallback((id: string, color: ColorGlobo | null) => {
+    // `id` es la cabeza del tramo (= id del nodo). El color vive ahí.
+    setArbol((a) => conColor(a, id, color));
+  }, []);
   const transcripcion = useMemo(
     () => (transcriptNodeId ? caminoRaizA(arbol, transcriptNodeId) : null),
     [arbol, transcriptNodeId],
@@ -1119,6 +1127,7 @@ function Flow() {
       stopNode,
       openNode,
       resizeNode,
+      colorNode,
       readOnly,
       crecimientoPx,
       crecimientoTope,
@@ -1129,6 +1138,7 @@ function Flow() {
       stopNode,
       openNode,
       resizeNode,
+      colorNode,
       readOnly,
       crecimientoPx,
       crecimientoTope,

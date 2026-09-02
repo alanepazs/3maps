@@ -69,8 +69,9 @@ freelance. Repo público: https://github.com/alanepazs/3maps
 
 ### Modelo de datos
 - **El intercambio (una pregunta + su respuesta) es la unidad de DATOS.** Cada uno es un `.md`
-  con frontmatter (`id`, `padre_id`, `rama`, `x`, `y`, `proveedor`, `fecha`, `tokens_in/out`,
-  `adjuntos`) + secciones `## Pregunta` / `## Respuesta`. Una carpeta = un árbol. El `padre_id`
+  con frontmatter (`id`, `padre_id`, `rama`, `x`, `y`, `ancho`, `alto`, `color`, `proveedor`,
+  `fecha`, `tokens_in/out`, `adjuntos`) + secciones `## Pregunta` / `## Respuesta`. Una carpeta =
+  un árbol. El `padre_id`
   define las flechas. Exportar = `.zip` de la carpeta.
 - **Un globo (nodo del canvas) = un TRAMO: una cadena maximal de intercambios unidos por
   `rama: "main"`** (Fase 5, decisiones F5-1). Enter agrega al mismo tramo; un globo nuevo se crea

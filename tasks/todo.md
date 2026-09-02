@@ -127,8 +127,10 @@ Sub-tareas:
       Falta que Alan confirme B9 (scroll-follow) en Chrome con key real.
 
 ## Fuera de este plan (más adelante — pedidos de Alan 01-09)
-- **B1** — color por globo: marcar la esquina sup-derecha del título con un color a elección.
-  Va al `.md` (`Intercambio.color`), se elige desde el `NodeToolbar`.
+- **B1 ✅** — color por globo. Paleta fija de 6 (`ambar/verde/rojo/cian/violeta/rosa`) + sin color,
+  no hex. `Intercambio.color` en la cabeza del tramo → `.md` (`color:`) → sync/compartir gratis.
+  Punto en la esquina del header + fila de swatches en el `NodeToolbar`. `conColor` / `colorNode`.
+  12 asserts + e2e. Decisiones B1.
 - **B2** — optimizar la ventana de contexto a medida que el mapa crece (resumen más agresivo,
   ventana adaptativa). ❓ **Pregunta pendiente**: ¿es mucho el gasto de tokens que hace el
   `resumir()` con keys gratuitas? Medir antes de tocar.

@@ -1238,6 +1238,29 @@ Tres bugs de la prueba de Alan en Chrome (02-09).
     la `›` en la misma posición relativa que side-right (solape de ~3px con el scrollbar, igual que
     side-right); el resize sigue andando (960→1050 al arrastrar).
 
+### B1. Color por globo
+
+- **Paleta FIJA de 6 slots** (`ambar`, `verde`, `rojo`, `cian`, `violeta`, `rosa`) + `null`, NO hex
+  libre — el `.md` queda legible (`color: ambar`) y los colores consistentes. Se descartó `azul`
+  para no chocar con el `ring-sky-400` de la selección. `COLORES_GLOBO` (slugs) + `ColorGlobo`
+  viven en `intercambio.ts`; el hex (`COLOR_GLOBO_HEX`) en `MessageNode` (presentación).
+- **Vive en la CABEZA del tramo** (como `ancho`/`alto`, F5-1). `Intercambio.color: ColorGlobo |
+  null`. `conColor(a, id, color)` (mutación pura). `.md` frontmatter: línea `color:` (vacía = null);
+  `parseMarkdown` valida contra la lista → desconocido / línea ausente = `null` (compat con `.md`
+  viejos y árboles compartidos previos).
+- **Sync / compartir: gratis** — el color va en el `.md`, no hubo que tocar `sync.ts` ni
+  `compartir.ts`.
+- `arbolAVista`: `data.color` de la cabeza + se sumó a `data.rev` (`…x${cabeza.color}`) y a la
+  `firma` de `FlowCanvas` → cambiar el color re-deriva la vista y re-renderiza el nodo. (Cuesta un
+  re-parse del markdown del tramo por click de color — acción deliberada, no per-frame, aceptable.)
+- **UI**: punto de color en la esquina sup-derecha del header del globo (visible siempre, también
+  en modo compartido). Fila de 6 swatches + "✕ sin color" en el `NodeToolbar` (2ª fila, bajo
+  Abrir/Rehacer/Eliminar; solo `!readOnly`). Click en el color activo → lo saca.
+- `nodeActions.ts` gana `colorNode(id, color)`; `FlowCanvas` lo cablea (`id` = cabeza del nodo).
+- Verificado: 12 asserts en `_scratch.mts` (round-trip `.md`, compat `.md` viejo, color inválido →
+  null, `rev` cambia, no-cabeza no afecta) + e2e en el pane (swatch aplica → punto en el header +
+  `color: rojo` en el `.md`; toggle-off; ✕; persiste tras reload).
+
 ---
 
 ## Build / deploy
