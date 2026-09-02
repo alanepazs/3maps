@@ -145,6 +145,9 @@ src/
                         recorta (`relative text-sm`); la tarjeta visible es un hijo `absolute
                         inset-0` con `overflow-hidden rounded-md border`; la manija ◢ cuelga fuera
                         de ese recorte, `-bottom-1 -right-1` (F5-4c).
+                        La transcripción sale a `CuerpoTramo` (`memo` por `rev`/`readOnly`) → mover
+                        el globo no re-parsea el markdown (B8, decisiones F5-7). Auto-scroll del
+                        stream con `useLayoutEffect` + ref `autoScroll` (B9).
     gestos.ts           `tragarClickSintetico()` — tras soltar un resize, traga el `click` sintético
                         SOLO si su `target` es `.react-flow__pane` o `[data-cierra-al-click]` (el
                         backdrop del panel) — deselección / cierre no deseados. Un click sobre
@@ -164,7 +167,9 @@ src/
                         Código/tablas con scroll horizontal propio; links target=_blank.
                         Prop `conCopiar` (la pasa el panel, NO el globo): botón "⧉" por bloque de
                         código que copia ese bloque en crudo (T15, F3-23).
-                        Decisiones F3-12, F3-14, F3-23.
+                        `export default memo(Markdown)` + `useMemo` del texto — mismo `children`
+                        string no se re-parsea (B8, decisiones F5-7).
+                        Decisiones F3-12, F3-14, F3-23, F5-7.
     LimiteError.tsx     Error boundary de clase genérico (`fallback` + `resetKey`). Aísla un crash
                         de render: en `Markdown.tsx` y en el cuerpo de cada `MessageNode`. Un globo
                         roto muestra el fallback, el resto de la app sigue viva. F3-14.
@@ -175,10 +180,12 @@ src/
                         lado (izq/der) → `settings.transcriptSide`. Si recibe `onSubmit` (no en
                         modo compartido): mini-composer al pie que crea un hijo del globo abierto
                         y mueve el panel a ese hijo (fase 3.9; Enter continúa / Ctrl+Enter ramifica,
-                        fase 3.12). Auto-scroll al último.
+                        fase 3.12). Auto-scroll al último con `useLayoutEffect` + ref `autoScroll`
+                        (ignora el `scroll` propio → no se planta a mitad del stream; B9, F5-7).
                         Ancho (fase 3.11): si `resizable`, manija en el borde interno (arrastra
                         style.width por DOM, persiste al soltar vía `onResize`). Si no (móvil),
-                        pantalla completa + botón "🗺 Ver mapa" en el header.
+                        pantalla completa + botón "🗺 Ver mapa" en el header. Con `side="left"` el
+                        `scrollRef` lleva `mr-4` para que el scrollbar no se pegue a la manija (B10).
                         Header: "N interc. · ≈ N tokens de contexto" (T10, prop `contextoTokens`
                         calculada en FlowCanvas; F3-20). Cada turno IA: "N → N tok" de
                         `Intercambio.tokensEntrada/Salida` si los tiene (T12, F3-21). `fmtTokens`
@@ -445,10 +452,12 @@ sinHijos?, ancho, alto, adjuntosN, rev }`. `intercambios` = el tramo entero; `re
 `adjuntosN` = suma del tramo → badge "📎 N".
 - Ancho por defecto 260px. Alto = `ALTO_BASE_GLOBO(108) + min(n*crecimientoPx, crecimientoTope)`
   (F5-4) salvo tamaño manual (manija ◢, F3-8, en `data.ancho/alto` de la CABEZA → `.md`).
-- Cuerpo (Fase 5): `data.intercambios.map(...)` — cada uno "pregunta (negrita) + respuesta
-  (`<Markdown>`)"; `pending` → texto parcial + ▍; `error` → recuadro rojo. **Scrolleable siempre**
-  (`flex-1 overflow-y-auto`); auto-scroll al fondo mientras la punta streamea. STOP/Rehacer →
-  punta; Eliminar → cabeza.
+- Cuerpo (Fase 5): `<CuerpoTramo>` (componente `memo` local, compare `rev === rev && readOnly ===
+  readOnly`) — `intercambios.map(...)`, cada uno "pregunta (negrita) + respuesta (`<Markdown>`)";
+  `pending` → texto parcial + ▍; `error` → recuadro rojo. **Scrolleable siempre** (`flex-1
+  overflow-y-auto`). El `memo` = mover el globo / zoom / seleccionar NO re-parsea el markdown del
+  tramo (B8, decisiones F5-7). Auto-scroll al fondo mientras la punta streamea (`useLayoutEffect`
+  + ref `autoScroll`, B9). STOP/Rehacer → punta; Eliminar → cabeza.
 - Handles: `target` arriba (el raíz NO lo tiene) · `source id="main"` abajo ·
   `source id="branch-right"` derecha · `source id="branch-left"` izquierda (= los valores de `rama`).
 - `<NodeToolbar>` cuando `selected`: "⤢ Abrir" · "↻ Rehacer" (`retryNode(punta)`) si `!readOnly` ·

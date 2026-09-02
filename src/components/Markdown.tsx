@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useMemo, useState } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
@@ -246,7 +246,12 @@ const preConCopiar: Components["pre"] = ({ children, node }) => {
   );
 };
 
-export default function Markdown({
+// `memo` + `useMemo`: react-markdown (remark parse, rehype-raw, sanitize, katex)
+// es lo caro del render de un globo/panel. Con `data.rev` estable (mover el globo,
+// re-render por zoom, etc.) el string `children` no cambia → no se re-parsea (B8:
+// arrastrar un globo iba a ~5 fps porque re-parseaba TODA la transcripción del
+// tramo por frame).
+function Markdown({
   children,
   conCopiar = false,
 }: {
@@ -254,10 +259,14 @@ export default function Markdown({
   // Botón "copiar" en cada bloque de código (T15). Lo activa el panel, no el globo.
   conCopiar?: boolean;
 }) {
-  const texto = normalizarMath(sanitizarCrudo(children));
-  const comps = conCopiar
-    ? { ...components, pre: preConCopiar }
-    : components;
+  const texto = useMemo(
+    () => normalizarMath(sanitizarCrudo(children)),
+    [children],
+  );
+  const comps = useMemo(
+    () => (conCopiar ? { ...components, pre: preConCopiar } : components),
+    [conCopiar],
+  );
   return (
     <div className="katex-compacto break-words text-left [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
       <LimiteError
@@ -279,3 +288,5 @@ export default function Markdown({
     </div>
   );
 }
+
+export default memo(Markdown);

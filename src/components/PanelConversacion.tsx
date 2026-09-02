@@ -2,6 +2,7 @@
 
 import {
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type ClipboardEvent as ReactClipboardEvent,
@@ -177,15 +178,25 @@ export default function PanelConversacion({
   // usuario scrollee hacia arriba a leer (`pegado` = false); vuelve a seguir si
   // baja. Se re-pega al abrir / navegar / mandar (cambia `ultimo?.id`).
   const pegado = useRef(true);
+  // El scroll que hacemos nosotros dispara un `scroll` event → `alScrollear`
+  // veía "no está en el fondo" (el markdown recién crecido, aún sin reflow) y
+  // apagaba `pegado` a mitad del stream (B9). Marca los scrolls propios.
+  const autoScroll = useRef(false);
   useEffect(() => {
     pegado.current = true;
   }, [ultimo?.id]);
-  useEffect(() => {
-    if (!streameando) return;
+  useLayoutEffect(() => {
+    if (!streameando || !pegado.current) return;
     const cont = scrollRef.current;
-    if (cont && pegado.current) cont.scrollTop = cont.scrollHeight;
+    if (!cont) return;
+    autoScroll.current = true;
+    cont.scrollTop = cont.scrollHeight;
+    requestAnimationFrame(() => {
+      autoScroll.current = false;
+    });
   }, [ultimo?.respuesta, streameando]);
   const alScrollear = () => {
+    if (autoScroll.current) return;
     const c = scrollRef.current;
     if (c) pegado.current = c.scrollHeight - c.scrollTop - c.clientHeight < 60;
   };
@@ -388,7 +399,12 @@ export default function PanelConversacion({
         <div
           ref={scrollRef}
           onScroll={alScrollear}
-          className="relative flex-1 space-y-5 overflow-y-auto px-10 py-4"
+          // Con el panel a la izquierda, la manija de resize va en el borde
+          // derecho — el mismo lado que el scrollbar de la conversación. Se
+          // separan con un margen en ese lado (B10).
+          className={`relative flex-1 space-y-5 overflow-y-auto px-10 py-4 ${
+            side === "left" ? "mr-4" : ""
+          }`}
         >
           {intercambios.map((ic, i) => (
             <div

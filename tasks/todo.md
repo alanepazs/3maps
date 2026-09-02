@@ -122,12 +122,9 @@ Sub-tareas:
 - [x] Enter 10-11× → **1 globo** · ramificar desde el medio · "▤ Ordenar" no solapa · Copiar/Guardar
       por respuesta · el `⌄` de un click · cursor de resize
 - [ ] "mapa viejo se agrupa en 1 tramo" — no gatillado (caso interno)
-- [ ] push (deploy a Pages) — cuando Alan diga
-
-Backlog abierto de Fase 5 (ver "Fuera de este plan"):
-- **B8** — arrastrar un globo va a ~5 fps (`MessageNode` re-parsea todo el markdown del tramo por frame).
-- **B9** — el scroll-follow del **panel** se queda por la mitad al streamear (los globos siguen bien).
-- **B10** — la manija de resize del panel y el scrollbar de la conversación quedan pegados (side izq).
+- [x] push (deploy a Pages) — hecho (`7079332..d1ff407`, run OK)
+- [x] B8 / B9 / B10 (bugs de la prueba) arreglados — ver "Fuera de este plan" + decisiones F5-7.
+      Falta que Alan confirme B9 (scroll-follow) en Chrome con key real.
 
 ## Fuera de este plan (más adelante — pedidos de Alan 01-09)
 - **B1** — color por globo: marcar la esquina sup-derecha del título con un color a elección.
@@ -149,19 +146,14 @@ Backlog abierto de Fase 5 (ver "Fuera de este plan"):
   (hover → `transform: scale()` o lente). Setting en la pestaña "Lienzo": `Settings.hoverZoom`
   (on/off). Cuidar: no romper el drag/selección, ni el layout de los vecinos (¿scale desde el
   centro? ¿z-index alto en hover?).
-- **B8** — perf: arrastrar un globo va a ~5 fps desde Fase 5 (Alan 02-09). El `MessageNode`
-  re-renderiza toda la transcripción del tramo (`intercambios.map(<Markdown>)`) en cada frame del
-  drag → react-markdown re-parsea todo. Fix: `React.memo` del cuerpo (o `useMemo` keyed por
-  `data.rev`) para que mover el globo no re-parsee el markdown. `nodeActions` ya está memoizado.
-- **B9** — el scroll-follow del **panel** (`PanelConversacion`) se planta a mitad de la respuesta
-  mientras streamea, largo o corto. Solo el panel; los globos siguen bien (Alan 02-09). Hipótesis:
-  `scrollTop = scrollHeight` corre antes de que crezca el markdown → el `scroll` event propio
-  dispara `alScrollear` → ve diff > 60 → apaga `pegado`. Fix: flag para ignorar scroll propio, o
-  apagar `pegado` solo ante wheel/touch de usuario, o re-scrollear en rAF.
-- **B10** — la manija de resize del panel y el scrollbar de la conversación quedan pegados cuando
-  el panel está a la **izquierda** (`side="left"`: la manija va en `right-0 -mr-1.5` y el scrollbar
-  de `scrollRef` también en el borde derecho). Separarlos: `scrollbar-gutter: stable` + padding, o
-  correr la manija.
+- **B8 ✅** — arrastrar un globo iba a ~5 fps. `Markdown` = `memo` + `useMemo`; la transcripción
+  del `MessageNode` sale a `CuerpoTramo` (`memo` por `rev`/`readOnly`). 0 mutaciones DOM en
+  zoom+drag. Decisiones F5-7.
+- **B9 ✅** — el scroll-follow del panel se plantaba a mitad del stream. `useLayoutEffect` + ref
+  `autoScroll` (ignora el `scroll` event propio). Aplicado a `PanelConversacion` y `MessageNode`.
+  Decisiones F5-7.
+- **B10 ✅** — manija de resize + scrollbar del panel pegados con `side="left"`. `scrollRef` gana
+  `mr-4` en ese lado. Decisiones F5-7.
 
 ## Fuera de este plan (más adelante — pre-existentes)
 - Auto-switch de proveedor al pegar una key de otro

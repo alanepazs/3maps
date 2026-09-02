@@ -1200,6 +1200,37 @@ tramo de N mensajes en N slots (y solo la cabeza tiene nodo).
   cabeza en (0,0), rama-right en (400,0), rama-left en (-400,0); persiste al `.md` solo las
   cabezas).
 
+### F5-7. B8/B9/B10 — perf del drag, scroll-follow del panel, manija vs scrollbar
+
+Tres bugs de la prueba de Alan en Chrome (02-09).
+
+- **B8 — arrastrar un globo iba a ~5 fps.** React Flow re-renderiza el nodo arrastrado en cada
+  frame (posición / `dragging`); `MessageNode` re-corría `intercambios.map(<Markdown>)` →
+  **react-markdown re-parseaba TODA la transcripción del tramo por frame** (remark + rehype-raw +
+  sanitize + katex). Fix en dos capas:
+  1. `Markdown` = `memo(Markdown)` + `useMemo` del texto normalizado. Mismo `children` string →
+     no se re-parsea. Sirve para globo Y panel.
+  2. `MessageNode`: la transcripción sale a `CuerpoTramo`, `memo` con compare `(a,b) =>
+     a.rev === b.rev && a.readOnly === b.readOnly`. `rev` (`data.rev`) es la firma corta del tramo
+     (id + largo de cada respuesta + pending/error + nº adjuntos) — estable = mismo contenido. Un
+     drag / zoom / cambio de selección no toca `rev` → `CuerpoTramo` no se renderiza. `onRehacer`
+     va como `useCallback([retryNode, puntaId])` (estable mientras `rev` no cambie).
+  - Verificado (CDP): 0 mutaciones de DOM en el cuerpo del globo durante 5 wheel de zoom + un drag.
+- **B9 — el scroll-follow del PANEL se plantaba a mitad del stream** (los globos seguían bien).
+  El `cont.scrollTop = cont.scrollHeight` que hacemos nosotros dispara un `scroll` event →
+  `alScrollear` corría antes del reflow del markdown recién crecido, veía `diff > 60` y apagaba
+  `pegado`. Fix (en `PanelConversacion` y `MessageNode`, misma forma): (a) `useLayoutEffect` en vez
+  de `useEffect` para scrollear después del mutate del DOM y antes del paint (sin frame de atraso);
+  (b) `autoScroll` ref — se prende antes del scroll propio, se apaga en `requestAnimationFrame`;
+  `alScrollear` sale temprano si está prendido. Así el scroll propio nunca apaga `pegado`; el
+  scroll real del usuario (después del rAF) sí.
+- **B10 — la manija de resize del panel y el scrollbar de la conversación quedaban pegados.** Solo
+  con el panel a la **izquierda**: la manija va en el borde derecho (`right-0 -mr-1.5`) y el
+  scrollbar de `scrollRef` también (borde derecho, LTR). Fix: `scrollRef` gana `mr-4` cuando
+  `side === "left"` → 10px de aire entre el scrollbar y la manija. Con `side === "right"` la manija
+  va a la izquierda (mira al canvas) y no hay conflicto — sin margen.
+  - Verificado (CDP): side-left gap 10px (antes solapaban ~5px); side-right `marginRight: 0`.
+
 ---
 
 ## Build / deploy

@@ -147,24 +147,14 @@ Fase 5 (moverse entre globos + ramificar al costado, no hacia abajo). Ya está h
 - **B1-B7** (pedidos de Alan 01-09): color por globo · ventana de contexto adaptativa (medir el
   gasto de `resumir()` primero — se cruza con T11) · multi-select move + envión · grosor de líneas
   · fuente + tamaño de texto · logo de fondo · zoom de lupa en hover.
-- **B8 — perf: arrastrar un globo va lageado (~5 fps) desde Fase 5** (Alan 02-09). Hipótesis:
-  `MessageNode` renderiza `data.intercambios.map(ic => <Markdown>{ic.respuesta}</Markdown>)` y
-  React Flow re-renderiza el nodo arrastrado en cada frame (`dragging`/posición) → react-markdown
-  re-parsea TODA la transcripción del tramo por frame. Fix probable: `React.memo` del cuerpo de la
-  transcripción (o `useMemo` keyed por `data.rev`) para que mover el globo no re-parsee el markdown;
-  o render liviano en el globo y markdown completo solo en el panel. `nodeActions` ya está memoizado
-  (no es eso).
-- **B9 — el scroll-follow del PANEL se queda por la mitad** (Alan 02-09). Al streamear en
-  `PanelConversacion` el follow arranca pero a veces se planta a mitad de la respuesta, largo o
-  corto. **Solo el panel** (los globos siguen bien). Hipótesis: `scrollTop = scrollHeight` se
-  setea sobre el `scrollHeight` viejo (antes de que el markdown crezca) → dispara el `scroll`
-  event → `alScrollear` ve que ya no está pegado al fondo (diff > 60) → apaga `pegado`. Fix:
-  ignorar los `scroll` events propios (flag), o solo apagar `pegado` ante scroll de usuario real
-  (wheel/touch), o re-scrollear en rAF tras el layout.
-- **B10 — la manija de resize del panel y el scrollbar de la conversación quedan pegados** (Alan
-  02-09, con `side` = izquierda: la manija va en el borde interno derecho, y el scrollbar de
-  `scrollRef` también). Separarlos: `scrollbar-gutter` o padding en el lado de la manija, o mover
-  la manija.
+- **B8 ✅** (decisiones F5-7) — arrastrar un globo iba a ~5 fps: `MessageNode` re-parseaba toda la
+  transcripción del tramo por frame del drag. `Markdown` = `memo` + `useMemo` del texto; la
+  transcripción sale a `CuerpoTramo` (`memo` por `rev`/`readOnly`). 0 mutaciones de DOM en zoom+drag.
+- **B9 ✅** (decisiones F5-7) — el scroll-follow del panel se plantaba a mitad del stream: el
+  `scrollTop = scrollHeight` propio disparaba `alScrollear` y apagaba `pegado`. `useLayoutEffect` +
+  ref `autoScroll` (prende antes del scroll propio, apaga en rAF). Aplicado también al globo.
+- **B10 ✅** (decisiones F5-7) — manija de resize + scrollbar del panel pegados con `side="left"`:
+  `scrollRef` gana `mr-4` en ese lado (10px de aire). `side="right"` sin cambio.
 - **T15 "doc card"** — tarjeta compacta cuando la respuesta ES un documento; si el núcleo de T15
   no alcanza.
 - **Auto-switch de proveedor** al pegar una key de otro (hoy `avisoFormatoKey` solo avisa).

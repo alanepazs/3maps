@@ -1,7 +1,9 @@
 import {
+  memo,
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type PointerEvent as ReactPointerEvent,
@@ -27,6 +29,79 @@ type Tamano = { w: number; h: number };
 const TAMANO_MIN: Tamano = { w: 200, h: 80 };
 const TAMANO_MAX: Tamano = { w: 900, h: 1200 };
 const ANCHO_POR_DEFECTO = 260;
+
+// Cuerpo scrolleable del tramo — la transcripción. Memoizado por `rev` (firma
+// corta del tramo, incluye largo de cada respuesta / pending / error) + `readOnly`.
+// `rev` estable = mismo contenido → no se re-renderiza al mover el globo, panear,
+// cambiar el zoom, etc. Sin esto react-markdown re-parseaba todo el tramo por
+// frame durante el drag (B8: ~5 fps).
+const CuerpoTramo = memo(
+  function CuerpoTramo({
+    intercambios,
+    rev,
+    readOnly,
+    onRehacer,
+  }: {
+    intercambios: Intercambio[];
+    rev: string;
+    readOnly: boolean;
+    onRehacer: () => void;
+  }) {
+    return (
+      <LimiteError
+        resetKey={rev}
+        fallback={
+          <div className="px-3 py-2 text-left">
+            <p className="text-xs text-red-300">
+              ⚠ No se pudo mostrar esta conversación.
+            </p>
+            {!readOnly && (
+              <button
+                type="button"
+                onClick={onRehacer}
+                className="mt-2 rounded border border-white/20 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
+              >
+                ↻ Rehacer
+              </button>
+            )}
+          </div>
+        }
+      >
+        {intercambios.map((ic) => (
+          <div
+            key={ic.id}
+            className="border-b border-white/5 px-3 py-1.5 text-left last:border-0"
+          >
+            {ic.pregunta && (
+              <p className="whitespace-pre-wrap text-xs font-semibold text-white/90">
+                {ic.pregunta}
+              </p>
+            )}
+            <div className="mt-0.5 text-white/70">
+              {ic.error ? (
+                <p className="whitespace-pre-wrap text-xs text-red-300">
+                  ⚠ {ic.error}
+                </p>
+              ) : ic.respuesta != null ? (
+                <>
+                  <Markdown>{ic.respuesta}</Markdown>
+                  {ic.pending && <span className="italic text-white/40"> ▍</span>}
+                </>
+              ) : ic.pending ? (
+                <span className="text-xs italic text-white/40">escribiendo…</span>
+              ) : (
+                <span className="text-xs italic text-white/40">
+                  respuesta pendiente
+                </span>
+              )}
+            </div>
+          </div>
+        ))}
+      </LimiteError>
+    );
+  },
+  (a, b) => a.rev === b.rev && a.readOnly === b.readOnly,
+);
 
 // Un globo = un TRAMO de la conversación (Fase 5): una cadena de intercambios
 // unidos por `rama: "main"`. `data.intercambios` es el tramo en orden. El
@@ -95,15 +170,25 @@ export default function MessageNode({
   // el usuario scrollee hacia arriba a leer (`pegado` = false); vuelve a seguir
   // si baja de nuevo. Se re-pega al arrancar una respuesta nueva (`puntaId`).
   const pegado = useRef(true);
+  // El scroll que hacemos nosotros dispara un evento `scroll` → `alScrollear`
+  // veía "no está en el fondo" (el markdown recién crecido) y apagaba `pegado`
+  // a mitad del stream (B9). Marca los scrolls propios para ignorarlos.
+  const autoScroll = useRef(false);
   useEffect(() => {
     pegado.current = true;
   }, [puntaId]);
-  useEffect(() => {
-    if (!pending) return;
+  useLayoutEffect(() => {
+    if (!pending || !pegado.current) return;
     const el = cuerpoRef.current;
-    if (el && pegado.current) el.scrollTop = el.scrollHeight;
+    if (!el) return;
+    autoScroll.current = true;
+    el.scrollTop = el.scrollHeight;
+    requestAnimationFrame(() => {
+      autoScroll.current = false;
+    });
   }, [rev, pending]);
   const alScrollear = () => {
+    if (autoScroll.current) return;
     const el = cuerpoRef.current;
     if (el) pegado.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
   };
@@ -149,6 +234,13 @@ export default function MessageNode({
     setDrag(null);
     resizeNode(id, null, null);
   }, [id, resizeNode]);
+
+  // Estable mientras `rev` no cambie (`puntaId` sale del último id del tramo,
+  // que va en `rev`) → `CuerpoTramo` puede memoizar por `rev`/`readOnly` (B8).
+  const rehacerPunta = useCallback(
+    () => retryNode(puntaId),
+    [retryNode, puntaId],
+  );
 
   return (
     <div
@@ -268,58 +360,12 @@ export default function MessageNode({
           onScroll={alScrollear}
           className="nowheel scroll-fino min-h-0 flex-1 overflow-y-auto pb-2"
         >
-          <LimiteError
-            resetKey={rev}
-            fallback={
-              <div className="px-3 py-2 text-left">
-                <p className="text-xs text-red-300">
-                  ⚠ No se pudo mostrar esta conversación.
-                </p>
-                {!readOnly && (
-                  <button
-                    type="button"
-                    onClick={() => retryNode(puntaId)}
-                    className="mt-2 rounded border border-white/20 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
-                  >
-                    ↻ Rehacer
-                  </button>
-                )}
-              </div>
-            }
-          >
-            {intercambios.map((ic) => (
-              <div
-                key={ic.id}
-                className="border-b border-white/5 px-3 py-1.5 text-left last:border-0"
-              >
-                {ic.pregunta && (
-                  <p className="whitespace-pre-wrap text-xs font-semibold text-white/90">
-                    {ic.pregunta}
-                  </p>
-                )}
-                <div className="mt-0.5 text-white/70">
-                  {ic.error ? (
-                    <p className="whitespace-pre-wrap text-xs text-red-300">
-                      ⚠ {ic.error}
-                    </p>
-                  ) : ic.respuesta != null ? (
-                    <>
-                      <Markdown>{ic.respuesta}</Markdown>
-                      {ic.pending && (
-                        <span className="italic text-white/40"> ▍</span>
-                      )}
-                    </>
-                  ) : ic.pending ? (
-                    <span className="text-xs italic text-white/40">escribiendo…</span>
-                  ) : (
-                    <span className="text-xs italic text-white/40">
-                      respuesta pendiente
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </LimiteError>
+          <CuerpoTramo
+            intercambios={intercambios}
+            rev={rev}
+            readOnly={readOnly}
+            onRehacer={rehacerPunta}
+          />
         </div>
 
         <Handle
