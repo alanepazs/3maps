@@ -35,20 +35,21 @@ export function fmtTokens(n: number): string {
   return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
 }
 
-// Panel lateral read-only: el camino raíz→globo aplanado a preguntas y
-// respuestas, tipo chat normal. Es una vista derivada del árbol (no toca
-// estado). Se abre con doble-click en un globo o con el botón ⤢ de su barra. El
-// lado (izq/der) lo elige el usuario con el botón ⇄ y se persiste en Settings.
+// Panel de conversación (era `BranchTranscript` hasta F5-6): el camino
+// raíz→globo aplanado a preguntas y respuestas, tipo chat. Vista derivada del
+// árbol (no toca estado). Con Fase 5 el globo es un TRAMO, así que el camino
+// abarca varios tramos ancestros + el tramo abierto, todo como una
+// transcripción continua. Se abre con doble-click en un globo o el botón ⤢. El
+// lado (izq/der) lo elige el usuario con ⇄ y se persiste en Settings.
 //
-// Si recibe `onSubmit` (no en modo compartido), muestra un mini-composer al pie
-// para seguir la conversación sin cerrar el panel (fase 3.9): crea un hijo del
-// último globo del camino y el panel se mueve a ese hijo. Enter continúa el
-// hilo, Ctrl/Cmd+Enter abre una rama (fase 3.12).
+// Si recibe `onSubmit` (no en modo compartido), es también la superficie de
+// ESCRITURA (F5): mini-composer al pie — Enter agrega a la punta del tramo
+// abierto, Ctrl/Cmd+Enter (o "⑂ ramificar desde acá" en un turno) ramifica.
 //
 // Ancho (fase 3.11): en desktop se arrastra el borde interno (`onResize` con el
 // ancho ya clampeado por el padre en `width`). En móvil (`resizable === false`)
 // va a pantalla completa y el header muestra un botón "🗺 Mapa" para volver.
-export default function BranchTranscript({
+export default function PanelConversacion({
   intercambios,
   side,
   onFlipSide,
@@ -103,8 +104,10 @@ export default function BranchTranscript({
   const [arrastrando, setArrastrando] = useState(false);
   // Imagen abierta a tamaño completo (lightbox).
   const [verImagen, setVerImagen] = useState<Adjunto | null>(null);
-  // Feedback "✓ Copiado" del botón de copiar la respuesta (T15).
-  const [copiada, setCopiada] = useState(false);
+  // Id del intercambio cuya respuesta se acaba de copiar → "✓ Copiado" en ESE
+  // turno (los botones de copiar/guardar están en cada respuesta, no solo la
+  // última — T15 + pedido de Alan 02-09).
+  const [copiadaId, setCopiadaId] = useState<string | null>(null);
   // Ramificar desde un intercambio del medio (F5-3). `null` = desde la punta.
   const [ramificarDesde, setRamificarDesde] = useState<string | null>(null);
   const arrastreDepth = useRef(0);
@@ -262,6 +265,10 @@ export default function BranchTranscript({
 
   return (
     <div
+      // `data-cierra-al-click`: el swallower de `gestos.ts` se traga el click
+      // sintético post-resize del borde si cae sobre este backdrop (si no,
+      // cerraría el panel recién redimensionado).
+      data-cierra-al-click
       className={`absolute inset-0 z-20 flex bg-black/40 ${
         side === "left" ? "justify-start" : "justify-end"
       }`}
@@ -462,29 +469,66 @@ export default function BranchTranscript({
                 ) : (
                   <p className="italic text-white/40">Respuesta pendiente</p>
                 )}
-                {/* Ramificar desde ESTE intercambio (F5-3). En la punta es el
-                    default (lo hace el botón "⑂ Ramificar" del composer). */}
-                {onSubmit && ic.respuesta && !ic.pending && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRamificarDesde(ic.id);
-                      textareaRef.current?.focus();
-                    }}
-                    className={`mt-1 text-[11px] ${
-                      ramificarDesde === ic.id
-                        ? "font-medium text-sky-300"
-                        : "text-white/25 hover:text-white/60"
-                    }`}
-                    title="Ramificar una pregunta nueva desde este punto (sin tocar el hilo)"
-                  >
-                    ⑂ ramificar desde acá
-                  </button>
+                {/* Acciones por respuesta (T15 + F5-3): ramificar desde este
+                    punto, copiar / guardar ESTA respuesta. En cada turno de la
+                    IA, no solo el último. Links sutiles, siempre visibles. */}
+                {!ic.pending && ic.respuesta && !ic.error && (
+                  <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
+                    {onSubmit && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRamificarDesde(ic.id);
+                          textareaRef.current?.focus();
+                        }}
+                        className={
+                          ramificarDesde === ic.id
+                            ? "font-medium text-sky-300"
+                            : "text-white/25 hover:text-white/60"
+                        }
+                        title="Ramificar una pregunta nueva desde este punto (sin tocar el hilo)"
+                      >
+                        ⑂ ramificar desde acá
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (await copiarTexto(ic.respuesta ?? "")) {
+                          setCopiadaId(ic.id);
+                          setTimeout(
+                            () =>
+                              setCopiadaId((c) => (c === ic.id ? null : c)),
+                            1500,
+                          );
+                        }
+                      }}
+                      className="text-white/25 hover:text-white/60"
+                      title="Copiar la respuesta como texto"
+                    >
+                      {copiadaId === ic.id ? "✓ Copiado" : "⧉ Copiar"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const { nombre, contenido, mime } =
+                          nombreArchivoRespuesta(ic.respuesta ?? "");
+                        descargarTexto(nombre, contenido, mime);
+                      }}
+                      className="text-white/25 hover:text-white/60"
+                      title="Guardar la respuesta como archivo"
+                    >
+                      ⬇ Guardar
+                    </button>
+                  </div>
                 )}
-                {/* Acciones del globo abierto (el último del camino). */}
-                {!ic.pending && i === intercambios.length - 1 && (
-                  <div className="mt-1.5 flex flex-wrap gap-1.5">
-                    {onRetry && (
+                {/* Rehacer / reintentar: solo la punta del camino (es la única
+                    respuesta que se puede volver a pedir). */}
+                {!ic.pending &&
+                  i === intercambios.length - 1 &&
+                  onRetry &&
+                  (ic.respuesta || ic.error) && (
+                    <div className="mt-1.5">
                       <button
                         type="button"
                         onClick={onRetry}
@@ -493,38 +537,8 @@ export default function BranchTranscript({
                       >
                         ↻ {ic.error ? "Reintentar" : "Rehacer"}
                       </button>
-                    )}
-                    {ic.respuesta && !ic.error && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            if (await copiarTexto(ic.respuesta ?? "")) {
-                              setCopiada(true);
-                              setTimeout(() => setCopiada(false), 1500);
-                            }
-                          }}
-                          className="rounded border border-white/15 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
-                          title="Copiar la respuesta como texto"
-                        >
-                          {copiada ? "✓ Copiado" : "⧉ Copiar"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const { nombre, contenido, mime } =
-                              nombreArchivoRespuesta(ic.respuesta ?? "");
-                            descargarTexto(nombre, contenido, mime);
-                          }}
-                          className="rounded border border-white/15 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
-                          title="Guardar la respuesta como archivo"
-                        >
-                          ⬇ Guardar
-                        </button>
-                      </>
-                    )}
-                  </div>
-                )}
+                    </div>
+                  )}
               </div>
             </div>
           ))}

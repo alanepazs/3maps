@@ -1,7 +1,8 @@
 # Fase 5 — El globo pasa a ser un *tramo* de la conversación
 
-> Spec. Estado: **EN CURSO** (02-09). F5-0 ✅ · F5-1 ✅ · F5-2 casi · F5-3 ✅ · F5-4 ✅. Falta F5-5, F5-6.
-> Es un cambio de arquitectura de la VISTA. **El modelo de datos NO cambia.**
+> Spec. Estado: **COMPLETA** (02-09). F5-0/1/2/3/4/4b/4c/5/6 ✅. Falta solo la prueba de Alan en
+> Chrome real con keys (Enter 10×, ramificar desde el medio, mapa viejo, crecimiento, adjuntos).
+> Es un cambio de arquitectura de la VISTA. **El modelo de datos NO cambió, cero migración.**
 
 ## Objetivo
 
@@ -152,11 +153,19 @@ medio) — **eso no corta el tramo**, la rama es otro tramo que nace de al lado.
 - **F5-3 — Ramificar desde cualquier intercambio**. Affordance "⑂" por intercambio en la
   transcripción del panel + botón del composer (ramifica desde la punta).
 - **F5-4 — Setting de crecimiento + badge "N mensajes"**.
-- **F5-5 — adaptar** layout/Ordenar, flechas de nav, `deleteNode`/`stopNode`/`retryNode`,
-  streaming/auto-scroll, contador de contexto.
-- **F5-6 — docs**: `CLAUDE.md` (invariante "un globo = un intercambio" → "un globo = un tramo; el
-  intercambio sigue siendo la unidad de datos"), ADR en `decisiones.md`, `arquitectura.md`,
-  `historia.md`.
+- **F5-5 ✅ — `calcularLayout` + `resolverSuperposiciones` tramo-aware** (decisiones F5-5). Nav /
+  `deleteNode` / `stopNode` / `retryNode` ya se adaptaron en F5-1; streaming/auto-scroll en F5-4b;
+  contador de contexto ya andaba. 19 asserts + e2e.
+- **F5-4c ✅** (fuera del plan original) — `⌄` y cursor de resize cerrados de verdad (F5-0/F5-4b
+  no alcanzaron; reproducidos en Chrome real). Decisiones F5-4c.
+- **F5-6 ✅ — docs + rename**: `historia.md` sección Fase 5; `arquitectura.md` + `decisiones.md`
+  al día; `CLAUDE.md` invariante ya decía "un globo (nodo del canvas) = un TRAMO". Rename
+  `BranchTranscript` → `PanelConversacion` (archivo + refs vivas; la historia queda con el nombre
+  viejo). **"globo" → "tramo" NO se hizo**: la implementación se asentó en dos términos distintos
+  y útiles — **globo** = el nodo visual / contenedor del canvas, **tramo** = la cadena `main` de
+  intercambios que ese globo muestra. `ubicarNuevoGlobo` / `verGloboEnPanel` siguen siendo
+  correctos (ubican / abren un globo, cuya cabeza es un tramo). El decisión 8 abajo queda
+  superada en esa parte.
 
 ## Success criteria
 
@@ -177,4 +186,5 @@ medio) — **eso no corta el tramo**, la rama es otro tramo que nace de al lado.
 5. **Composer de abajo se mantiene** + arreglar el `⌄` (un solo clic, F5-0).
 6. **Edge de rama: v1 costado-a-costado**, refinar después.
 7. **Se saca "Expandir/Colapsar"** del globo (F3-1) — con el slider + scroll interno no aporta.
-8. **Renombrar** `BranchTranscript` → `PanelConversacion`, "globo" → "tramo" en el código.
+8. **Renombrar** `BranchTranscript` → `PanelConversacion` ✅. ~~"globo" → "tramo"~~ — no se hizo:
+   quedaron los dos términos (globo = nodo visual, tramo = cadena de datos que muestra). Ver F5-6.

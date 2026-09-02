@@ -6,18 +6,24 @@
 
 ## Dónde estamos
 
-**Fases 1-4 en producción; Fase 5 EN CURSO.** `https://alanepazs.github.io/3maps/`
+**Fases 1-4 en producción; Fase 5 CODEADA (sin pushear).** `https://alanepazs.github.io/3maps/`
 (deploy automático en cada push a `main`). Repo `github.com/alanepazs/3maps`, local `D:\IA\3maps`.
 - **Fase 4** (panel rediseñado + contadores de tokens + adjuntos + copiar/guardar): shippeada,
   probada con keys (Gemini imagen+PDF, Groq visión, pegar captura, T15). Claude bloqueado por saldo.
-- **Fase 5** (`tasks/fase5-spec.md`): el globo pasa de "un intercambio" a "un TRAMO" (cadena
-  `main`). Enter agrega al mismo globo; globo nuevo solo al ramificar. **Cambio solo de vista,
-  cero migración.** F5-0 ✅ (fix del `⌄`), F5-1 ✅ (`calcularTramos` + `arbolAVista` reescrito),
-  F5-2 casi (folded), F5-3 ✅ (ramificar desde cualquier intercambio del tramo), F5-4 ✅ (el
-  globo crece con la conversación — slider en "Lienzo"; se sacó expandir/colapsar),
-  F5-4b ✅ (fixes: auto-scroll de streaming en panel + globos, `⌄` de un click, zona de agarre
-  del resize más grande — decisiones F5-4b). Falta F5-5 (Ordenar/solapes + streaming del globo),
-  F5-6 (docs + renombres).
+- **Fase 5** — **un globo del canvas = un TRAMO** (cadena `main`), no un intercambio suelto. Enter
+  agrega a la punta del mismo globo; globo nuevo solo al ramificar; el globo crece con la
+  conversación (slider en "Lienzo"). **Cambio solo de vista, cero migración.** Detalle por
+  sub-tarea: `docs/historia.md` "Fase 5"; el porqué: `decisiones.md` F5-0..F5-6.
+  - F5-0/1/2/3/4/4b/4c/5/6 ✅ (en `main`: F5-0/1/3/4/4b commit `7079332`; F5-4c/5/6 sin commitear).
+  - **F5-4c**: el `⌄` de un click y el cursor de resize — F5-0/F5-4b no los cerraron, reproducidos
+    en Chrome real con CDP (el pane no los reproduce). `tragarClickSintetico` traga por target
+    (`.react-flow__pane` / `[data-cierra-al-click]`); la manija de resize salió del `overflow-hidden`.
+  - **F5-6**: `BranchTranscript` → `PanelConversacion`; "⧉ Copiar"/"⬇ Guardar" en CADA respuesta
+    del panel. **"globo" → "tramo" NO se hizo** (dos términos útiles: globo = nodo visual,
+    tramo = cadena de datos).
+  - **Falta**: prueba de Alan en Chrome real (Enter 10× → 1 globo, ramificar desde el medio,
+    mapa viejo se agrupa, crecimiento, "▤ Ordenar" con tramos altos). Backlog **B8** (drag lageado
+    a ~5 fps — ver "Qué falta").
 
 - **Canvas** (React Flow): árbol de globos, tronco vertical + ramas al costado, envión al soltar,
   2 modos (manito / selección con espacio), redimensionar globo y panel, auto-layout ("▤ Ordenar"),
@@ -93,7 +99,7 @@
   el último mapa suben un `epoch` → reset duro en el otro dispositivo. **Probado OK con celu
   + PC**: crear / borrar / renombrar / reset / tamaño del globo convergen. Detalle: decisiones F3-4.
 - **Persistencia local**: `localStorage["3maps:arbol:<mapId>"]` = un string `.md` por intercambio.
-  Vista en `"3maps:vista"`, ajustes en `"3maps:settings"`, IA en `"3maps:ia"`.
+  Ajustes en `"3maps:settings"`, IA en `"3maps:ia"`. (`"3maps:vista"` quedó muerta en F5-4.)
 
 ## Qué falta
 
@@ -117,19 +123,40 @@ ni llamadas con key):
 - **Falta probar**: turnos/STOP/flechas/contadores del panel; `\frac` suelto de gpt-oss; manija
   de resize con zoom out. (Claude/DeepSeek/GPT: bloqueado por saldo.)
 
-**Pedido de Alan (02-09) — NO tocar todavía**: quiere los botones "⧉ Copiar" / "⬇ Guardar" en
-**cada** respuesta del panel, no solo la última. Está **evaluando un rediseño grande de los globos**
-→ **no arrancar B1-B7 ni nada de globos/panel hasta que decida.**
 - **Bloqueado por saldo** (Alan no tiene, 02-09): imagen/PDF con **Claude** (código igual al de
   Gemini — bloques `image`/`document` nativos, sin beta header; debería andar). Idem DeepSeek/GPT.
 - `stream_options.include_usage` (T11) — asumido que anda en Groq/OpenRouter/HuggingFace; si
   alguno tira 400 habría que gatearlo por proveedor en `llamarOpenAICompat`.
+
+### Fase 5 — codeada, pendiente prueba de Alan + push
+
+F5-0..F5-6 ✅ (detalle: `historia.md` "Fase 5"). En `main`: F5-0/1/3/4/4b (commit `7079332`).
+**Sin commitear**: F5-4c (bugs `⌄`/cursor), F5-5 (layout tramo-aware), F5-6 (docs + rename +
+Copiar/Guardar por respuesta). Todo con `tsc`/`lint`/`build` verde + `_scratch`/e2e en el pane.
+
+**Falta que Alan pruebe en Chrome real**:
+- Enter 10× seguidas → **1 globo** de 10 intercambios; ramificar desde el 3er intercambio de un
+  tramo largo → tramo nuevo al costado, el original intacto; un mapa de fase 1-4 se agrupa en 1
+  tramo sin migración; el globo crece según el slider; "▤ Ordenar" con tramos altos no los solapa.
+- El `⌄` de un click y el cursor de resize (F5-4c) — ya reproducidos y verificados con CDP, pero
+  conviene la pasada de Alan.
+- Copiar/Guardar en cada respuesta del panel (F5-6) — 3 botones por turno, "↻ Rehacer" solo en la
+  punta.
+
+**Sigue en pie**: Alan **evaluaba un rediseño grande de los globos** → confirmar antes de B1-B8.
 
 ### Backlog (fuera del plan de fases) → `tasks/todo.md` "Fuera de este plan"
 
 - **B1-B7** (pedidos de Alan 01-09): color por globo · ventana de contexto adaptativa (medir el
   gasto de `resumir()` primero — se cruza con T11) · multi-select move + envión · grosor de líneas
   · fuente + tamaño de texto · logo de fondo · zoom de lupa en hover.
+- **B8 — perf: arrastrar un globo va lageado (~5 fps) desde Fase 5** (Alan 02-09). Hipótesis:
+  `MessageNode` renderiza `data.intercambios.map(ic => <Markdown>{ic.respuesta}</Markdown>)` y
+  React Flow re-renderiza el nodo arrastrado en cada frame (`dragging`/posición) → react-markdown
+  re-parsea TODA la transcripción del tramo por frame. Fix probable: `React.memo` del cuerpo de la
+  transcripción (o `useMemo` keyed por `data.rev`) para que mover el globo no re-parsee el markdown;
+  o render liviano en el globo y markdown completo solo en el panel. `nodeActions` ya está memoizado
+  (no es eso).
 - **T15 "doc card"** — tarjeta compacta cuando la respuesta ES un documento; si el núcleo de T15
   no alcanza.
 - **Auto-switch de proveedor** al pegar una key de otro (hoy `avisoFormatoKey` solo avisa).

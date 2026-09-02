@@ -22,6 +22,10 @@ Runbook corto. Cosas que muerden si no las sabés. Leer antes de tocar.
    reiniciado, o el overlay de error de Next (`nextjs-portal` shadow DOM → `div[role=dialog]`).
    Un `arbolInicial is not defined` / dep-array que cambia de tamaño suele ser HMR entre edits,
    no un bug de fresh-load — reiniciá el server para confirmar.
+3a. **NO corras `next build` con el `next dev` levantado** — comparten `.next` y el dev queda
+   con `ERR_CONNECTION_REFUSED` + un parse-error viejo pegado en la consola. Para el build final:
+   `preview_stop` → `rm -rf .next` → `next build` → `rm -rf .next` → `preview_start`. Durante el
+   trabajo alcanza con `tsc` + `lint` (no tocan `.next`).
 4. **Publicar**: `git push` desde `D:\IA\3maps` funciona directo (credencial en Windows
    Credential Manager). **`gh` NO está autenticado y `gh auth login` cuelga** — no lo uses.
    Deploy a Pages = push a `main` (workflow). **El CDN de Pages cachea `index.html` ~10 min**:

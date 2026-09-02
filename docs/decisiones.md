@@ -1034,8 +1034,13 @@ Spec completa y decisiones de alcance en `tasks/T16-spec.md`. Lo no obvio de la 
     `documento`.
   - `descargarTexto` (Blob + `<a download>`), `copiarTexto` (`navigator.clipboard`, sin fallback).
 - **UI — SOLO en el panel** (decisión de Alan; el `NodeToolbar` del globo queda como está):
-  - `BranchTranscript`, turno IA del **último** globo: "⧉ Copiar" (feedback "✓ Copiado" 1.5s) +
-    "⬇ Guardar", junto a "↻ Rehacer". Solo con `respuesta` y sin `error`/`pending`.
+  - `BranchTranscript`, en **cada** turno IA (F5, pedido de Alan 02-09 — antes solo el último):
+    "⑂ ramificar desde acá" · "⧉ Copiar" (feedback "✓ Copiado" 1.5s) · "⬇ Guardar", como **links
+    sutiles** (`text-[11px] text-white/25`, siempre visibles) en una fila por turno. Solo con
+    `respuesta` y sin `error`/`pending`. "↻ Rehacer" sigue **solo en la punta** (es la única que se
+    puede re-pedir) y como botón con borde. El estado del feedback es `copiadaId` (id del turno
+    copiado, con updater funcional para no pisar otro "✓") en vez de un bool global.
+    Copiar/Guardar andan también en modo compartido (no requieren `onSubmit`).
   - `Markdown.tsx` gana la prop **`conCopiar`** (la pasa `BranchTranscript`, NO `MessageNode`):
     con ella, `components.pre` → `preConCopiar` envuelve cada bloque con un botón "⧉" (hover,
     `group-hover:opacity-100`) que copia ese bloque en crudo (`extraerTextoCodigo(node)` del hast).
@@ -1134,6 +1139,63 @@ Ver F3-8 (actualizado) — `components/gestos.ts` `tragarClickSintetico()`.
   abajo-derecha. El cursor `nwse-resize` cambia antes al acercarse a la esquina.
 - Verificado en el pane: `⌄` togglea en un click en los dos sentidos; grip `cursor: nwse-resize`
   con zona de 28px. El follow del stream lo prueba Alan con key real.
+
+### F5-4c. El `⌄` y el cursor de resize, de verdad (lo que F5-0/F5-4b no cerraron)
+Alan probó F5-4b en Chrome real: **el auto-scroll anda**; el `⌄` **seguía pidiendo doble click**
+y el cursor de la esquina **seguía tardando en pasar de "manito" a "flechas"**. Reproducidos en
+el navegador con eventos de puntero reales (CDP) — el pane no los reproduce (congela CSS +
+`visibility:hidden` en los nodos sin medir), por eso las dos "verificaciones en el pane"
+anteriores mintieron.
+
+- **`⌄` doble click — causa**: `tragarClickSintetico` armaba un listener de `click` **global en
+  `window`** después de cada resize. Las heurísticas para distinguir "sintético" de "real"
+  (F5-0: desarmar en `pointerdown`; F5-4b: ventana de 150ms) **las dos leakean**: un click real
+  y rápido sobre otro control (el `⌄`, un botón del toolbar) caía en la ventana y se perdía.
+  - **Fix**: el discriminante deja de ser el TIEMPO y pasa a ser **dónde cae el click**. Se traga
+    solo si `ev.target` **es exactamente** `.react-flow__pane` (fondo del lienzo) o un
+    `[data-cierra-al-click]` (backdrop del panel — atributo nuevo en `BranchTranscript`). `matches`,
+    no `closest`: los nodos viven DENTRO de `.react-flow__pane` y un click sobre el contenido de un
+    nodo (o sobre cualquier `<button>`) nunca matchea → pasa intacto. Un click que no matchea **no
+    desarma** el listener (el sintético "malo" sobre el fondo puede venir justo después); corta el
+    backstop de 400ms.
+  - Verificado (CDP): resize globo → click `⌄` a 7ms → **togglea en un click**; `✎ Escribir` ídem;
+    el globo queda seleccionado tras el resize; click normal en el fondo **sigue** deseleccionando;
+    resize del panel que termina sobre el backdrop **no** lo cierra; click intencional en el
+    backdrop **sí** lo cierra.
+- **Cursor de resize — causa**: la manija vivía DENTRO del `overflow-hidden` + `rounded-md` +
+  `border` del root del `MessageNode`. El borde (1px) + el arco de la esquina redondeada dejaban
+  una banda de ~2-6px con `cursor: grab` (el del pan) justo donde uno apunta para redimensionar.
+  Agrandar la zona a 28px (F5-4b) no tocó ese borde exterior.
+  - **Fix**: el root del `MessageNode` pasa a ser un contenedor de posición **sin recorte**
+    (`relative text-sm`); la tarjeta visible (header + cuerpo + handles) es un hijo `absolute
+    inset-0` que se clippea a sí mismo. La manija sale del recorte y **cuelga 4px por fuera** de
+    la esquina (`-bottom-1 -right-1`) → el `nwse-resize` agarra *antes* de llegar al borde visible.
+    Las `NodeToolbar` ya se portalean, no las afecta.
+  - Verificado (CDP): `cursor: nwse-resize` desde 4px por fuera de la esquina hacia adentro; ya no
+    hay banda muerta con `grab`.
+
+### F5-5. `calcularLayout` ("▤ Ordenar") + `resolverSuperposiciones` tramo-aware
+Las dos funciones de `layout.ts` seguían recorriendo el árbol **intercambio por intercambio**
+(vía `hijos()`), poniendo cada `main` en su propio slot vertical. Con Fase 5 eso desparrama un
+tramo de N mensajes en N slots (y solo la cabeza tiene nodo).
+
+- **`calcularLayout`** ahora recorre **tramos** (`calcularTramos`). Por tramo: 1 posición (la de la
+  cabeza, = la `id` del nodo de React Flow). `alturaDe(cabezaId)` ya devuelve el alto del tramo
+  entero (React Flow mide el nodo completo); fallback sin medir = `130 + (n-1)*40`. Las ramas que
+  salen de **cualquier** intercambio del tramo (`tramosHijos`, ordenadas por el índice del
+  intercambio del que salen) van a columnas ±1 al costado, **alineadas con el top del tramo** (no
+  empujadas hacia abajo por la cantidad de mensajes). Una 2ª continuación `main` desde el medio
+  cae como otro tronco debajo.
+- **`resolverSuperposiciones`** ahora arma `pos`/`dim` por **cabeza de tramo** y `medir(cabezaId)`
+  da el rect del tramo entero. El loop de empuje-hacia-abajo no cambió. `FlowCanvas.resolverSolapes`
+  ya escribía por `pos.get(n.id)` (n.id = cabeza) y por `pos.get(i.id)` por intercambio (solo las
+  cabezas están en el map → los no-cabeza no se tocan).
+- **`ubicarNuevoGlobo`** ya era tramo-aware (F5-3) y solo corre al **ramificar**.
+- Verificado: 19 asserts en `_scratch.mts` (cadena `main` → 1 posición; rama desde el medio →
+  alineada al top; raíces apiladas; fallback escala con n; solape entre tramos empuja al de abajo;
+  1 tramo / sin solape → `null`) + e2e en el pane (árbol tramo + 2 ramas → "▤ Ordenar" deja
+  cabeza en (0,0), rama-right en (400,0), rama-left en (-400,0); persiste al `.md` solo las
+  cabezas).
 
 ---
 

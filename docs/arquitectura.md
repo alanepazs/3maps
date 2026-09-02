@@ -3,11 +3,11 @@
 > Mapa de `src/` para no leer todo. Para una dependencia puntual: `graphify query "..."`
 > (napkin §6b). El árbol de abajo es el índice; las secciones `##` que siguen son deep-dives —
 > leelas solo si tocás ese archivo. Actualizar cuando cambie la estructura.
-> Última actualización: 01-09-2026.
+> Última actualización: 02-09-2026 (Fase 5).
 
 **Tamaños** (líneas): `FlowCanvas.tsx` ~1150 · `ia.ts` ~890 · `SettingsPanel.tsx` ~745 ·
-`intercambio.ts` ~350 · `MessageNode.tsx` ~300 · `sync.ts` ~330 · `BranchTranscript.tsx` ~270 ·
-`compartir.ts` 237 · `contexto.ts` 227 · `configIA.ts` 183 · `useSync.ts` 166 · `layout.ts` 148 ·
+`intercambio.ts` ~350 · `MessageNode.tsx` ~375 · `sync.ts` ~330 · `layout.ts` ~320 ·
+`PanelConversacion.tsx` ~270 · `compartir.ts` 237 · `contexto.ts` 227 · `configIA.ts` 183 · `useSync.ts` 166 ·
 `mapas.ts` ~150 · `Composer.tsx` 138 · el resto < 110.
 
 ## Stack real (lo que está instalado)
@@ -69,17 +69,19 @@ src/
                          nuevoMapaId, cuandoMeta (= renombrado ?? creado, para LWW de títulos),
                          fusionarMapasNube (agrega los que faltan + adopta títulos más nuevos + dedup),
                          podarMapasBorrados(borrados, excepto) (aplica tombstones).
-    layout.ts            calcularLayout(arbol, alturaDe) → Map<id,{x,y}>. Auto-layout recursivo
-                         para el botón "Ordenar" (fase 3.4): tronco `main` vertical, ramas
-                         `branch-*` en columnas al costado con su propio tronco. Puro.
-                         ubicarNuevoGlobo(arbol, parentId, kind, medir) → {x, y, rama}: al crear
-                         un hijo, busca un lugar libre cerca del padre (no pisa a NINGÚN globo,
-                         usa rects reales) y alterna el lado de las ramas (fase 3.2).
-                         resolverSuperposiciones(arbol, medir) → Map<id,{x,y}> | null: empuja
-                         hacia ABAJO solo los globos que quedaron pisando a otro (respuesta más
-                         alta que el estimado, o posiciones de otra pantalla). Respeta lo que no
-                         se pisa. Lo llama `FlowCanvas` (debounce 500ms) al terminar una respuesta
-                         y al traer un árbol de la nube.
+    layout.ts            calcularLayout(arbol, alturaDe) → Map<cabezaId,{x,y}>. Auto-layout para
+                         "▤ Ordenar" (fase 3.4). **Fase 5 (F5-5): recorre TRAMOS, no intercambios
+                         sueltos** — 1 posición por tramo (la de la cabeza), `alturaDe(cabezaId)` =
+                         alto del tramo entero. Tronco vertical; ramas de CUALQUIER intercambio del
+                         tramo en columnas ±1 al costado, alineadas con el top del tramo. Puro.
+                         ubicarNuevoGlobo(arbol, parentId, kind, medir) → {x, y, rama}: solo al
+                         RAMIFICAR (F5-3). Resuelve `parentId` → cabeza; busca lugar libre cerca
+                         sin pisar ningún TRAMO; alterna el lado (fase 3.2).
+                         resolverSuperposiciones(arbol, medir) → Map<cabezaId,{x,y}> | null: empuja
+                         hacia ABAJO solo los TRAMOS que quedaron pisando a otro (F5-5: `pos`/`dim`
+                         por cabeza; `medir(cabezaId)` = rect del tramo). Respeta lo que no se pisa.
+                         Lo llama `FlowCanvas` (debounce 500ms) al terminar una respuesta y al
+                         traer un árbol de la nube.
     contexto.ts          armarContexto(arbol, nodoId, opts, resumenViejo, relevantes) → Mensaje[]:
                          SOLO el camino raíz→nodo, aplanado a user/assistant, con ventana (últimos
                          N completos + resumen del tramo viejo). `relevantes` = intercambios viejos
@@ -139,10 +141,16 @@ src/
                         Rehacer" → PUNTA (`data.intercambios.at(-1).id`); "🗑 Eliminar" → cabeza
                         (= el tramo + sub-ramas). Manija ◢ para redimensionar a mano (F3-8): al
                         soltar → `resizeNode` (NodeActionsContext) → `.md` (`ancho/alto` de la
-                        CABEZA). `tragarClickSintetico()` tras soltar (F5-0).
-    gestos.ts           `tragarClickSintetico()` — traga el `click` sintético post-drag SIN comerse
-                        un click real posterior (se desarma en el 1er `pointerdown`; timeout 500ms).
-                        F5-0. Lo usan `MessageNode` y `BranchTranscript`.
+                        CABEZA). `tragarClickSintetico()` tras soltar (F5-0). El root del nodo NO
+                        recorta (`relative text-sm`); la tarjeta visible es un hijo `absolute
+                        inset-0` con `overflow-hidden rounded-md border`; la manija ◢ cuelga fuera
+                        de ese recorte, `-bottom-1 -right-1` (F5-4c).
+    gestos.ts           `tragarClickSintetico()` — tras soltar un resize, traga el `click` sintético
+                        SOLO si su `target` es `.react-flow__pane` o `[data-cierra-al-click]` (el
+                        backdrop del panel) — deselección / cierre no deseados. Un click sobre
+                        cualquier otra cosa (botón, nodo, textarea) pasa intacto. Backstop 400ms.
+                        F5-4c (antes: heurística por tiempo, F5-0/F5-4b — leakeaba y el `⌄` pedía
+                        doble click). Lo usan `MessageNode` y `PanelConversacion`.
     (vista.ts borrado en F5-4 — el "expandir/colapsar" del globo se reemplazó por el alto
      configurable. La clave `localStorage["3maps:vista"]` quedó muerta.)
     Markdown.tsx        <Markdown>{texto}</Markdown> — react-markdown con estilos compactos para el
@@ -160,7 +168,8 @@ src/
     LimiteError.tsx     Error boundary de clase genérico (`fallback` + `resetKey`). Aísla un crash
                         de render: en `Markdown.tsx` y en el cuerpo de cada `MessageNode`. Un globo
                         roto muestra el fallback, el resto de la app sigue viva. F3-14.
-    BranchTranscript.tsx  Panel lateral: el camino raíz→globo (`caminoRaizA`) aplanado a Q/A tipo
+    PanelConversacion.tsx  (era `BranchTranscript` hasta F5-6)
+                        Panel lateral: el camino raíz→globo (`caminoRaizA`) aplanado a Q/A tipo
                         chat. Vista derivada. Se abre con doble-click en un globo o el botón ⤢;
                         cierra con Esc / ✕ / click en el fondo. Botón ⇄ en el header cambia el
                         lado (izq/der) → `settings.transcriptSide`. Si recibe `onSubmit` (no en
@@ -178,8 +187,9 @@ src/
                         texto e imágenes; chips con ✕ (thumbnail si es imagen); el turno "Vos"
                         muestra los adjuntos en modo lectura (imagen → thumbnail → lightbox
                         `verImagen`). `onSubmit(text, kind, adjuntos)`. F3-22 / F3-22b.
-                        Turno IA del último globo (T15, F3-23): "⧉ Copiar" + "⬇ Guardar" la
-                        respuesta; `<Markdown conCopiar>`.
+                        CADA turno IA (T15, F3-23 + F5): fila de links sutiles "⑂ ramificar desde
+                        acá" · "⧉ Copiar" (`copiadaId`) · "⬇ Guardar"; "↻ Rehacer" solo en la
+                        punta. `<Markdown conCopiar>`.
                         Props: {intercambios, side, onFlipSide, onClose, onSubmit?, onStop?,
                         onRetry?, nav?, onNavigate?, contextoTokens?, proveedorNombre?,
                         proveedorLeePdf?, width?, resizable?, onResize?}.
@@ -305,7 +315,7 @@ Handlers (todos operan sobre `arbol` vía `setArbol`):
   `ubicarNuevoGlobo` (layout.ts): lugar libre cerca del padre sin pisar ningún globo, ramas
   alternando izq/der (fase 3.2). Al crear cualquier globo, `centrarEnGlobo(x,y)` (`setCenter`,
   mantiene zoom) baja la cámara al nuevo (3.2b).
-- `responderDesdePanel(text)` — el composer de `BranchTranscript` (fase 3.9):
+- `responderDesdePanel(text)` — el composer de `PanelConversacion` (fase 3.9):
   `handleSubmit(text, "main", transcriptNodeId)` + mueve el panel al hijo nuevo.
 - `onNodeDrag` (envuelve el de `useNodeInertia`) — además de trackear velocidad para el envión,
   si el nodo arrastrado es una rama, mueve el `sourceHandle` de su flecha al lado (izq/der) en
@@ -323,7 +333,7 @@ Handlers (todos operan sobre `arbol` vía `setArbol`):
   `conRespuesta({pending:false, proveedor})`; en error `conError`. `enVueloRef` (Map<id,
   AbortController>) para cancelar. `arbolRef` espeja `arbol` para leerlo en callbacks async.
 - `retryNode(id)` — `responder(id, arbolRef.current)`. Via NodeActionsContext.
-- `openNode(id)` — setea `transcriptNodeId`; `<BranchTranscript>` se renderiza con
+- `openNode(id)` — setea `transcriptNodeId`; `<PanelConversacion>` se renderiza con
   `caminoRaizA(arbol, transcriptNodeId)`. También lo dispara `onNodeDoubleClick`. Via NodeActionsContext.
 - `asentar(id)` — escribe la posición final al árbol (`conPosicion`) y, si es rama, fija el lado
   (`conRama`) según dónde quedó respecto del padre. Es el `onSettle` de `useNodeInertia`.
@@ -339,7 +349,7 @@ Handlers (todos operan sobre `arbol` vía `setArbol`):
 - Viewport / móvil (F3-11): `anchoVentana` (useState + listener `resize`) → `esMobile = < 768`.
   `fitOpts` (memo) = `{ padding: 0.18, minZoom: 0.15, maxZoom: esMobile ? 0.7 : 1.2 }` va a
   `<ReactFlow fitViewOptions>` y a los 4 `fitView()`. `panelBucket` / `panelResizable` /
-  `panelAncho` / `guardarAnchoPanel` → `<BranchTranscript>` (F3-9). El `<div>` raíz lleva
+  `panelAncho` / `guardarAnchoPanel` → `<PanelConversacion>` (F3-9). El `<div>` raíz lleva
   `data-chat={settings.composerOculto ? "oculto" : "visible"}` (lo lee `globals.css`).
   `<Composer oculto onToggleOculto>` → `settings.composerOculto`.
 
@@ -381,7 +391,7 @@ Props de `<ReactFlow>` que importan:
   Cada adaptador mapea antes del texto — Claude `image` / `document` block, Gemini `inline_data`
   (mime de imagen o `application/pdf`), OpenAI-compat solo `image_url` (el PDF NO se manda por
   proxy). Si el proveedor 400/415ea con imágenes, el error sugiere Gemini/Claude. El aviso "PDF
-  solo Gemini/Claude" lo muestra `BranchTranscript` (props `proveedorLeePdf`/`proveedorNombre`).
+  solo Gemini/Claude" lo muestra `PanelConversacion` (props `proveedorLeePdf`/`proveedorNombre`).
 - La key de Claude/Gemini va **directo del navegador al proveedor**. Las de los otros 11
   **transitan** el proxy stateless (opt-in `opts.usarProxy` / `settings.usarProxyIA`), nunca se
   almacenan. Ver §7a.

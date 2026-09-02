@@ -25,7 +25,7 @@ import MessageNode from "./MessageNode";
 import Composer, { type BranchKind } from "./Composer";
 import SettingsPanel from "./SettingsPanel";
 import { useSync } from "./useSync";
-import BranchTranscript from "./BranchTranscript";
+import PanelConversacion from "./PanelConversacion";
 import LoginNudge from "./LoginNudge";
 import SharedBanner from "./SharedBanner";
 import { NodeActionsContext } from "./nodeActions";
@@ -1539,7 +1539,7 @@ function Flow() {
           />
         )}
         {transcripcion && transcripcion.length > 0 && (
-          <BranchTranscript
+          <PanelConversacion
             intercambios={transcripcion}
             side={settings.transcriptSide}
             onFlipSide={() =>

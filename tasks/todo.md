@@ -96,7 +96,7 @@ Sub-tareas:
   1 tramo = cadena `main`) + `MessageNode` renderiza el tramo + `datosIguales` usa `data.rev` +
   `FlowCanvas` resuelve todo a cabeza/punta. `handleSubmit` main → agrega a la punta (no crea
   globo). Cero migración. Decisiones F5-1. 18 asserts + pane.
-- **F5-2 ~** — Enter a la punta: casi hecho en F5-1. Falta verificar el mini-composer del panel.
+- **F5-2 ✅** — Enter a la punta (folded en F5-1). Verificado en el pane.
 - **F5-3 ✅** — ramificar desde cualquier intercambio. "⑂ ramificar desde acá" por turno IA en el
   panel → chip "Ramificando desde: «...»" + Enter/botón ramifican desde ese punto. `onSubmit`
   gana `desdeId?`. `ubicarNuevoGlobo` ahora es tramo-aware (`layout.ts`). Decisiones F5-3.
@@ -104,11 +104,20 @@ Sub-tareas:
 - **F5-4 ✅** — `Settings.crecimientoPxPorMensaje` (0-24, def 9) + `crecimientoTope` (def 320);
   sliders en "Lienzo". `MessageNode` alto = `ALTO_BASE_GLOBO(108) + min(n*px, tope)` (por
   `NodeActionsContext`). Se sacó "expandir/colapsar" del globo (F3-1) + `vista.ts`. Decisiones F5-4.
-- **F5-5** — adaptar `calcularLayout` ("Ordenar"), `resolverSolapes`, streaming del globo.
-- **F5-6** — docs (CLAUDE.md invariante ✅ ya) + `arquitectura.md` + `historia.md` + renombres.
-
-## Fuera de este plan (más adelante — pedidos de Alan 01-09)
-- **B1** — color por globo: marcar la esquina sup-derecha del título con un color a elección.
+- **F5-4b ✅** — auto-scroll del stream (patrón `pegado`) en panel + globos; grip 16→28px.
+- **F5-4c ✅** — el `⌄` y el cursor de resize DE VERDAD (F5-0/F5-4b no cerraron; reproducidos en
+  Chrome real con CDP). `tragarClickSintetico` traga por **target** (`.react-flow__pane` /
+  `[data-cierra-al-click]`), no por tiempo. La manija de resize sale del `overflow-hidden` del
+  `MessageNode` y cuelga 4px por fuera. Decisiones F5-4c.
+- **F5-5 ✅** — `calcularLayout` ("▤ Ordenar") + `resolverSuperposiciones` recorren TRAMOS (1
+  posición por tramo, la de la cabeza; ramas alineadas al top). `ubicarNuevoGlobo` ya era
+  tramo-aware. 19 asserts + e2e. Decisiones F5-5.
+- **F5-6 ✅** — `historia.md` sección Fase 5; `arquitectura.md` + `decisiones.md` al día; CLAUDE.md
+  invariante ya decía "un globo (nodo del canvas) = un TRAMO". `BranchTranscript` → `PanelConversacion`
+  (archivo + refs vivas). "⧉ Copiar"/"⬇ Guardar" en CADA respuesta del panel (F3-23). **"globo" →
+  "tramo" NO se hizo** — quedaron dos términos útiles (globo = nodo visual, tramo = cadena de datos).
+- Backlog abierto: **B8** (arrastrar un globo va a ~5 fps — `MessageNode` re-parsea todo el markdown
+  del tramo por frame). Ver "Fuera de este plan".
 
 ## Fuera de este plan (más adelante — pedidos de Alan 01-09)
 - **B1** — color por globo: marcar la esquina sup-derecha del título con un color a elección.
@@ -130,6 +139,10 @@ Sub-tareas:
   (hover → `transform: scale()` o lente). Setting en la pestaña "Lienzo": `Settings.hoverZoom`
   (on/off). Cuidar: no romper el drag/selección, ni el layout de los vecinos (¿scale desde el
   centro? ¿z-index alto en hover?).
+- **B8** — perf: arrastrar un globo va a ~5 fps desde Fase 5 (Alan 02-09). El `MessageNode`
+  re-renderiza toda la transcripción del tramo (`intercambios.map(<Markdown>)`) en cada frame del
+  drag → react-markdown re-parsea todo. Fix: `React.memo` del cuerpo (o `useMemo` keyed por
+  `data.rev`) para que mover el globo no re-parsee el markdown. `nodeActions` ya está memoizado.
 
 ## Fuera de este plan (más adelante — pre-existentes)
 - Auto-switch de proveedor al pegar una key de otro

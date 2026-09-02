@@ -92,3 +92,27 @@ real con keys.
 Bugfixes de la fase: `ubicarNuevoGlobo` no pisa a nadie (F3-7b/c) · `asentar` usa la posición
 autoritativa del `onNodeDragStop` (F3-18b) · la rama entra al hijo por el costado opuesto
 (nuevos handles `t-left`/`t-right`/`t-top`, F3-2b).
+
+---
+
+## Fase 5 — un globo del canvas = un TRAMO de la conversación (en curso, 02-09-2026)
+
+Spec `tasks/fase5-spec.md`. **Cambio de arquitectura de la VISTA — el modelo de datos no cambió,
+cero migración**: `Intercambio` / `.md` / persistencia / sync / compartir / `armarContexto` iguales.
+Antes cada Enter creaba un globo; ahora **un globo = un tramo** = una cadena maximal de
+intercambios unidos por `rama: "main"`. Enter agrega a la punta del mismo globo; un globo nuevo
+sale solo al **ramificar** (`rama != "main"`).
+
+| Bloque | Qué | Ref |
+|---|---|---|
+| **F5-0** | Fix del `⌄` del `Composer` (pedía doble click): `tragarClickSintetico` en `components/gestos.ts` — el swallower del click post-resize se comía cualquier click. | F5-0 |
+| **F5-1** | `calcularTramos` / `tramoDesde` / `cabezaDeTramo` (`intercambio.ts`); `arbolAVista` reescrito (1 nodo = 1 tramo, `id` = cabeza, `data.intercambios` + `data.rev`); `datosIguales` ignora `intercambios` usa `rev`; `MessageNode` renderiza el tramo como transcripción scrolleable; `FlowCanvas` resuelve todo a cabeza/punta (`transcriptNodeId` = la PUNTA). `handleSubmit` `main` agrega a la punta SIN crear globo (F5-2 folded acá). | F5-1 |
+| **F5-3** | Ramificar desde **cualquier** intercambio del tramo: "⑂ ramificar desde acá" por turno IA en el panel → `ramificarDesde` + chip; `onSubmit` gana `desdeId?`; `ubicarNuevoGlobo` tramo-aware (resuelve a cabeza, choca contra tramos). | F5-3 |
+| **F5-4** | El globo crece con la conversación: `Settings.crecimientoPxPorMensaje` (0-24, def 9) + `crecimientoTope` (def 320) → sliders en "Lienzo". Alto = `ALTO_BASE_GLOBO(108) + min(n*px, tope)` (por `NodeActionsContext`). Se sacó "expandir/colapsar" del globo (F3-1) + se borró `vista.ts`. | F5-4 |
+| **F5-4b** | Auto-scroll del stream (patrón `pegado`) en panel + globos; grip de resize de 16→28px. | F5-4b |
+| **F5-4c** | El `⌄` y el cursor del resize **de verdad** (F5-0/F5-4b no cerraron; reproducidos en Chrome real con CDP): `tragarClickSintetico` traga por **target** (`.react-flow__pane` / `[data-cierra-al-click]`), no por tiempo; la manija de resize sale del `overflow-hidden` del `MessageNode` y cuelga 4px por fuera de la esquina. | F5-4c |
+| **F5-5** | `calcularLayout` ("▤ Ordenar") y `resolverSuperposiciones` (`layout.ts`) recorren **tramos**: 1 posición por tramo (la de la cabeza), ramas de cualquier intercambio del tramo en columnas al costado alineadas al top. `ubicarNuevoGlobo` ya era tramo-aware. | F5-5 |
+| **F5-6** | `BranchTranscript` → `PanelConversacion` (rename). "⧉ Copiar" / "⬇ Guardar" en **cada** respuesta del panel (no solo la última; `copiada` bool → `copiadaId`). Docs (`historia.md`, `arquitectura.md`, `decisiones.md`, invariante de `CLAUDE.md`). | F5-6, F3-23 |
+
+Backlog abierto en Fase 5: **B8** (arrastrar un globo va a ~5 fps — el `MessageNode` re-parsea
+todo el markdown del tramo por frame; `React.memo` del cuerpo).
