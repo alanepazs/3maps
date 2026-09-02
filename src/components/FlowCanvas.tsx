@@ -888,16 +888,10 @@ function Flow() {
       const sel = getNodes().filter((n) => n.selected);
       const enGrupo = sel.length > 1 && sel.some((n) => n.id === node.id);
       nodeInertiaDragStop(evt, node, enGrupo ? sel : [node]);
-      // Tras mover un grupo, deseleccionar todo: si no, quedan las NodeToolbar
-      // de cada globo (Abrir/Rehacer/Eliminar + swatches) apiladas sobre el
-      // canvas (B3). El envión no depende de la selección — ya capturó sus ids.
-      if (enGrupo) {
-        setNodes((nds) =>
-          nds.map((n) => (n.selected ? { ...n, selected: false } : n)),
-        );
-      }
+      // La selección se MANTIENE tras mover el grupo (pedido de Alan) — se limpia
+      // sola al clickear el fondo del canvas (`onPaneClick`).
     },
-    [getNodes, setNodes, nodeInertiaDragStop],
+    [getNodes, nodeInertiaDragStop],
   );
 
   // Mientras se arrastra una rama: mover el handle de su flecha al lado

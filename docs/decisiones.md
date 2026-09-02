@@ -1302,10 +1302,11 @@ Tres bugs de la prueba de Alan en Chrome (02-09).
     un solo `setArbol` que aplica `conPosicion` + (`conRama` si es rama) a todos → persiste x/y y
     lado de cada uno en un commit (antes: N `setArbol` / N `guardarArbol`, y solo del globo
     agarrado → el resto no persistía).
-  - Tras un drag de **grupo** (`>1`), el wrapper **deselecciona todo** (`setNodes` → `selected:
-    false`) — si no, quedan las `NodeToolbar` de cada globo apiladas sobre el canvas. Un drag
-    individual mantiene la selección (default de RF). El envión ya capturó los ids, no depende de
-    la selección.
+  - Tras un drag de grupo la selección **se mantiene** (pedido de Alan, 02-09 — corrige la
+    decisión previa de deseleccionar). Se limpia sola al clickear el fondo del canvas (default de
+    React Flow, `resetSelectedElements` en el `Pane`; no hace falta `onPaneClick`). Las
+    `NodeToolbar` de cada globo seleccionado quedan visibles mientras dure la selección — es el
+    estado esperado.
 - **Decisión** (Alan, tras probar): **envión parejo a todo el grupo** (no "sin envión de grupo",
   que era la opción pre-elegida en `tasks/plan.md` — la sintió y le gustó).
 - **Lo que NO se tocó**: el flip de handle en vivo del `onNodeDrag` wrapper sigue siendo solo del
