@@ -22,6 +22,13 @@ Runbook corto. Cosas que muerden si no las sabés. Leer antes de tocar.
    reiniciado, o el overlay de error de Next (`nextjs-portal` shadow DOM → `div[role=dialog]`).
    Un `arbolInicial is not defined` / dep-array que cambia de tamaño suele ser HMR entre edits,
    no un bug de fresh-load — reiniciá el server para confirmar.
+3b. **Probar drag/envión en el pane pese al freeze**: el store de React Flow se alcanza por el
+   fiber — `document.querySelector('.react-flow')[__reactFiber$…]`, subir `.return` buscando un
+   `memoizedProps.value` con `.getState().nodeLookup`. Da `addSelectedNodes`, `updateNodePositions`,
+   y los handlers `onNodeDrag*` (nuestros wrappers). Para que `runGlide` avance:
+   `window.requestAnimationFrame = fn => setTimeout(()=>fn(performance.now()),16)`. Así se verificó
+   B3. **Ojo**: `onNodeDragStop` de RF NO trae confiable todos los nodos seleccionados en el 3er
+   arg (según agarres globo o recuadro, y `selectNodesOnDrag`) → leé la selección de `getNodes()`.
 3a. **NO corras `next build` con el `next dev` levantado** — comparten `.next` y el dev queda
    con `ERR_CONNECTION_REFUSED` + un parse-error viejo pegado en la consola. Para el build final:
    `preview_stop` → `rm -rf .next` → `next build` → `rm -rf .next` → `preview_start`. Durante el
