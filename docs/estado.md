@@ -139,7 +139,8 @@ medio → OK · "▤ Ordenar" / solapes → nada se solapó · Copiar/Guardar po
 herramienta en general anda bien. (No probó "mapa viejo se agrupa" — es un caso interno, sin
 UI para gatillarlo.)
 
-**Sigue en pie**: Alan **evaluaba un rediseño grande de los globos** → confirmar antes de B1-B10.
+**Freeze levantado** (Alan 02-09): el "rediseño grande de los globos" que estaba evaluando ERA
+Fase 5 (moverse entre globos + ramificar al costado, no hacia abajo). Ya está hecho. B1-B10 abiertos.
 
 ### Backlog (fuera del plan de fases) → `tasks/todo.md` "Fuera de este plan"
 
