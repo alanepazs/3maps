@@ -249,8 +249,11 @@ src/
                         Textarea "instrucción de sistema" → onChange({systemPrompt}) directo.
     settings.ts         Settings = {inertia, ventanaContexto, systemPrompt, transcriptSide,
                         transcriptWidth, usarProxyIA, composerOculto, crecimientoPxPorMensaje (0-24,
-                        def 9), crecimientoTope (def 320)}. `ALTO_BASE_GLOBO` = 108. DEFAULT_SETTINGS,
-                        storage key. Los sliders de crecimiento están en la pestaña "Lienzo" (F5-4).
+                        def 9), crecimientoTope (def 320), grosorLineas (1-5, def 1.5; B4)}.
+                        `ALTO_BASE_GLOBO` = 108. DEFAULT_SETTINGS, storage key. Los sliders de
+                        crecimiento y de grosor de líneas están en la pestaña "Lienzo".
+                        `grosorLineas` → `FlowCanvas` lo pone como `--xy-edge-stroke-width` (CSS var)
+                        en el contenedor; lo hereda `.react-flow__edge-path`.
     nodeActions.ts       NodeActionsContext: deleteNode / retryNode / stopNode / openNode /
                          resizeNode / colorNode (B1) + readOnly + crecimientoPx / crecimientoTope
                          (F5-4, clampeados en FlowCanvas). readOnly=true (árbol compartido) esconde

@@ -441,6 +441,29 @@ export default function SettingsPanel({
               )}
 
               <label className="mt-3 block text-sm">
+                <span className="flex items-center justify-between">
+                  <span className="text-white/70">Grosor de las líneas</span>
+                  <span className="text-white/50">
+                    {(settings.grosorLineas ?? 1.5).toFixed(1)} px
+                  </span>
+                </span>
+                <input
+                  type="range"
+                  min={1}
+                  max={5}
+                  step={0.5}
+                  value={settings.grosorLineas ?? 1.5}
+                  onChange={(e) =>
+                    onChange({ grosorLineas: Number(e.target.value) })
+                  }
+                  className="mt-2 w-full accent-sky-500"
+                />
+                <span className="mt-1 block text-[11px] text-white/40">
+                  Las flechas que conectan los globos.
+                </span>
+              </label>
+
+              <label className="mt-3 block text-sm">
                 <span className="text-white/70">
                   Instrucción de sistema (opcional)
                 </span>

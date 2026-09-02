@@ -1261,6 +1261,19 @@ Tres bugs de la prueba de Alan en Chrome (02-09).
   null, `rev` cambia, no-cabeza no afecta) + e2e en el pane (swatch aplica → punto en el header +
   `color: rojo` en el `.md`; toggle-off; ✕; persiste tras reload).
 
+### B4. Grosor de las líneas (edges)
+
+- `Settings.grosorLineas: number` (1-5, def **1.5**). Slider en la pestaña "Lienzo".
+- **No pasa por `arbolAVista`** (es pura, no conoce settings, y cambiar el slider no debería
+  re-derivar la vista). Se aplica como la **CSS var `--xy-edge-stroke-width`** en el `<div>`
+  contenedor del canvas (`FlowCanvas`, `style` inline clampeado 1-5) → la heredan `.react-flow` y
+  `.react-flow__edge-path` (RF v12: `stroke-width: var(--xy-edge-stroke-width, var(...-default: 1))`;
+  RF nunca setea la var sin `-default`, así que la nuestra gana). Cambiar el slider se aplica al
+  toque, sin re-render de nodos/edges.
+- Config vieja sin `grosorLineas` → `{ ...DEFAULT_SETTINGS, ...parsed }` da 1.5.
+- Verificado (CDP): slider 1/2/4/5 → `getComputedStyle('.react-flow__edge-path').strokeWidth` =
+  1/2/4/5px en vivo; persiste.
+
 ---
 
 ## Build / deploy

@@ -137,8 +137,9 @@ Sub-tareas:
 - **B3** — multi-select move: al mover varios globos seleccionados, uno solo queda con envión.
   Decidir: quitarle el envión a ese, o dárselo a todos (probablemente ninguno — el envión de
   grupo no aporta y confunde). Toca `useNodeInertia` / `onSelectionDrag*`.
-- **B4** — Setting "grosor de líneas": engrosar/afinar los edges conectores (`Settings.edgeWidth`
-  → `arbolAVista` / CSS de `.react-flow__edge-path`).
+- **B4 ✅** — Setting "grosor de líneas" (edges). `Settings.grosorLineas` (1-5, def 1.5), slider en
+  "Lienzo". Se aplica como CSS var `--xy-edge-stroke-width` en el contenedor del canvas (no pasa
+  por `arbolAVista`). En vivo, persiste. Decisiones B4.
 - **B5** — Settings "fuente" (un puñado de las conocidas) + "tamaño de texto". Toca `globals.css`
   / `layout.tsx` (cargar las fuentes) + `Settings`.
 - **B6** — logo de 3maps + usarlo en la app.

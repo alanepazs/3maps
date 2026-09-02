@@ -31,6 +31,9 @@ export type Settings = {
   // crece. En px de canvas.
   crecimientoPxPorMensaje: number; // 0-24
   crecimientoTope: number; // máximo que crece por encima del base
+  // Grosor de las flechas conectoras (B4). Se aplica como `--xy-edge-stroke-width`
+  // sobre el contenedor del canvas (lo hereda `.react-flow__edge-path`). 1-5.
+  grosorLineas: number;
 };
 
 export const ANCHO_PANEL_DEFECTO = 460;
@@ -51,6 +54,7 @@ export const DEFAULT_SETTINGS: Settings = {
   composerOculto: false,
   crecimientoPxPorMensaje: 9,
   crecimientoTope: 320,
+  grosorLineas: 1.5,
 };
 
 export const SETTINGS_STORAGE_KEY = "3maps:settings";

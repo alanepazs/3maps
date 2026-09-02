@@ -146,10 +146,15 @@ Fase 5 (moverse entre globos + ramificar al costado, no hacia abajo). Ya está h
 
 - **B1 ✅** (decisiones B1) — color por globo. Paleta fija de 6 + sin color (no hex). `Intercambio.color`
   en la cabeza del tramo → `.md` → sync/compartir gratis. Punto en el header + swatches en el toolbar.
-- **B2-B7** (pedidos de Alan 01-09): ventana de contexto adaptativa (medir el gasto de `resumir()`
-  primero — se cruza con T11) · multi-select move + envión · grosor de líneas · fuente + tamaño de
-  texto · **B6 logo** (definido 02-09: árbol "3" verde + globos naranjas; falta el asset en
-  `public/` + favicon — ver `todo.md` B6 y `CLAUDE.md`) · zoom de lupa en hover.
+- **B4 ✅** (decisiones B4) — Setting "grosor de líneas". `Settings.grosorLineas` (1-5, def 1.5),
+  slider en "Lienzo", vía CSS var `--xy-edge-stroke-width`. En vivo.
+- **B2/B3/B5/B7** (pedidos de Alan 01-09): ventana de contexto adaptativa (medir el gasto de
+  `resumir()` primero — se cruza con T11) · multi-select move + envión · fuente + tamaño de texto ·
+  zoom de lupa en hover.
+- **B6 logo** — concepto elegido (02-09: árbol verde + copa de globos de diálogo naranjas/verdes +
+  wordmark "3maps" naranja, sin "3" como tronco). **Falta que Alan suba los assets** a `public/`
+  (`logo.svg` lockup / `logo-mark.svg` árbol solo / `favicon.svg` + `apple-touch-icon.png`). Ahí:
+  `<link>` del favicon en `app/layout.tsx` + fondo del canvas con `logo-mark` en opacidad baja.
 - **B8 ✅** (decisiones F5-7) — arrastrar un globo iba a ~5 fps: `MessageNode` re-parseaba toda la
   transcripción del tramo por frame del drag. `Markdown` = `memo` + `useMemo` del texto; la
   transcripción sale a `CuerpoTramo` (`memo` por `rev`/`readOnly`). 0 mutaciones de DOM en zoom+drag.

@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -1449,6 +1456,17 @@ function Flow() {
       <div
         className="relative h-full w-full"
         data-chat={settings.composerOculto ? "oculto" : "visible"}
+        // Grosor de las flechas conectoras (B4). `.react-flow__edge-path` lee
+        // `--xy-edge-stroke-width`; lo heredan desde acá. Cambiar el slider se
+        // aplica al toque, sin re-render de la vista.
+        style={
+          {
+            "--xy-edge-stroke-width": Math.min(
+              5,
+              Math.max(1, settings.grosorLineas ?? 1.5),
+            ),
+          } as CSSProperties
+        }
       >
         <ReactFlow
           nodes={nodes}
