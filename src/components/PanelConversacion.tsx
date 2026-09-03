@@ -65,6 +65,7 @@ export default function PanelConversacion({
   contextoTokens,
   proveedorNombre,
   proveedorLeePdf = true,
+  proveedorLeeImagen = true,
   width,
   resizable = false,
   onResize,
@@ -96,6 +97,8 @@ export default function PanelConversacion({
   // Para el aviso "el PDF solo lo leen Gemini/Claude" (T16c).
   proveedorNombre?: string;
   proveedorLeePdf?: boolean;
+  // `false` = el proveedor ignora las imágenes adjuntas (WebLLM: modelo sin visión).
+  proveedorLeeImagen?: boolean;
   width?: number;
   resizable?: boolean;
   onResize?: (px: number) => void;
@@ -661,6 +664,13 @@ export default function PanelConversacion({
                     <p className="text-[11px] text-amber-300/90">
                       ⚠ El PDF solo lo leen Gemini (gratis) o Claude
                       {proveedorNombre ? ` — con ${proveedorNombre} se va a ignorar` : ""}.
+                    </p>
+                  )}
+                {!proveedorLeeImagen &&
+                  adjuntos.some((a) => a.tipo === "imagen") && (
+                    <p className="text-[11px] text-amber-300/90">
+                      ⚠ Este modelo no lee imágenes
+                      {proveedorNombre ? ` — con ${proveedorNombre} se van a ignorar` : ""}.
                     </p>
                   )}
               </div>

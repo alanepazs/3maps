@@ -54,10 +54,17 @@ export const OLLAMA_URL = (
   process.env.NEXT_PUBLIC_OLLAMA_URL || "http://localhost:11434"
 ).replace(/\/+$/, "");
 
-// Sentinel que guarda `configIA` como "apiKey" de Ollama: el almacén tira las
-// entradas sin apiKey, y Ollama no tiene una. `llamarIA` / `llamarOllama` lo
-// ignoran. No es un secreto.
+// Sentinel que guarda `configIA` como "apiKey" de un proveedor sin key (Ollama,
+// WebLLM): el almacén tira las entradas sin apiKey y estos no tienen una.
+// `llamarIA` / los adaptadores lo ignoran. No es un secreto.
 export const OLLAMA_SENTINEL = "local";
+export const WEBLLM_SENTINEL = "browser";
+
+// Proveedores locales sin auth: no piden API key ni proxy. `llamarIA` /
+// `listarModelos` saltean el chequeo de key; `SettingsPanel` oculta el input.
+export function proveedorSinKey(p: Proveedor): boolean {
+  return p === "ollama" || p === "webllm";
+}
 
 // Proveedores OpenAI-compatibles que NO habilitan CORS desde el navegador →
 // van contra su API vía el proxy `ia-proxy` (opt-in "usar proxy" en ⚙️).
@@ -318,8 +325,7 @@ export async function llamarIA(
   opts: LlamadaOpts = {},
 ): Promise<RespuestaIA> {
   // Ollama (localhost) y WebLLM (in-browser) corren sin auth — no hay key.
-  const sinKey = config.proveedor === "ollama" || config.proveedor === "webllm";
-  if (!sinKey && !config.apiKey.trim()) {
+  if (!proveedorSinKey(config.proveedor) && !config.apiKey.trim()) {
     throw new ErrorIA("Falta la API key. Cargala en ⚙️.");
   }
   if (mensajes.length === 0) {
@@ -983,8 +989,30 @@ async function llamarWebLLM(
   mensajes: Mensaje[],
   opts: LlamadaOpts,
 ): Promise<RespuestaIA> {
-  const { obtenerEngineWebLLM } = await import("./webllm");
-  const engine = await obtenerEngineWebLLM(config.modelo, opts.onProgreso);
+  const { obtenerEngineWebLLM, hayWebGPU } = await import("./webllm");
+  if (!hayWebGPU()) {
+    throw new ErrorIA(
+      "Este navegador no tiene WebGPU. El modelo local necesita Chrome o Edge " +
+        "de escritorio (no anda en Safari ni en el celular).",
+    );
+  }
+
+  let engine;
+  try {
+    engine = await obtenerEngineWebLLM(config.modelo, opts.onProgreso);
+  } catch (e) {
+    if (esAbort(e)) throw e;
+    const m = e instanceof Error ? e.message : String(e);
+    if (/GPU|WebGPU/i.test(m)) {
+      throw new ErrorIA(
+        "No se pudo iniciar WebGPU. Necesitás Chrome/Edge de escritorio con una " +
+          "GPU; en gráficas viejas o integradas puede fallar. Detalle: " + m,
+        e,
+      );
+    }
+    throw new ErrorIA("No se pudo cargar el modelo local: " + m, e);
+  }
+
   const stream = await engine.chat.completions.create({
     stream: true,
     stream_options: { include_usage: true },
@@ -1183,8 +1211,7 @@ export const MODELOS_WEBLLM: string[] = [
 ];
 
 export async function listarModelos(config: ConfigIA): Promise<string[]> {
-  const sinKey = config.proveedor === "ollama" || config.proveedor === "webllm";
-  if (!sinKey && !config.apiKey.trim()) {
+  if (!proveedorSinKey(config.proveedor) && !config.apiKey.trim()) {
     throw new ErrorIA("Falta la API key. Cargala en ⚙️.");
   }
   switch (config.proveedor) {

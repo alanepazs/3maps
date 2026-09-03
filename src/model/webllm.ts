@@ -34,6 +34,9 @@ export function obtenerEngineWebLLM(
         initProgressCallback: (r) => onProgreso?.(r.progress, r.text),
       });
     })();
+    // No cachear un rechazo: si la carga falla (WebGPU, red), un reintento
+    // vuelve a probar en vez de devolver el mismo error.
+    e.catch(() => engines.delete(modelo));
     engines.set(modelo, e);
   }
   return e;

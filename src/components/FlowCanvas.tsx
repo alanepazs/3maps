@@ -607,8 +607,10 @@ function Flow() {
       // Con `ollama` (modelo local) los topes van ×3-4: la lógica de "free tier
       // saturado" no aplica, pero la visión (imagen ~2800 tok) en una GPU modesta
       // es lenta en el 1er token y entre chunks → el falso "no hubo respuesta"
-      // que reportó Alan. Ver decisiones §7f.
-      const local = configIA.proveedor === "ollama";
+      // que reportó Alan. Ver decisiones §7f. Con `webllm` idem + más lento aún
+      // (modelo cargando en VRAM); la descarga de pesos se maneja aparte
+      // (`descargando` desactiva el watchdog mientras baja).
+      const local = configIA.proveedor === "ollama" || configIA.proveedor === "webllm";
       const INACTIVIDAD_MS = local ? 180_000 : 45_000;
       const PRIMER_BYTE_MS = local ? 240_000 : 90_000;
       const TOTAL_MS = local ? 900_000 : 240_000;
@@ -616,10 +618,12 @@ function Flow() {
       let ultimaActividad = Date.now();
       let esperandoRespuesta = false; // ya se llamó a `llamarIA`
       let recibioAlgo = false; // llegó ≥1 chunk
+      let descargando = false; // WebLLM bajando/cargando los pesos (puede tardar minutos)
       let cortadoPorTimeout = false;
       // Lo último que llegó, sin throttle — para conservarlo si el usuario corta.
       let ultimoAcumulado = "";
       const watchdog = window.setInterval(() => {
+        if (descargando) return; // bajando pesos: sin timeout (el usuario tiene STOP)
         const ahora = Date.now();
         if (ahora - inicio > TOTAL_MS) {
           cortadoPorTimeout = true;
@@ -647,7 +651,14 @@ function Flow() {
         // Resumen del tramo viejo (spec §5). Si falla, se manda completo.
         const viejos = tramoAResumir(base, nodeId, { ventana });
         let resumen: string | null = null;
-        if (viejos.length > 0) {
+        // WebLLM: NO se resume con el modelo (3B resume mal + la llamada oculta
+        // bajaría los pesos antes de tiempo). El tramo viejo se DESCARTA con un
+        // placeholder (la ventana de 4096 no lo banca completo). Ver spec V2-6.
+        if (configIA.proveedor === "webllm" && viejos.length > 0) {
+          resumen =
+            "(La parte más antigua de esta rama se omitió: el modelo local " +
+            "tiene poca ventana de contexto.)";
+        } else if (viejos.length > 0) {
           const idsViejos = viejos.map((i) => i.id);
           const clave = idsViejos.join("|");
           resumen = resumenCacheRef.current.get(clave) ?? null;
@@ -717,8 +728,25 @@ function Flow() {
           signal: ctrl.signal,
           sistema,
           usarProxy: settings.usarProxyIA,
+          // Solo WebLLM: descarga/carga de los pesos del modelo local. Mientras
+          // baja, el watchdog está apagado (`descargando`) y el globo muestra el %.
+          onProgreso: (fraccion, txt) => {
+            descargando = fraccion < 1;
+            ultimaActividad = Date.now();
+            const ahora = Date.now();
+            if (ahora - ultimoRender < 250) return;
+            ultimoRender = ahora;
+            const pct = Math.round(fraccion * 100);
+            const linea = fraccion < 1
+              ? `⬇ Preparando el modelo local… ${pct}%\n\n${txt}`
+              : "⬇ Modelo listo, generando…";
+            setArbol((a) =>
+              conRespuesta(a, nodeId, { respuesta: linea, pending: true }),
+            );
+          },
           onTexto: (_delta, acumulado) => {
             const ahora = Date.now();
+            descargando = false;
             recibioAlgo = true;
             ultimaActividad = ahora;
             ultimoAcumulado = acumulado;
@@ -1826,6 +1854,7 @@ function Flow() {
             proveedorLeePdf={
               configIA.proveedor === "gemini" || configIA.proveedor === "claude"
             }
+            proveedorLeeImagen={configIA.proveedor !== "webllm"}
             width={panelAncho}
             resizable={panelResizable}
             onResize={guardarAnchoPanel}

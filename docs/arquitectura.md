@@ -5,7 +5,7 @@
 > leelas solo si tocás ese archivo. Actualizar cuando cambie la estructura.
 > Última actualización: 03-09-2026 (backlog B1-B10 + B6 logo + fixes IA + export/import + doc card).
 
-**Tamaños** (líneas, 03-09): `FlowCanvas.tsx` ~1835 · `ia.ts` ~1285 · `SettingsPanel.tsx` ~1080 ·
+**Tamaños** (líneas, 03-09): `FlowCanvas.tsx` ~1875 · `ia.ts` ~1405 · `SettingsPanel.tsx` ~1130 ·
 `PanelConversacion.tsx` ~755 · `intercambio.ts` ~585 · `MessageNode.tsx` ~495 · `sync.ts` ~330 ·
 `layout.ts` ~317 · `contexto.ts` ~283 · `compartir.ts` 237 · `configIA.ts` 183 · `useSync.ts` 166 ·
 `mapas.ts` ~150 · `Composer.tsx` 138 · `ToolbarGrupo.tsx` 54 · `gestos.ts` 46 · el resto < 110.
@@ -119,12 +119,16 @@ src/
                          ia-proxy; SSE estilo OpenAI). Streaming vía opts.onTexto. opts.usarProxy
                          los gatea (si false → ErrorIA explicativo); resumir() lo recibe también.
                          listarModelos (Claude client.models.list(), Gemini GET /v1beta/models,
-                         los demás via proxy GET /models). PROVEEDORES_DISPONIBLES = 7 (Gemini,
-                         Claude + 5 vía proxy: deepseek, gpt, groq, openrouter,
-                         huggingface). upstreamDe(prov) → clave
+                         los demás via proxy GET /models). PROVEEDORES_DISPONIBLES = 9 (Gemini,
+                         Claude + 5 vía proxy: deepseek, gpt, groq, openrouter, huggingface +
+                         ollama local + webllm in-browser). upstreamDe(prov) → clave
                          del mapa PROVEEDORES del proxy. `GUIA_API_KEY[prov]` = {url, gratis,
                          abierto?, pasos} (mini-guía en ⚙️). `sinRazonamiento()` saca <think> del
-                         stream (F3-12). ErrorIA con mensajes legibles.
+                         stream (F3-12). ErrorIA con mensajes legibles. Adaptadores locales:
+                         llamarOllama (fetch localhost, §7f), llamarWebLLM (webllm.ts, §7g).
+    webllm.ts /          WebLLM (modelo in-browser, WebGPU). worker: WebWorkerMLCEngineHandler.
+    webllm.worker.ts     webllm.ts: obtenerEngineWebLLM (cache por modelo, import dinámico de
+                         @mlc-ai/web-llm, new Worker(new URL(...))), hayWebGPU(). Ver §7g.
     configIA.ts          localStorage "3maps:ia" = { activo, keys: {[prov]:{apiKey,modelo}}, dueño }
                          — UNA key por proveedor. cargarConfigIA() (default gemini), guardarConfigIA,
                          cambiarProveedorActivo, borrarKeyProveedor, configGuardadaDe.
@@ -244,7 +248,8 @@ src/
                         documento → `<DocCard>` desplegable (T15, 03-09).
                         Props: {intercambios, side, onFlipSide, onClose, onSubmit?, onStop?,
                         onRetry?, nav?, onNavigate?, contextoTokens?, proveedorNombre?,
-                        proveedorLeePdf?, width?, resizable?, onResize?}.
+                        proveedorLeePdf?, proveedorLeeImagen? (false = webllm, aviso ámbar
+                        "no lee imágenes"), width?, resizable?, onResize?}.
     SharedBanner.tsx    Cartel arriba cuando se ve un árbol compartido (`?compartir=`). Props:
                         {titulo, onGuardar, onSalir}. "Guardar en mi 3maps" = pasa a local editable.
     LoginNudge.tsx      Pill arriba-centro para el usuario DESLOGUEADO (solo si `haySupabase()`):
@@ -289,10 +294,12 @@ src/
                         los modelos de la key; el contenedor scrollea). Los 8
                         proveedores; commit() lo dispara al guardar. `<details>` con la mini-guía
                         de API key (`GUIA_API_KEY`, F3-12 aclara open-source).
-                        Rama `esOllama` (§7f): sin input de key, caja con requisitos (server en
-                        `OLLAMA_URL`, `ollama pull`, solo Chrome/Edge), `dirty`/commit sobre el
-                        modelo solo, `keyEfectiva = OLLAMA_SENTINEL`, botón "ver modelos que
-                        bajaste" → `/api/tags`.
+                        Rama `esLocal` (`proveedorSinKey`: ollama/webllm, §7f/§7g): sin input de
+                        key, `dirty`/commit sobre el modelo solo, `keyEfectiva = sentinelLocal`.
+                        `esOllama` → caja "server en `OLLAMA_URL` + `ollama pull`", botón "ver
+                        modelos que bajaste" → `/api/tags`. `esWebllm` → caja "~2 GB, WebGPU,
+                        Chrome/Edge", gate `hayWebGPU()` (deshabilita Guardar), picker de los 3
+                        `MODELOS_WEBLLM`.
                         Textarea "instrucción de sistema" → onChange({systemPrompt}) directo.
     settings.ts         Settings = {inertia, ventanaContexto, systemPrompt, transcriptSide,
                         transcriptWidth, usarProxyIA, composerOculto, crecimientoPxPorMensaje (0-24,
@@ -396,16 +403,19 @@ Handlers (todos operan sobre `arbol` vía `setArbol`):
   se corrige en el drop (B3).
 - `responder(nodeId, arbolBase)` — **la llamada a la IA**. Watchdog por fases (F3-6): resumir bajo
   `TOTAL_MS` (240s) + corte propio `RESUMEN_MS` (50s) de `resumir()`; 1er token del stream
-  `PRIMER_BYTE_MS` (90s); entre chunks `INACTIVIDAD_MS` (45s). Con `configIA.proveedor === "ollama"`
-  (`local`) los 4 van ×3-4 (240/900/... — visión local lenta, §7f). Timeout → error reintentable
-  (deja la parcial). Sin API key → `conError` (salvo `ollama`, que no usa key). Si no:
+  `PRIMER_BYTE_MS` (90s); entre chunks `INACTIVIDAD_MS` (45s). Con `local` (`ollama`/`webllm`)
+  los 4 van ×3-4 (240/900/… — modelo local lento, §7f/§7g); con `webllm` además el watchdog se
+  **apaga** mientras `descargando` (bajada de pesos, puede tardar minutos → `onProgreso`).
+  Timeout → error reintentable (deja la parcial). Sin API key → `conError` (salvo `local`). Si no:
   `conRespuesta({pending:true})` + limpia error; arma el contexto con `armarContexto` (tratando a
   `nodeId` como pendiente, así un reintento descarta la respuesta parcial vieja); si el camino
   supera la ventana, genera/cachea el `resumenViejo` con `resumir` (sin `systemPrompt`)
   **incremental** (busca el prefijo cacheado más largo en `resumenCacheRef` → resume solo la cola
   nueva sobre él, `opts.resumenPrevio`; B2, decisiones §10) + calcula
-  `intercambiosRelevantes` (rescate por palabras clave, fase 2.5); `llamarIA`
-  con `opts.sistema = settings.systemPrompt`, `opts.usarProxy = settings.usarProxyIA`, y `onTexto`
+  `intercambiosRelevantes` (rescate por palabras clave, fase 2.5). **`webllm` NO resume** (el tramo
+  viejo se descarta con un placeholder — §7g). `llamarIA`
+  con `opts.sistema = settings.systemPrompt`, `opts.usarProxy = settings.usarProxyIA`, `onProgreso`
+  (webllm: descarga de pesos → texto en el globo), y `onTexto`
   throttleado a 80ms → `conRespuesta({respuesta: acc, pending:true})` (streaming); al terminar
   `conRespuesta({pending:false, proveedor})`; en error `conError`. `enVueloRef` (Map<id,
   AbortController>) para cancelar. `arbolRef` espeja `arbol` para leerlo en callbacks async.
@@ -457,10 +467,12 @@ Props de `<ReactFlow>` que importan:
 
 ## IA (model/ia.ts)
 
-- `ConfigIA = { proveedor, apiKey, modelo }`. `PROVEEDORES_DISPONIBLES` = **8**
-  (`gemini, claude` + 5 vía proxy: `groq, openrouter, huggingface, deepseek, gpt` + `ollama` local).
+- `ConfigIA = { proveedor, apiKey, modelo }`. `PROVEEDORES_DISPONIBLES` = **9** (`main`: 8)
+  (`gemini, claude` + 5 vía proxy: `groq, openrouter, huggingface, deepseek, gpt` + `ollama`
+  local + `webllm` in-browser).
   `PROVEEDORES_VIA_PROXY` = **5** (los 5 OpenAI-compat cloud — no habilitan CORS → van por
   `ia-proxy`, decisiones §7a). `cerebras`/`siliconflow`/`zhipu`/`moonshot`/`mistral`/`qwen` se eliminaron (§7d).
+  `proveedorSinKey(p)` = `ollama` \| `webllm` (locales, sin auth).
   `MODELO_POR_DEFECTO`, `NOMBRE_PROVEEDOR`, `PISTA_API_KEY`, `GUIA_API_KEY` por proveedor
   (`MODELOS_SUGERIDOS` se eliminó — F3-13).
 - `llamarIA(config, mensajes, opts)` → `Promise<{ texto, uso, truncada? }>`, `switch(config.proveedor)`.
@@ -497,6 +509,16 @@ Props de `<ReactFlow>` que importan:
   `configIA` guarda `apiKey: OLLAMA_SENTINEL` (`"local"`) para persistir la entrada sin key;
   `llamarIA` / `listarModelos` saltean el chequeo de key para `"ollama"`. Opción avanzada: solo
   Chrome/Edge escritorio (localhost = secure context), Safari/móvil no.
+- **Adaptador WebLLM** (`llamarWebLLM`, decisiones §7g): modelo in-browser con WebGPU.
+  `src/model/webllm.worker.ts` (`WebWorkerMLCEngineHandler`) + `src/model/webllm.ts`
+  (`obtenerEngineWebLLM` — cache de engine por modelo, `import("@mlc-ai/web-llm")` dinámico,
+  `new Worker(new URL("./webllm.worker.ts", import.meta.url), { type: "module" })`; `hayWebGPU`).
+  `llamarWebLLM` itera el `AsyncGenerator` OpenAI-compat del engine (no SSE de texto), feature-
+  detecta WebGPU y traduce el error crudo de web-llm. `MODELOS_WEBLLM` (1B/3B/7B). Sentinel
+  `WEBLLM_SENTINEL` (`"browser"`). `opts.onProgreso(fraccion, texto)` = descarga de pesos →
+  `responder` lo muestra en el globo y apaga el watchdog (`descargando`). `responder` NO resume
+  con webllm (placeholder). El chunk de web-llm (6 MB) es lazy — `import()` dinámico, no en la
+  carga inicial. Bundlea bajo `output: export` (spike, §7g).
 - **Adaptador Claude** (`llamarClaude`): `await import("@anthropic-ai/sdk")` (dinámico),
   `new Anthropic({ apiKey, dangerouslyAllowBrowser: true })`, `client.messages.stream(...)` con
   `signal`. CORS habilitado por el header `anthropic-dangerous-direct-browser-access` del SDK.

@@ -182,3 +182,23 @@ Follow-ups (03-09): Alan lo probó desde el sitio publicado (`alanepazs.github.i
 texto/PDF/imagen OK, el PNA de Chrome no bloqueó) — hizo falta `OLLAMA_ORIGINS`. Y el watchdog de
 `FlowCanvas.responder` daba un falso "no hubo respuesta" con la visión local (lenta): con
 `ollama` los 4 topes (`PRIMER_BYTE_MS`/`INACTIVIDAD_MS`/`TOTAL_MS`/`RESUMEN_MS`) van ×3-4.
+
+## v2 — WebLLM: modelo local in-browser (03-09-2026, en curso — rama `spike/webllm-build`)
+
+Proveedor #9 `webllm`: un LLM chico corriendo en la pestaña del usuario con WebGPU, sin instalar
+nada, sin key. `@mlc-ai/web-llm@0.2.84` (única dep nueva desde React Flow/Supabase), `import()`
+dinámico → cero peso en la carga inicial.
+
+- **Spike de build (Open Question #1 del spec) → PASA**: `new Worker(new URL("./webllm.worker.ts",
+  import.meta.url), { type: "module" })` bundlea bien con Turbopack + `output: "export"`. El chunk
+  de web-llm (6 MB) queda lazy; el worker se emite como `.js` clásico; el basePath `/3maps` se
+  aplica a los chunks del worker. Verificado sirviendo `out/` bajo `/3maps/`.
+- `webllm.worker.ts` (`WebWorkerMLCEngineHandler`) + `webllm.ts` (`obtenerEngineWebLLM` con cache
+  por modelo + `hayWebGPU`). `ia.ts` `llamarWebLLM` itera el `AsyncGenerator` OpenAI-compat del
+  engine. `MODELOS_WEBLLM` (Llama-3.2-1B/3B-default/Qwen2.5-7B).
+- `proveedorSinKey(p)` unifica ollama+webllm; `WEBLLM_SENTINEL = "browser"`. `SettingsPanel` rama
+  `esWebllm` (sin key, caja de requisitos, gate `hayWebGPU()`, picker de 3 modelos).
+- Descarga de pesos: `onProgreso` → texto en el globo + watchdog apagado (`descargando`).
+  `webllm` no resume (placeholder). Aviso ámbar "no lee imágenes".
+- `tsc`/`lint`/`build` verde. **Falta la prueba de generación de Alan en Chrome real** (el pane
+  de Claude no tiene WebGPU funcional). Detalle: decisiones §7g.

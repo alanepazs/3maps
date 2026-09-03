@@ -23,11 +23,14 @@ import {
   PISTA_API_KEY,
   PROVEEDORES_DISPONIBLES,
   PROVEEDORES_VIA_PROXY,
+  WEBLLM_SENTINEL,
   avisoFormatoKey,
   proveedorDeLaKey,
+  proveedorSinKey,
   listarModelos,
   type ConfigIA,
 } from "@/model/ia";
+import { hayWebGPU } from "@/model/webllm";
 import type { Proveedor } from "@/model/intercambio";
 import { haySupabase } from "@/model/supabase";
 import { useSesion } from "./useSesion";
@@ -197,12 +200,21 @@ export default function SettingsPanel({
   };
 
   const proveedor: Proveedor = configIA.proveedor;
-  // Ollama corre en localhost sin auth: no hay API key. `configIA` guarda un
-  // sentinel para que la entrada persista (el almacén tira las sin key).
+  // Ollama (localhost) y WebLLM (in-browser) corren sin auth: no hay API key.
+  // `configIA` guarda un sentinel para que la entrada persista (el almacén tira
+  // las sin key). Ver decisiones §7f.
   const esOllama = proveedor === "ollama";
+  const esWebllm = proveedor === "webllm";
+  const esLocal = proveedorSinKey(proveedor);
+  const sentinelLocal = esWebllm ? WEBLLM_SENTINEL : OLLAMA_SENTINEL;
   const keyGuardada = configIA.apiKey;
   const modeloGuardado = configIA.modelo || MODELO_POR_DEFECTO[proveedor];
-  const hayKey = !esOllama && keyGuardada.trim() !== "";
+  const hayKey = !esLocal && keyGuardada.trim() !== "";
+
+  // WebLLM necesita WebGPU (Chrome/Edge escritorio). `hayWebGPU()` es SSR-safe
+  // (chequea `typeof navigator`); el panel de ⚙️ no está en el paint inicial, así
+  // que el initializer lazy corre en cliente sin mismatch de hidratación.
+  const [hayGpu] = useState(() => hayWebGPU());
 
   // DeepSeek / GPT van por el proxy de 3maps (no habilitan CORS). Necesitan que
   // el usuario acepte el opt-in Y que la instancia tenga el proxy configurado.
@@ -247,13 +259,13 @@ export default function SettingsPanel({
     setFiltroModelo("");
   }
 
-  const dirty = esOllama
+  const dirty = esLocal
     ? modeloDraft.trim() !== modeloGuardado.trim() || keyGuardada.trim() === ""
     : keyDraft.trim() !== keyGuardada.trim() ||
       modeloDraft.trim() !== modeloGuardado.trim();
 
-  const keyEfectiva = esOllama
-    ? OLLAMA_SENTINEL
+  const keyEfectiva = esLocal
+    ? sentinelLocal
     : keyDraft.trim() || keyGuardada.trim();
 
   // Chequeo de formato local (gratis): avisa si la key no pinta del proveedor
@@ -293,7 +305,7 @@ export default function SettingsPanel({
     if (!dirty) return;
     onGuardarKeyIA({
       proveedor,
-      apiKey: esOllama ? OLLAMA_SENTINEL : keyDraft.trim(),
+      apiKey: esLocal ? sentinelLocal : keyDraft.trim(),
       modelo: modeloDraft.trim() || MODELO_POR_DEFECTO[proveedor],
     });
     setAplicado(true);
@@ -301,7 +313,7 @@ export default function SettingsPanel({
     // Al guardar una key, traer de una la lista de modelos que esa key puede
     // usar (varía por key) → el usuario ve las opciones y confirma que la key
     // es válida sin gastar tokens.
-    if (esOllama || keyDraft.trim()) void verModelos();
+    if (esLocal || keyDraft.trim()) void verModelos();
   };
 
   const cambiarProveedor = (p: Proveedor, conservarKey?: string) => {
@@ -621,7 +633,26 @@ export default function SettingsPanel({
             </div>
           )}
 
-          {esOllama ? (
+          {esWebllm ? (
+            <div className="mt-2 rounded border border-white/10 bg-white/5 p-2 text-[11px] text-white/70">
+              El modelo corre <span className="text-white/90">en esta pestaña</span>{" "}
+              con WebGPU — no gasta tokens, nada sale de tu compu. La 1ª vez se
+              descargan ~2 GB de pesos (con barra de progreso), después queda
+              cacheado. No hay API key.{" "}
+              {!hayGpu ? (
+                <span className="text-amber-300">
+                  Tu navegador no expone WebGPU: necesitás Chrome/Edge de
+                  escritorio con una GPU. No anda en móvil.
+                </span>
+              ) : (
+                <span className="text-white/60">
+                  Necesita Chrome/Edge de escritorio y una GPU decente. No anda en
+                  móvil. Modelo chico → bueno para resumir/charlar, flojo para
+                  código; sin imágenes ni PDF.
+                </span>
+              )}
+            </div>
+          ) : esOllama ? (
             <div className="mt-2 rounded border border-white/10 bg-white/5 p-2 text-[11px] text-white/70">
               El modelo corre en <span className="text-white/90">tu máquina</span>,
               no gasta tokens. Requiere el server de Ollama escuchando en{" "}
@@ -682,13 +713,20 @@ export default function SettingsPanel({
               <span className="mr-1 inline-block transition-transform group-open:rotate-90">
                 ▸
               </span>
-              {esOllama
-                ? "¿Cómo pongo a andar Ollama?"
-                : "¿No sabés cómo conseguir tu API key?"}
+              {esWebllm
+                ? "¿Qué es el modelo local del navegador?"
+                : esOllama
+                  ? "¿Cómo pongo a andar Ollama?"
+                  : "¿No sabés cómo conseguir tu API key?"}
             </summary>
             <div className="space-y-1.5 px-2 pb-2 pt-0.5 text-white/70">
               <p>
-                {esOllama ? (
+                {esWebllm ? (
+                  <span>
+                    Un modelo de IA que corre en tu navegador con WebGPU, gratis.
+                    No instalás nada; se descarga la 1ª vez y queda cacheado.{" "}
+                  </span>
+                ) : esOllama ? (
                   <span>
                     Un modelo local, gratis, corriendo en tu compu. Instalás Ollama
                     una vez y bajás el modelo.{" "}
@@ -730,11 +768,13 @@ export default function SettingsPanel({
                 rel="noreferrer"
                 className="inline-block rounded bg-sky-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-400"
               >
-                {esOllama
-                  ? "Descargar Ollama ↗"
-                  : `Abrir la web de ${NOMBRE_PROVEEDOR[proveedor]} ↗`}
+                {esWebllm
+                  ? "Sobre WebLLM ↗"
+                  : esOllama
+                    ? "Descargar Ollama ↗"
+                    : `Abrir la web de ${NOMBRE_PROVEEDOR[proveedor]} ↗`}
               </a>
-              {!esOllama && (
+              {!esLocal && (
                 <p className="text-[11px] text-white/40">
                   La clave se guarda solo en este navegador (y, si iniciás sesión,
                   en tu cuenta para tenerla en todos tus dispositivos). Nunca la
@@ -770,14 +810,18 @@ export default function SettingsPanel({
               ? esOllama
                 ? "consultando Ollama…"
                 : "verificando key…"
-              : esOllama
-                ? "↻ ver modelos que bajaste"
-                : "↻ verificar key y ver sus modelos"}
+              : esWebllm
+                ? "↻ ver modelos disponibles"
+                : esOllama
+                  ? "↻ ver modelos que bajaste"
+                  : "↻ verificar key y ver sus modelos"}
           </button>
           <span className="mt-1 block text-[11px] text-white/40">
-            {esOllama
-              ? "Lista lo que devuelve `ollama list` en tu máquina."
-              : "Consulta gratis (no gasta tokens): si la key es inválida, avisa acá."}
+            {esWebllm
+              ? "Lista corta curada. El de arriba baja ~2 GB la 1ª vez; el chico ~0.9 GB."
+              : esOllama
+                ? "Lista lo que devuelve `ollama list` en tu máquina."
+                : "Consulta gratis (no gasta tokens): si la key es inválida, avisa acá."}
           </span>
 
           {errorModelos && (
@@ -859,14 +903,14 @@ export default function SettingsPanel({
             <button
               type="button"
               onClick={commit}
-              disabled={!dirty}
+              disabled={!dirty || (esWebllm && !hayGpu)}
               className="rounded bg-sky-500 px-3 py-1.5 text-xs font-medium text-white enabled:hover:bg-sky-400 disabled:opacity-40"
             >
               {dirty
                 ? "Guardar"
                 : aplicado
                   ? "✓ Aplicado"
-                  : hayKey || (esOllama && keyGuardada.trim() !== "")
+                  : hayKey || (esLocal && keyGuardada.trim() !== "")
                     ? "✓ Guardado"
                     : "Guardar"}
             </button>
@@ -885,11 +929,13 @@ export default function SettingsPanel({
               ? "Cambios sin guardar."
               : aplicado
                 ? "Config aplicada. Ya podés mandar una pregunta."
-                : esOllama
-                  ? `Se llama directo a ${OLLAMA_URL} — nada sale de tu red.`
-                  : hayKey
-                    ? "Guardada en este navegador. Se manda directo al proveedor."
-                    : "La key se guarda solo en este navegador; nunca a un servidor de 3maps."}
+                : esWebllm
+                  ? "El modelo corre en esta pestaña — nada sale de tu compu."
+                  : esOllama
+                    ? `Se llama directo a ${OLLAMA_URL} — nada sale de tu red.`
+                    : hayKey
+                      ? "Guardada en este navegador. Se manda directo al proveedor."
+                      : "La key se guarda solo en este navegador; nunca a un servidor de 3maps."}
           </span>
 
           {haySupabase() && (

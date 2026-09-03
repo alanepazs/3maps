@@ -1,7 +1,9 @@
 # Spec: v2 — Modelo local in-browser (proveedor `webllm`)
 
-> Estado: **SPECIFY** (Fase 1 de spec-driven-development). Pendiente de aprobación de Alan.
-> Fecha: 03-09-2026. Contexto previo: memoria `project-3maps-v2-modelo-local`.
+> Estado: **IMPLEMENT** (rama `spike/webllm-build`). Spec aprobado + spike de build OK
+> (Open Question #1 resuelto) + toda la mecánica armada. **Falta**: la prueba de generación
+> de Alan en Chrome real (WebGPU + descarga). Fecha: 03-09-2026. El "por qué" del código:
+> decisiones §7g. Contexto previo: memoria `project-3maps-v2-modelo-local`.
 
 ## Objective
 

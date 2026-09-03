@@ -2,7 +2,7 @@
 
 > Por qué el código es como es. Cada entrada: **qué se decidió**, **por qué**, y **qué romperías
 > si lo revertís sin pensar**. Si vas a ir en contra de una de estas, que sea a propósito.
-> Última actualización: 03-09-2026 (backlog B1-B10 + B6 logo + fixes IA + onboarding §26 + Ollama §7f).
+> Última actualización: 03-09-2026 (backlog B1-B10 + B6 logo + fixes IA + onboarding §26 + Ollama §7f + WebLLM §7g).
 
 Complementa a:
 - `docs/spec-proyecto.md` — el diseño y las decisiones de producto (modelo de datos, UX, roadmap).
@@ -210,6 +210,45 @@ CORS necesita `OLLAMA_ORIGINS`; Chrome PNA puede bloquear public→localhost; el
 - **Revertir**: sacás `"ollama"` de `Proveedor` + los `Record`, el `case`, `llamarOllama` /
   `listarModelosOllama` / `procesarStreamOpenAICompat` (re-inline en `llamarOpenAICompat`), y el
   branch `esOllama` de `SettingsPanel`. Una config vieja con `activo: "ollama"` cae al default.
+
+### 7g. WebLLM: modelo local in-browser como proveedor #9 (v2 — spec `tasks/v2-webllm-spec.md`)
+El camino de "IA gratis para cualquiera": el visitante corre un LLM chico **dentro de su
+pestaña** con WebGPU, sin instalar nada, sin key. `@mlc-ai/web-llm` (Apache-2.0, MLC) — única dep
+nueva desde React Flow/Supabase, evaluada explícitamente ([[feedback-3maps-no-unknown-deps]]):
+WebGPU LLM no se hace en vanilla; se carga con `import()` dinámico → cero peso en la carga inicial.
+- **Spike (Open Question #1) resuelto** (03-09): `new Worker(new URL("./webllm.worker.ts",
+  import.meta.url), { type: "module" })` **bundlea bien** con Turbopack + `output: "export"`.
+  Turbopack emite un bootstrap `turbopack-worker-*.js` + entry `.js` (no `.ts`) + el chunk de
+  web-llm (6 MB, **lazy** — no en `index.html`); convierte a worker **clásico** (`importScripts`,
+  sin líos de MIME en Pages); el basePath `/3maps` se aplica bien a los chunks del worker. No
+  hizo falta plan B (in-main-thread / esm.run). web-llm 0.2.84 no necesita stubs de
+  `fs`/`module`/`perf_hooks` (el ejemplo webpack viejo sí).
+- **Arquitectura**: `webllm.worker.ts` (`WebWorkerMLCEngineHandler`) + `webllm.ts`
+  (`obtenerEngineWebLLM` — cache de engine por modelo, import dinámico; `hayWebGPU`). `ia.ts`
+  `llamarWebLLM`: itera el `AsyncGenerator` OpenAI-compat del engine (no SSE de texto → no reusa
+  `procesarStreamOpenAICompat`); feature-detect WebGPU + traduce el error crudo de web-llm.
+- **`MODELOS_WEBLLM`** (lista corta, spec V2-3): `Llama-3.2-1B` (~0.9 GB) / `Llama-3.2-3B`
+  (~2.3 GB, **default**) / `Qwen2.5-7B` (~5.1 GB). `listarModelos` los devuelve tal cual.
+- **Sin key**: sentinel `WEBLLM_SENTINEL = "browser"` en `configIA` (como Ollama, §7f).
+  `proveedorSinKey(p)` unifica el "sin auth" de ollama+webllm en `ia.ts` y `SettingsPanel`
+  (`esLocal`). `SettingsPanel` rama `esWebllm`: sin input de key, caja de requisitos, gate
+  `hayWebGPU()` (deshabilita "Guardar" si no hay), picker de los 3 modelos.
+- **Descarga de pesos** (`onProgreso` → `LlamadaOpts`): `responder` la muestra como texto en el
+  globo (`⬇ Preparando el modelo local… N%`) y **apaga el watchdog** mientras baja
+  (`descargando`; puede tardar minutos, el usuario tiene STOP). Post-descarga, los topes van como
+  `local` (×3-4, §7f).
+- **Sin resumen para webllm**: `responder` NO llama a `resumir()` con webllm (el 3B resume mal +
+  dispararía la descarga antes de tiempo). El tramo viejo se descarta con un placeholder — la
+  ventana de 4096 no lo banca completo (spec V2-6).
+- **Sin imagen/PDF**: los modelos son texto puro. `PanelConversacion` `proveedorLeeImagen=false`
+  para webllm → aviso ámbar "este modelo no lee imágenes".
+- **NO es el default** (spec V2-7): "traé tu key" sigue siendo el default; webllm es opt-in.
+- **Pendiente**: la prueba de generación real (WebGPU + descarga) la hace Alan en su Chrome —
+  el pane de Claude no tiene WebGPU funcional. Todo lo demás verificado (build, worker bundle,
+  UI, config, error path).
+- **Revertir**: `git rm src/model/webllm*.ts`, sacá `"webllm"` de `Proveedor`/`Record`/`case`,
+  `llamarWebLLM`/`MODELOS_WEBLLM`/`proveedorSinKey`, el branch `esWebllm` de `SettingsPanel`, el
+  `onProgreso`/`descargando` de `responder`, `npm rm @mlc-ai/web-llm`.
 
 ### 7b. Modelos de Gemini: default `gemini-3.7-flash`, "thinking" mínimo por generación, botón "ver modelos"
 La API de Gemini se renovó entera en 2026 y una key **free tier** nueva de AI Studio se comporta

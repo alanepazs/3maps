@@ -16,7 +16,10 @@
 auto-switch de proveedor + export/import `.zip` + doc card + **proveedor Ollama local (§7f)**:
 todo shippeado. `tsc`/`lint`/`build` verde. `https://alanepazs.github.io/3maps/` (deploy automático
 en cada push a `main`). Repo `github.com/alanepazs/3maps`, local `D:\IA\3maps`.
-**En curso**: v2 = modelo local WebLLM in-browser — spec en `tasks/v2-webllm-spec.md` (fase SPECIFY).
+**En curso**: v2 = modelo local **WebLLM in-browser** (proveedor #9 `webllm`) — rama
+`spike/webllm-build`. Spike de build OK + toda la mecánica armada (UI, adapter, progreso,
+watchdog); **falta la prueba de generación de Alan en Chrome real** (WebGPU + descarga de ~2 GB).
+Spec `tasks/v2-webllm-spec.md`, decisiones §7g.
 
 **Lo único que queda son cosas de Alan / diferidas** (ver "Ideas sin empezar" + "Prueba real
 pendiente"): ronda de pruebas en Chrome con keys reales,
@@ -49,9 +52,10 @@ en el celu). **El próximo paso natural es la prueba de Alan, no más código.**
   varios mapas, esconder la barra de chat. El `arbol` de `Intercambio`s es la fuente de la verdad;
   la vista de React Flow se deriva.
 - **IA** (`model/ia.ts`, wired en `FlowCanvas.responder`): streaming, contexto = solo el camino
-  raíz→globo con ventana + resumen. **8 proveedores**: Gemini + Claude directos del navegador;
-  DeepSeek/GPT/Groq/OpenRouter/HuggingFace vía el edge function `ia-proxy` (opt-in "usar proxy"
-  en ⚙️); **Ollama local** (`fetch` directo a `localhost:11434`, sin key — decisiones §7f).
+  raíz→globo con ventana + resumen. **9 proveedores** (en `main`, 8): Gemini + Claude directos
+  del navegador; DeepSeek/GPT/Groq/OpenRouter/HuggingFace vía el edge function `ia-proxy` (opt-in
+  "usar proxy" en ⚙️); **Ollama local** (`fetch` a `localhost:11434`, sin key — §7f); **WebLLM**
+  (`webllm`, modelo in-browser con WebGPU, sin key — rama `spike/webllm-build`, §7g).
   Una key/modelo por proveedor. `⚙️` trae mini-guía de API key por proveedor
   (`GUIA_API_KEY`) y aclara cuáles son open-source.
   **Probados e2e: Gemini + Groq + OpenRouter + HuggingFace** (4 free) + **Ollama** (`qwen2.5vl:7b`).
