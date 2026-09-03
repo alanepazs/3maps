@@ -7,10 +7,9 @@
 
 ## Dónde estamos
 
-**Fases 1-5 en producción.** **Backlog B1-B10 shippeado y pusheado** salvo **B6** (bloqueado — faltan
-los assets del logo en `public/`). Más fixes de robustez de la llamada a la IA (03-09, ver abajo).
-`https://alanepazs.github.io/3maps/` (deploy automático en cada push a `main`). Repo
-`github.com/alanepazs/3maps`, local `D:\IA\3maps`.
+**Fases 1-5 en producción. Backlog B1-B10 completo.** Más: fixes de robustez de la llamada a la IA
++ auto-switch de proveedor (03-09). `https://alanepazs.github.io/3maps/` (deploy automático en cada
+push a `main`). Repo `github.com/alanepazs/3maps`, local `D:\IA\3maps`.
 - **Fase 4** (panel rediseñado + contadores de tokens + adjuntos + copiar/guardar): shippeada,
   probada con keys (Gemini imagen+PDF, Groq visión, pegar captura, T15). Claude bloqueado por saldo.
 - **Fase 5** — **un globo del canvas = un TRAMO** (cadena `main`), no un intercambio suelto. Enter
@@ -21,10 +20,13 @@ los assets del logo en `public/`). Más fixes de robustez de la llamada a la IA 
   de datos).
 - **Backlog B1-B10**: detalle en `docs/historia.md` "Backlog post-fases"; el porqué en
   `decisiones.md` (B1, B3, B4, B5, B7, §10, F5-7).
+- **B6 (logo)** ✅ — `public/{logo.png,3.png}` (Alan). `src/app/{favicon.ico,icon.png,apple-icon.png}`
+  (Next los linkea con basePath) + `public/logo-mark.png` (watermark del canvas, 5%, hijo de
+  `<ReactFlow>`). `src/model/assets.ts` `rutaAsset()`. Decisiones B6.
 - **Fixes de la IA (03-09)** — reporte de Alan (respuestas que se cortan a la mitad, peor con
   2 ramas): watchdog **por fases**, respuesta **truncada** que se marcaba como completa,
-  `⌄` con **pointer capture**, **mismatch de hidratación** con ajustes guardados. Todo en
-  `decisiones.md` F3-6 (+ B3-b, B5). Pusheado.
+  `⌄` con **pointer capture**, **mismatch de hidratación** con ajustes guardados, **auto-switch de
+  proveedor** al pegar una key de otro. Todo en `decisiones.md` F3-6 (+ B3-b, B5, §8c). Pusheado.
 - **Falta que Alan confirme en Chrome**: que ya no se corta con 2 ramas; el `:hover` visual de B7;
   la instrumentación `[b2]` con keys reales (después sacarla).
 
@@ -143,12 +145,6 @@ respuesta · multi-select con envión parejo (los 4) — todo OK.
 - B2: correr una rama larga con key real → `localStorage["3maps:debug:b2"]` con `incremental:true`.
   **Después: sacar la instrumentación `[b2]`** (temporal — `console.info` + ese localStorage).
 - Fixes IA 03-09: que ya no se corte con 2 ramas; el aviso de respuesta truncada.
-
-### B6 — logo (bloqueado)
-Concepto elegido (02-09: árbol verde + copa de globos de diálogo naranjas/verdes + wordmark
-"3maps" naranja, sin "3" como tronco). **Falta que Alan suba los assets** a `public/`
-(`logo.svg` lockup / `logo-mark.svg` árbol solo / `favicon.svg` + `apple-touch-icon.png`). Ahí:
-`<link>` del favicon en `app/layout.tsx` + fondo del canvas con `logo-mark` en opacidad baja.
 
 ### Ideas sin empezar
 - **T15 "doc card"** — tarjeta compacta cuando la respuesta ES un documento.

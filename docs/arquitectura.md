@@ -3,7 +3,7 @@
 > Mapa de `src/` para no leer todo. Para una dependencia puntual: `graphify query "..."`
 > (napkin §6b). El árbol de abajo es el índice; las secciones `##` que siguen son deep-dives —
 > leelas solo si tocás ese archivo. Actualizar cuando cambie la estructura.
-> Última actualización: 03-09-2026 (backlog B1-B10 + fixes IA).
+> Última actualización: 03-09-2026 (backlog B1-B10 + B6 logo + fixes IA).
 
 **Tamaños** (líneas, 03-09): `FlowCanvas.tsx` ~1835 · `ia.ts` ~1165 · `SettingsPanel.tsx` ~1005 ·
 `PanelConversacion.tsx` ~755 · `intercambio.ts` ~585 · `MessageNode.tsx` ~495 · `sync.ts` ~330 ·
@@ -34,6 +34,9 @@ src/
     layout.tsx      Root layout. metadata.title = "3maps". <html> con suppressHydrationWarning
                     (por Darkreader). body: `flex h-full flex-col overflow-hidden`. next/font:
                     Geist + Geist_Mono + Lora (`--font-*`; Lora = serif opcional de B5).
+    favicon.ico / icon.png / apple-icon.png   Ícono de la app (B6): la marca del logo (`3.png`)
+                    sobre blanco, cuadrada. Convención de archivos de Next → linkea solo, con
+                    `basePath` en el build de Pages. `.ico` generado con `png-to-ico` (16/32/48).
     page.tsx        Renderiza <FlowCanvas /> dentro de <main class="h-dvh w-full overflow-hidden">.
                     `dvh` (no `vh`) para que en móvil encuadre al área visible real, sin scroll.
     globals.css     Tailwind + tokens de color que siguen prefers-color-scheme (dark por defecto
@@ -61,6 +64,8 @@ src/
                          PDF = base64 tal cual, tope 1MB. pesoAdjunto / fmtBytes / iconoAdjunto / dataUrl /
                          descargarAdjunto (base64→Blob para binarios). Topes LIMITE_TEXTO 128KB /
                          LIMITE_BINARIO 1MB / LIMITE_INTERCAMBIO 2MB. Decisiones F3-22 / F3-22b.
+    assets.ts            `rutaAsset(archivo)` = `${basePath}/${archivo}` — para referenciar assets
+                         de `public/` a mano (Next NO les pone el basePath solo). B6.
     exportar.ts          Sacar una respuesta como texto (T15, F3-23). nombreArchivoRespuesta(resp)
                          → {nombre,contenido,mime} (fence único → interior + ext del lang; parece
                          markdown → .md; si no → .txt; nombre del slug del 1er `# Título`).
@@ -422,6 +427,8 @@ Props de `<ReactFlow>` que importan:
 - `colorMode="dark"`, `fitView` (+ un `fitView()` extra tras cargar el árbol guardado).
 - `devIndicators.position = "bottom-right"` (next.config) para no tapar la tuerquita.
 - `agentRules: false` (next.config) para que `next dev` no escriba en CLAUDE.md.
+- Hijos: `<Background>` (puntos), watermark del logo (`<div>` con `logo-mark.png`, `z-index:0`,
+  op. 5% — B6), `<Controls>` (+ botón "▤ Ordenar"), `<MiniMap>`, `<ToolbarGrupo>` (B3).
 
 ## IA (model/ia.ts)
 

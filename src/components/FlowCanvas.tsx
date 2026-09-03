@@ -132,6 +132,7 @@ import {
   scopeConfigIA,
 } from "@/model/configIA";
 import { haySupabase } from "@/model/supabase";
+import { rutaAsset } from "@/model/assets";
 import {
   cargarArbolCompartido,
   compartirArbol,
@@ -1720,6 +1721,19 @@ function Flow() {
           zoomOnDoubleClick={false}
         >
           <Background />
+          {/* Marca de agua del logo (B6): la copa de globos, tenue, centrada,
+              fija (no pan/zoom). Hija de `<ReactFlow>` → sobre el fondo pero
+              debajo del `.react-flow__pane` (z-1) y los nodos. */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 bg-no-repeat opacity-[0.05]"
+            style={{
+              zIndex: 0,
+              backgroundImage: `url(${rutaAsset("logo-mark.png")})`,
+              backgroundSize: "min(46vh, 360px)",
+              backgroundPosition: "center 42%",
+            }}
+          />
           <Controls>
             {!readOnly && (
               <ControlButton

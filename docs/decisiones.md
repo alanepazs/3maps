@@ -2,7 +2,7 @@
 
 > Por qué el código es como es. Cada entrada: **qué se decidió**, **por qué**, y **qué romperías
 > si lo revertís sin pensar**. Si vas a ir en contra de una de estas, que sea a propósito.
-> Última actualización: 03-09-2026 (backlog B1-B10 + fixes IA).
+> Última actualización: 03-09-2026 (backlog B1-B10 + B6 logo + fixes IA).
 
 Complementa a:
 - `docs/spec-proyecto.md` — el diseño y las decisiones de producto (modelo de datos, UX, roadmap).
@@ -1261,6 +1261,32 @@ El `⌄` **volvió a pedir doble click** (reporte de Alan). F5-4c redujo el swal
   dispara `:hover` real (napkin §2).
 - **Revertir**: se saca la regla CSS + el `data-hoverzoom` del effect; `offsetWidth` en el resize
   queda (es más robusto igual).
+
+### B6. Logo — favicon + watermark del canvas
+
+- **Assets que subió Alan** (`public/`): `logo.png` (lockup: árbol de globos + wordmark "3maps") y
+  `3.png` (la marca sola). **Ambos ya traen transparencia** — son palette PNG con chunk `tRNS`;
+  `file` dice "no alpha channel" pero `sharp(...).metadata()` reporta `channels: 4` y el fondo es
+  `[r,g,b,α=0]`. (Al principio les pasé un "blanco→alfa" y les metí un rectángulo verde
+  semiopaco — las zonas transparentes tenían RGB verde. Se sacó: usar los PNG tal cual.)
+- **Favicon**: `src/app/{icon.png,apple-icon.png,favicon.ico}` — la marca (`3.png` recortada)
+  centrada en un cuadrado **con fondo blanco** (el tab del navegador espera un ícono opaco).
+  Convención de archivos de Next → linkea solo los `<link rel="icon">`, **con `basePath`** (`/3maps`
+  en el build de Pages). No `metadata.icons` a mano (los string paths NO se prefijan). El `.ico`
+  se generó con `png-to-ico` (16/32/48).
+- **Watermark del canvas**: `public/logo-mark.png` (la marca transparente, ~38KB) como
+  `background-image` de un `<div aria-hidden absolute inset-0>` **hijo de `<ReactFlow>`** (después
+  de `<Background/>`), `z-index: 0` → sobre el fondo de RF pero debajo del `.react-flow__pane`
+  (z-1) y los nodos. `opacity: 0.05`, `background-position: center 42%`, `size: min(46vh, 360px)`.
+  Fijo (no pan/zoom — no está en `.react-flow__viewport`).
+  - **Por qué hijo de RF y no del wrapper**: `<ReactFlow colorMode="dark">` pinta un
+    `background-color: #141414` OPACO en `.react-flow` (el `--xy-background-color-default:
+    transparent` lo pisa la clase `.dark`) → un watermark en el wrapper quedaba tapado.
+- **`src/model/assets.ts`**: `rutaAsset(archivo)` = `${basePath}/${archivo}` — Next NO prefija
+  las URLs de `public/` que referenciás a mano (sí `app/icon.png` y `next/image`). Reusable para
+  futuros assets.
+- **`logo.png`** (lockup) queda en `public/` sin usar todavía — para un landing / página de
+  compartir más adelante.
 
 ### F5-5. `calcularLayout` ("▤ Ordenar") + `resolverSuperposiciones` tramo-aware
 Las dos funciones de `layout.ts` seguían recorriendo el árbol **intercambio por intercambio**

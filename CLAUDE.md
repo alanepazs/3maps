@@ -2,12 +2,12 @@
 
 **Nombre**: `3maps` — "3" = three = *tree* (árbol), y suena a "maps". Mapas de árbol.
 
-**Logo** (concepto elegido 02-09-2026): un **árbol verde** de tronco/ramas simples (NO un "3" —
-Alan lo descartó, el wordmark ya lleva el sentido "three→tree"), la **copa son globos de diálogo**
-naranjas/ámbar (algunos verdes), + wordmark **"3maps"** naranja lowercase debajo = "la conversación
-es un árbol que ramifica". Paleta: naranja/ámbar cálido + verde. El asset bueno todavía NO está en
-`public/` — Alan tiene que subir PNG con transparencia real / SVG (no capturas JPG) + un favicon
-cuadrado. Recién ahí se hace B6 (favicon en `app/layout.tsx` + fondo del canvas). Ver `tasks/todo.md` B6.
+**Logo** (B6, shippeado 03-09): un **árbol verde** de tronco/ramas simples cuya **copa son globos
+de diálogo** naranjas/ámbar (algunos verdes), + wordmark **"3maps"** naranja lowercase = "la
+conversación es un árbol que ramifica". Assets en `public/`: `logo.png` (lockup completo,
+transparente) y `3.png` (la marca sola). Generados: `src/app/{favicon.ico,icon.png,apple-icon.png}`
+(Next los linkea solo, con basePath), `public/logo-mark.png` (la marca, watermark del canvas al
+5% de opacidad detrás de los nodos). Ver decisiones B6.
 
 ## Al arrancar una sesión, leé (en este orden)
 
