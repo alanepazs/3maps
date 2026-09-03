@@ -821,9 +821,12 @@ function Flow() {
           }
           return;
         }
-        setArbol((a) =>
-          conError(a, nodeId, e instanceof Error ? e.message : String(e)),
-        );
+        // `e` (binding del catch) se copia a un const ANTES del closure de
+        // `setArbol`: capturarlo directo hace paniquear al React Compiler y ese
+        // panic descarta el lint `react-hooks` de TODO el archivo. No inline-ar.
+        // Ver decisiones §27.
+        const mensajeError = e instanceof Error ? e.message : String(e);
+        setArbol((a) => conError(a, nodeId, mensajeError));
       } finally {
         window.clearInterval(watchdog);
         if (enVueloRef.current.get(nodeId) === ctrl) {

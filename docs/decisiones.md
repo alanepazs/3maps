@@ -1697,13 +1697,22 @@ Tres bugs de la prueba de Alan en Chrome (02-09).
   flaggean dos patrones **deliberados**: (a) `useEffect(() => setX(true), [])` para hidratación
   SSR (§5 / B7 — sin eso hay mismatch y React 19 no lo patchea); (b) leer `resumenCacheRef.current`
   en un `useMemo` de solo lectura (contador de tokens del panel, T10 — no dispara el resumen).
-  Encima el plugin tiene **presupuesto de análisis por función** → en `FlowCanvas` (`Flow()`,
-  ~1900 líneas) reportaba o no según el tamaño exacto del archivo (`npm run lint` no
-  determinístico). Apagar las 2 reglas es la respuesta proporcionada — arreglar los patrones
-  "bien" (useSyncExternalStore, sacar el ref del memo) es refactor de riesgo en un archivo
-  delicado para reglas que se equivocan acá.
+  Apagar las 2 reglas es la respuesta proporcionada — arreglar los patrones "bien"
+  (useSyncExternalStore, sacar el ref del memo) es refactor de riesgo en un archivo delicado
+  para reglas que se equivocan acá.
 - **`.claude/**` agregado a `globalIgnores`**: las worktrees de sesiones de Claude Code tienen
   `out/` (build minificado) + copia de `src/` → `npm run lint` levantaba 4000+ "problemas" que no
   son del proyecto.
+- **El `npm run lint` de `FlowCanvas.tsx` era no determinístico** (0 errores, pero aparecían apenas
+  se agregaba una línea a `Flow()`): la causa NO era un "presupuesto de análisis por función" sino
+  un **panic del React Compiler**. En `responder`, el binding `e` del `catch` se capturaba dentro
+  del closure de `setArbol((a) => conError(a, nodeId, e …))` → `CompilerError: Invariant`
+  ("referenced as a context variable but was previously referenced as a local"). Ese panic **hace
+  que el plugin descarte los diagnósticos `react-hooks` de TODO el archivo** — no solo las 2
+  reglas apagadas acá, sino cualquier otra a futuro. **Fix** (commit del `catch`): copiar `e` a un
+  `const mensajeError` en el cuerpo del `catch` antes de pasarlo al closure. Con eso el archivo
+  vuelve a analizarse; queda un `todo` benigno por el `try/finally` de `responder` que solo saltea
+  la *memoización* de esa función, no el lint. **No volver a inline-ar** ese `e`.
 - **Revertir**: si algún día se refactoriza `Flow()` para no necesitar esos patrones, volvés a
-  prender las reglas.
+  prender las 2 reglas. Si se revierte el fix del `catch`, el lint de `FlowCanvas` vuelve a dar un
+  0 falso.
