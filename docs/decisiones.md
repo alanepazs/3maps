@@ -163,7 +163,8 @@ Alan probó `qwen2.5vl:7b` local (texto + PDF-como-imagen + imágenes, ~26 tok/s
 16GB) y pidió sumarlo a `ia.ts`. **Encuadre**: proveedor **local/avanzado**, NO el camino de
 "IA gratis para cualquiera" — ese sigue siendo WebLLM in-browser (`tasks/v2-webllm-spec.md`),
 porque Ollama-por-HTTP tiene los problemas de §7a (Safari bloquea `https→http://localhost`;
-CORS necesita `OLLAMA_ORIGINS`; el celu no llega a `localhost`).
+CORS necesita `OLLAMA_ORIGINS`; Chrome PNA puede bloquear public→localhost; el celu no llega a
+`localhost`). El detalle de las 2 barreras del sitio publicado, abajo.
 - **Qué se hizo**: `Proveedor += "ollama"` (`intercambio.ts`, `PROVEEDORES`), entradas en los
   `Record<Proveedor,…>` de `ia.ts` (`MODELO_POR_DEFECTO.ollama = "qwen2.5vl:7b"`,
   `NOMBRE_PROVEEDOR`, `PISTA_API_KEY = ""`, `GUIA_API_KEY` con pasos de instalación),
@@ -183,6 +184,20 @@ CORS necesita `OLLAMA_ORIGINS`; el celu no llega a `localhost`).
   (`/api/tags`) → guardar → pregunta → `POST /v1/chat/completions` 200, respuesta streameada y
   guardada en el `.md` con `proveedor: ollama` + `tokens_in/out`. CORS de Ollama desde
   `localhost:3000` anda sin config extra.
+- **En el sitio publicado (HTTPS) hay DOS barreras, no una**:
+  1. **CORS**: Ollama solo acepta origins localhost por defecto → hay que setear
+     `OLLAMA_ORIGINS=https://alanepazs.github.io` (variable de entorno de usuario) y reiniciar el
+     server. Hecho en la máquina de Alan (03-09); verificado por `curl`: responde
+     `Access-Control-Allow-Origin: https://alanepazs.github.io` para ese origin, `403` para otros,
+     y `localhost:3000` sigue OK.
+  2. **Private Network Access (PNA) de Chrome**: un `fetch` de un origin **público** a `localhost`
+     dispara un preflight con `Access-Control-Request-Private-Network: true`; el server tiene que
+     contestar `Access-Control-Allow-Private-Network: true` y **Ollama NO manda ese header**.
+     Según la versión de Chrome eso es un **prompt de permiso** ("acceder a dispositivos de tu red
+     local") que se acepta una vez, o un bloqueo duro. No se pudo verificar en el pane (bloquea
+     todo cross-origin a localhost con `ERR_BLOCKED_BY_CLIENT`); **queda pendiente probarlo en el
+     Chrome real de Alan**. Si Chrome lo bloquea sin prompt, no hay workaround liviano (confirma
+     por qué v2 va con WebLLM). Nada de esto aplica en `npm run dev` (origin ya es localhost).
 - **Revertir**: sacás `"ollama"` de `Proveedor` + los `Record`, el `case`, `llamarOllama` /
   `listarModelosOllama` / `procesarStreamOpenAICompat` (re-inline en `llamarOpenAICompat`), y el
   branch `esOllama` de `SettingsPanel`. Una config vieja con `activo: "ollama"` cae al default.

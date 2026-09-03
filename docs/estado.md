@@ -181,7 +181,12 @@ solo encabezado en el globo. Solo vista. Decisiones "Doc card". Falta prueba de 
 
 ### Prueba real pre-existente pendiente
 - **DeepSeek, GPT** con key real (pagos — cuando Alan tenga saldo). Los 4 free
-  (Gemini/Groq/OpenRouter/HuggingFace) + Ollama local ya están probados; cloud cerrada en 7.
+  (Gemini/Groq/OpenRouter/HuggingFace) + Ollama local (`npm run dev`) ya están probados; cloud
+  cerrada en 7.
+- **Ollama desde el sitio publicado (HTTPS)**: `OLLAMA_ORIGINS` ya está seteado en la máquina de
+  Alan y el CORS verifica por `curl`, PERO falta probar en el **Chrome real** si el Private
+  Network Access de Chrome deja pasar `https://…github.io → http://localhost:11434` (prompt de
+  permiso o bloqueo). Ver decisiones §7f. En dev no aplica.
 - Panel/globo redimensionable + fixes de móvil (3.11/3.13) en celu.
 - ⚠️ LWW de títulos usa el reloj del navegador: relojes MUY desfasados podrían elegir mal.
 
