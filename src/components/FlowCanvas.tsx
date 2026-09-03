@@ -640,7 +640,13 @@ function Flow() {
       }, 3_000);
 
       try {
-        const ventana = settings.ventanaContexto;
+        // WebLLM: la ventana de estos modelos es 4096 tokens → mucho más chica
+        // que la de los cloud. Se fuerza una ventana chica y se descarta todo lo
+        // viejo (el 3B "olvida" lo anterior; es inherente). Ver spec V2-6.
+        const ventana =
+          configIA.proveedor === "webllm"
+            ? Math.min(settings.ventanaContexto, 3)
+            : settings.ventanaContexto;
         // El contexto se arma tratando a `nodeId` como pendiente: si es un
         // reintento, se descarta la respuesta parcial que hubiera quedado.
         const base = conRespuesta(arbolBase, nodeId, {

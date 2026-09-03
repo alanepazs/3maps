@@ -1025,15 +1025,36 @@ async function llamarWebLLM(
     throw new ErrorIA("No se pudo cargar el modelo local: " + m, e);
   }
 
-  const stream = await engine.chat.completions.create({
-    stream: true,
-    stream_options: { include_usage: true },
-    messages: [
-      ...(opts.sistema ? [{ role: "system" as const, content: opts.sistema }] : []),
-      ...mensajes.map((m) => ({ role: m.rol, content: m.texto })),
-    ],
-    max_tokens: opts.maxTokens ?? 4096,
-  });
+  // La ventana de los modelos MLC es 4096 tokens EN TOTAL (prompt + respuesta).
+  // Un `max_tokens` alto no deja lugar para el prompt → error de contexto. Se
+  // cap­ea a 1024 (o menos si el llamador pidió menos) para dejar ~3k al input.
+  const maxSalida = Math.min(opts.maxTokens ?? 1024, 1024);
+  let stream;
+  try {
+    stream = await engine.chat.completions.create({
+      stream: true,
+      stream_options: { include_usage: true },
+      messages: [
+        ...(opts.sistema
+          ? [{ role: "system" as const, content: opts.sistema }]
+          : []),
+        ...mensajes.map((m) => ({ role: m.rol, content: m.texto })),
+      ],
+      max_tokens: maxSalida,
+    });
+  } catch (e) {
+    if (esAbort(e)) throw e;
+    const m = e instanceof Error ? e.message : String(e);
+    if (/context|window|token|exceed|prompt.*long|too long/i.test(m)) {
+      throw new ErrorIA(
+        "La conversación no entra en el modelo local (ventana de 4096 tokens). " +
+          "Empezá una rama nueva (⑂) o usá un proveedor con más contexto para " +
+          "los hilos largos.",
+        e,
+      );
+    }
+    throw new ErrorIA("El modelo local rechazó el pedido: " + m, e);
+  }
 
   let crudo = "";
   let acumulado = "";
@@ -1066,6 +1087,14 @@ async function llamarWebLLM(
   } catch (e) {
     if (esAbort(e)) throw e;
     if (acumulado) return { texto: acumulado, uso };
+    const m = e instanceof Error ? e.message : String(e);
+    if (/context|window|token|exceed|prompt.*long|too long/i.test(m)) {
+      throw new ErrorIA(
+        "La conversación no entra en el modelo local (ventana de 4096 tokens). " +
+          "Empezá una rama nueva (⑂) o usá otro proveedor para los hilos largos.",
+        e,
+      );
+    }
     throw new ErrorIA(mensajeLegible(e), e);
   }
   if (acumulado) {
