@@ -251,7 +251,9 @@ WebGPU LLM no se hace en vanilla; se carga con `import()` dinámico → cero pes
   `local` (×3-4, §7f).
 - **Sin resumen para webllm**: `responder` NO llama a `resumir()` con webllm (el 3B resume mal +
   dispararía la descarga antes de tiempo). El tramo viejo se descarta con un placeholder — la
-  ventana de 4096 no lo banca completo (spec V2-6).
+  ventana de 4096 no lo banca completo (spec V2-6). Además `responder` fuerza
+  `ventana = min(ventanaContexto, 3)` y `llamarWebLLM` capea `max_tokens` a 1024
+  (4096 es prompt+respuesta juntos) + traduce el error de contexto de web-llm.
 - **Sin imagen/PDF**: los modelos son texto puro. `PanelConversacion` `proveedorLeeImagen=false`
   para webllm → aviso ámbar "este modelo no lee imágenes".
 - **NO es el default** (spec V2-7): "traé tu key" sigue siendo el default; webllm es opt-in.

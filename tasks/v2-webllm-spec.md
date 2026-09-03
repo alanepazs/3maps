@@ -165,10 +165,15 @@ async function llamarWebLLM(
   `output: export` — la Cache API ya persiste los pesos entre visitas.
 - **V2-5 — `apiKey` no aplica.** `llamarIA()` saltea el chequeo para `webllm`;
   `configIA` no exige key; SettingsPanel no muestra input de key para este proveedor.
-- **V2-6 — Context window de 4096.** Los modelos MLC vienen con 4k por defecto (vs
-  32k-1M de los cloud). `armarContexto()` ya windowea; documentar que con `webllm` la
-  ventana efectiva es más chica y el resumen entra antes. NO tocar `contexto.ts` en
-  este spec salvo que la prueba de Alan muestre que se rompe.
+- **V2-6 — Context window de 4096.** Los modelos MLC tienen 4k tokens EN TOTAL
+  (prompt + respuesta). La prueba de Alan (hilo profundo) lo rompió → ajustes:
+  - `responder`: con webllm la ventana va `min(ventanaContexto, 3)` y lo viejo se
+    **descarta** (placeholder; el 3B "olvida" — inherente).
+  - `llamarWebLLM`: `max_tokens` cap a 1024 (deja ~3k para el input); captura el
+    error de contexto de web-llm → mensaje "no entra en 4096, rama nueva u otro
+    proveedor".
+  - `contexto.ts` sí se tocó (el cap de `viejos` sin resumen), pero eso arregla un
+    bug general de ramas profundas + modelos free, no solo webllm.
 - **V2-7 — `webllm` NO es el default.** El default sigue "traé tu key". Se ofrece como
   opción prominente y opt-in.
 
