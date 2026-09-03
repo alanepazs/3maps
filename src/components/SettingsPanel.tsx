@@ -851,24 +851,16 @@ export default function SettingsPanel({
           )}
 
           {esWebllm ? (
-            <div className="mt-2 rounded border border-white/10 bg-white/5 p-2 text-[11px] text-white/70">
-              El modelo corre <span className="text-white/90">en esta pestaña</span>{" "}
-              con WebGPU — no gasta tokens, nada sale de tu compu. La 1ª vez se
-              descargan ~2 GB de pesos (con barra de progreso), después queda
-              cacheado. No hay API key.{" "}
-              {!hayGpu ? (
-                <span className="text-amber-300">
-                  Tu navegador no expone WebGPU: necesitás Chrome/Edge de
-                  escritorio con una GPU. No anda en móvil.
-                </span>
-              ) : (
-                <span className="text-white/60">
-                  Necesita Chrome/Edge de escritorio y una GPU decente. No anda en
-                  móvil. Modelo chico → bueno para resumir/charlar, flojo para
-                  código; sin imágenes ni PDF.
-                </span>
-              )}
-            </div>
+            !hayGpu ? (
+              <p className="mt-2 rounded border border-amber-400/30 bg-amber-400/5 p-2 text-[11px] text-amber-300">
+                Tu navegador no expone WebGPU: necesitás Chrome/Edge de escritorio
+                con una GPU. No anda en móvil.
+              </p>
+            ) : (
+              <p className="mt-2 text-[11px] text-white/40">
+                Corre en tu navegador (WebGPU) — sin key, sin costo. Detalle abajo.
+              </p>
+            )
           ) : esOllama ? (
             <div className="mt-2 rounded border border-white/10 bg-white/5 p-2 text-[11px] text-white/70">
               El modelo corre en <span className="text-white/90">tu máquina</span>,

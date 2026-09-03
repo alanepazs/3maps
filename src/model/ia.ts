@@ -227,6 +227,7 @@ export const GUIA_API_KEY: Record<
       "No instalás nada: el modelo corre en tu navegador con WebGPU.",
       "La 1ª vez se descargan ~2 GB de pesos (con barra de progreso), después queda cacheado.",
       "Necesita Chrome/Edge de escritorio y una GPU decente. No anda en móvil.",
+      "Modelo chico: bueno para resumir/charlar, flojo para código. Sin imágenes ni PDF (usá Gemini para eso).",
     ],
   },
 };
