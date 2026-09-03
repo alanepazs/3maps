@@ -280,10 +280,17 @@ export async function llamarIA(
 // resumen se saltea → contexto completo).
 // Devuelve el `uso` (tokens del proveedor) además del texto — lo usa la
 // instrumentación de B2 para medir cuánto cuesta esta llamada "oculta".
+// `resumenPrevio` (B2): si viene, resume INCREMENTAL — parte del resumen que ya
+// existía y solo agrega `intercambios` (los nuevos que cayeron fuera de la
+// ventana). Así en una rama larga la entrada de esta llamada no crece sin tope.
 export async function resumir(
   config: ConfigIA,
   intercambios: { pregunta: string; respuesta: string | null }[],
-  opts: { usarProxy?: boolean; signal?: AbortSignal } = {},
+  opts: {
+    usarProxy?: boolean;
+    signal?: AbortSignal;
+    resumenPrevio?: string;
+  } = {},
 ): Promise<{ texto: string; uso: UsoTokens | null }> {
   const texto = intercambios
     .map(
@@ -291,18 +298,21 @@ export async function resumir(
         `Pregunta: ${i.pregunta}\nRespuesta: ${i.respuesta ?? "(sin respuesta)"}`,
     )
     .join("\n\n");
+  const prompt = opts.resumenPrevio
+    ? "Este es el resumen de la parte previa de una conversación:\n\n" +
+      opts.resumenPrevio +
+      "\n\nLa conversación siguió así:\n\n" +
+      texto +
+      "\n\nDevolvé un resumen ACTUALIZADO (que incluya lo anterior y lo nuevo) " +
+      "en pocas frases, conservando los datos, decisiones y preferencias que " +
+      "importan para seguir el hilo. Sin preámbulo."
+    : "Resumí en pocas frases esta parte previa de una conversación, " +
+      "conservando los datos, decisiones y preferencias que importan para " +
+      "seguir el hilo. Sin preámbulo.\n\n" +
+      texto;
   const r = await llamarIA(
     config,
-    [
-      {
-        rol: "user",
-        texto:
-          "Resumí en pocas frases esta parte previa de una conversación, " +
-          "conservando los datos, decisiones y preferencias que importan para " +
-          "seguir el hilo. Sin preámbulo.\n\n" +
-          texto,
-      },
-    ],
+    [{ rol: "user", texto: prompt }],
     { maxTokens: 2048, usarProxy: opts.usarProxy, signal: opts.signal },
   );
   return { texto: r.texto, uso: r.uso };

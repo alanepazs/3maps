@@ -280,6 +280,14 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
   (`resumenCacheRef`, key = ids del tramo concatenados con `|`).
 - El **prefijo del contexto se mantiene consistente** entre llamadas de la misma rama → aprovecha
   el prompt caching del proveedor. No reordenar ni regenerar el prefijo por gusto.
+- **Resumen INCREMENTAL (B2, 03-09)**: cuando la ventana se corre y hay que re-resumir, `responder`
+  busca en `resumenCacheRef` el **prefijo cacheado más largo** del set viejo (que crece agregando
+  al final) y le pasa a `resumir()` solo la **cola nueva** + ese resumen (`opts.resumenPrevio`).
+  Así la entrada de la llamada oculta no crece sin tope en una rama larga (verificado: 8 viejos →
+  1600 chars la 1ª vez, 617 la 2ª). Se descartó "ventana adaptativa que se achica" (§B2 del plan):
+  no baja el costo del resumen (habría MÁS para resumir) y recorta el contexto reciente. El
+  prompt caching de la respuesta ya está roto en ramas profundas (el resumen cambia cada turno →
+  cache miss desde su posición) — el incremental no lo empeora, solo abarata la llamada de resumen.
 
 ### 10b. Rescate de contexto viejo por palabras clave (fase 2.5, versión liviana)
 - **Problema**: cuando el tramo viejo se resume, un dato puntual ("tengo 2 horas por día") se

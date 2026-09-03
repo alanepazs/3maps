@@ -368,7 +368,9 @@ Handlers (todos operan sobre `arbol` vía `setArbol`):
   `conError`. Si no:
   `conRespuesta({pending:true})` + limpia error; arma el contexto con `armarContexto` (tratando a
   `nodeId` como pendiente, así un reintento descarta la respuesta parcial vieja); si el camino
-  supera la ventana, genera/cachea el `resumenViejo` con `resumir` (sin `systemPrompt`) + calcula
+  supera la ventana, genera/cachea el `resumenViejo` con `resumir` (sin `systemPrompt`)
+  **incremental** (busca el prefijo cacheado más largo en `resumenCacheRef` → resume solo la cola
+  nueva sobre él, `opts.resumenPrevio`; B2, decisiones §10) + calcula
   `intercambiosRelevantes` (rescate por palabras clave, fase 2.5); `llamarIA`
   con `opts.sistema = settings.systemPrompt`, `opts.usarProxy = settings.usarProxyIA`, y `onTexto`
   throttleado a 80ms → `conRespuesta({respuesta: acc, pending:true})` (streaming); al terminar
@@ -431,8 +433,9 @@ Props de `<ReactFlow>` que importan:
   `final.usage`, Gemini `usageMetadata`, OpenAI-compat `stream_options:{include_usage:true}` →
   chunk final (T11, decisiones F3-19). Sumar proveedor = un `case` nuevo + entradas en los
   `Record<Proveedor,…>` + (si es OpenAI-compat) redeploy del `ia-proxy`. Cero cambios en el árbol
-  (spec §6). `resumir()` usa el mismo proveedor (le pasa `usarProxy`) y devuelve `string` (tira
-  el `uso`).
+  (spec §6). `resumir(config, intercambios, opts)` usa el mismo proveedor; devuelve `{texto, uso}`
+  (B2). `opts.resumenPrevio` → resumen incremental (prompt "actualizá este resumen con lo nuevo").
+  `opts.signal` → cancelable (F3-6).
 - **Adjuntos multimedia** (T16b/c, F3-22b/c): `multimediaDe(m)` (imágenes + PDF) / `imagenesDe(m)`.
   Cada adaptador mapea antes del texto — Claude `image` / `document` block, Gemini `inline_data`
   (mime de imagen o `application/pdf`), OpenAI-compat solo `image_url` (el PDF NO se manda por

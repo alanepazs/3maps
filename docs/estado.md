@@ -168,8 +168,13 @@ Fase 5 (moverse entre globos + ramificar al costado, no hacia abajo). Ya está h
   `data-hoverzoom` va en el `<html>` desde el effect de B5 (evita mismatch de hidratación).
   `onResizeStart` usa `offsetWidth` (inmune al transform). Checkbox en "Lienzo". tsc/lint/build
   verde + pane (el `:hover` visual lo prueba Alan). **Falta**: prueba de Alan + push.
-- **B2** (pedido de Alan 01-09): ventana de contexto adaptativa — medir el gasto de `resumir()`
-  primero (se cruza con T11).
+- **B2 ✅ codeado** (decisiones §10) — contexto adaptativo = **resumen incremental**. Cuando la
+  ventana se corre, `responder` busca el prefijo cacheado más largo del set viejo y resume solo la
+  cola nueva sobre él (`resumir(..., { resumenPrevio })`). La entrada de la llamada oculta deja de
+  crecer sin tope en ramas largas (pane: 8 viejos → 1600 chars la 1ª, 617 la 2ª). Se descartó la
+  "ventana que se achica". Instrumentación `[b2]` mantiene (registra `incremental`/`nNuevos`).
+  6 asserts + pane e2e con fetch stub + tsc/lint/build verde. **Falta**: prueba de Alan + push +
+  sacar la instrumentación cuando confirme.
 - **B6 logo** — concepto elegido (02-09: árbol verde + copa de globos de diálogo naranjas/verdes +
   wordmark "3maps" naranja, sin "3" como tronco). **Falta que Alan suba los assets** a `public/`
   (`logo.svg` lockup / `logo-mark.svg` árbol solo / `favicon.svg` + `apple-touch-icon.png`). Ahí:

@@ -640,19 +640,41 @@ function Flow() {
         let resumen: string | null = null;
         let resumenUso: { entrada: number; salida: number } | null = null;
         let resumenDesdeCache = true;
+        let resumenNuevos = 0; // cuántos intercambios entraron a esta llamada (B2)
         if (viejos.length > 0) {
-          const clave = viejos.map((i) => i.id).join("|");
+          const idsViejos = viejos.map((i) => i.id);
+          const clave = idsViejos.join("|");
           resumen = resumenCacheRef.current.get(clave) ?? null;
           if (!resumen) {
             resumenDesdeCache = false;
+            // Resumen INCREMENTAL (B2): buscar el prefijo cacheado más largo del
+            // tramo viejo (la ventana se corre de a 1, así que el set viejo
+            // crece agregando al final). Si hay, resumir solo la cola nueva
+            // sobre ese resumen → la entrada de esta llamada oculta no crece
+            // sin tope en una rama larga.
+            let resumenPrevio: string | undefined;
+            let desde = 0;
+            for (let k = idsViejos.length - 1; k >= 1; k--) {
+              const c = resumenCacheRef.current.get(
+                idsViejos.slice(0, k).join("|"),
+              );
+              if (c) {
+                resumenPrevio = c;
+                desde = k;
+                break;
+              }
+            }
+            const aResumir = viejos.slice(desde);
+            resumenNuevos = aResumir.length;
             // Tope propio para la llamada oculta: si tarda demasiado (proveedor
             // saturado), se sigue SIN resumen (el tramo viejo va completo) en
             // vez de hacer esperar al usuario. `ctrl.signal` la cancela igual
             // ante STOP / TOTAL_MS.
             const RESUMEN_MS = 50_000;
             try {
-              const rs = await resumir(configIA, viejos, {
+              const rs = await resumir(configIA, aResumir, {
                 usarProxy: settings.usarProxyIA,
+                resumenPrevio,
                 signal: AbortSignal.any([
                   ctrl.signal,
                   AbortSignal.timeout(RESUMEN_MS),
@@ -721,7 +743,10 @@ function Flow() {
         // ~60 en `localStorage["3maps:debug:b2"]` + `console.info`. Sacar cuando
         // haya datos y esté decidida la política de ventana adaptativa.
         if (!resumenDesdeCache && viejos.length > 0) {
-          const charsViejos = viejos.reduce(
+          // Estimado de la entrada REAL de la llamada oculta: solo la cola nueva
+          // (incremental) + el resumen previo, no el tramo viejo entero.
+          const nuevos = viejos.slice(viejos.length - resumenNuevos);
+          const charsResumen = nuevos.reduce(
             (s, i) => s + i.pregunta.length + (i.respuesta?.length ?? 0),
             0,
           );
@@ -732,7 +757,9 @@ function Flow() {
             ventana,
             nViejos: viejos.length,
             resumen: {
-              estIn: Math.round(charsViejos / 4),
+              incremental: resumenNuevos < viejos.length,
+              nNuevos: resumenNuevos,
+              estIn: Math.round(charsResumen / 4),
               tokIn: resumenUso?.entrada ?? null,
               tokOut: resumenUso?.salida ?? null,
             },
