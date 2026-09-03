@@ -2,7 +2,7 @@
 
 > Por qué el código es como es. Cada entrada: **qué se decidió**, **por qué**, y **qué romperías
 > si lo revertís sin pensar**. Si vas a ir en contra de una de estas, que sea a propósito.
-> Última actualización: 03-09-2026 (backlog B1-B10 + B6 logo + fixes IA).
+> Última actualización: 03-09-2026 (backlog B1-B10 + B6 logo + fixes IA + onboarding §26 + Ollama §7f).
 
 Complementa a:
 - `docs/spec-proyecto.md` — el diseño y las decisiones de producto (modelo de datos, UX, roadmap).
@@ -11,7 +11,7 @@ Complementa a:
 - Este archivo — decisiones de implementación que no son obvias mirando el código.
 
 Índice: **§1-5** datos/`.md` · **§6-11** IA · **§12-16** canvas · **F2-1..F2-8** fase 2 ·
-**F3-1..F3-11** fase 3 · **§21-23** build · **§24-25** proceso.
+**F3-1..F3-11** fase 3 · **§21-23** build · **§24-26** proceso.
 
 ---
 
@@ -104,8 +104,9 @@ Complementa a:
   muestra en un `<details>` bajo el input, con un botón que abre la web del proveedor y avisa si
   cobra (sugiriendo Gemini). `abierto: true` (groq, openrouter, huggingface)
   → agrega la línea "acá usás modelos open-source (Llama, Qwen, DeepSeek, GLM…)". No hay proveedor
-  "open-source" aparte: los modelos abiertos ya se sirven vía esos (online); un modo offline
-  tipo Ollama quedó descartado por ahora (mixed-content/CORS + el celu no llega a `localhost`).
+  "open-source" aparte: los modelos abiertos ya se sirven vía esos (online). Un modo offline
+  tipo Ollama quedó descartado **como camino principal** (mixed-content/CORS + el celu no llega
+  a `localhost`), pero existe como proveedor local opt-in — ver §7f.
 
 ### 7d. Cerebras, SiliconFlow, Zhipu, Moonshot, Mistral, Qwen: eliminados (free inutilizable)
 Probados uno por uno (01-09-2026). Todos autentican y listan modelos, pero el free tier no da una
@@ -156,6 +157,35 @@ los chips un modelo que va a fallar o confundir**. El usuario igual puede tiparl
   nativo, F3-22c).
 - **`gpt-oss-safeguard-20b` NO se esconde** — es un chat de texto normal; el regex evita `guard-2`
   justamente para no pescarlo.
+
+### 7f. Ollama local como proveedor #8 (opt-in, no reemplaza WebLLM)
+Alan probó `qwen2.5vl:7b` local (texto + PDF-como-imagen + imágenes, ~26 tok/s en su RTX 4060 Ti
+16GB) y pidió sumarlo a `ia.ts`. **Encuadre**: proveedor **local/avanzado**, NO el camino de
+"IA gratis para cualquiera" — ese sigue siendo WebLLM in-browser (`tasks/v2-webllm-spec.md`),
+porque Ollama-por-HTTP tiene los problemas de §7a (Safari bloquea `https→http://localhost`;
+CORS necesita `OLLAMA_ORIGINS`; el celu no llega a `localhost`).
+- **Qué se hizo**: `Proveedor += "ollama"` (`intercambio.ts`, `PROVEEDORES`), entradas en los
+  `Record<Proveedor,…>` de `ia.ts` (`MODELO_POR_DEFECTO.ollama = "qwen2.5vl:7b"`,
+  `NOMBRE_PROVEEDOR`, `PISTA_API_KEY = ""`, `GUIA_API_KEY` con pasos de instalación),
+  `PROVEEDORES_DISPONIBLES += "ollama"`. **8 proveedores** (7 + ollama). El `ia-proxy` NO se toca
+  (Ollama no pasa por el proxy).
+- **`llamarOllama`** = `fetch` directo a `${OLLAMA_URL}/v1/chat/completions` (default
+  `http://localhost:11434`, override `NEXT_PUBLIC_OLLAMA_URL`), sin headers ni key. Refactor: el
+  build del body (`cuerpoOpenAICompat`) y el parseo del SSE (`procesarStreamOpenAICompat`) se
+  extrajeron de `llamarOpenAICompat` y los comparten los dos. `listarModelosOllama` = `GET
+  /api/tags`.
+- **Sin API key**: el almacén de `configIA` tira las entradas sin `apiKey`. Ollama guarda el
+  sentinel `apiKey: "local"` (`OLLAMA_SENTINEL`) para persistir sin tocar la lógica de
+  sync/scoping; `llamarIA` / `llamarOllama` lo ignoran. `llamarIA` y `listarModelos` saltean el
+  chequeo de key para `ollama`. `SettingsPanel` oculta el input de key y muestra una caja con
+  los requisitos (server corriendo, `ollama pull`, solo Chrome/Edge escritorio).
+- **Verificado** (03-09, `npm run dev` + Ollama real): seleccionar Ollama → ver modelos
+  (`/api/tags`) → guardar → pregunta → `POST /v1/chat/completions` 200, respuesta streameada y
+  guardada en el `.md` con `proveedor: ollama` + `tokens_in/out`. CORS de Ollama desde
+  `localhost:3000` anda sin config extra.
+- **Revertir**: sacás `"ollama"` de `Proveedor` + los `Record`, el `case`, `llamarOllama` /
+  `listarModelosOllama` / `procesarStreamOpenAICompat` (re-inline en `llamarOpenAICompat`), y el
+  branch `esOllama` de `SettingsPanel`. Una config vieja con `activo: "ollama"` cae al default.
 
 ### 7b. Modelos de Gemini: default `gemini-3.7-flash`, "thinking" mínimo por generación, botón "ver modelos"
 La API de Gemini se renovó entera en 2026 y una key **free tier** nueva de AI Studio se comporta
@@ -1547,3 +1577,21 @@ Tres bugs de la prueba de Alan en Chrome (02-09).
   teclado/drag no disparan. **No es un bug de la app** (confirmado idéntico en commits
   pre-refactor). Verificá el **estado final** (clases aplicadas, `pointer-events`, `localStorage`,
   `.textContent`); la animación en sí y el render los prueba el usuario. Detalle en `.claude/napkin.md`.
+
+### 26. Onboarding de sesión: `CLAUDE.md` + `estado.md` + memory `project-3maps-brief`; el resto on-demand
+- **Por qué**: la lista "leé en este orden" de `CLAUDE.md` (7 ítems — `estado.md` +
+  `arquitectura.md` + `napkin.md` + `decisiones.md` cada sesión, y `decisiones.md` son 1500+
+  líneas) hacía releer casi todo el contexto del proyecto en cada arranque. v2 apunta a gastar
+  menos tokens; el arranque también cuenta.
+- **Qué se lee ahora**: `CLAUDE.md` (lo inyecta el harness igual) + `docs/estado.md` (corto) +
+  memory `project-3maps-brief` (una pantalla). `decisiones.md` / `arquitectura.md` / `napkin.md`
+  / `historia.md` / `spec-proyecto.md` **solo si la tarea lo pide**, y primero `graphify query`.
+- **Se evaluó indexar `docs/` en graphify y se descartó**: la extracción semántica de prosa es
+  con pérdida, el grafo queda stale en cada edición de doc (= re-correr graphify = gasto), y no
+  ahorra la lectura (igual abrís la sección para el texto exacto). graphify sigue siendo para
+  `src/`; para el "por qué", el índice + headers de `decisiones.md` + Read puntual.
+- **Se evaluó `caveman-compress` sobre `estado.md` / `napkin.md` / `CLAUDE.md` y se descartó**:
+  sobre docs ya densos el ahorro real fue ~5-8% y metía español telegráfico ("pa retomar") a
+  costa de legibilidad. El ahorro está en leer menos archivos, no en comprimir los que se leen.
+- **Revertir**: volvés a la lista de 7 ítems obligatorios; no se rompe nada, solo se releen
+  ~2000 líneas de docs por sesión.

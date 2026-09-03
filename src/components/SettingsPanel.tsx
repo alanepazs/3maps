@@ -18,6 +18,8 @@ import {
   GUIA_API_KEY,
   MODELO_POR_DEFECTO,
   NOMBRE_PROVEEDOR,
+  OLLAMA_SENTINEL,
+  OLLAMA_URL,
   PISTA_API_KEY,
   PROVEEDORES_DISPONIBLES,
   PROVEEDORES_VIA_PROXY,
@@ -195,9 +197,12 @@ export default function SettingsPanel({
   };
 
   const proveedor: Proveedor = configIA.proveedor;
+  // Ollama corre en localhost sin auth: no hay API key. `configIA` guarda un
+  // sentinel para que la entrada persista (el almacén tira las sin key).
+  const esOllama = proveedor === "ollama";
   const keyGuardada = configIA.apiKey;
   const modeloGuardado = configIA.modelo || MODELO_POR_DEFECTO[proveedor];
-  const hayKey = keyGuardada.trim() !== "";
+  const hayKey = !esOllama && keyGuardada.trim() !== "";
 
   // DeepSeek / GPT van por el proxy de 3maps (no habilitan CORS). Necesitan que
   // el usuario acepte el opt-in Y que la instancia tenga el proxy configurado.
@@ -242,11 +247,14 @@ export default function SettingsPanel({
     setFiltroModelo("");
   }
 
-  const dirty =
-    keyDraft.trim() !== keyGuardada.trim() ||
-    modeloDraft.trim() !== modeloGuardado.trim();
+  const dirty = esOllama
+    ? modeloDraft.trim() !== modeloGuardado.trim() || keyGuardada.trim() === ""
+    : keyDraft.trim() !== keyGuardada.trim() ||
+      modeloDraft.trim() !== modeloGuardado.trim();
 
-  const keyEfectiva = keyDraft.trim() || keyGuardada.trim();
+  const keyEfectiva = esOllama
+    ? OLLAMA_SENTINEL
+    : keyDraft.trim() || keyGuardada.trim();
 
   // Chequeo de formato local (gratis): avisa si la key no pinta del proveedor
   // elegido. No garantiza que funcione — para eso, "ver modelos".
@@ -285,7 +293,7 @@ export default function SettingsPanel({
     if (!dirty) return;
     onGuardarKeyIA({
       proveedor,
-      apiKey: keyDraft.trim(),
+      apiKey: esOllama ? OLLAMA_SENTINEL : keyDraft.trim(),
       modelo: modeloDraft.trim() || MODELO_POR_DEFECTO[proveedor],
     });
     setAplicado(true);
@@ -293,7 +301,7 @@ export default function SettingsPanel({
     // Al guardar una key, traer de una la lista de modelos que esa key puede
     // usar (varía por key) → el usuario ve las opciones y confirma que la key
     // es válida sin gastar tokens.
-    if (keyDraft.trim()) void verModelos();
+    if (esOllama || keyDraft.trim()) void verModelos();
   };
 
   const cambiarProveedor = (p: Proveedor, conservarKey?: string) => {
@@ -613,46 +621,60 @@ export default function SettingsPanel({
             </div>
           )}
 
-          <label className="mt-2 block text-sm">
-            <span className="text-white/70">API key</span>
-            <input
-              type="password"
-              value={keyDraft}
-              onChange={(e) => setKeyDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  commit();
-                }
-              }}
-              placeholder={PISTA_API_KEY[proveedor]}
-              autoComplete="off"
-              spellCheck={false}
-              className={`mt-1 w-full rounded border bg-neutral-950 px-2 py-1.5 text-sm placeholder:text-white/30 focus:outline-none ${
-                avisoFormato
-                  ? "border-amber-400/60 focus:border-amber-400"
-                  : "border-white/15 focus:border-sky-400"
-              }`}
-            />
-            {sugerirCambio ? (
-              <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-amber-400">
-                Esta key parece de {NOMBRE_PROVEEDOR[sugerirCambio]}.
-                <button
-                  type="button"
-                  onClick={() =>
-                    cambiarProveedor(sugerirCambio, keyDraft.trim())
+          {esOllama ? (
+            <div className="mt-2 rounded border border-white/10 bg-white/5 p-2 text-[11px] text-white/70">
+              El modelo corre en <span className="text-white/90">tu máquina</span>,
+              no gasta tokens. Requiere el server de Ollama escuchando en{" "}
+              <span className="text-white/90">{OLLAMA_URL}</span> y un modelo bajado
+              (<span className="text-white/90">ollama pull qwen2.5vl:7b</span>).
+              No hay API key. Anda en Chrome/Edge de escritorio;{" "}
+              <span className="text-amber-400/90">
+                Safari y el celular no llegan a tu localhost
+              </span>
+              .
+            </div>
+          ) : (
+            <label className="mt-2 block text-sm">
+              <span className="text-white/70">API key</span>
+              <input
+                type="password"
+                value={keyDraft}
+                onChange={(e) => setKeyDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    commit();
                   }
-                  className="rounded border border-amber-400/50 px-1.5 py-0.5 font-medium text-amber-300 hover:bg-amber-400/10"
-                >
-                  Cambiar a {NOMBRE_PROVEEDOR[sugerirCambio]}
-                </button>
-              </span>
-            ) : avisoFormato ? (
-              <span className="mt-1 block text-[11px] text-amber-400">
-                {avisoFormato}
-              </span>
-            ) : null}
-          </label>
+                }}
+                placeholder={PISTA_API_KEY[proveedor]}
+                autoComplete="off"
+                spellCheck={false}
+                className={`mt-1 w-full rounded border bg-neutral-950 px-2 py-1.5 text-sm placeholder:text-white/30 focus:outline-none ${
+                  avisoFormato
+                    ? "border-amber-400/60 focus:border-amber-400"
+                    : "border-white/15 focus:border-sky-400"
+                }`}
+              />
+              {sugerirCambio ? (
+                <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-amber-400">
+                  Esta key parece de {NOMBRE_PROVEEDOR[sugerirCambio]}.
+                  <button
+                    type="button"
+                    onClick={() =>
+                      cambiarProveedor(sugerirCambio, keyDraft.trim())
+                    }
+                    className="rounded border border-amber-400/50 px-1.5 py-0.5 font-medium text-amber-300 hover:bg-amber-400/10"
+                  >
+                    Cambiar a {NOMBRE_PROVEEDOR[sugerirCambio]}
+                  </button>
+                </span>
+              ) : avisoFormato ? (
+                <span className="mt-1 block text-[11px] text-amber-400">
+                  {avisoFormato}
+                </span>
+              ) : null}
+            </label>
+          )}
 
           {/* Mini-guía para gente que nunca sacó una API key. */}
           <details className="group mt-1.5 rounded border border-white/10 bg-white/5 text-xs">
@@ -660,13 +682,24 @@ export default function SettingsPanel({
               <span className="mr-1 inline-block transition-transform group-open:rotate-90">
                 ▸
               </span>
-              ¿No sabés cómo conseguir tu API key?
+              {esOllama
+                ? "¿Cómo pongo a andar Ollama?"
+                : "¿No sabés cómo conseguir tu API key?"}
             </summary>
             <div className="space-y-1.5 px-2 pb-2 pt-0.5 text-white/70">
               <p>
-                Es la contraseña que le da acceso a 3maps al proveedor que
-                elegiste ({NOMBRE_PROVEEDOR[proveedor]}). La sacás en su web, en
-                1 minuto.{" "}
+                {esOllama ? (
+                  <span>
+                    Un modelo local, gratis, corriendo en tu compu. Instalás Ollama
+                    una vez y bajás el modelo.{" "}
+                  </span>
+                ) : (
+                  <>
+                    Es la contraseña que le da acceso a 3maps al proveedor que
+                    elegiste ({NOMBRE_PROVEEDOR[proveedor]}). La sacás en su web, en
+                    1 minuto.{" "}
+                  </>
+                )}
                 {GUIA_API_KEY[proveedor].gratis ? (
                   <span className="text-emerald-400">Este proveedor es gratis.</span>
                 ) : (
@@ -697,13 +730,17 @@ export default function SettingsPanel({
                 rel="noreferrer"
                 className="inline-block rounded bg-sky-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-400"
               >
-                Abrir la web de {NOMBRE_PROVEEDOR[proveedor]} ↗
+                {esOllama
+                  ? "Descargar Ollama ↗"
+                  : `Abrir la web de ${NOMBRE_PROVEEDOR[proveedor]} ↗`}
               </a>
-              <p className="text-[11px] text-white/40">
-                La clave se guarda solo en este navegador (y, si iniciás sesión,
-                en tu cuenta para tenerla en todos tus dispositivos). Nunca la
-                compartimos.
-              </p>
+              {!esOllama && (
+                <p className="text-[11px] text-white/40">
+                  La clave se guarda solo en este navegador (y, si iniciás sesión,
+                  en tu cuenta para tenerla en todos tus dispositivos). Nunca la
+                  compartimos.
+                </p>
+              )}
             </div>
           </details>
 
@@ -730,11 +767,17 @@ export default function SettingsPanel({
             className="mt-1.5 rounded border border-white/15 px-2 py-1 text-[11px] text-white/70 enabled:hover:bg-white/10 disabled:opacity-40"
           >
             {cargandoModelos
-              ? "verificando key…"
-              : "↻ verificar key y ver sus modelos"}
+              ? esOllama
+                ? "consultando Ollama…"
+                : "verificando key…"
+              : esOllama
+                ? "↻ ver modelos que bajaste"
+                : "↻ verificar key y ver sus modelos"}
           </button>
           <span className="mt-1 block text-[11px] text-white/40">
-            Consulta gratis (no gasta tokens): si la key es inválida, avisa acá.
+            {esOllama
+              ? "Lista lo que devuelve `ollama list` en tu máquina."
+              : "Consulta gratis (no gasta tokens): si la key es inválida, avisa acá."}
           </span>
 
           {errorModelos && (
@@ -819,7 +862,13 @@ export default function SettingsPanel({
               disabled={!dirty}
               className="rounded bg-sky-500 px-3 py-1.5 text-xs font-medium text-white enabled:hover:bg-sky-400 disabled:opacity-40"
             >
-              {dirty ? "Guardar" : aplicado ? "✓ Aplicado" : hayKey ? "✓ Guardado" : "Guardar"}
+              {dirty
+                ? "Guardar"
+                : aplicado
+                  ? "✓ Aplicado"
+                  : hayKey || (esOllama && keyGuardada.trim() !== "")
+                    ? "✓ Guardado"
+                    : "Guardar"}
             </button>
             {hayKey && (
               <button
@@ -836,9 +885,11 @@ export default function SettingsPanel({
               ? "Cambios sin guardar."
               : aplicado
                 ? "Config aplicada. Ya podés mandar una pregunta."
-                : hayKey
-                  ? "Guardada en este navegador. Se manda directo al proveedor."
-                  : "La key se guarda solo en este navegador; nunca a un servidor de 3maps."}
+                : esOllama
+                  ? `Se llama directo a ${OLLAMA_URL} — nada sale de tu red.`
+                  : hayKey
+                    ? "Guardada en este navegador. Se manda directo al proveedor."
+                    : "La key se guarda solo en este navegador; nunca a un servidor de 3maps."}
           </span>
 
           {haySupabase() && (

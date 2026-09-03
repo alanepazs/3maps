@@ -11,17 +11,20 @@ ilegible a 16px; sin `apple-icon.png` por decisión de Alan). **Watermark** del 
 opaco). `src/model/assets.ts` `rutaAsset()` (Next no prefija con basePath las URLs de `public/`
 a mano). Ver decisiones B6.
 
-## Al arrancar una sesión, leé (en este orden)
+## Al arrancar una sesión, leé
 
-1. Este archivo (invariantes + convenciones que no se rompen).
-2. `docs/estado.md` — dónde estamos, qué falta, gotchas, cómo correr/publicar. **Corto.**
-3. `docs/arquitectura.md` — mapa de `src/` (qué hace cada archivo + `file:línea`).
-4. `.claude/napkin.md` — gotchas del entorno (preview pane, git/gh, graphify).
-5. `docs/decisiones.md` — por qué el código es como es (no revertir sin pensar). Antes de tocar
-   `ia.ts`, `FlowCanvas`, persistencia, sync o el `.md`.
-6. `docs/historia.md` — qué shippeó cada fase. Solo si necesitás el contexto histórico.
-7. `docs/spec-proyecto.md` — diseño de producto (modelo de datos, pseudocódigo). Solo si tocás
-   datos / IA / contexto.
+**Obligatorio y suficiente para arrancar**: este archivo (invariantes) + `docs/estado.md`
+(dónde estamos, qué falta, gotchas, cómo correr/publicar — corto). El memory
+`project-3maps-brief` ya te da el resumen de una pantalla.
+
+**El resto, SOLO si la tarea puntual lo pide** — y primero `graphify query "<pregunta>"`
+(indexa `src/`), que suele responder sin abrir el archivo:
+- `docs/decisiones.md` — por qué el código es como es. Leé **la sección puntual** antes de
+  tocar `ia.ts`, `FlowCanvas`, persistencia, sync o el `.md`. Nunca el archivo entero.
+- `docs/arquitectura.md` — mapa de `src/` (qué hace cada archivo + `file:línea`).
+- `.claude/napkin.md` — gotchas del entorno (preview pane, git/gh, graphify).
+- `docs/historia.md` — qué shippeó cada fase. Solo para contexto histórico.
+- `docs/spec-proyecto.md` — diseño de producto. Solo si tocás datos / IA / contexto.
 
 **Navegar el código — `graphify` SIEMPRE (imperativo, Alan 03-09)**: antes de tocar código o
 abrir archivos de `src/`, correr `graphify query "<pregunta>"` desde `D:\IA\3maps` — devuelve el

@@ -5,7 +5,7 @@
 > leelas solo si tocás ese archivo. Actualizar cuando cambie la estructura.
 > Última actualización: 03-09-2026 (backlog B1-B10 + B6 logo + fixes IA + export/import + doc card).
 
-**Tamaños** (líneas, 03-09): `FlowCanvas.tsx` ~1835 · `ia.ts` ~1165 · `SettingsPanel.tsx` ~1005 ·
+**Tamaños** (líneas, 03-09): `FlowCanvas.tsx` ~1835 · `ia.ts` ~1285 · `SettingsPanel.tsx` ~1080 ·
 `PanelConversacion.tsx` ~755 · `intercambio.ts` ~585 · `MessageNode.tsx` ~495 · `sync.ts` ~330 ·
 `layout.ts` ~317 · `contexto.ts` ~283 · `compartir.ts` 237 · `configIA.ts` 183 · `useSync.ts` 166 ·
 `mapas.ts` ~150 · `Composer.tsx` 138 · `ToolbarGrupo.tsx` 54 · `gestos.ts` 46 · el resto < 110.
@@ -286,9 +286,13 @@ src/
                         chips). Nunca modelos adivinados (F3-13; `MODELOS_SUGERIDOS` se eliminó).
                         Sin `<datalist>`. Lista > 12 (OpenRouter ~300, HF ~90) → los chips van en
                         un `<details>` plegado con filtro por substring adentro (se muestran TODOS
-                        los modelos de la key; el contenedor scrollea). Los 7
+                        los modelos de la key; el contenedor scrollea). Los 8
                         proveedores; commit() lo dispara al guardar. `<details>` con la mini-guía
                         de API key (`GUIA_API_KEY`, F3-12 aclara open-source).
+                        Rama `esOllama` (§7f): sin input de key, caja con requisitos (server en
+                        `OLLAMA_URL`, `ollama pull`, solo Chrome/Edge), `dirty`/commit sobre el
+                        modelo solo, `keyEfectiva = OLLAMA_SENTINEL`, botón "ver modelos que
+                        bajaste" → `/api/tags`.
                         Textarea "instrucción de sistema" → onChange({systemPrompt}) directo.
     settings.ts         Settings = {inertia, ventanaContexto, systemPrompt, transcriptSide,
                         transcriptWidth, usarProxyIA, composerOculto, crecimientoPxPorMensaje (0-24,
@@ -452,9 +456,9 @@ Props de `<ReactFlow>` que importan:
 
 ## IA (model/ia.ts)
 
-- `ConfigIA = { proveedor, apiKey, modelo }`. `PROVEEDORES_DISPONIBLES` = **7**
-  (`gemini, claude` + 5 vía proxy: `groq, openrouter, huggingface, deepseek, gpt`).
-  `PROVEEDORES_VIA_PROXY` = **5** (todos menos gemini/claude — no habilitan CORS → van por
+- `ConfigIA = { proveedor, apiKey, modelo }`. `PROVEEDORES_DISPONIBLES` = **8**
+  (`gemini, claude` + 5 vía proxy: `groq, openrouter, huggingface, deepseek, gpt` + `ollama` local).
+  `PROVEEDORES_VIA_PROXY` = **5** (los 5 OpenAI-compat cloud — no habilitan CORS → van por
   `ia-proxy`, decisiones §7a). `cerebras`/`siliconflow`/`zhipu`/`moonshot`/`mistral`/`qwen` se eliminaron (§7d).
   `MODELO_POR_DEFECTO`, `NOMBRE_PROVEEDOR`, `PISTA_API_KEY`, `GUIA_API_KEY` por proveedor
   (`MODELOS_SUGERIDOS` se eliminó — F3-13).
@@ -474,15 +478,23 @@ Props de `<ReactFlow>` que importan:
   (mime de imagen o `application/pdf`), OpenAI-compat solo `image_url` (el PDF NO se manda por
   proxy). Si el proveedor 400/415ea con imágenes, el error sugiere Gemini/Claude. El aviso "PDF
   solo Gemini/Claude" lo muestra `PanelConversacion` (props `proveedorLeePdf`/`proveedorNombre`).
-- La key de Claude/Gemini va **directo del navegador al proveedor**. Las de los otros 11
-  **transitan** el proxy stateless (opt-in `opts.usarProxy` / `settings.usarProxyIA`), nunca se
-  almacenan. Ver §7a.
+- La key de Claude/Gemini va **directo del navegador al proveedor**. Las de los 5 cloud
+  OpenAI-compat **transitan** el proxy stateless (opt-in `opts.usarProxy` / `settings.usarProxyIA`),
+  nunca se almacenan. Ollama no usa key ni proxy (localhost). Ver §7a / §7f.
 - **Adaptador OpenAI-compat** (`llamarOpenAICompat` / `listarModelosOpenAICompat`): `fetch` a
   `proxyIAUrl()` con headers `x-ia-provider` (nombre, no URL — anti-SSRF), `x-ia-path`, `x-ia-key`.
-  SSE `data: {json}` → `choices[0].delta.content`. `max_completion_tokens` solo para `gpt`, el
-  resto `max_tokens`. `upstreamDe(prov)` mapea el `Proveedor` a la clave del mapa `PROVEEDORES` del
-  proxy. Sin `usarProxy` / sin proxy → `ErrorIA` explicativo. `mensajeErrorOpenAICompat` para
-  401/402/403/404/429/5xx.
+  El body lo arma `cuerpoOpenAICompat` y el SSE lo parsea `procesarStreamOpenAICompat` (`data:
+  {json}` → `choices[0].delta.content`), **compartidos con `llamarOllama`**. `max_completion_tokens`
+  solo para `gpt`, el resto `max_tokens`. `upstreamDe(prov)` mapea el `Proveedor` a la clave del
+  mapa `PROVEEDORES` del proxy. Sin `usarProxy` / sin proxy → `ErrorIA` explicativo.
+  `mensajeErrorOpenAICompat` para 401/402/403/404/429/5xx.
+- **Adaptador Ollama local** (`llamarOllama` / `listarModelosOllama`, decisiones §7f): `fetch`
+  **directo** a `${OLLAMA_URL}/v1/chat/completions` (`OLLAMA_URL` = `NEXT_PUBLIC_OLLAMA_URL` ||
+  `http://localhost:11434`), sin proxy, sin headers, sin API key. Reusa `cuerpoOpenAICompat` +
+  `procesarStreamOpenAICompat`. `listarModelosOllama` = `GET /api/tags` → `models[].name`.
+  `configIA` guarda `apiKey: OLLAMA_SENTINEL` (`"local"`) para persistir la entrada sin key;
+  `llamarIA` / `listarModelos` saltean el chequeo de key para `"ollama"`. Opción avanzada: solo
+  Chrome/Edge escritorio (localhost = secure context), Safari/móvil no.
 - **Adaptador Claude** (`llamarClaude`): `await import("@anthropic-ai/sdk")` (dinámico),
   `new Anthropic({ apiKey, dangerouslyAllowBrowser: true })`, `client.messages.stream(...)` con
   `signal`. CORS habilitado por el header `anthropic-dangerous-direct-browser-access` del SDK.

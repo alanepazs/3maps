@@ -161,3 +161,19 @@ Decisiones "Export / import".
 chars) → `src/components/DocCard.tsx` en vez de volcar el bloque. Encabezado `📄 nombre · N
 líneas · lang`; desplegable en `PanelConversacion`, solo encabezado (`compacto`) en `MessageNode`.
 Solo presentación — cero cambio de datos. 12 asserts. Decisiones "Doc card".
+
+## Proveedor Ollama local (03-09-2026, decisiones §7f)
+
+Proveedor #8: `case "ollama"` en `ia.ts`. Modelo local corriendo en la máquina del usuario
+(Ollama, API OpenAI-compat en `localhost:11434`), `fetch` directo — sin proxy, sin API key.
+`llamarOllama` + `listarModelosOllama` (`GET /api/tags`); el body (`cuerpoOpenAICompat`) y el
+parseo SSE (`procesarStreamOpenAICompat`) se extrajeron de `llamarOpenAICompat` y los comparten.
+`OLLAMA_URL` (default `http://localhost:11434`, override `NEXT_PUBLIC_OLLAMA_URL`). Sin key: el
+almacén de `configIA` guarda el sentinel `"local"` (`OLLAMA_SENTINEL`) para persistir; `llamarIA`
+y `listarModelos` saltean el chequeo de key para `"ollama"`. `SettingsPanel` (rama `esOllama`):
+sin input de key, caja con requisitos (server corriendo, `ollama pull`, solo Chrome/Edge de
+escritorio — Safari/móvil no llegan a localhost). Verificado con Ollama real (`qwen2.5vl:7b`):
+seleccionar → ver modelos → guardar → pregunta → `POST /v1/chat/completions` 200, respuesta
+streameada y guardada en el `.md` con `proveedor: ollama` + tokens. Encuadre: opción
+local/avanzada, NO el camino de "IA gratis para cualquiera" (ese sigue siendo WebLLM in-browser,
+`tasks/v2-webllm-spec.md`).

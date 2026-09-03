@@ -29,7 +29,8 @@ export type Proveedor =
   | "gemini"
   | "groq"
   | "openrouter"
-  | "huggingface";
+  | "huggingface"
+  | "ollama";
 
 export const RAMAS: readonly Rama[] = ["main", "branch-left", "branch-right"];
 
@@ -54,6 +55,7 @@ export const PROVEEDORES: readonly Proveedor[] = [
   "groq",
   "openrouter",
   "huggingface",
+  "ollama",
 ];
 
 export type Intercambio = {

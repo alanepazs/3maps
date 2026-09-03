@@ -4,13 +4,19 @@
 > `docs/historia.md`. "Qué hace cada archivo" → `docs/arquitectura.md`. Por qué el código es así →
 > `docs/decisiones.md`. **Navegar el código: `graphify query "…"` SIEMPRE** (napkin §6b; regenerar
 > con `graphify update . --force` tras cambios de estructura). Última actualización: 03-09-2026.
+>
+> **Al arrancar la sesión alcanza con**: `CLAUDE.md` + este archivo + el memory
+> `project-3maps-brief`. El resto de `docs/` es on-demand (ver `CLAUDE.md` §"Al arrancar"):
+> primero `graphify query` (indexa `src/`), y si hace falta el "por qué", la sección puntual de
+> `decisiones.md` (tiene índice arriba), no el archivo entero.
 
 ## Dónde estamos
 
-**Backlog COMPLETO — nada pendiente de implementar (03-09-2026).** Fases 1-5 + B1-B10 + fixes de
-robustez de la IA + auto-switch de proveedor + export/import `.zip` + doc card: todo shippeado y
-pusheado. `tsc`/`lint`/`build` verde. `https://alanepazs.github.io/3maps/` (deploy automático en
-cada push a `main`). Repo `github.com/alanepazs/3maps`, local `D:\IA\3maps`.
+**Backlog 1-5 + B1-B10 COMPLETO (03-09-2026).** Fases 1-5 + B1-B10 + fixes de robustez de la IA +
+auto-switch de proveedor + export/import `.zip` + doc card + **proveedor Ollama local (§7f)**:
+todo shippeado. `tsc`/`lint`/`build` verde. `https://alanepazs.github.io/3maps/` (deploy automático
+en cada push a `main`). Repo `github.com/alanepazs/3maps`, local `D:\IA\3maps`.
+**En curso**: v2 = modelo local WebLLM in-browser — spec en `tasks/v2-webllm-spec.md` (fase SPECIFY).
 
 **Lo único que queda son cosas de Alan / diferidas** (ver "Ideas sin empezar" + "Prueba real
 pendiente"): ronda de pruebas en Chrome con keys reales, sacar la instrumentación `[b2]` (tras
@@ -43,12 +49,13 @@ en el celu). **El próximo paso natural es la prueba de Alan, no más código.**
   varios mapas, esconder la barra de chat. El `arbol` de `Intercambio`s es la fuente de la verdad;
   la vista de React Flow se deriva.
 - **IA** (`model/ia.ts`, wired en `FlowCanvas.responder`): streaming, contexto = solo el camino
-  raíz→globo con ventana + resumen. **7 proveedores**: Gemini + Claude directos del navegador; el
-  resto (DeepSeek, GPT, Groq, OpenRouter, HuggingFace) vía el edge function `ia-proxy` (opt-in
-  "usar proxy" en ⚙️). Una key/modelo por proveedor. `⚙️` trae mini-guía de API key por proveedor
+  raíz→globo con ventana + resumen. **8 proveedores**: Gemini + Claude directos del navegador;
+  DeepSeek/GPT/Groq/OpenRouter/HuggingFace vía el edge function `ia-proxy` (opt-in "usar proxy"
+  en ⚙️); **Ollama local** (`fetch` directo a `localhost:11434`, sin key — decisiones §7f).
+  Una key/modelo por proveedor. `⚙️` trae mini-guía de API key por proveedor
   (`GUIA_API_KEY`) y aclara cuáles son open-source.
-  **Probados e2e: Gemini + Groq + OpenRouter + HuggingFace** — los 4 free reales y fluidos.
-  Claude/DeepSeek/GPT son pagos (el user trae saldo). **Lista de proveedores cerrada en 7.**
+  **Probados e2e: Gemini + Groq + OpenRouter + HuggingFace** (4 free) + **Ollama** (`qwen2.5vl:7b`).
+  Claude/DeepSeek/GPT son pagos (el user trae saldo). **Lista de cloud cerrada en 7; Ollama = #8 local.**
 - **Modelos probados (31-08 / 01-09)** — referencia rápida, ordenados de funcional a no funcional:
   - **Groq** (proxy):
     1. **Chat de texto**: `groq/compound(-mini)`, `openai/gpt-oss-20b/120b/safeguard-20b`,
@@ -167,12 +174,14 @@ solo encabezado en el globo. Solo vista. Decisiones "Doc card". Falta prueba de 
 ### Ideas sin empezar
 - **Embeddings 2.5b** (`transformers.js`) si `intercambiosRelevantes` (match por palabras) se
   queda corto — misma firma, drop-in.
-- Modelos locales tipo Ollama (spec §10) — **descartado** (mixed-content/CORS + el celu no llega a
-  `localhost`); los modelos abiertos ya se sirven online vía Groq/OpenRouter/etc.
+- Modelos locales tipo Ollama (spec §10) — **descartado como camino principal** (mixed-content/CORS
+  + el celu no llega a `localhost`); PERO shippeado como **proveedor local opt-in** (03-09,
+  decisiones §7f): `case "ollama"` en `ia.ts`, `fetch` a `localhost:11434/v1`, sin key. El camino
+  "IA gratis para cualquiera" sigue siendo WebLLM (`tasks/v2-webllm-spec.md`).
 
 ### Prueba real pre-existente pendiente
 - **DeepSeek, GPT** con key real (pagos — cuando Alan tenga saldo). Los 4 free
-  (Gemini/Groq/OpenRouter/HuggingFace) ya están probados; lista de proveedores cerrada en 7.
+  (Gemini/Groq/OpenRouter/HuggingFace) + Ollama local ya están probados; cloud cerrada en 7.
 - Panel/globo redimensionable + fixes de móvil (3.11/3.13) en celu.
 - ⚠️ LWW de títulos usa el reloj del navegador: relojes MUY desfasados podrían elegir mal.
 

@@ -40,7 +40,23 @@ export const PROVEEDORES_DISPONIBLES: Proveedor[] = [
   "huggingface",
   "deepseek",
   "gpt",
+  "ollama",
 ];
+
+// Modelo local corriendo en la máquina del usuario (Ollama, API OpenAI-compat en
+// :11434). NO usa el proxy ni una API key — `fetch` directo a localhost. Opción
+// avanzada: anda en Chrome/Edge de escritorio (localhost es "secure context"),
+// NO en Safari ni en móvil, y el servidor Ollama tiene que estar corriendo.
+// Ver decisiones §7a. Override para apuntar a otra máquina de la LAN:
+// `NEXT_PUBLIC_OLLAMA_URL`.
+export const OLLAMA_URL = (
+  process.env.NEXT_PUBLIC_OLLAMA_URL || "http://localhost:11434"
+).replace(/\/+$/, "");
+
+// Sentinel que guarda `configIA` como "apiKey" de Ollama: el almacén tira las
+// entradas sin apiKey, y Ollama no tiene una. `llamarIA` / `llamarOllama` lo
+// ignoran. No es un secreto.
+export const OLLAMA_SENTINEL = "local";
 
 // Proveedores OpenAI-compatibles que NO habilitan CORS desde el navegador →
 // van contra su API vía el proxy `ia-proxy` (opt-in "usar proxy" en ⚙️).
@@ -60,6 +76,7 @@ export const MODELO_POR_DEFECTO: Record<Proveedor, string> = {
   groq: "llama-3.3-70b-versatile",
   openrouter: "nvidia/nemotron-3-super-120b-a12b:free",
   huggingface: "Qwen/Qwen2.5-72B-Instruct",
+  ollama: "qwen2.5vl:7b",
 };
 
 // Modelos de Gemini que ya no sirven para una key free tier nueva y hay que
@@ -90,6 +107,7 @@ export const NOMBRE_PROVEEDOR: Record<Proveedor, string> = {
   groq: "Groq",
   openrouter: "OpenRouter",
   huggingface: "Hugging Face",
+  ollama: "Ollama (local)",
 };
 
 // Pista de formato de la API key, por proveedor (para el placeholder del input).
@@ -101,6 +119,7 @@ export const PISTA_API_KEY: Record<Proveedor, string> = {
   groq: "gsk_…",
   openrouter: "sk-or-…",
   huggingface: "hf_…",
+  ollama: "", // no usa API key
 };
 
 // Mini-guía "cómo consigo mi API key", por proveedor — para gente que nunca usó
@@ -176,6 +195,17 @@ export const GUIA_API_KEY: Record<
       "Abrí el link y creá una cuenta de OpenAI.",
       "Necesita saldo: cargá crédito en Billing.",
       'Clic en "Create new secret key", copiá y pegá acá.',
+    ],
+  },
+  ollama: {
+    url: "https://ollama.com/download",
+    gratis: true,
+    abierto: true,
+    pasos: [
+      "Instalá Ollama desde el link (Windows / macOS / Linux).",
+      "Bajá un modelo: en la terminal, `ollama pull qwen2.5vl:7b` (texto + imágenes + PDF).",
+      "El server queda escuchando en localhost:11434. No hay API key.",
+      "Anda en Chrome/Edge de escritorio. Safari y el celular NO llegan a tu localhost.",
     ],
   },
 };
@@ -270,7 +300,8 @@ export async function llamarIA(
   mensajes: Mensaje[],
   opts: LlamadaOpts = {},
 ): Promise<RespuestaIA> {
-  if (!config.apiKey.trim()) {
+  // Ollama corre en localhost sin auth — no hay key que pedir.
+  if (config.proveedor !== "ollama" && !config.apiKey.trim()) {
     throw new ErrorIA("Falta la API key. Cargala en ⚙️.");
   }
   if (mensajes.length === 0) {
@@ -287,6 +318,8 @@ export async function llamarIA(
     case "openrouter":
     case "huggingface":
       return llamarOpenAICompat(config, mensajes, opts);
+    case "ollama":
+      return llamarOllama(config, mensajes, opts);
     default:
       throw new ErrorIA(
         `El proveedor "${config.proveedor}" todavía no está implementado.`,
@@ -801,32 +834,20 @@ type ContenidoOpenAI =
       | { type: "image_url"; image_url: { url: string } }
     >;
 
-async function llamarOpenAICompat(
+// El body de una llamada `/chat/completions` OpenAI-compat. Igual para el proxy
+// y para Ollama local — cambia solo a dónde se manda (`llamarOpenAICompat` vs
+// `llamarOllama`).
+function cuerpoOpenAICompat(
   config: ConfigIA,
   mensajes: Mensaje[],
   opts: LlamadaOpts,
-): Promise<RespuestaIA> {
-  const nombre = NOMBRE_PROVEEDOR[config.proveedor];
-  if (!opts.usarProxy) {
-    throw new ErrorIA(
-      `${nombre} necesita el proxy de 3maps (esas APIs no se pueden llamar ` +
-        `directo desde el navegador). Activá "usar proxy" en ⚙️.`,
-    );
-  }
-  const proxy = proxyIAUrl();
-  if (!proxy) {
-    throw new ErrorIA(
-      `Esta instancia de 3maps no tiene el proxy configurado, así que ${nombre} ` +
-        `no está disponible. Usá Gemini o Claude.`,
-    );
-  }
-
-  const body = {
+): Record<string, unknown> {
+  return {
     model: config.modelo,
     stream: true,
     // Pide que el chunk final del SSE incluya el `usage` (tokens in/out). Groq,
-    // OpenRouter, DeepSeek y OpenAI lo soportan; si algún proveedor lo rechaza,
-    // simplemente no viene el `usage` (o habría que gatearlo por proveedor).
+    // OpenRouter, DeepSeek, OpenAI y Ollama lo soportan; si algún proveedor lo
+    // rechaza, simplemente no viene el `usage` (o habría que gatearlo).
     stream_options: { include_usage: true },
     messages: [
       ...(opts.sistema
@@ -848,10 +869,31 @@ async function llamarOpenAICompat(
       }),
     ],
     // OpenAI (modelos nuevos) renombró `max_tokens` → `max_completion_tokens`;
-    // DeepSeek sigue con `max_tokens`.
+    // DeepSeek / Ollama siguen con `max_tokens`.
     [config.proveedor === "gpt" ? "max_completion_tokens" : "max_tokens"]:
       opts.maxTokens ?? 4096,
   };
+}
+
+async function llamarOpenAICompat(
+  config: ConfigIA,
+  mensajes: Mensaje[],
+  opts: LlamadaOpts,
+): Promise<RespuestaIA> {
+  const nombre = NOMBRE_PROVEEDOR[config.proveedor];
+  if (!opts.usarProxy) {
+    throw new ErrorIA(
+      `${nombre} necesita el proxy de 3maps (esas APIs no se pueden llamar ` +
+        `directo desde el navegador). Activá "usar proxy" en ⚙️.`,
+    );
+  }
+  const proxy = proxyIAUrl();
+  if (!proxy) {
+    throw new ErrorIA(
+      `Esta instancia de 3maps no tiene el proxy configurado, así que ${nombre} ` +
+        `no está disponible. Usá Gemini o Claude.`,
+    );
+  }
 
   let res: Response;
   try {
@@ -863,7 +905,7 @@ async function llamarOpenAICompat(
         "x-ia-path": "/chat/completions",
         "x-ia-key": config.apiKey,
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(cuerpoOpenAICompat(config, mensajes, opts)),
       signal: opts.signal,
     });
   } catch (e) {
@@ -880,12 +922,53 @@ async function llamarOpenAICompat(
     );
   }
 
+  return procesarStreamOpenAICompat(res.body, nombre, opts);
+}
+
+// Ollama local: mismo formato OpenAI-compat, pero `fetch` directo a
+// `localhost:11434` — sin proxy, sin API key, sin CORS (localhost es "secure
+// context" en Chrome/Edge). Ver decisiones §7a.
+async function llamarOllama(
+  config: ConfigIA,
+  mensajes: Mensaje[],
+  opts: LlamadaOpts,
+): Promise<RespuestaIA> {
+  const nombre = NOMBRE_PROVEEDOR[config.proveedor];
+  let res: Response;
+  try {
+    res = await fetch(`${OLLAMA_URL}/v1/chat/completions`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(cuerpoOpenAICompat(config, mensajes, opts)),
+      signal: opts.signal,
+    });
+  } catch (e) {
+    if (esAbort(e)) throw e;
+    throw new ErrorIA(
+      `No se pudo contactar Ollama en ${OLLAMA_URL}. ¿Está corriendo el server ` +
+        `(\`ollama serve\`)? Safari y el celular no llegan a tu localhost.`,
+      e,
+    );
+  }
+  if (!res.ok || !res.body) {
+    throw new ErrorIA(await mensajeErrorOpenAICompat(res, nombre, hayImagenes(mensajes)));
+  }
+  return procesarStreamOpenAICompat(res.body, nombre, opts);
+}
+
+// Lee el stream SSE de una respuesta `/chat/completions` OpenAI-compat y devuelve
+// el texto (sin cadena de pensamiento ni tokens internos) + el `usage`.
+async function procesarStreamOpenAICompat(
+  stream: ReadableStream<Uint8Array>,
+  nombre: string,
+  opts: LlamadaOpts,
+): Promise<RespuestaIA> {
   let crudo = ""; // contenido tal cual llega (puede traer <think>…)
   let acumulado = ""; // lo mismo pero ya sin la cadena de pensamiento
   let errorEnStream: string | null = null;
   let uso: UsoTokens | null = null;
   let finish: string | null = null; // `length` = cortada por el límite de salida
-  const reader = res.body.getReader();
+  const reader = stream.getReader();
   const dec = new TextDecoder();
   let buf = "";
 
@@ -1012,7 +1095,7 @@ async function mensajeErrorOpenAICompat(
 // Cada key tiene acceso a un set distinto de modelos; esto evita adivinar
 // nombres. Lo usa el botón "ver modelos disponibles" de SettingsPanel.
 export async function listarModelos(config: ConfigIA): Promise<string[]> {
-  if (!config.apiKey.trim()) {
+  if (config.proveedor !== "ollama" && !config.apiKey.trim()) {
     throw new ErrorIA("Falta la API key. Cargala en ⚙️.");
   }
   switch (config.proveedor) {
@@ -1026,6 +1109,8 @@ export async function listarModelos(config: ConfigIA): Promise<string[]> {
     case "openrouter":
     case "huggingface":
       return listarModelosOpenAICompat(config);
+    case "ollama":
+      return listarModelosOllama();
     default:
       throw new ErrorIA(
         `Listar modelos no está implementado para "${config.proveedor}".`,
@@ -1077,6 +1162,30 @@ async function listarModelosOpenAICompat(config: ConfigIA): Promise<string[]> {
     .filter(Boolean)
     .filter((id) => modeloListable(config.proveedor, id))
     .sort();
+}
+
+// Modelos que el usuario ya bajó (`ollama pull …`). `GET /api/tags` de Ollama.
+async function listarModelosOllama(): Promise<string[]> {
+  let res: Response;
+  try {
+    res = await fetch(`${OLLAMA_URL}/api/tags`);
+  } catch (e) {
+    throw new ErrorIA(
+      `No se pudo contactar Ollama en ${OLLAMA_URL}. ¿Está corriendo el server?`,
+      e,
+    );
+  }
+  if (!res.ok) {
+    throw new ErrorIA(`Ollama respondió ${res.status} al listar modelos.`);
+  }
+  const j = (await res.json()) as { models?: Array<{ name?: string }> };
+  const ids = (j.models ?? []).map((m) => m.name ?? "").filter(Boolean).sort();
+  if (ids.length === 0) {
+    throw new ErrorIA(
+      `Ollama no tiene modelos bajados. Corré \`ollama pull qwen2.5vl:7b\`.`,
+    );
+  }
+  return ids;
 }
 
 async function listarModelosGemini(config: ConfigIA): Promise<string[]> {

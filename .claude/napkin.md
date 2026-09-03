@@ -41,9 +41,10 @@ Runbook corto. Cosas que muerden si no las sabés. Leer antes de tocar.
 ## Proyecto
 
 5. Carpeta local `D:\IA\3maps`. Repo `github.com/alanepazs/3maps`. Rama `main`.
-6. **Antes de codear leé** (orden en `CLAUDE.md`): `docs/estado.md`, `docs/arquitectura.md`,
-   este archivo, `docs/decisiones.md`. `docs/historia.md` (qué shippeó cada fase) y
-   `docs/spec-proyecto.md` solo si hace falta. No leas todo `src/`.
+6. **Antes de codear**: alcanza con `CLAUDE.md` + `docs/estado.md` + el memory
+   `project-3maps-brief`. `docs/decisiones.md` (sección puntual — tiene índice arriba) /
+   `docs/arquitectura.md` / este archivo / `docs/historia.md` / `docs/spec-proyecto.md`
+   **solo si la tarea puntual lo pide**, y primero `graphify query` (§6b). No leas todo `src/`.
 6a. **agent-skills (IMPERATIVO, ver CLAUDE.md)**: las 25 skills viven en `.claude/skills/` pero
    están **gitignoreadas** — un clon nuevo NO las trae. Restaurar:
    `git clone --depth 1 https://github.com/addyosmani/agent-skills /tmp/as && cp -r /tmp/as/{skills,references,agents} .claude/`
@@ -55,7 +56,8 @@ Runbook corto. Cosas que muerden si no las sabés. Leer antes de tocar.
    nuevos), **regenerar**: `graphify update . --force` (re-extrae, sin LLM; hace backup en
    `graphify-out/<fecha>/`). `graphify explain "<Nodo>"` / `graphify path "A" "B"` para relaciones
    puntuales. El intérprete está en `graphify-out\.graphify_python`. `graph.html` para mirar a ojo.
-   544 nodes / 1110 edges (03-09). Las líneas del grafo desactualizado mienten → regenerar primero.
+   574 nodes / 1182 edges (03-09, solo `src/` — `docs/` no se indexa a propósito, ver decisiones
+   §26). Las líneas del grafo desactualizado mienten → regenerar primero.
 7. `next.config.ts`: `agentRules: false` (que Next no escriba en CLAUDE.md), `devIndicators`
    abajo-derecha, `output: "export"`, y `basePath: /3maps` **solo si `NEXT_PUBLIC_PAGES=1`**
    (el workflow de Pages lo setea; `next dev` local queda en la raíz). Deploy = push a `main`.
