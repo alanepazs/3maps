@@ -576,7 +576,8 @@ function Flow() {
       // Cancelar cualquier llamada previa para este mismo nodo.
       enVueloRef.current.get(nodeId)?.abort();
 
-      if (!configIA.apiKey.trim()) {
+      // Ollama es local, sin auth — no hay key que pedir (ver decisiones §7f).
+      if (configIA.proveedor !== "ollama" && !configIA.apiKey.trim()) {
         setArbol((a) =>
           conError(a, nodeId, "Cargá tu API key en ⚙️ para que la IA responda."),
         );
@@ -603,9 +604,14 @@ function Flow() {
       //   - respuesta esperando el 1er token: gracia larga PRIMER_BYTE_MS (un
       //     free tier saturado tarda en empezar).
       //   - respuesta ya en curso: INACTIVIDAD_MS entre chunks.
-      const INACTIVIDAD_MS = 45_000;
-      const PRIMER_BYTE_MS = 90_000;
-      const TOTAL_MS = 240_000;
+      // Con `ollama` (modelo local) los topes van ×3-4: la lógica de "free tier
+      // saturado" no aplica, pero la visión (imagen ~2800 tok) en una GPU modesta
+      // es lenta en el 1er token y entre chunks → el falso "no hubo respuesta"
+      // que reportó Alan. Ver decisiones §7f.
+      const local = configIA.proveedor === "ollama";
+      const INACTIVIDAD_MS = local ? 180_000 : 45_000;
+      const PRIMER_BYTE_MS = local ? 240_000 : 90_000;
+      const TOTAL_MS = local ? 900_000 : 240_000;
       const inicio = Date.now();
       let ultimaActividad = Date.now();
       let esperandoRespuesta = false; // ya se llamó a `llamarIA`
@@ -670,10 +676,10 @@ function Flow() {
             const aResumir = viejos.slice(desde);
             resumenNuevos = aResumir.length;
             // Tope propio para la llamada oculta: si tarda demasiado (proveedor
-            // saturado), se sigue SIN resumen (el tramo viejo va completo) en
-            // vez de hacer esperar al usuario. `ctrl.signal` la cancela igual
-            // ante STOP / TOTAL_MS.
-            const RESUMEN_MS = 50_000;
+            // saturado, o modelo local lento), se sigue SIN resumen (el tramo
+            // viejo va completo) en vez de hacer esperar al usuario. `ctrl.signal`
+            // la cancela igual ante STOP / TOTAL_MS.
+            const RESUMEN_MS = local ? 180_000 : 50_000;
             try {
               const rs = await resumir(configIA, aResumir, {
                 usarProxy: settings.usarProxyIA,

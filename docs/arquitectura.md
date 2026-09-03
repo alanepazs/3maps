@@ -395,9 +395,10 @@ Handlers (todos operan sobre `arbol` vía `setArbol`):
   `rama` al soltar. En un drag de grupo el flip en vivo es solo del globo de referencia; el resto
   se corrige en el drop (B3).
 - `responder(nodeId, arbolBase)` — **la llamada a la IA**. Watchdog por fases (F3-6): resumir bajo
-  `TOTAL_MS` (240s) + corte propio a 50s de `resumir()`; 1er token del stream `PRIMER_BYTE_MS`
-  (90s); entre chunks `INACTIVIDAD_MS` (45s). Timeout → error reintentable (deja la parcial). Si no hay API key →
-  `conError`. Si no:
+  `TOTAL_MS` (240s) + corte propio `RESUMEN_MS` (50s) de `resumir()`; 1er token del stream
+  `PRIMER_BYTE_MS` (90s); entre chunks `INACTIVIDAD_MS` (45s). Con `configIA.proveedor === "ollama"`
+  (`local`) los 4 van ×3-4 (240/900/... — visión local lenta, §7f). Timeout → error reintentable
+  (deja la parcial). Sin API key → `conError` (salvo `ollama`, que no usa key). Si no:
   `conRespuesta({pending:true})` + limpia error; arma el contexto con `armarContexto` (tratando a
   `nodeId` como pendiente, así un reintento descarta la respuesta parcial vieja); si el camino
   supera la ventana, genera/cachea el `resumenViejo` con `resumir` (sin `systemPrompt`)

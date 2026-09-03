@@ -185,10 +185,8 @@ solo encabezado en el globo. Solo vista. Decisiones "Doc card". Falta prueba de 
   cerrada en 7.
 - **Ollama desde el sitio publicado (HTTPS)** ✅ — Alan lo probó en su Chrome (03-09):
   `alanepazs.github.io` → Ollama local reconoció texto, PDF e imagen. `OLLAMA_ORIGINS` seteado +
-  el PNA de Chrome no bloqueó. Ver decisiones §7f.
-  ⚠️ **Pendiente (chico)**: la visión local lenta (imagen, ~2800 tok) cruza el watchdog de
-  `FlowCanvas.responder` → falso "no hubo respuesta del servidor" aunque la respuesta llega.
-  Subir `PRIMER_BYTE_MS`/`INACTIVIDAD_MS`/`TOTAL_MS` cuando el proveedor es `ollama`.
+  el PNA de Chrome no bloqueó. El watchdog de `responder` va ×3-4 con `ollama` (visión local
+  lenta → antes marcaba un falso "no hubo respuesta"). Ver decisiones §7f.
 - Panel/globo redimensionable + fixes de móvil (3.11/3.13) en celu.
 - ⚠️ LWW de títulos usa el reloj del navegador: relojes MUY desfasados podrían elegir mal.
 
@@ -212,8 +210,8 @@ solo encabezado en el globo. Solo vista. Decisiones "Doc card". Falta prueba de 
 - **Llamada IA que se corta**: watchdog **por fases** (F3-6: resumir 240s + corte propio 50s;
   1er token 90s; entre chunks 45s) + `pendiente: 1` persistido + "↻ Rehacer". Respuesta cortada
   por `MAX_TOKENS`/`length` → `RespuestaIA.truncada` → nota "incompleta" sin borrar el texto.
-  ⚠️ **Con `ollama` + imagen** esos topes se quedan cortos (la visión local es lenta) → falso
-  error aunque la respuesta llega. Pendiente subirlos para `ollama`. Ver decisiones §7f.
+  Con `ollama` esos topes van ×3-4 (`local` en `responder`): la visión local es lenta y antes
+  daba un falso error. Ver decisiones §7f.
 
 ## Cómo correr / verificar / publicar
 

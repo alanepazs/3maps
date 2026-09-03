@@ -199,12 +199,14 @@ CORS necesita `OLLAMA_ORIGINS`; Chrome PNA puede bloquear public→localhost; el
      real (03-09)**: `alanepazs.github.io` → Ollama local **anduvo** — reconoció texto, PDF e
      imagen. (Con la config de Alan el PNA de Chrome no bloqueó; en otra versión/perfil podría
      salir el prompt.) Nada de esto aplica en `npm run dev` (origin ya es localhost).
-- **Gotcha — visión local lenta dispara un falso "no hubo respuesta del servidor"**: qwen2.5vl:7b
-  con una imagen (~2800 tokens de prompt visual) en la GPU de Alan puede tardar bastante en el 1er
-  token / entre chunks → cruza el watchdog de `FlowCanvas.responder` (`PRIMER_BYTE_MS` 90s /
-  `INACTIVIDAD_MS` 45s / `TOTAL_MS` 240s, decisiones F3-6) y el globo marca error aunque la
-  respuesta **sí** está llegando, solo lenta. Pendiente: subir esos topes cuando el proveedor
-  activo es `ollama` (local, sin la lógica de "free tier saturado" que motivó los valores).
+- **Visión local lenta**: qwen2.5vl:7b con una imagen (~2800 tokens de prompt visual) en una GPU
+  modesta tarda bastante en el 1er token / entre chunks → cruzaba el watchdog de
+  `FlowCanvas.responder` y el globo marcaba un falso "no hubo respuesta" (reporte de Alan, 03-09).
+  **Arreglado**: cuando `configIA.proveedor === "ollama"` (`local`) los topes van ×3-4 —
+  `PRIMER_BYTE_MS` 240s (era 90s), `INACTIVIDAD_MS` 180s (45s), `TOTAL_MS` 900s (240s),
+  `RESUMEN_MS` 180s (50s). La lógica de "free tier saturado" que fijó los valores originales no
+  aplica a un modelo local. Mismo commit: `responder` saltea el chequeo de `apiKey` para `ollama`
+  (antes dependía del sentinel).
 - **Revertir**: sacás `"ollama"` de `Proveedor` + los `Record`, el `case`, `llamarOllama` /
   `listarModelosOllama` / `procesarStreamOpenAICompat` (re-inline en `llamarOpenAICompat`), y el
   branch `esOllama` de `SettingsPanel`. Una config vieja con `activo: "ollama"` cae al default.

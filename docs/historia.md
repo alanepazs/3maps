@@ -177,3 +177,8 @@ seleccionar → ver modelos → guardar → pregunta → `POST /v1/chat/completi
 streameada y guardada en el `.md` con `proveedor: ollama` + tokens. Encuadre: opción
 local/avanzada, NO el camino de "IA gratis para cualquiera" (ese sigue siendo WebLLM in-browser,
 `tasks/v2-webllm-spec.md`).
+
+Follow-ups (03-09): Alan lo probó desde el sitio publicado (`alanepazs.github.io` → Ollama local,
+texto/PDF/imagen OK, el PNA de Chrome no bloqueó) — hizo falta `OLLAMA_ORIGINS`. Y el watchdog de
+`FlowCanvas.responder` daba un falso "no hubo respuesta" con la visión local (lenta): con
+`ollama` los 4 topes (`PRIMER_BYTE_MS`/`INACTIVIDAD_MS`/`TOTAL_MS`/`RESUMEN_MS`) van ×3-4.
