@@ -56,7 +56,7 @@ Runbook corto. Cosas que muerden si no las sabés. Leer antes de tocar.
    nuevos), **regenerar**: `graphify update . --force` (re-extrae, sin LLM; hace backup en
    `graphify-out/<fecha>/`). `graphify explain "<Nodo>"` / `graphify path "A" "B"` para relaciones
    puntuales. El intérprete está en `graphify-out\.graphify_python`. `graph.html` para mirar a ojo.
-   587 nodes / 1144 edges (03-09, solo `src/` — `docs/` no se indexa a propósito, ver decisiones
+   600 nodes / 1158 edges (03-09, solo `src/` — `docs/` no se indexa a propósito, ver decisiones
    §26). Las líneas del grafo desactualizado mienten → regenerar primero.
 7. `next.config.ts`: `agentRules: false` (que Next no escriba en CLAUDE.md), `devIndicators`
    abajo-derecha, `output: "export"`, y `basePath: /3maps` **solo si `NEXT_PUBLIC_PAGES=1`**
