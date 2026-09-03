@@ -209,8 +209,27 @@ export function armarContexto(
       texto: `Resumen de la parte previa de esta conversación:\n\n${resumen}`,
     });
     crudo.push({ rol: "assistant", texto: "Listo, lo tengo presente." });
-  } else {
-    for (const ic of viejos) crudo.push(...aplanar(ic));
+  } else if (viejos.length > 0) {
+    // Sin resumen (falló, o fase 1): mandar los viejos pero ACOTADOS — los más
+    // recientes que entren en un presupuesto de chars. Si no, en una rama
+    // profunda el request es enorme y el modelo (sobre todo free) lo rechaza.
+    const PRESUP_VIEJOS = 16_000; // ~4k tokens
+    const conservados: Mensaje[] = [];
+    let chars = 0;
+    for (let i = viejos.length - 1; i >= 0; i--) {
+      const msgs = aplanar(viejos[i]);
+      const c = msgs.reduce((s, m) => s + m.texto.length, 0);
+      if (conservados.length > 0 && chars + c > PRESUP_VIEJOS) {
+        conservados.unshift(
+          { rol: "user", texto: "(La parte más vieja de esta conversación se omitió por tamaño.)" },
+          { rol: "assistant", texto: "Ok, sigo con lo que hay." },
+        );
+        break;
+      }
+      conservados.unshift(...msgs);
+      chars += c;
+    }
+    crudo.push(...conservados);
   }
 
   // La ventana, menos el último (que es la pregunta actual / pendiente): así el

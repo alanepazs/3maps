@@ -369,12 +369,23 @@ export async function resumir(
     resumenPrevio?: string;
   } = {},
 ): Promise<string> {
-  const texto = intercambios
-    .map(
-      (i) =>
-        `Pregunta: ${i.pregunta}\nRespuesta: ${i.respuesta ?? "(sin respuesta)"}`,
-    )
-    .join("\n\n");
+  // Acotar la entrada del resumen: cada respuesta recortada + tope total (los
+  // intercambios MÁS VIEJOS se dropean si no entran). Si no, en una rama profunda
+  // el propio prompt de resumen se pasa del contexto del modelo (sobre todo free)
+  // y la llamada oculta falla → contexto entero → falla la real. Ver decisiones §10.
+  const RESP_MAX = 800;
+  const TOTAL_MAX = 14_000; // ~3.5k tokens — entra hasta en modelos free de 8k
+  let bloques = intercambios.map(
+    (i) =>
+      `Pregunta: ${i.pregunta}\nRespuesta: ${(i.respuesta ?? "(sin respuesta)").slice(0, RESP_MAX)}`,
+  );
+  while (bloques.length > 1 && bloques.join("\n\n").length > TOTAL_MAX) {
+    bloques = bloques.slice(1);
+  }
+  const texto =
+    (bloques.length < intercambios.length
+      ? "(intercambios más viejos omitidos por tamaño)\n\n"
+      : "") + bloques.join("\n\n");
   const prompt = opts.resumenPrevio
     ? "Este es el resumen de la parte previa de una conversación:\n\n" +
       opts.resumenPrevio +
@@ -1192,6 +1203,16 @@ async function mensajeErrorOpenAICompat(
   if (res.status === 502 || res.status === 503) {
     return `${nombre} está caído o saturado. Probá de nuevo.`;
   }
+  // El contexto (conversación acumulada) no entra en el modelo. Pasa en ramas
+  // profundas con modelos free de poca ventana.
+  if (
+    res.status === 413 ||
+    /context length|context window|maximum context|too many tokens|reduce the length|context_length_exceeded|input is too long|prompt is too long/i.test(
+      m ?? "",
+    )
+  ) {
+    return `${nombre}: la conversación es muy larga para este modelo. Empezá una rama nueva (⑂), bajá "ventana de contexto" en ⚙️ · Lienzo, o elegí un modelo con más contexto.`;
+  }
   const pistaImg =
     conImagenes && [400, 415, 422].includes(res.status)
       ? ` · ¿Este modelo acepta imágenes? Muchos modelos abiertos no — probá Gemini o Claude.`
@@ -1427,10 +1448,12 @@ function mensajeLegible(e: unknown): string {
     return `Pedido inválido${err.message ? `: ${err.message}` : ""}.`;
   if (typeof err?.message === "string" && err.message) {
     // Errores de red del navegador suelen venir como "Failed to fetch".
-    if (/failed to fetch|networkerror/i.test(err.message)) {
+    if (/failed to fetch|network\s?error/i.test(err.message)) {
       return "No se pudo conectar con la API (red, CORS o CSP).";
     }
     return err.message;
   }
-  return "Error llamando a la IA.";
+  // Sin status ni message: suele ser la conexión cortada a mitad del stream
+  // (proxy/proveedor que dropea la respuesta, a veces por un request muy grande).
+  return "La IA cortó la conexión sin dar un motivo. Reintentá; si sigue, la conversación puede ser muy larga para el modelo — probá una rama nueva o un modelo con más contexto.";
 }

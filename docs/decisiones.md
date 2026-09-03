@@ -392,6 +392,18 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
   (`resumenCacheRef`, key = ids del tramo concatenados con `|`).
 - El **prefijo del contexto se mantiene consistente** entre llamadas de la misma rama → aprovecha
   el prompt caching del proveedor. No reordenar ni regenerar el prefijo por gusto.
+- **Topes de tamaño (03-09, fix)**: en una rama profunda con un modelo de poca ventana (free) el
+  request explotaba — el resumen y la llamada real fallaban y el globo tiraba "Error llamando a
+  la IA." (reporte de Alan, ~29 intercambios / ~35k tokens).
+  - `resumir()` acota su entrada: cada respuesta a `RESP_MAX` 800 chars, tope total `TOTAL_MAX`
+    14 000 (~3.5k tokens), dropea los intercambios **más viejos** si no entran. Así la llamada
+    oculta no se pasa del contexto del modelo.
+  - `armarContexto`, cuando NO hay resumen (falló, o fase 1): el tramo viejo va **acotado** —
+    los intercambios más recientes que entren en `PRESUP_VIEJOS` 16 000 chars (~4k tokens), con
+    nota "(La parte más vieja … se omitió por tamaño)". Antes iba entero (35k → rechazo).
+  - `mensajeErrorOpenAICompat` detecta 413 / "context length" / "maximum context" → mensaje
+    útil ("la conversación es muy larga para este modelo — rama nueva, o bajá la ventana").
+    `mensajeLegible` sin `status`/`message` (stream cortado) también sugiere eso.
 - **Resumen INCREMENTAL (B2, 03-09)**: cuando la ventana se corre y hay que re-resumir, `responder`
   busca en `resumenCacheRef` el **prefijo cacheado más largo** del set viejo (que crece agregando
   al final) y le pasa a `resumir()` solo la **cola nueva** + ese resumen (`opts.resumenPrevio`).
