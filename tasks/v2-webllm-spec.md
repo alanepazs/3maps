@@ -172,11 +172,23 @@ async function llamarWebLLM(
 
 ## Open Questions
 
-1. **Next 16 + `output: export` + Web Worker de módulo.** ¿`new Worker(new URL(...))`
-   bundlea limpio con Turbopack en modo export? Riesgo principal. Si no, plan B:
-   engine in-main-thread (`CreateMLCEngine`) y aceptar el jank durante la generación,
-   o cargar el worker desde la CDN de esm.run. → resolver en Fase 2 (Plan) con una
-   prueba de build mínima antes de comprometer el diseño.
+1. ~~**Next 16 + `output: export` + Web Worker de módulo.**~~ **RESUELTO (03-09, spike
+   `spike/webllm-build`)** — `new Worker(new URL("./webllm.worker.ts", import.meta.url),
+   { type: "module" })` + `import("@mlc-ai/web-llm")` **bundlea bien** con Turbopack en
+   modo `export`:
+   - `npm run build` compila; `tsc` verde. web-llm 0.2.84 no necesita stubs de
+     `fs`/`module`/`perf_hooks` (el ejemplo webpack viejo sí, esta versión no).
+   - Turbopack emite un bootstrap `turbopack-worker-*.js` + el entry del worker
+     (`.js`, no `.ts`) + el chunk de web-llm (6 MB). Convierte el `type: "module"` a
+     worker **clásico** (`importScripts`) → sin líos de MIME en GitHub Pages.
+   - **El chunk de web-llm (6 MB) es lazy** — NO está en el `index.html`, solo se baja
+     cuando se dispara el proveedor. Carga inicial de 3maps intacta.
+   - Con `NEXT_PUBLIC_PAGES=1` (basePath `/3maps`) los chunks del worker resuelven a
+     `/3maps/_next/static/chunks/...` correctamente (probado sirviendo `out/` bajo `/3maps/`).
+   - El worker corrió web-llm de verdad; solo falló al init de WebGPU porque el pane de
+     Claude no tiene WebGPU real ("Failed to create WebGPU Context Provider"). **Falta la
+     prueba de generación en el Chrome real de Alan** (GPU + descarga de pesos).
+   - No hizo falta plan B (in-main-thread / esm.run).
 2. **`stream_options: { include_usage: true }`** en WebLLM — asumido que anda (es
    OpenAI-compat). Si no, `uso: null` y listo (ya pasa con varios proveedores free).
 3. ¿La barra de progreso va en SettingsPanel o en un overlay a pantalla completa la

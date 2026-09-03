@@ -41,6 +41,7 @@ export const PROVEEDORES_DISPONIBLES: Proveedor[] = [
   "deepseek",
   "gpt",
   "ollama",
+  "webllm",
 ];
 
 // Modelo local corriendo en la máquina del usuario (Ollama, API OpenAI-compat en
@@ -77,6 +78,7 @@ export const MODELO_POR_DEFECTO: Record<Proveedor, string> = {
   openrouter: "nvidia/nemotron-3-super-120b-a12b:free",
   huggingface: "Qwen/Qwen2.5-72B-Instruct",
   ollama: "qwen2.5vl:7b",
+  webllm: "Llama-3.2-3B-Instruct-q4f16_1-MLC",
 };
 
 // Modelos de Gemini que ya no sirven para una key free tier nueva y hay que
@@ -108,6 +110,7 @@ export const NOMBRE_PROVEEDOR: Record<Proveedor, string> = {
   openrouter: "OpenRouter",
   huggingface: "Hugging Face",
   ollama: "Ollama (local)",
+  webllm: "Modelo local (en el navegador)",
 };
 
 // Pista de formato de la API key, por proveedor (para el placeholder del input).
@@ -120,6 +123,7 @@ export const PISTA_API_KEY: Record<Proveedor, string> = {
   openrouter: "sk-or-…",
   huggingface: "hf_…",
   ollama: "", // no usa API key
+  webllm: "", // no usa API key — corre en el navegador
 };
 
 // Mini-guía "cómo consigo mi API key", por proveedor — para gente que nunca usó
@@ -208,6 +212,16 @@ export const GUIA_API_KEY: Record<
       "Anda en Chrome/Edge de escritorio. Safari y el celular NO llegan a tu localhost.",
     ],
   },
+  webllm: {
+    url: "https://webllm.mlc.ai/",
+    gratis: true,
+    abierto: true,
+    pasos: [
+      "No instalás nada: el modelo corre en tu navegador con WebGPU.",
+      "La 1ª vez se descargan ~2 GB de pesos (con barra de progreso), después queda cacheado.",
+      "Necesita Chrome/Edge de escritorio y una GPU decente. No anda en móvil.",
+    ],
+  },
 };
 
 // A qué proveedor pertenece una key, por su prefijo — solo si es INEQUÍVOCO.
@@ -279,6 +293,9 @@ export type LlamadaOpts = {
   maxTokens?: number;
   // Se llama con cada fragmento de texto que llega (para stremear en vivo).
   onTexto?: (delta: string, acumulado: string) => void;
+  // Solo WebLLM: progreso de la descarga/carga de los pesos del modelo local
+  // (`fraccion` 0..1). Ver `webllm.ts`.
+  onProgreso?: (fraccion: number, texto: string) => void;
   signal?: AbortSignal;
   // El usuario aceptó que su key transite el proxy de 3maps (aplica a los
   // proveedores OpenAI-compatibles vía proxy). Sin esto tiran error explicativo.
@@ -300,8 +317,9 @@ export async function llamarIA(
   mensajes: Mensaje[],
   opts: LlamadaOpts = {},
 ): Promise<RespuestaIA> {
-  // Ollama corre en localhost sin auth — no hay key que pedir.
-  if (config.proveedor !== "ollama" && !config.apiKey.trim()) {
+  // Ollama (localhost) y WebLLM (in-browser) corren sin auth — no hay key.
+  const sinKey = config.proveedor === "ollama" || config.proveedor === "webllm";
+  if (!sinKey && !config.apiKey.trim()) {
     throw new ErrorIA("Falta la API key. Cargala en ⚙️.");
   }
   if (mensajes.length === 0) {
@@ -320,6 +338,8 @@ export async function llamarIA(
       return llamarOpenAICompat(config, mensajes, opts);
     case "ollama":
       return llamarOllama(config, mensajes, opts);
+    case "webllm":
+      return llamarWebLLM(config, mensajes, opts);
     default:
       throw new ErrorIA(
         `El proveedor "${config.proveedor}" todavía no está implementado.`,
@@ -954,6 +974,68 @@ async function llamarOllama(
   return procesarStreamOpenAICompat(res.body, nombre, opts);
 }
 
+// WebLLM: modelo corriendo in-browser con WebGPU. El engine (con su Web Worker)
+// vive en `webllm.ts`; acá solo se itera el stream, que ya es OpenAI-compat pero
+// como AsyncGenerator de objetos (no SSE de texto → no reusa
+// `procesarStreamOpenAICompat`). Spike v2 — ver `tasks/v2-webllm-spec.md`.
+async function llamarWebLLM(
+  config: ConfigIA,
+  mensajes: Mensaje[],
+  opts: LlamadaOpts,
+): Promise<RespuestaIA> {
+  const { obtenerEngineWebLLM } = await import("./webllm");
+  const engine = await obtenerEngineWebLLM(config.modelo, opts.onProgreso);
+  const stream = await engine.chat.completions.create({
+    stream: true,
+    stream_options: { include_usage: true },
+    messages: [
+      ...(opts.sistema ? [{ role: "system" as const, content: opts.sistema }] : []),
+      ...mensajes.map((m) => ({ role: m.rol, content: m.texto })),
+    ],
+    max_tokens: opts.maxTokens ?? 4096,
+  });
+
+  let crudo = "";
+  let acumulado = "";
+  let uso: UsoTokens | null = null;
+  let finish: string | null = null;
+  try {
+    for await (const chunk of stream) {
+      if (opts.signal?.aborted) {
+        await engine.interruptGenerate();
+        break;
+      }
+      const trozo = chunk.choices[0]?.delta?.content ?? "";
+      if (chunk.choices[0]?.finish_reason) finish = chunk.choices[0].finish_reason;
+      if (chunk.usage) {
+        uso = {
+          entrada: chunk.usage.prompt_tokens ?? 0,
+          salida: chunk.usage.completion_tokens ?? 0,
+        };
+      }
+      if (!trozo) continue;
+      crudo += trozo;
+      const limpio = sinTokensBasura(sinRazonamiento(crudo));
+      if (limpio === acumulado) continue;
+      const delta = limpio.startsWith(acumulado)
+        ? limpio.slice(acumulado.length)
+        : limpio;
+      acumulado = limpio;
+      opts.onTexto?.(delta, acumulado);
+    }
+  } catch (e) {
+    if (esAbort(e)) throw e;
+    if (acumulado) return { texto: acumulado, uso };
+    throw new ErrorIA(mensajeLegible(e), e);
+  }
+  if (acumulado) {
+    return { texto: acumulado, uso, truncada: finish === "length" };
+  }
+  throw new ErrorIA(
+    "El modelo local no devolvió texto. Probá de nuevo o cambiá de modelo.",
+  );
+}
+
 // Lee el stream SSE de una respuesta `/chat/completions` OpenAI-compat y devuelve
 // el texto (sin cadena de pensamiento ni tokens internos) + el `usage`.
 async function procesarStreamOpenAICompat(
@@ -1092,8 +1174,17 @@ async function mensajeErrorOpenAICompat(
 // ── Listar modelos disponibles para la key del usuario ────────────────────
 // Cada key tiene acceso a un set distinto de modelos; esto evita adivinar
 // nombres. Lo usa el botón "ver modelos disponibles" de SettingsPanel.
+// WebLLM: lista corta curada (el spec pide 2-3 con default 3B). El catálogo
+// completo de `prebuiltAppConfig` son ~150 ids.
+export const MODELOS_WEBLLM: string[] = [
+  "Llama-3.2-1B-Instruct-q4f16_1-MLC", // ~0.9 GB — máquinas flojas
+  "Llama-3.2-3B-Instruct-q4f16_1-MLC", // ~2.3 GB — default
+  "Qwen2.5-7B-Instruct-q4f16_1-MLC", // ~5.1 GB — GPU ≥6 GB VRAM
+];
+
 export async function listarModelos(config: ConfigIA): Promise<string[]> {
-  if (config.proveedor !== "ollama" && !config.apiKey.trim()) {
+  const sinKey = config.proveedor === "ollama" || config.proveedor === "webllm";
+  if (!sinKey && !config.apiKey.trim()) {
     throw new ErrorIA("Falta la API key. Cargala en ⚙️.");
   }
   switch (config.proveedor) {
@@ -1109,6 +1200,8 @@ export async function listarModelos(config: ConfigIA): Promise<string[]> {
       return listarModelosOpenAICompat(config);
     case "ollama":
       return listarModelosOllama();
+    case "webllm":
+      return MODELOS_WEBLLM;
     default:
       throw new ErrorIA(
         `Listar modelos no está implementado para "${config.proveedor}".`,

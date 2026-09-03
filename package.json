@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.122.0",
+    "@mlc-ai/web-llm": "^0.2.84",
     "@supabase/supabase-js": "^2.112.4",
     "@xyflow/react": "^12.11.5",
     "katex": "^0.18.5",
