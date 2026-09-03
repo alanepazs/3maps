@@ -1691,3 +1691,19 @@ Tres bugs de la prueba de Alan en Chrome (02-09).
   costa de legibilidad. El ahorro está en leer menos archivos, no en comprimir los que se leen.
 - **Revertir**: volvés a la lista de 7 ítems obligatorios; no se rompe nada, solo se releen
   ~2000 líneas de docs por sesión.
+
+### 27. ESLint: apagadas `react-hooks/set-state-in-effect` y `react-hooks/refs`; `.claude/**` ignorado
+- **`eslint-plugin-react-hooks@7`** (vía `core-web-vitals` de Next 16) trae reglas nuevas que
+  flaggean dos patrones **deliberados**: (a) `useEffect(() => setX(true), [])` para hidratación
+  SSR (§5 / B7 — sin eso hay mismatch y React 19 no lo patchea); (b) leer `resumenCacheRef.current`
+  en un `useMemo` de solo lectura (contador de tokens del panel, T10 — no dispara el resumen).
+  Encima el plugin tiene **presupuesto de análisis por función** → en `FlowCanvas` (`Flow()`,
+  ~1900 líneas) reportaba o no según el tamaño exacto del archivo (`npm run lint` no
+  determinístico). Apagar las 2 reglas es la respuesta proporcionada — arreglar los patrones
+  "bien" (useSyncExternalStore, sacar el ref del memo) es refactor de riesgo en un archivo
+  delicado para reglas que se equivocan acá.
+- **`.claude/**` agregado a `globalIgnores`**: las worktrees de sesiones de Claude Code tienen
+  `out/` (build minificado) + copia de `src/` → `npm run lint` levantaba 4000+ "problemas" que no
+  son del proyecto.
+- **Revertir**: si algún día se refactoriza `Flow()` para no necesitar esos patrones, volvés a
+  prender las reglas.
