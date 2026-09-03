@@ -1217,10 +1217,14 @@ El `⌄` **volvió a pedir doble click** (reporte de Alan). F5-4c redujo el swal
   `z-index: 50`. `transform` **no afecta el layout** → los vecinos no se corren.
 - **`data-hoverzoom` va en el `<html>` desde un `useEffect`** (el mismo que aplica fuente/tamaño de
   B5), NO como prop inline. Con prop inline había **mismatch de hidratación** (SSR = default `off`,
-  cliente con `localStorage` = `on`) y React 19 **no lo patchea** → el atributo quedaba en `off`
-  hasta un re-render. El effect corre post-montaje y lo ajusta siempre. (Mismo patrón que
-  `--fuente-3maps`.) `data-chat` / `--xy-edge-stroke-width` tienen el mismo bug latente si se
-  recarga con un valor no-default guardado — no se tocó acá.
+  cliente con `localStorage` = `on`) y React 19 **no lo patchea**. El effect corre post-montaje y
+  lo ajusta siempre. (Mismo patrón que `--fuente-3maps`.)
+- **`data-chat` / `--xy-edge-stroke-width` / `<Composer oculto>` tenían el mismo mismatch** (lo
+  reportó Alan al recargar con `composerOculto` guardado). Fix (03-09): `sVista = hidratado ?
+  settings : DEFAULT_SETTINGS` — un flag `hidratado` (`useState(false)` + `useEffect(()=>set(true))`)
+  hace que el 1er render del cliente use los defaults (= lo que prerenderiza el server), y recién
+  el 2º render aplica los ajustes guardados. Los `useEffect` (fuente/tamaño/hoverzoom) siguen
+  usando `settings` directo (post-montaje, sin SSR).
 - **Exclusiones**: `:not(.dragging)` (RF marca así el nodo que se arrastra — no salta de tamaño a
   mitad del drag) y `:not(.selected)` (con el globo seleccionado están el anillo + la toolbar).
   `@media (hover: hover)` → en touch no aplica.

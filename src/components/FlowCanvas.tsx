@@ -310,9 +310,7 @@ function Flow() {
   }, [listo, fitView, fitOpts]);
 
   // Ajustes configurables (tuerquita). En el server no hay localStorage, así
-  // que se usan los defaults; en el cliente se leen los guardados. No hay
-  // mismatch de hidratación porque el panel arranca cerrado y nada del render
-  // inicial depende de estos valores.
+  // que se usan los defaults; en el cliente se leen los guardados.
   const [settings, setSettings] = useState<Settings>(() => {
     if (typeof window === "undefined") return DEFAULT_SETTINGS;
     try {
@@ -335,6 +333,16 @@ function Flow() {
       return next;
     });
   }, []);
+
+  // Para lo que se dibuja en el PRIMER render (atributos del contenedor, prop
+  // `oculto` del Composer): usar los defaults hasta montar. Así el HTML del
+  // server (que no ve localStorage) y el primer render del cliente coinciden;
+  // si hay ajustes guardados no-default se aplican en el 2º render. Sin esto:
+  // mismatch de hidratación ("data-chat"/`--xy-edge-stroke-width`, React 19 no
+  // lo patchea). Los `useEffect` sí usan `settings` directo (corren post-montaje).
+  const [hidratado, setHidratado] = useState(false);
+  useEffect(() => setHidratado(true), []);
+  const sVista = hidratado ? settings : DEFAULT_SETTINGS;
 
   // Settings que se aplican al `<html>` de forma imperativa post-montaje (sin
   // mismatch de hidratación — el SSR usa los defaults y esto ajusta al valor
@@ -1625,15 +1633,16 @@ function Flow() {
     <NodeActionsContext.Provider value={nodeActions}>
       <div
         className="relative h-full w-full"
-        data-chat={settings.composerOculto ? "oculto" : "visible"}
+        data-chat={sVista.composerOculto ? "oculto" : "visible"}
         // Grosor de las flechas conectoras (B4). `.react-flow__edge-path` lee
         // `--xy-edge-stroke-width`; lo heredan desde acá. Cambiar el slider se
-        // aplica al toque, sin re-render de la vista.
+        // aplica al toque, sin re-render de la vista. (`sVista`: default hasta
+        // montar → sin mismatch de hidratación.)
         style={
           {
             "--xy-edge-stroke-width": Math.min(
               5,
-              Math.max(1, settings.grosorLineas ?? 1.5),
+              Math.max(1, sVista.grosorLineas ?? 1.5),
             ),
           } as CSSProperties
         }
@@ -1734,7 +1743,7 @@ function Flow() {
             activeNodeLabel={activeNodeLabel}
             arbolVacio={arbol.intercambios.length === 0}
             onSubmit={handleSubmit}
-            oculto={settings.composerOculto}
+            oculto={sVista.composerOculto}
             onToggleOculto={() =>
               updateSettings({ composerOculto: !settings.composerOculto })
             }

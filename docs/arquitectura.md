@@ -340,8 +340,11 @@ Estado / hooks clave:
 - `useNodesState` / `useEdgesState` — la vista de React Flow (derivada del árbol).
 - `activeNodeId` (useState) — el globo "activo" desde el que se escribe. Se sincroniza con la
   selección vía `onSelectionChange`. `activeNode` sale de `buscar(arbol, activeNodeId)`.
-- `settings` (useState con lazy init desde `localStorage`, sin mismatch de hidratación porque el
-  panel arranca cerrado). `updateSettings` persiste.
+- `settings` (useState con lazy init desde `localStorage`). `updateSettings` persiste. Lo que va
+  al PRIMER render (atributos del contenedor, prop `oculto` del Composer) usa `sVista = hidratado
+  ? settings : DEFAULT_SETTINGS` — el flag `hidratado` (effect de montaje) hace que server y 1er
+  render del cliente coincidan; el 2º render aplica los guardados. Sin esto: mismatch de
+  hidratación. Los effects (fuente/tamaño/hoverzoom) usan `settings` directo.
 - `spaceHeld` (useState) — listener propio de keydown/keyup en `window`. Invierte el modo del lienzo.
 
 Handlers (todos operan sobre `arbol` vía `setArbol`):
