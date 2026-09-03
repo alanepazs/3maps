@@ -153,7 +153,9 @@ Fase 5 (moverse entre globos + ramificar al costado, no hacia abajo). Ya está h
   arg de RF no es confiable — según agarres globo o recuadro trae uno solo). `glide(grupo)` una
   velocidad; `onSettle` → `asentarVarios` (batch, persiste x/y + rama de todos en un `setArbol`).
   Tras un drag de grupo la selección se mantiene (se limpia al clickear el fondo — default RF).
-  10 asserts + tsc/lint/build verde + pane con shim de rAF + Alan en Chrome.
+  Con >1 seleccionado: toolbar compartida `ToolbarGrupo` ("🗑 Eliminar N" + swatches de color a
+  todos), las toolbars por-globo se esconden. 10 asserts + tsc/lint/build verde + pane + Alan en
+  Chrome.
 - **B5 ✅ codeado** (decisiones B5) — fuente + tamaño de texto. `Settings.fuenteTexto`
   (sistema/geist/serif/mono) + `escalaTexto` (0.8-1.3). `FlowCanvas` escala el `font-size` del
   `<html>` (todo lo `rem`) + setea `--fuente-3maps` (lo lee `body`). `select` + slider en "Lienzo".

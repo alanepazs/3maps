@@ -179,6 +179,13 @@ src/
     LimiteError.tsx     Error boundary de clase genérico (`fallback` + `resetKey`). Aísla un crash
                         de render: en `Markdown.tsx` y en el cuerpo de cada `MessageNode`. Un globo
                         roto muestra el fallback, el resto de la app sigue viva. F3-14.
+    ToolbarGrupo.tsx    Toolbar única para >1 globo seleccionado (B3). `<NodeToolbar nodeId={ids}>`
+                        (RF la posiciona sobre el bounding box). "🗑 Eliminar N" + swatches de color.
+                        Props {ids, onEliminar, onColor}. La cablea `FlowCanvas` (`deleteMuchos` /
+                        `colorMuchos`, `idsSeleccionados`). Con >1 sel., `MessageNode` esconde su
+                        toolbar (`variosSeleccionados` vía `useStore`).
+    colores.ts          `COLOR_GLOBO_HEX` (hex de la paleta B1). Lo comparten `MessageNode` y
+                        `ToolbarGrupo`. Los slugs viven en el modelo; el hex es presentación.
     PanelConversacion.tsx  (era `BranchTranscript` hasta F5-6)
                         Panel lateral: el camino raíz→globo (`caminoRaizA`) aplanado a Q/A tipo
                         chat. Vista derivada. Se abre con doble-click en un globo o el botón ⤢;

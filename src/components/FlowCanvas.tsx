@@ -33,6 +33,7 @@ import Composer, { type BranchKind } from "./Composer";
 import SettingsPanel from "./SettingsPanel";
 import { useSync } from "./useSync";
 import PanelConversacion from "./PanelConversacion";
+import ToolbarGrupo from "./ToolbarGrupo";
 import LoginNudge from "./LoginNudge";
 import SharedBanner from "./SharedBanner";
 import { NodeActionsContext } from "./nodeActions";
@@ -1035,6 +1036,64 @@ function Flow() {
     [arbol, cancelInertia, cancelPanInertia, readOnly],
   );
 
+  // Selección múltiple (B3): ids de los globos seleccionados, estable mientras
+  // no cambie la selección (no re-deriva en cada frame de drag). Alimenta la
+  // toolbar compartida `ToolbarGrupo`.
+  const selKey = nodes
+    .filter((n) => n.selected)
+    .map((n) => n.id)
+    .sort()
+    .join(",");
+  const idsSeleccionados = useMemo(
+    () => (selKey ? selKey.split(",") : []),
+    [selKey],
+  );
+
+  // Eliminar varios globos de una (toolbar compartida). Un solo `window.confirm`.
+  // Si un seleccionado cuelga de otro seleccionado, se borra con él (no se
+  // cuenta dos veces).
+  const deleteMuchos = useCallback(
+    (ids: string[]) => {
+      if (readOnly || ids.length < 2) return;
+      cancelInertia();
+      cancelPanInertia();
+      const a = arbolRef.current;
+      const sel = new Set(ids);
+      const raices = ids.filter((id) => {
+        let p = buscar(a, id)?.padreId ?? null;
+        while (p) {
+          if (sel.has(cabezaDeTramo(a, p))) return false;
+          p = buscar(a, p)?.padreId ?? null;
+        }
+        return true;
+      });
+      const afectados = new Set<string>();
+      for (const id of raices) {
+        afectados.add(id);
+        for (const d of descendientes(a, id)) afectados.add(d.id);
+      }
+      if (
+        !window.confirm(
+          `Se van a eliminar ${afectados.size} intercambios (${raices.length} globos y todo lo que cuelga). ¿Seguir?`,
+        )
+      ) {
+        return;
+      }
+      for (const q of afectados) {
+        enVueloRef.current.get(q)?.abort();
+        enVueloRef.current.delete(q);
+      }
+      setArbol((prev) => raices.reduce((acc, id) => quitarSubarbol(acc, id), prev));
+      setActiveNodeId(null);
+    },
+    [readOnly, cancelInertia, cancelPanInertia],
+  );
+
+  // Pintar varios globos de una (toolbar compartida).
+  const colorMuchos = useCallback((ids: string[], color: ColorGlobo | null) => {
+    setArbol((a) => ids.reduce((acc, id) => conColor(acc, id, color), a));
+  }, []);
+
   // Panel de transcripción de la rama (doble-click en un globo o botón ⤢).
   const [transcriptNodeId, setTranscriptNodeId] = useState<string | null>(null);
 
@@ -1555,6 +1614,13 @@ function Flow() {
             )}
           </Controls>
           <MiniMap position="top-right" pannable zoomable />
+          {!readOnly && (
+            <ToolbarGrupo
+              ids={idsSeleccionados}
+              onEliminar={deleteMuchos}
+              onColor={colorMuchos}
+            />
+          )}
         </ReactFlow>
         {listo && arbol.intercambios.length === 0 && !readOnly && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">

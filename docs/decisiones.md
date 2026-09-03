@@ -1304,9 +1304,16 @@ Tres bugs de la prueba de Alan en Chrome (02-09).
     agarrado → el resto no persistía).
   - Tras un drag de grupo la selección **se mantiene** (pedido de Alan, 02-09 — corrige la
     decisión previa de deseleccionar). Se limpia sola al clickear el fondo del canvas (default de
-    React Flow, `resetSelectedElements` en el `Pane`; no hace falta `onPaneClick`). Las
-    `NodeToolbar` de cada globo seleccionado quedan visibles mientras dure la selección — es el
-    estado esperado.
+    React Flow, `resetSelectedElements` en el `Pane`; no hace falta `onPaneClick`).
+  - **Toolbar compartida** (`ToolbarGrupo`): con >1 globo seleccionado, cada `MessageNode` esconde
+    su `NodeToolbar` (`isVisible={selected && !variosSeleccionados}`, `variosSeleccionados` vía
+    `useStore` — cuenta `n.selected`, corta en 2) y `FlowCanvas` muestra UNA
+    `<NodeToolbar nodeId={idsSeleccionados}>` (RF la posiciona sobre el bounding box del grupo).
+    Acciones en lote: **🗑 Eliminar N** (`deleteMuchos` — un solo `confirm`; si un seleccionado
+    cuelga de otro seleccionado se borra con él, no se cuenta dos veces) y **swatches de color**
+    (`colorMuchos` → `conColor` a cada uno). `idsSeleccionados` se memoiza por un `selKey`
+    ordenado → no re-deriva en cada frame de drag. `COLOR_GLOBO_HEX` salió de `MessageNode` a
+    `components/colores.ts` (lo comparten `MessageNode` y `ToolbarGrupo`).
 - **Decisión** (Alan, tras probar): **envión parejo a todo el grupo** (no "sin envión de grupo",
   que era la opción pre-elegida en `tasks/plan.md` — la sintió y le gustó).
 - **Lo que NO se tocó**: el flip de handle en vivo del `onNodeDrag` wrapper sigue siendo solo del

@@ -17,6 +17,7 @@ import {
   type NodeProps,
 } from "@xyflow/react";
 
+import { COLOR_GLOBO_HEX } from "./colores";
 import { tragarClickSintetico } from "./gestos";
 import LimiteError from "./LimiteError";
 import Markdown from "./Markdown";
@@ -28,16 +29,6 @@ import {
   type Intercambio,
 } from "@/model/intercambio";
 
-// Hex de cada slot de la paleta del globo (B1). Los slugs viven en el modelo
-// (`.md`); el color concreto es presentación → acá.
-const COLOR_GLOBO_HEX: Record<ColorGlobo, string> = {
-  ambar: "#f59e0b",
-  verde: "#22c55e",
-  rojo: "#ef4444",
-  cian: "#06b6d4",
-  violeta: "#a855f7",
-  rosa: "#ec4899",
-};
 const esColorGlobo = (v: unknown): v is ColorGlobo =>
   typeof v === "string" && (COLORES_GLOBO as readonly string[]).includes(v);
 
@@ -169,6 +160,17 @@ export default function MessageNode({
   const zoomLienzo = useStore((s) => s.transform[2]);
   const escalaManija = Math.min(4, Math.max(1, 1 / (zoomLienzo || 1)));
 
+  // ¿Hay más de un globo seleccionado? Con selección múltiple, cada globo NO
+  // muestra su toolbar (se apilarían) — la maneja la toolbar compartida de
+  // `FlowCanvas`. Re-render solo cuando el booleano cambia.
+  const variosSeleccionados = useStore((s) => {
+    let n = 0;
+    for (const nodo of s.nodes) {
+      if (nodo.selected && ++n > 1) return true;
+    }
+    return false;
+  });
+
   // Tamaño manual (fase 3.10) — guardado en la CABEZA del tramo (`data.ancho/alto`
   // → `.md`). `id` (prop) = id de la cabeza.
   const anchoData = typeof data.ancho === "number" ? data.ancho : null;
@@ -289,7 +291,11 @@ export default function MessageNode({
         </div>
       </NodeToolbar>
 
-      <NodeToolbar isVisible={selected} position={Position.Top} align="end">
+      <NodeToolbar
+        isVisible={selected && !variosSeleccionados}
+        position={Position.Top}
+        align="end"
+      >
         <div className="flex flex-col items-end gap-1.5">
           <div className="flex gap-1.5">
             <button
