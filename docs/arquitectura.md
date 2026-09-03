@@ -5,7 +5,7 @@
 > leelas solo si tocás ese archivo. Actualizar cuando cambie la estructura.
 > Última actualización: 03-09-2026 (backlog B1-B10 + B6 logo + fixes IA + export/import + doc card).
 
-**Tamaños** (líneas, 03-09): `FlowCanvas.tsx` ~1875 · `ia.ts` ~1405 · `SettingsPanel.tsx` ~1130 ·
+**Tamaños** (líneas, 03-09): `FlowCanvas.tsx` ~1875 · `ia.ts` ~1440 · `SettingsPanel.tsx` ~1310 ·
 `PanelConversacion.tsx` ~755 · `intercambio.ts` ~585 · `MessageNode.tsx` ~495 · `sync.ts` ~330 ·
 `layout.ts` ~317 · `contexto.ts` ~283 · `compartir.ts` 237 · `configIA.ts` 183 · `useSync.ts` 166 ·
 `mapas.ts` ~150 · `Composer.tsx` 138 · `ToolbarGrupo.tsx` 54 · `gestos.ts` 46 · el resto < 110.
@@ -44,7 +44,7 @@ src/
                     en el SO del usuario). `body { font-family: var(--fuente-3maps, Arial…) }` (B5;
                     la var la setea FlowCanvas). Zoom de lupa en hover (B7):
                     `:root[data-hoverzoom="on"] .react-flow__node:hover .globo-root { scale(1.35) }`
-                    (excluye `.dragging`/`.selected`, `@media (hover:hover)`). `@media
+                    (excluye solo `.dragging`; sí aplica a `.selected` — Alan lo pidió; `@media (hover:hover)`). `@media
                     (max-width:640px)`: sube los `.react-flow__controls` (los tapaba el composer) y
                     oculta el `.react-flow__minimap`. `.scroll-fino` = scrollbar de 8px para el
                     cuerpo del globo redimensionado.
@@ -300,7 +300,15 @@ src/
                         modelos que bajaste" → `/api/tags`. `esWebllm` → caja "~2 GB, WebGPU,
                         Chrome/Edge", gate `hayWebGPU()` (deshabilita Guardar), picker de los 3
                         `MODELOS_WEBLLM`.
-                        Textarea "instrucción de sistema" → onChange({systemPrompt}) directo.
+                        2 pestañas: **Lienzo** (envión, texto, zoom de lupa, + bloque **Compartir**
+                        `bloqueCompartir`) · **IA** (proveedor/key/modelo, Cuenta, + **instrucción
+                        de sistema** `bloqueSystemPrompt`). El swap Compartir↔system-prompt entre
+                        pestañas = pedido de Alan (system prompt es config de IA; compartir es del
+                        árbol). Bajo el textarea: cargar/💾guardar/📁archivo/🗑 prompts
+                        (`src/model/prompts.ts`: `PROMPTS_PRESET` + `localStorage["3maps:prompts"]`).
+    prompts.ts          Prompts de sistema: `PROMPTS_PRESET` (4 de fábrica) + `leerPromptsMios` /
+                        `guardarPromptMio` / `borrarPromptMio` en `localStorage["3maps:prompts"]`
+                        (local, no sincroniza; el prompt ACTIVO sí, en `settings.systemPrompt`).
     settings.ts         Settings = {inertia, ventanaContexto, systemPrompt, transcriptSide,
                         transcriptWidth, usarProxyIA, composerOculto, crecimientoPxPorMensaje (0-24,
                         def 9), crecimientoTope (def 320), grosorLineas (1-5, def 1.5; B4),

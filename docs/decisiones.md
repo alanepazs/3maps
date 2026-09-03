@@ -1373,9 +1373,11 @@ El `⌄` **volvió a pedir doble click** (reporte de Alan). F5-4c redujo el swal
   hace que el 1er render del cliente use los defaults (= lo que prerenderiza el server), y recién
   el 2º render aplica los ajustes guardados. Los `useEffect` (fuente/tamaño/hoverzoom) siguen
   usando `settings` directo (post-montaje, sin SSR).
-- **Exclusiones**: `:not(.dragging)` (RF marca así el nodo que se arrastra — no salta de tamaño a
-  mitad del drag) y `:not(.selected)` (con el globo seleccionado están el anillo + la toolbar).
-  `@media (hover: hover)` → en touch no aplica.
+- **Exclusiones**: solo `:not(.dragging)` (RF marca así el nodo que se arrastra — no salta de
+  tamaño a mitad del drag). `@media (hover: hover)` → en touch no aplica.
+  - **`:not(.selected)` se sacó (03-09, Alan lo pidió)**: el zoom antes NO aplicaba a globos
+    seleccionados (anillo azul). Ahora sí — el anillo está dentro de `.globo-root` y escala; la
+    NodeToolbar de RF queda un toque desalineada mientras dura el hover, aceptable.
 - **`onResizeStart` pasó de `getBoundingClientRect().width / zoom` a `offsetWidth`/`offsetHeight`**:
   `offset*` es el tamaño de layout, inmune a los transforms (zoom del lienzo + scale del
   hover-zoom); con `getBoundingClientRect` el hover-zoom inflaba el tamaño de arranque del resize.

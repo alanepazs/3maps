@@ -202,3 +202,18 @@ dinámico → cero peso en la carga inicial.
   `webllm` no resume (placeholder). Aviso ámbar "no lee imágenes".
 - `tsc`/`lint`/`build` verde. **Falta la prueba de generación de Alan en Chrome real** (el pane
   de Claude no tiene WebGPU funcional). Detalle: decisiones §7g.
+
+## ⚙️ swap de pestañas + cargar prompts + lupa en seleccionados (03-09-2026)
+
+Pedidos de Alan mientras probaba WebLLM:
+- **"Instrucción de sistema"** pasó de la pestaña **Lienzo** → **IA** (es config de IA);
+  el bloque **"Compartir"** pasó de **IA** → **Lienzo** (es del árbol). Extraídos a
+  `bloqueSystemPrompt` / `bloqueCompartir` en `SettingsPanel`.
+- **Cargar prompts**: bajo el textarea, select con presets de 3maps (`PROMPTS_PRESET`, 4) +
+  los guardados, 💾 Guardar (nombre), 📁 Archivo (.txt/.md), 🗑 borrar. `src/model/prompts.ts`
+  + `localStorage["3maps:prompts"]` (local, no sincroniza; el activo sí en `settings.systemPrompt`).
+- **B7**: el zoom de lupa ahora aplica también a globos **seleccionados** (se sacó
+  `:not(.selected)` de `globals.css`). Ver decisiones B7.
+- **Fixes de contexto** (rama profunda + modelo de poca ventana): `armarContexto` acota los
+  viejos sin resumen, `resumir()` acota su input, `acotarMensajes` recorta duro para webllm,
+  y los errores de contexto ahora dan un mensaje útil. Ver decisiones §10 / §7g.
