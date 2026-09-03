@@ -7,11 +7,19 @@
 
 ## Dónde estamos
 
-**Fases 1-5 en producción. Backlog B1-B10 completo.** Más: fixes de robustez de la llamada a la IA
-+ auto-switch de proveedor (03-09). `https://alanepazs.github.io/3maps/` (deploy automático en cada
-push a `main`). Repo `github.com/alanepazs/3maps`, local `D:\IA\3maps`.
-- **Fase 4** (panel rediseñado + contadores de tokens + adjuntos + copiar/guardar): shippeada,
-  probada con keys (Gemini imagen+PDF, Groq visión, pegar captura, T15). Claude bloqueado por saldo.
+**Backlog COMPLETO — nada pendiente de implementar (03-09-2026).** Fases 1-5 + B1-B10 + fixes de
+robustez de la IA + auto-switch de proveedor + export/import `.zip` + doc card: todo shippeado y
+pusheado. `tsc`/`lint`/`build` verde. `https://alanepazs.github.io/3maps/` (deploy automático en
+cada push a `main`). Repo `github.com/alanepazs/3maps`, local `D:\IA\3maps`.
+
+**Lo único que queda son cosas de Alan / diferidas** (ver "Ideas sin empezar" + "Prueba real
+pendiente"): ronda de pruebas en Chrome con keys reales, sacar la instrumentación `[b2]` (tras
+confirmar), embeddings 2.5b (descartado por ahora — vanilla), fixes de móvil 3.13 (a reproducir
+en el celu). **El próximo paso natural es la prueba de Alan, no más código.**
+- **Fase 4** (panel rediseñado + contadores de tokens + adjuntos + copiar/guardar + doc card):
+  shippeada, probada con keys (Gemini imagen+PDF, Groq visión, pegar captura, T15). Claude
+  bloqueado por saldo. **Doc card (T15, 03-09)**: `docDeRespuesta` + `DocCard.tsx` — respuesta que
+  es un fence largo → tarjeta compacta. Solo vista. Falta que Alan la vea en Chrome.
 - **Fase 5** — **un globo del canvas = un TRAMO** (cadena `main`), no un intercambio suelto. Enter
   agrega a la punta del mismo globo; globo nuevo solo al ramificar; el globo crece con la
   conversación (slider en "Lienzo"). **Cambio solo de vista, cero migración.** Shippeada.
