@@ -1078,7 +1078,7 @@ Spec completa y decisiones de alcance en `tasks/T16-spec.md`. Lo no obvio de la 
   - `Markdown.tsx` gana la prop **`conCopiar`** (la pasa `BranchTranscript`, NO `MessageNode`):
     con ella, `components.pre` → `preConCopiar` envuelve cada bloque con un botón "⧉" (hover,
     `group-hover:opacity-100`) que copia ese bloque en crudo (`extraerTextoCodigo(node)` del hast).
-- **Descartado**: la "doc card" (tarjeta compacta cuando la respuesta ES un documento) y tocar el
+- **Diferido** (luego hecho, ver "Doc card" más abajo): la "doc card". **Descartado**: tocar el
   `systemPrompt` por defecto — Alan: núcleo ahora, el resto si no alcanza.
 - **Revertir**: se saca `exportar.ts` + los botones + la prop `conCopiar`.
 
@@ -1316,6 +1316,28 @@ El `⌄` **volvió a pedir doble click** (reporte de Alan). F5-4c redujo el swal
   intercepta un blob `application/zip` de 1.3KB "PK…"; re-importarlo crea un 2º mapa con los 3
   intercambios idénticos).
 - **Revertir**: se sacan los 2 ítems del menú; `zip.ts`/`traspaso.ts` quedan sin usar.
+
+### Doc card: una respuesta que ES un documento va en tarjeta compacta (T15, 03-09)
+
+- **El problema**: pedir un archivo largo (200 líneas de código, un `.md` entero) → el globo y el
+  panel lo vuelcan completo → el árbol se vuelve ilegible. El núcleo de T15 (F3-23, copiar/guardar)
+  no cambiaba eso.
+- **Detección** (`docDeRespuesta(respuesta)` en `exportar.ts`): toda la respuesta (tras `trim`) es
+  UN solo fence ```` ```lang … ``` ```` (reusa `fenceUnico`, la misma base que
+  `nombreArchivoRespuesta`) **y** es larga (≥ 12 líneas **o** ≥ 800 chars). Si hay prosa alrededor
+  del fence → no aplica (es una explicación con código, se renderiza normal). Devuelve
+  `{ nombre, lang, lineas, contenido, mime } | null`; el `nombre` sale de `nombreArchivoRespuesta`.
+- **`src/components/DocCard.tsx`** (nuevo): encabezado `📄 nombre · N líneas · lang`.
+  - En el **panel** (`PanelConversacion`): card **desplegable** ("▸ ver" / "▾ ocultar") — el cuerpo
+    abierto es `<Markdown conCopiar>` (mantiene el "⧉" por bloque y el guardar de la fila de abajo).
+  - En el **globo** (`MessageNode`, prop `compacto`): **solo el encabezado**, sin desplegar — el
+    globo es un overview, se abre el panel para leer. No se dispara con `pending` (mientras
+    streamea, el fence todavía no cerró igual).
+- Cero cambio de datos / `.md` / contexto — es solo presentación. `estimarTokens` no se toca.
+- Verificado: 12 asserts en `_scratch.mts` (prosa → null, fence corto → null, ≥12 líneas → doc,
+  ≥900 chars con 3 líneas → doc, nombre = slug del `# Título` interno, fence + prosa → null, lang
+  desconocido → `.txt`, coherencia con `nombreArchivoRespuesta`) + tsc/lint/build verde.
+- **Revertir**: se saca `DocCard.tsx` + `docDeRespuesta`; los 2 call-sites vuelven a `<Markdown>`.
 
 ### F5-5. `calcularLayout` ("▤ Ordenar") + `resolverSuperposiciones` tramo-aware
 Las dos funciones de `layout.ts` seguían recorriendo el árbol **intercambio por intercambio**

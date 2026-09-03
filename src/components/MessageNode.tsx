@@ -20,9 +20,11 @@ import {
 import { COLOR_GLOBO_HEX } from "./colores";
 import { arrastrarConCaptura } from "./gestos";
 import LimiteError from "./LimiteError";
+import DocCard from "./DocCard";
 import Markdown from "./Markdown";
 import { NodeActionsContext } from "./nodeActions";
 import { ALTO_BASE_GLOBO } from "./settings";
+import { docDeRespuesta } from "@/model/exportar";
 import {
   COLORES_GLOBO,
   type ColorGlobo,
@@ -88,12 +90,28 @@ const CuerpoTramo = memo(
             <div className="mt-0.5 text-white/70">
               {/* La respuesta (aunque haya `error`: una respuesta parcial que se
                   cortó por límite de tokens / watchdog sigue siendo útil). */}
-              {ic.respuesta != null && (
-                <>
-                  <Markdown>{ic.respuesta}</Markdown>
-                  {ic.pending && <span className="italic text-white/40"> ▍</span>}
-                </>
-              )}
+              {ic.respuesta != null &&
+                (() => {
+                  const doc = !ic.pending ? docDeRespuesta(ic.respuesta) : null;
+                  return (
+                    <>
+                      {doc ? (
+                        <DocCard
+                          compacto
+                          nombre={doc.nombre}
+                          lang={doc.lang}
+                          lineas={doc.lineas}
+                          textoCrudo={ic.respuesta}
+                        />
+                      ) : (
+                        <Markdown>{ic.respuesta}</Markdown>
+                      )}
+                      {ic.pending && (
+                        <span className="italic text-white/40"> ▍</span>
+                      )}
+                    </>
+                  );
+                })()}
               {ic.error ? (
                 <p className="mt-1 whitespace-pre-wrap text-xs text-red-300">
                   ⚠ {ic.error}

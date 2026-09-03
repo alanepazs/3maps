@@ -96,6 +96,24 @@ export function nombreArchivoRespuesta(respuesta: string): {
   };
 }
 
+// ¿La respuesta ES un documento (un solo bloque de código, sin texto alrededor)
+// y lo bastante largo como para mostrarlo en una tarjeta compacta en vez de
+// volcarlo entero? (T15 "doc card"). `null` si no aplica → render normal.
+export function docDeRespuesta(respuesta: string): {
+  nombre: string;
+  lang: string;
+  lineas: number;
+  contenido: string;
+  mime: string;
+} | null {
+  const fence = fenceUnico(respuesta.trim());
+  if (!fence) return null;
+  const lineas = fence.cuerpo.split("\n").length;
+  if (lineas < 12 && fence.cuerpo.length < 800) return null; // corto: va inline
+  const { nombre, mime } = nombreArchivoRespuesta(respuesta);
+  return { nombre, lang: fence.lang, lineas, contenido: fence.cuerpo, mime };
+}
+
 export function descargarTexto(
   nombre: string,
   contenido: string,

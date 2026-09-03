@@ -11,6 +11,7 @@ import {
 } from "react";
 
 import type { BranchKind } from "./Composer";
+import DocCard from "./DocCard";
 import Markdown from "./Markdown";
 import { ANCHO_PANEL_MAX_FRAC, ANCHO_PANEL_MIN } from "./settings";
 import { arrastrarConCaptura } from "./gestos";
@@ -25,6 +26,7 @@ import {
 import {
   copiarTexto,
   descargarTexto,
+  docDeRespuesta,
   nombreArchivoRespuesta,
 } from "@/model/exportar";
 import { NOMBRE_PROVEEDOR } from "@/model/ia";
@@ -467,9 +469,21 @@ export default function PanelConversacion({
                 {/* La respuesta (aunque haya `error`: una parcial que se cortó
                     por límite de tokens / watchdog sigue siendo útil). */}
                 {ic.respuesta ? (
-                  <div className="rounded-md rounded-tl-none bg-white/[0.04] px-3 py-2 text-white/90">
-                    <Markdown conCopiar>{ic.respuesta}</Markdown>
-                  </div>
+                  (() => {
+                    const doc = docDeRespuesta(ic.respuesta);
+                    return doc ? (
+                      <DocCard
+                        nombre={doc.nombre}
+                        lang={doc.lang}
+                        lineas={doc.lineas}
+                        textoCrudo={ic.respuesta}
+                      />
+                    ) : (
+                      <div className="rounded-md rounded-tl-none bg-white/[0.04] px-3 py-2 text-white/90">
+                        <Markdown conCopiar>{ic.respuesta}</Markdown>
+                      </div>
+                    );
+                  })()
                 ) : null}
                 {ic.error ? (
                   <p className="mt-1 whitespace-pre-wrap text-xs text-red-300">

@@ -3,7 +3,7 @@
 > Mapa de `src/` para no leer todo. Para una dependencia puntual: `graphify query "..."`
 > (napkin §6b). El árbol de abajo es el índice; las secciones `##` que siguen son deep-dives —
 > leelas solo si tocás ese archivo. Actualizar cuando cambie la estructura.
-> Última actualización: 03-09-2026 (backlog B1-B10 + B6 logo + fixes IA).
+> Última actualización: 03-09-2026 (backlog B1-B10 + B6 logo + fixes IA + export/import + doc card).
 
 **Tamaños** (líneas, 03-09): `FlowCanvas.tsx` ~1835 · `ia.ts` ~1165 · `SettingsPanel.tsx` ~1005 ·
 `PanelConversacion.tsx` ~755 · `intercambio.ts` ~585 · `MessageNode.tsx` ~495 · `sync.ts` ~330 ·
@@ -78,6 +78,8 @@ src/
     exportar.ts          Sacar una respuesta como texto (T15, F3-23). nombreArchivoRespuesta(resp)
                          → {nombre,contenido,mime} (fence único → interior + ext del lang; parece
                          markdown → .md; si no → .txt; nombre del slug del 1er `# Título`).
+                         docDeRespuesta(resp) → {nombre,lang,lineas,contenido,mime}|null: la
+                         respuesta ES un fence largo (≥12 líneas o ≥800 chars) → va en DocCard.
                          descargarTexto / descargarBytes (`.zip`) / copiarTexto(t)→bool.
     persistencia.ts      guardarArbol(arbol, mapId) / cargarArbol(mapId) en localStorage
                          ("3maps:arbol:<mapId>"), un string .md por intercambio. Cae a
@@ -172,7 +174,9 @@ src/
                         de ese recorte, `-bottom-1 -right-1` (F5-4c).
                         La transcripción sale a `CuerpoTramo` (`memo` por `rev`/`readOnly`) → mover
                         el globo no re-parsea el markdown (B8, decisiones F5-7). Auto-scroll del
-                        stream con `useLayoutEffect` + ref `autoScroll` (B9).
+                        stream con `useLayoutEffect` + ref `autoScroll` (B9). Una respuesta que ES
+                        un documento (`docDeRespuesta`) → `<DocCard compacto>` (solo encabezado)
+                        en vez de volcar el fence (T15, 03-09).
     gestos.ts           `arrastrarConCaptura(e, onMove, onEnd)` — arrastre de resize con
                         `handle.setPointerCapture(e.pointerId)`. El capture re-dirige a `handle`
                         todos los eventos siguientes del puntero, incluido el `click` sintético
@@ -197,6 +201,11 @@ src/
                         `export default memo(Markdown)` + `useMemo` del texto — mismo `children`
                         string no se re-parsea (B8, decisiones F5-7).
                         Decisiones F3-12, F3-14, F3-23, F5-7.
+    DocCard.tsx         Tarjeta para una respuesta que ES un documento (un fence largo, sin prosa
+                        alrededor; detección `docDeRespuesta` en `exportar.ts`). Encabezado
+                        `📄 nombre · N líneas · lang`. Prop `compacto` (en `MessageNode`): solo el
+                        encabezado. Sin `compacto` (en `PanelConversacion`): encabezado + cuerpo
+                        `<Markdown conCopiar>` desplegable ("▸ ver" / "▾ ocultar"). T15, 03-09.
     LimiteError.tsx     Error boundary de clase genérico (`fallback` + `resetKey`). Aísla un crash
                         de render: en `Markdown.tsx` y en el cuerpo de cada `MessageNode`. Un globo
                         roto muestra el fallback, el resto de la app sigue viva. F3-14.
@@ -231,7 +240,8 @@ src/
                         `verImagen`). `onSubmit(text, kind, adjuntos)`. F3-22 / F3-22b.
                         CADA turno IA (T15, F3-23 + F5): fila de links sutiles "⑂ ramificar desde
                         acá" · "⧉ Copiar" (`copiadaId`) · "⬇ Guardar"; "↻ Rehacer" solo en la
-                        punta. `<Markdown conCopiar>`.
+                        punta. `<Markdown conCopiar>`, salvo que `docDeRespuesta` diga que ES un
+                        documento → `<DocCard>` desplegable (T15, 03-09).
                         Props: {intercambios, side, onFlipSide, onClose, onSubmit?, onStop?,
                         onRetry?, nav?, onNavigate?, contextoTokens?, proveedorNombre?,
                         proveedorLeePdf?, width?, resizable?, onResize?}.

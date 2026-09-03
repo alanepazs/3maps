@@ -150,8 +150,13 @@ respuesta · multi-select con envión parejo (los 4) — todo OK.
 `src/model/{zip.ts, traspaso.ts}` (ZIP sin dep) + 2 ítems en el menú de `MapaSwitcher`. Exportar =
 `.zip` de los `.md` + `3maps.json`; importar = mapa nuevo. Decisiones "Export / import".
 
+### Doc card ✅ (03-09, T15)
+`docDeRespuesta` (`exportar.ts`) + `src/components/DocCard.tsx`: respuesta = un fence largo (≥12
+líneas o ≥800 chars) → tarjeta `📄 nombre · N líneas` en vez del volcado. Desplegable en el panel,
+solo encabezado en el globo. Solo vista. Decisiones "Doc card". Falta prueba de Alan en Chrome
+(pedir un archivo largo real → ver la card en globo + panel).
+
 ### Ideas sin empezar
-- **T15 "doc card"** — tarjeta compacta cuando la respuesta ES un documento.
 - **Embeddings 2.5b** (`transformers.js`) si `intercambiosRelevantes` (match por palabras) se
   queda corto — misma firma, drop-in.
 - Modelos locales tipo Ollama (spec §10) — **descartado** (mixed-content/CORS + el celu no llega a

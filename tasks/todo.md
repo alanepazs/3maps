@@ -52,7 +52,10 @@
       (`nombreArchivoRespuesta` heurística: fence único → interior + ext; parece markdown → `.md`;
       slug del `# Título` · `descargarTexto` · `copiarTexto`). "⧉ Copiar" + "⬇ Guardar" en el turno
       IA del panel; "⧉" por bloque de código en `Markdown.tsx` (prop `conCopiar`, solo el panel).
-      Sin doc card, sin tocar systemPrompt. (decisiones F3-23) — 14 asserts + verificado en el pane.
+      Sin tocar systemPrompt. (decisiones F3-23) — 14 asserts + verificado en el pane.
+      **Doc card ✅ (03-09)**: `docDeRespuesta` + `src/components/DocCard.tsx` — respuesta = un
+      fence largo (≥12 líneas o ≥800 chars) → tarjeta `📄 nombre · N líneas` (desplegable en el
+      panel, solo encabezado `compacto` en el globo). Solo vista. 12 asserts. Decisiones "Doc card".
 - [x] T16 — Adjuntar archivos al mini-composer del panel (texto + imágenes + PDF). Spec:
       `tasks/T16-spec.md`. **T16a texto ✅ · T16b imágenes ✅ · T16c PDF ✅** (F3-22/b/c). Falta
       prueba de Alan con keys reales (imagen/PDF con Gemini/Claude, modelo de visión de Groq,

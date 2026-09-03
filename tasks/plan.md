@@ -301,9 +301,10 @@ el panel scrollea al fondo en cada actualización de `respuesta` (mismo patrón 
 **Dependencies:** None. **Files:** `BranchTranscript.tsx`. **Scope:** S.
 
 ### T15 — Respuestas que son un documento: copiar / guardar (pedido de Alan, 01-09)
-**Spec: `tasks/T15-spec.md`.** Decisiones con Alan (02-09): solo el núcleo (copiar + guardar la
+**Spec: `tasks/T15-spec.md`.** Decisiones con Alan (02-09): el núcleo (copiar + guardar la
 respuesta, en el panel; + copiar por bloque de código gateado al panel). Heurística de nombre de
-archivo. Sin doc card. Sin tocar `systemPrompt`.
+archivo. Sin tocar `systemPrompt`. **Doc card agregada 03-09** (`docDeRespuesta` + `DocCard.tsx`:
+respuesta = un fence largo → tarjeta compacta; decisiones "Doc card").
 
 **Núcleo:**
 - `src/model/exportar.ts` (nuevo): `nombreArchivoRespuesta(respuesta)` → `{ nombre, contenido,

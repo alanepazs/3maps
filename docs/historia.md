@@ -87,7 +87,7 @@ real con keys.
 | **T10** | `estimarTokens(mensajes) = Σ chars/4` (`contexto.ts`); header del panel "≈ N tokens de contexto" del globo abierto (usa resumen cacheado, nunca lo dispara). | F3-20 |
 | **T12** | Cada turno IA del panel muestra "N → N tok" de `tokensEntrada/Salida` del `.md` (nada si no los tiene). | F3-21 |
 | **T16** | Adjuntar archivos al mini-composer del panel (texto + imágenes + PDF). `Adjunto` en el `.md` (frontmatter JSON 1 línea); imágenes recomprimidas con `<canvas>` (1568px); bloques nativos por proveedor (`ia.ts` `multimediaDe`); `src/model/adjuntos.ts`. Dropzone + paste + 📎 + chips + lightbox + badge "📎 N" + aviso "PDF solo Gemini/Claude". | F3-22/b/c |
-| **T15** | Sacar una respuesta como texto: `src/model/exportar.ts` (`nombreArchivoRespuesta` heurística de nombre/ext). Panel: "⧉ Copiar" + "⬇ Guardar" + "⧉" por bloque de código (`Markdown` prop `conCopiar`). | F3-23 |
+| **T15** | Sacar una respuesta como texto: `src/model/exportar.ts` (`nombreArchivoRespuesta` heurística de nombre/ext). Panel: "⧉ Copiar" + "⬇ Guardar" + "⧉" por bloque de código (`Markdown` prop `conCopiar`). Doc card (03-09): respuesta = un fence largo → `DocCard` (encabezado `📄 nombre · N líneas`; desplegable en el panel, solo encabezado en el globo), detección `docDeRespuesta`. | F3-23 |
 
 Bugfixes de la fase: `ubicarNuevoGlobo` no pisa a nadie (F3-7b/c) · `asentar` usa la posición
 autoritativa del `onNodeDragStop` (F3-18b) · la rama entra al hijo por el costado opuesto
@@ -154,3 +154,10 @@ Tres causas, todas en `decisiones.md` F3-6:
 zippea/parsea los mismos `.md`, con `3maps.json` de metadata). 2 ítems en el menú de
 `MapaSwitcher`. Import = mapa nuevo (desambigua el título si choca). 14 asserts + e2e pane.
 Decisiones "Export / import".
+
+## Doc card — respuesta que ES un documento (03-09-2026, T15)
+
+`docDeRespuesta` (`exportar.ts`): la respuesta entera es un fence largo (≥ 12 líneas o ≥ 800
+chars) → `src/components/DocCard.tsx` en vez de volcar el bloque. Encabezado `📄 nombre · N
+líneas · lang`; desplegable en `PanelConversacion`, solo encabezado (`compacto`) en `MessageNode`.
+Solo presentación — cero cambio de datos. 12 asserts. Decisiones "Doc card".
