@@ -16,6 +16,8 @@ import {
   ErrorIA,
   GEMINI_MODELOS_MUERTOS,
   GUIA_API_KEY,
+  INFO_MODELO_WEBLLM,
+  MODELOS_WEBLLM,
   MODELO_POR_DEFECTO,
   NOMBRE_PROVEEDOR,
   OLLAMA_SENTINEL,
@@ -232,7 +234,9 @@ export default function SettingsPanel({
   const [aplicado, setAplicado] = useState(false);
 
   // Modelos disponibles para esta key (se traen a pedido — el set varía por key).
-  const [modelos, setModelos] = useState<string[] | null>(null);
+  const [modelos, setModelos] = useState<string[] | null>(
+    proveedor === "webllm" ? MODELOS_WEBLLM : null,
+  );
   const [cargandoModelos, setCargandoModelos] = useState(false);
   const [errorModelos, setErrorModelos] = useState<string | null>(null);
   // Filtro de texto para la lista de chips (OpenRouter devuelve ~300 modelos).
@@ -254,7 +258,8 @@ export default function SettingsPanel({
     setKeyDraft(keyTrasCambio ?? keyGuardada);
     if (keyTrasCambio !== null) setKeyTrasCambio(null);
     setModeloDraft(modeloGuardado);
-    setModelos(null);
+    // WebLLM: la lista es fija y conocida → mostrarla de una (sin "ver modelos").
+    setModelos(proveedor === "webllm" ? MODELOS_WEBLLM : null);
     setErrorModelos(null);
     setFiltroModelo("");
   }
@@ -800,29 +805,29 @@ export default function SettingsPanel({
             />
           </label>
 
-          <button
-            type="button"
-            onClick={verModelos}
-            disabled={!keyEfectiva || cargandoModelos || !proveedorHabilitado}
-            className="mt-1.5 rounded border border-white/15 px-2 py-1 text-[11px] text-white/70 enabled:hover:bg-white/10 disabled:opacity-40"
-          >
-            {cargandoModelos
-              ? esOllama
-                ? "consultando Ollama…"
-                : "verificando key…"
-              : esWebllm
-                ? "↻ ver modelos disponibles"
-                : esOllama
-                  ? "↻ ver modelos que bajaste"
-                  : "↻ verificar key y ver sus modelos"}
-          </button>
-          <span className="mt-1 block text-[11px] text-white/40">
-            {esWebllm
-              ? "Lista corta curada. El de arriba baja ~2 GB la 1ª vez; el chico ~0.9 GB."
-              : esOllama
-                ? "Lista lo que devuelve `ollama list` en tu máquina."
-                : "Consulta gratis (no gasta tokens): si la key es inválida, avisa acá."}
-          </span>
+          {!esWebllm && (
+            <>
+              <button
+                type="button"
+                onClick={verModelos}
+                disabled={!keyEfectiva || cargandoModelos || !proveedorHabilitado}
+                className="mt-1.5 rounded border border-white/15 px-2 py-1 text-[11px] text-white/70 enabled:hover:bg-white/10 disabled:opacity-40"
+              >
+                {cargandoModelos
+                  ? esOllama
+                    ? "consultando Ollama…"
+                    : "verificando key…"
+                  : esOllama
+                    ? "↻ ver modelos que bajaste"
+                    : "↻ verificar key y ver sus modelos"}
+              </button>
+              <span className="mt-1 block text-[11px] text-white/40">
+                {esOllama
+                  ? "Lista lo que devuelve `ollama list` en tu máquina."
+                  : "Consulta gratis (no gasta tokens): si la key es inválida, avisa acá."}
+              </span>
+            </>
+          )}
 
           {errorModelos && (
             <p className="mt-1.5 text-[11px] text-red-400">{errorModelos}</p>
@@ -841,7 +846,53 @@ export default function SettingsPanel({
             )
           )}
 
-          {modelosKey.length > 0 &&
+          {esWebllm && modelosKey.length > 0 && (
+            <div className="mt-1.5 space-y-1">
+              <p className="text-[11px] text-white/40">
+                Elegí según tu máquina (se baja 1 vez):
+              </p>
+              {modelosKey.map((m) => {
+                const info = INFO_MODELO_WEBLLM[m];
+                const sel = m === modeloDraft.trim();
+                return (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setModeloDraft(m)}
+                    className={`block w-full rounded border px-2 py-1.5 text-left text-[11px] ${
+                      sel
+                        ? "border-sky-500 bg-sky-500/15 text-white"
+                        : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10"
+                    }`}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <span className="font-medium text-white/90">
+                        {info?.nombre ?? m}
+                      </span>
+                      {info && (
+                        <span className="text-white/40">· ~{info.gb} GB</span>
+                      )}
+                      {info?.recomendado && (
+                        <span className="rounded bg-emerald-500/20 px-1 text-[10px] text-emerald-300">
+                          recomendado
+                        </span>
+                      )}
+                    </span>
+                    {info && (
+                      <span className="mt-0.5 block text-white/50">{info.nota}</span>
+                    )}
+                  </button>
+                );
+              })}
+              <p className="text-[10px] text-white/30">
+                En gráfica integrada andan lentos; el 7B pide una GPU con VRAM
+                libre. Sin internet no puede &ldquo;buscar&rdquo; datos.
+              </p>
+            </div>
+          )}
+
+          {!esWebllm &&
+            modelosKey.length > 0 &&
             (() => {
               const chips = (
                 <>

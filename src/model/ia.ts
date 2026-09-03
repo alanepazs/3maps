@@ -1205,10 +1205,34 @@ async function mensajeErrorOpenAICompat(
 // WebLLM: lista corta curada (el spec pide 2-3 con default 3B). El catálogo
 // completo de `prebuiltAppConfig` son ~150 ids.
 export const MODELOS_WEBLLM: string[] = [
-  "Llama-3.2-1B-Instruct-q4f16_1-MLC", // ~0.9 GB — máquinas flojas
-  "Llama-3.2-3B-Instruct-q4f16_1-MLC", // ~2.3 GB — default
-  "Qwen2.5-7B-Instruct-q4f16_1-MLC", // ~5.1 GB — GPU ≥6 GB VRAM
+  "Llama-3.2-1B-Instruct-q4f16_1-MLC",
+  "Llama-3.2-3B-Instruct-q4f16_1-MLC",
+  "Qwen2.5-7B-Instruct-q4f16_1-MLC",
 ];
+
+// Info para que el usuario elija (SettingsPanel la muestra al lado de cada
+// modelo). `gb` = tamaño aprox. de la descarga; `nota` = para quién es.
+export const INFO_MODELO_WEBLLM: Record<
+  string,
+  { nombre: string; gb: number; nota: string; recomendado?: boolean }
+> = {
+  "Llama-3.2-1B-Instruct-q4f16_1-MLC": {
+    nombre: "Llama 3.2 · 1B",
+    gb: 0.9,
+    nota: "Rápido pero flojo. Solo si tu compu es limitada o la GPU es vieja.",
+  },
+  "Llama-3.2-3B-Instruct-q4f16_1-MLC": {
+    nombre: "Llama 3.2 · 3B",
+    gb: 2.3,
+    nota: "Equilibrado. Buen punto de partida — descarga corta, calidad decente.",
+    recomendado: true,
+  },
+  "Qwen2.5-7B-Instruct-q4f16_1-MLC": {
+    nombre: "Qwen 2.5 · 7B",
+    gb: 5.1,
+    nota: "El más capaz. Necesita GPU con ≥6 GB de VRAM libre.",
+  },
+};
 
 export async function listarModelos(config: ConfigIA): Promise<string[]> {
   if (!proveedorSinKey(config.proveedor) && !config.apiKey.trim()) {
