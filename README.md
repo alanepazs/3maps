@@ -1,50 +1,86 @@
 # 3maps
 
+Conversá con una IA viendo el chat como un **árbol de globos en un lienzo** (tipo
+n8n / Obsidian Canvas) en vez de una lista con scroll. Desde **cualquier respuesta
+vieja** podés abrir una pregunta nueva "para el costado" sin ensuciar el hilo
+principal — cada rama es su propia conversación.
 
-Web app para conversar con una IA (Claude / GPT / Gemini / DeepSeek, vía API con
-la clave del propio usuario) mostrando la conversación como un **árbol de nodos
-en un canvas libre** (tipo n8n / Obsidian Canvas) en vez de una lista con scroll.
-Desde cualquier respuesta se puede **ramificar** una pregunta nueva sin desviar el
-hilo principal.
+**En vivo:** https://alanepazs.github.io/3maps/
 
-> Estado: **fase 1 (MVP) en desarrollo**. Hoy hay solo el esqueleto visual del
-> canvas: nodos, ramas, barra para escribir y placeholders. Todavía **no** hay
-> llamadas a la IA ni guardado en disco.
+El nombre: **3** = *three* = *tree* (árbol), y suena a "maps". Mapas de árbol.
+
+---
+
+## Cómo funciona (para dummies)
+
+**Es local-first: sin cuenta ni servidor propio, todo pasa en tu navegador.** Abrís
+la web y ya estás listo — no hay nada que activar.
+
+- **Tus conversaciones** viven en el `localStorage` del navegador. Cada pregunta +
+  respuesta es un archivito Markdown; un conjunto = un mapa. Cerrás la pestaña,
+  volvés en la misma compu y el mismo navegador, y sigue todo ahí. (Otra compu u
+  otro navegador → no lo ve; en modo local no hay backup en la nube.)
+- **La IA responde con tu propia API key** (Google Gemini es gratis y es el
+  default). Tu key se guarda solo en tu navegador y viaja **directo al proveedor** —
+  la infraestructura de 3maps nunca la ve. Algunos proveedores no habilitan CORS y
+  pasan por un proxy *stateless* que solo reenvía (opt-in, no loguea nada).
+- **También podés correr el modelo en tu propia máquina** con
+  [Ollama](https://ollama.com) (proveedor "Ollama (local)"): cero tokens, cero
+  costo, nada sale de tu red. Chrome/Edge de escritorio.
+- **No manda todo el árbol a la IA.** Solo el camino raíz → globo actual; lo más
+  viejo de esa rama se resume en unas frases. Así una charla larga no cuesta como
+  reenviar todo cada vez.
+- **Exportás** un mapa como `.zip` de los `.md` (y lo volvés a importar).
+
+## Modo local vs. con cuenta
+
+El backend (Supabase) es **opcional**. Sin las env `NEXT_PUBLIC_SUPABASE_*` la app
+es 100% local.
+
+| | Local (default) | Con cuenta |
+|---|:---:|:---:|
+| IA, ramificar, el lienzo entero | ✅ | ✅ |
+| Guardado en el navegador | ✅ | ✅ |
+| Login (Google / magic-link) | — | ✅ |
+| Compartir un mapa por link | — | ✅ |
+| Sincronizar entre dispositivos | — | ✅ |
+| Keys en todos tus dispositivos | — | ✅ |
+
+## Proveedores de IA
+
+- **Gratis, sin tarjeta:** Google Gemini, Groq, OpenRouter, Hugging Face.
+- **Pagos (traés saldo):** Claude (Anthropic), OpenAI, DeepSeek.
+- **Local:** Ollama, corriendo en tu máquina.
+
+Adjuntás texto, imágenes y PDF (según lo que soporte el modelo elegido).
 
 ## Stack
 
-- Next.js (App Router) + TypeScript + Tailwind CSS
-- Canvas de nodos: [React Flow](https://reactflow.dev/) (`@xyflow/react`)
-- Fase 1: sin backend, sin login, todo client-side (deploy pensado para GitHub Pages)
+- Next.js 16 (App Router, Turbopack) + React 19 + TypeScript + Tailwind CSS 4
+- Canvas de nodos: [React Flow](https://reactflow.dev/) (`@xyflow/react` v12)
+- Backend opcional: Supabase (login, compartir, sync, proxy de IA)
+- Deploy: GitHub Pages (`output: "export"`, estático — todo corre client-side)
 
 ## Correr en local
 
 ```bash
 npm install
-npm run dev
+npm run dev          # http://localhost:3000
 ```
 
-Abrir http://localhost:3000.
-
-## Qué anda hoy
-
-- Canvas a pantalla completa. Un globo = un intercambio (pregunta + respuesta)
-- El hilo principal baja en vertical; las ramas salen por el costado y se pueden
-  arrastrar de derecha a izquierda
-- Barra inferior para escribir (Enter envía, Shift+Enter salto de línea). Cada
-  envío crea un globo con la pregunta y un placeholder de respuesta (todavía sin IA)
-- Botón para eliminar un globo y todo lo que cuelga de él
-- Envión / inercia al soltar globos y al panear, regulable desde la tuerquita
-- Lienzo: sin teclas → manito (pan); barra espaciadora → recuadro de selección
-
-## Documentación de diseño
-
-- [`CLAUDE.md`](CLAUDE.md) — resumen rápido de arquitectura y convenciones
-- [`docs/spec-proyecto.md`](docs/spec-proyecto.md) — diseño detallado: modelo de
-  datos (`.md` por nodo), algoritmo de contexto, gestión de costos de tokens,
-  roadmap por fases
+Sin `.env.local` corre igual, sin la parte de Supabase.
 
 ## Privacidad
 
-La clave de API del usuario se guarda solo en su navegador. Nunca se manda a un
-servidor de este proyecto. Nunca commitear claves ni archivos `.env`.
+La API key del usuario vive solo en su navegador y va directo al proveedor — nunca
+se almacena en infraestructura de terceros. Los proveedores vía proxy solo
+*transitan* un edge function *stateless* que no loguea ni guarda. Nunca se
+commitean claves ni archivos `.env` (el repo es público).
+
+## Documentación
+
+- [`CLAUDE.md`](CLAUDE.md) — invariantes y convenciones del proyecto
+- [`docs/spec-proyecto.md`](docs/spec-proyecto.md) — diseño: modelo de datos
+  (`.md` por intercambio), algoritmo de contexto, costos de tokens, roadmap
+- [`docs/arquitectura.md`](docs/arquitectura.md) — qué hace cada archivo de `src/`
+- [`docs/decisiones.md`](docs/decisiones.md) — por qué el código es como es
