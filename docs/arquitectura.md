@@ -38,9 +38,12 @@ src/
                     `dvh` (no `vh`) para que en móvil encuadre al área visible real, sin scroll.
     globals.css     Tailwind + tokens de color que siguen prefers-color-scheme (dark por defecto
                     en el SO del usuario). `body { font-family: var(--fuente-3maps, Arial…) }` (B5;
-                    la var la setea FlowCanvas). `@media (max-width:640px)`: sube los `.react-flow__
-                    controls` (los tapaba el composer) y oculta el `.react-flow__minimap`.
-                    `.scroll-fino` = scrollbar de 8px para el cuerpo del globo redimensionado.
+                    la var la setea FlowCanvas). Zoom de lupa en hover (B7):
+                    `:root[data-hoverzoom="on"] .react-flow__node:hover .globo-root { scale(1.35) }`
+                    (excluye `.dragging`/`.selected`, `@media (hover:hover)`). `@media
+                    (max-width:640px)`: sube los `.react-flow__controls` (los tapaba el composer) y
+                    oculta el `.react-flow__minimap`. `.scroll-fino` = scrollbar de 8px para el
+                    cuerpo del globo redimensionado.
   model/
     intercambio.ts       ★ Modelo de datos (fuente de la verdad). Tipos Intercambio/Arbol/Rama/
                          Proveedor. Funciones puras: consultas (buscar, hijos, descendientes,
@@ -263,10 +266,10 @@ src/
                         transcriptWidth, usarProxyIA, composerOculto, crecimientoPxPorMensaje (0-24,
                         def 9), crecimientoTope (def 320), grosorLineas (1-5, def 1.5; B4),
                         fuenteTexto ("sistema"|"geist"|"serif"|"mono", def sistema; B5),
-                        escalaTexto (0.8-1.3, def 1; B5)}.
+                        escalaTexto (0.8-1.3, def 1; B5), hoverZoom (bool, def false; B7)}.
                         `ALTO_BASE_GLOBO` = 108. `FUENTES_TEXTO` (familias CSS), `ESCALA_TEXTO_MIN/MAX`.
-                        DEFAULT_SETTINGS, storage key. Los sliders (crecimiento, grosor de líneas,
-                        fuente, tamaño de texto) están en la pestaña "Lienzo".
+                        DEFAULT_SETTINGS, storage key. Los controles (crecimiento, grosor de líneas,
+                        fuente, tamaño de texto, zoom de lupa) están en la pestaña "Lienzo".
                         `grosorLineas` → `FlowCanvas` lo pone como `--xy-edge-stroke-width` (CSS var)
                         en el contenedor; lo hereda `.react-flow__edge-path`. `fuenteTexto`/`escalaTexto`
                         → un `useEffect` de `FlowCanvas` escala `document.documentElement.style.fontSize`

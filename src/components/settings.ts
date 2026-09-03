@@ -39,6 +39,9 @@ export type Settings = {
   // del `<html>` → escala todo lo que usa `rem`. 0.8–1.3.
   fuenteTexto: "sistema" | "geist" | "serif" | "mono";
   escalaTexto: number;
+  // Zoom de lupa (B7): al pasar el mouse por un globo, se agranda para leerlo.
+  // Solo con hover real (no touch). `data-hoverzoom` en el contenedor del canvas.
+  hoverZoom: boolean;
 };
 
 export const ANCHO_PANEL_DEFECTO = 460;
@@ -62,6 +65,7 @@ export const DEFAULT_SETTINGS: Settings = {
   grosorLineas: 1.5,
   fuenteTexto: "sistema",
   escalaTexto: 1,
+  hoverZoom: false,
 };
 
 // Familias CSS por opción de `Settings.fuenteTexto` (B5). "sistema" = el stack

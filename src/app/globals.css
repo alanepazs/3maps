@@ -80,6 +80,36 @@ body {
   }
 }
 
+/* Zoom de lupa al pasar el mouse por un globo (B7). Se agranda `.globo-root`
+   (transform → NO afecta el layout: los vecinos no se corren) y sube el z-index
+   del nodo. Gateado por `data-hoverzoom="on"` en el `<html>` (lo pone FlowCanvas
+   en un effect → sin mismatch de hidratación). Excluye:
+   - `.dragging` — React Flow marca así el nodo que se arrastra (no queremos que
+     salte de tamaño a mitad del drag);
+   - `.selected` — con el globo seleccionado están el anillo azul + la toolbar;
+     agrandarlo encima molesta.
+   Solo en dispositivos con hover real (`@media (hover: hover)`) → en touch no
+   aplica (el "hover" queda pegado tras tocar). */
+@media (hover: hover) {
+  :root[data-hoverzoom="on"]
+    .react-flow__node:not(.dragging):not(.selected):hover {
+    z-index: 50;
+  }
+  :root[data-hoverzoom="on"]
+    .react-flow__node:not(.dragging):not(.selected):hover
+    .globo-root {
+    transform: scale(1.35);
+    transition: transform 0.12s ease;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :root[data-hoverzoom="on"]
+      .react-flow__node:not(.dragging):not(.selected):hover
+      .globo-root {
+      transition: none;
+    }
+  }
+}
+
 /* Lápiz "escribiendo" sobre el globo mientras la IA streamea (MessageNode).
    Con `prefers-reduced-motion` no se saca la animación del todo (sigue
    indicando actividad) — solo se cambia el meneo por un pulso de opacidad,

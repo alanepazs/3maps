@@ -218,13 +218,16 @@ export default function MessageNode({
     (e: ReactPointerEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      const rect = rootRef.current?.getBoundingClientRect();
-      if (!rect) return;
+      const el = rootRef.current;
+      if (!el) return;
       const zoom = getZoom() || 1;
       const startX = e.clientX;
       const startY = e.clientY;
-      const startW = rect.width / zoom;
-      const startH = rect.height / zoom;
+      // `offsetWidth/Height` = tamaño de layout en px de canvas, INMUNE a los
+      // transforms (el zoom del lienzo y el scale del hover-zoom B7). Con
+      // `getBoundingClientRect` el hover-zoom inflaba el tamaño de arranque.
+      const startW = el.offsetWidth;
+      const startH = el.offsetHeight;
       let ultimoT: Tamano | undefined;
       arrastrarConCaptura(
         e,
@@ -268,7 +271,9 @@ export default function MessageNode({
         width: tamano?.w ?? ANCHO_POR_DEFECTO,
         height: tamano?.h ?? altoTramo,
       }}
-      className="relative text-sm"
+      // `globo-root`: lo agranda el zoom de lupa en hover (B7) — regla en
+      // globals.css gateada por `[data-hoverzoom]` en el contenedor del canvas.
+      className="globo-root relative text-sm"
     >
       {/* Mientras la punta streamea: badge de lápiz + STOP, flotando a la
           izquierda (la tarjeta tiene overflow-hidden → NodeToolbar se renderiza afuera). */}

@@ -162,8 +162,14 @@ Fase 5 (moverse entre globos + ramificar al costado, no hacia abajo). Ya está h
   `<html>` (todo lo `rem`) + setea `--fuente-3maps` (lo lee `body`). `select` + slider en "Lienzo".
   `Lora` sumada a `layout.tsx`. `Markdown.tsx` px sueltos → `em`. tsc/lint/build verde + pane.
   **Falta**: prueba de Alan + push.
-- **B2/B7** (pedidos de Alan 01-09): ventana de contexto adaptativa (medir el gasto de
-  `resumir()` primero — se cruza con T11) · zoom de lupa en hover.
+- **B7 ✅ codeado** (decisiones B7) — zoom de lupa en hover. `Settings.hoverZoom` (def off). CSS
+  puro: `:root[data-hoverzoom="on"] .react-flow__node:hover .globo-root { scale(1.35) }` (transform
+  → no corre a los vecinos), excluye `.dragging`/`.selected`, `@media (hover: hover)`.
+  `data-hoverzoom` va en el `<html>` desde el effect de B5 (evita mismatch de hidratación).
+  `onResizeStart` usa `offsetWidth` (inmune al transform). Checkbox en "Lienzo". tsc/lint/build
+  verde + pane (el `:hover` visual lo prueba Alan). **Falta**: prueba de Alan + push.
+- **B2** (pedido de Alan 01-09): ventana de contexto adaptativa — medir el gasto de `resumir()`
+  primero (se cruza con T11).
 - **B6 logo** — concepto elegido (02-09: árbol verde + copa de globos de diálogo naranjas/verdes +
   wordmark "3maps" naranja, sin "3" como tronco). **Falta que Alan suba los assets** a `public/`
   (`logo.svg` lockup / `logo-mark.svg` árbol solo / `favicon.svg` + `apple-touch-icon.png`). Ahí:

@@ -509,6 +509,21 @@ export default function SettingsPanel({
                 </span>
               </label>
 
+              <label className="mt-3 flex items-center justify-between gap-2 text-sm">
+                <span>
+                  <span className="text-white/70">Zoom de lupa al pasar el mouse</span>
+                  <span className="mt-0.5 block text-[11px] text-white/40">
+                    El globo se agranda mientras lo apuntás, para leerlo.
+                  </span>
+                </span>
+                <input
+                  type="checkbox"
+                  checked={settings.hoverZoom ?? false}
+                  onChange={(e) => onChange({ hoverZoom: e.target.checked })}
+                  className="h-4 w-4 shrink-0 accent-sky-500"
+                />
+              </label>
+
               <label className="mt-3 block text-sm">
                 <span className="text-white/70">
                   Instrucción de sistema (opcional)

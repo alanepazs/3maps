@@ -336,12 +336,13 @@ function Flow() {
     });
   }, []);
 
-  // Fuente + tamaño del texto (B5). Se aplica al `<html>`: la familia como
-  // `--fuente-3maps` (lo lee `body` en globals.css), el tamaño escalando su
-  // `font-size` → todo lo que usa `rem` (Tailwind `text-sm`/`text-xs`, etc.)
-  // crece parejo. Imperativo post-montaje, sin mismatch de hidratación (igual
-  // que el resto de settings). No se limpia al desmontar: FlowCanvas vive toda
-  // la sesión.
+  // Settings que se aplican al `<html>` de forma imperativa post-montaje (sin
+  // mismatch de hidratación — el SSR usa los defaults y esto ajusta al valor
+  // guardado). No se limpia al desmontar: FlowCanvas vive toda la sesión.
+  // - B5: fuente (`--fuente-3maps`, lo lee `body`) + tamaño (escala el
+  //   `font-size` → todo lo `rem`).
+  // - B7: `data-hoverzoom` → gatea la regla del zoom de lupa en globals.css
+  //   (`:root[data-hoverzoom="on"] .react-flow__node:hover …`).
   useEffect(() => {
     const el = document.documentElement;
     const esc = Math.min(
@@ -353,7 +354,8 @@ function Flow() {
       "--fuente-3maps",
       FUENTES_TEXTO[settings.fuenteTexto] ?? FUENTES_TEXTO.sistema,
     );
-  }, [settings.escalaTexto, settings.fuenteTexto]);
+    el.dataset.hoverzoom = settings.hoverZoom ? "on" : "off";
+  }, [settings.escalaTexto, settings.fuenteTexto, settings.hoverZoom]);
 
   // Configuración de la IA (proveedor activo + su API key + modelo). Solo en
   // este navegador. `configIA.ts` guarda una key POR PROVEEDOR, así que cambiar

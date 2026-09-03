@@ -1199,6 +1199,31 @@ El `⌄` **volvió a pedir doble click** (reporte de Alan). F5-4c redujo el swal
   (el pane no dispara `setPointerCapture` con eventos no confiables).
 - **Revertir**: volvés al swallower global y a que el `⌄` pida doble click cada dos por tres.
 
+### B7. Zoom de lupa en hover
+
+- **`Settings.hoverZoom: boolean`** (def `false`). Toggle en "Lienzo".
+- **CSS puro**, gateado por `:root[data-hoverzoom="on"]`: al hacer `:hover` sobre un
+  `.react-flow__node` se escala `.globo-root` (el root del `MessageNode`) a `scale(1.35)` +
+  `z-index: 50`. `transform` **no afecta el layout** → los vecinos no se corren.
+- **`data-hoverzoom` va en el `<html>` desde un `useEffect`** (el mismo que aplica fuente/tamaño de
+  B5), NO como prop inline. Con prop inline había **mismatch de hidratación** (SSR = default `off`,
+  cliente con `localStorage` = `on`) y React 19 **no lo patchea** → el atributo quedaba en `off`
+  hasta un re-render. El effect corre post-montaje y lo ajusta siempre. (Mismo patrón que
+  `--fuente-3maps`.) `data-chat` / `--xy-edge-stroke-width` tienen el mismo bug latente si se
+  recarga con un valor no-default guardado — no se tocó acá.
+- **Exclusiones**: `:not(.dragging)` (RF marca así el nodo que se arrastra — no salta de tamaño a
+  mitad del drag) y `:not(.selected)` (con el globo seleccionado están el anillo + la toolbar).
+  `@media (hover: hover)` → en touch no aplica.
+- **`onResizeStart` pasó de `getBoundingClientRect().width / zoom` a `offsetWidth`/`offsetHeight`**:
+  `offset*` es el tamaño de layout, inmune a los transforms (zoom del lienzo + scale del
+  hover-zoom); con `getBoundingClientRect` el hover-zoom inflaba el tamaño de arranque del resize.
+- Verificado en el pane: `data-hoverzoom` togglea en el `<html>` (sin mismatch), la regla CSS está
+  bien formada, `@media (hover: hover)` matchea, `.globo-root` es hijo directo del nodo, el
+  checkbox persiste. **El `:hover` visual (scale + z-index) lo prueba Alan en Chrome** — el pane no
+  dispara `:hover` real (napkin §2).
+- **Revertir**: se saca la regla CSS + el `data-hoverzoom` del effect; `offsetWidth` en el resize
+  queda (es más robusto igual).
+
 ### F5-5. `calcularLayout` ("▤ Ordenar") + `resolverSuperposiciones` tramo-aware
 Las dos funciones de `layout.ts` seguían recorriendo el árbol **intercambio por intercambio**
 (vía `hijos()`), poniendo cada `main` en su propio slot vertical. Con Fase 5 eso desparrama un
