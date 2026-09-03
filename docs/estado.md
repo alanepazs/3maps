@@ -206,6 +206,10 @@ Fase 5 (moverse entre globos + ramificar al costado, no hacia abajo). Ya está h
 - Que el watchdog de 45s no corte un stream lento-pero-vivo. **Mejorado 03-09** (F3-6): watchdog
   por fases — resumir bajo TOTAL_MS (240s) + su propio corte a 50s; 1er token 90s; entre chunks
   45s. Falta que Alan confirme en Chrome que ya no se corta con 2 ramas.
+- **Respuesta cortada por límite de tokens del modelo** (03-09, F3-6): antes Gemini terminaba con
+  `MAX_TOKENS` y 3maps la trataba como completa (Rehacer habilitado, sin aviso). Ahora
+  `RespuestaIA.truncada` (los 3 adaptadores) → `error` sobre el intercambio SIN borrar el texto; el
+  render muestra respuesta + nota juntas. Falta prueba de Alan.
 - ⚠️ LWW de títulos usa el reloj del navegador: relojes MUY desfasados podrían elegir mal.
 
 ## Issues conocidos / gotchas

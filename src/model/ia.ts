@@ -222,7 +222,14 @@ export type UsoTokens = { entrada: number; salida: number };
 
 // Lo que devuelve `llamarIA`: el texto de la respuesta + el `usage` si el
 // proveedor lo mandó (`null` si no — no todos los free/proxy lo hacen).
-export type RespuestaIA = { texto: string; uso: UsoTokens | null };
+// `truncada`: el proveedor cortó por el límite de tokens de salida
+// (Gemini `MAX_TOKENS` / Claude `max_tokens` / OpenAI-compat `length`) — el
+// texto está incompleto aunque el stream terminó "bien".
+export type RespuestaIA = {
+  texto: string;
+  uso: UsoTokens | null;
+  truncada?: boolean;
+};
 
 export type LlamadaOpts = {
   sistema?: string;
@@ -400,7 +407,11 @@ async function llamarClaude(
           salida: u.output_tokens ?? 0,
         }
       : null;
-    return { texto: acumulado, uso };
+    return {
+      texto: acumulado,
+      uso,
+      truncada: final.stop_reason === "max_tokens",
+    };
   } catch (e) {
     if (e instanceof ErrorIA) throw e;
     if (esAbort(e)) throw e; // cancelación deliberada — la maneja quien llama
@@ -624,7 +635,11 @@ async function intentarGemini(
     throw new ErrorIA("Gemini bloqueó la respuesta por seguridad.");
   }
   // Con texto parcial: lo devolvemos aunque el stream se haya cortado con error.
-  if (acumulado) return { texto: acumulado, uso };
+  // Si `finish` es MAX_TOKENS con texto → la respuesta está incompleta pero es
+  // útil: se devuelve con `truncada` para que la UI lo marque.
+  if (acumulado) {
+    return { texto: acumulado, uso, truncada: finish === "MAX_TOKENS" };
+  }
 
   if (errorEnStream) {
     const msg = `Gemini (${modelo}): ${errorEnStream}`;
@@ -856,6 +871,7 @@ async function llamarOpenAICompat(
   let acumulado = ""; // lo mismo pero ya sin la cadena de pensamiento
   let errorEnStream: string | null = null;
   let uso: UsoTokens | null = null;
+  let finish: string | null = null; // `length` = cortada por el límite de salida
   const reader = res.body.getReader();
   const dec = new TextDecoder();
   let buf = "";
@@ -880,6 +896,9 @@ async function llamarOpenAICompat(
         entrada: chunk.usage.prompt_tokens ?? 0,
         salida: chunk.usage.completion_tokens ?? 0,
       };
+    }
+    if (chunk.choices?.[0]?.finish_reason) {
+      finish = chunk.choices[0].finish_reason;
     }
     const trozo = chunk.choices?.[0]?.delta?.content;
     if (!trozo) return; // `reasoning` / `reasoning_content` se ignoran
@@ -909,7 +928,7 @@ async function llamarOpenAICompat(
     throw new ErrorIA(mensajeLegible(e), e);
   }
 
-  if (acumulado) return { texto: acumulado, uso };
+  if (acumulado) return { texto: acumulado, uso, truncada: finish === "length" };
   if (errorEnStream) throw new ErrorIA(`${nombre}: ${errorEnStream}`);
   // Llegó contenido pero quedó vacío tras limpiar: era TODO cadena de pensamiento
   // (nunca cerró el `<think>` / gastó el presupuesto) o TODO tokens internos

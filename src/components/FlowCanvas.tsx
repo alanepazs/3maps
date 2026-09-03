@@ -711,7 +711,7 @@ function Flow() {
         // Recién ahora arranca el watchdog de inactividad de la respuesta.
         esperandoRespuesta = true;
         ultimaActividad = Date.now();
-        const { texto, uso } = await llamarIA(configIA, mensajes, {
+        const { texto, uso, truncada } = await llamarIA(configIA, mensajes, {
           signal: ctrl.signal,
           sistema,
           usarProxy: settings.usarProxyIA,
@@ -728,15 +728,26 @@ function Flow() {
           },
         });
 
-        setArbol((a) =>
-          conRespuesta(a, nodeId, {
+        setArbol((a) => {
+          let next = conRespuesta(a, nodeId, {
             respuesta: texto,
             pending: false,
             proveedor: configIA.proveedor,
             tokensEntrada: uso?.entrada ?? null,
             tokensSalida: uso?.salida ?? null,
-          }),
-        );
+          });
+          // El proveedor cortó por el límite de tokens de salida: el texto queda
+          // (útil) pero se marca como incompleto — si no, 3maps la trata como
+          // respuesta terminada y el usuario no se entera.
+          if (truncada) {
+            next = conError(
+              next,
+              nodeId,
+              "La respuesta llegó al límite de tokens del modelo y quedó incompleta. Volvé a preguntar pidiendo que continúe, o ↻ Rehacer.",
+            );
+          }
+          return next;
+        });
 
         // ── Instrumentación B2 (temporal): cuánto cuesta la llamada OCULTA de
         // `resumir()` vs la respuesta que el usuario sí ve. Se guarda el últimos

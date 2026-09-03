@@ -428,7 +428,10 @@ Props de `<ReactFlow>` que importan:
   `ia-proxy`, decisiones §7a). `cerebras`/`siliconflow`/`zhipu`/`moonshot`/`mistral`/`qwen` se eliminaron (§7d).
   `MODELO_POR_DEFECTO`, `NOMBRE_PROVEEDOR`, `PISTA_API_KEY`, `GUIA_API_KEY` por proveedor
   (`MODELOS_SUGERIDOS` se eliminó — F3-13).
-- `llamarIA(config, mensajes, opts)` → `Promise<{ texto, uso }>`, `switch(config.proveedor)`.
+- `llamarIA(config, mensajes, opts)` → `Promise<{ texto, uso, truncada? }>`, `switch(config.proveedor)`.
+  `truncada` = el proveedor cortó por el límite de tokens de salida (Gemini `MAX_TOKENS` / Claude
+  `max_tokens` / OpenAI-compat `length`) — el texto queda pero `responder` lo marca con `error`
+  sin borrarlo (03-09, decisiones F3-6).
   `uso` (`UsoTokens = { entrada, salida }` | null) = tokens que reportó el proveedor: Claude
   `final.usage`, Gemini `usageMetadata`, OpenAI-compat `stream_options:{include_usage:true}` →
   chunk final (T11, decisiones F3-19). Sumar proveedor = un `case` nuevo + entradas en los
@@ -497,7 +500,9 @@ en `FlowCanvas` ignora `intercambios` y compara por `rev`.
   (F5-4) salvo tamaño manual (manija ◢, F3-8, en `data.ancho/alto` de la CABEZA → `.md`).
 - Cuerpo (Fase 5): `<CuerpoTramo>` (componente `memo` local, compare `rev === rev && readOnly ===
   readOnly`) — `intercambios.map(...)`, cada uno "pregunta (negrita) + respuesta (`<Markdown>`)";
-  `pending` → texto parcial + ▍; `error` → recuadro rojo. **Scrolleable siempre** (`flex-1
+  `pending` → texto parcial + ▍; `error` → nota roja **debajo** de la respuesta (si hay texto se
+  muestran los dos — respuesta cortada por límite de tokens / watchdog; decisiones F3-6).
+  **Scrolleable siempre** (`flex-1
   overflow-y-auto`). El `memo` = mover el globo / zoom / seleccionar NO re-parsea el markdown del
   tramo (B8, decisiones F5-7). Auto-scroll al fondo mientras la punta streamea (`useLayoutEffect`
   + ref `autoScroll`, B9). STOP/Rehacer → punta; Eliminar → cabeza.

@@ -464,23 +464,28 @@ export default function PanelConversacion({
                       </span>
                     )}
                 </p>
-                {ic.error ? (
-                  <p className="whitespace-pre-wrap text-xs text-red-300">
-                    ⚠ {ic.error}
-                  </p>
-                ) : ic.respuesta ? (
+                {/* La respuesta (aunque haya `error`: una parcial que se cortó
+                    por límite de tokens / watchdog sigue siendo útil). */}
+                {ic.respuesta ? (
                   <div className="rounded-md rounded-tl-none bg-white/[0.04] px-3 py-2 text-white/90">
                     <Markdown conCopiar>{ic.respuesta}</Markdown>
                   </div>
-                ) : ic.pending ? (
+                ) : null}
+                {ic.error ? (
+                  <p className="mt-1 whitespace-pre-wrap text-xs text-red-300">
+                    ⚠ {ic.error}
+                  </p>
+                ) : ic.respuesta ? null : ic.pending ? (
                   <p className="italic text-white/40">escribiendo…</p>
                 ) : (
                   <p className="italic text-white/40">Respuesta pendiente</p>
                 )}
                 {/* Acciones por respuesta (T15 + F5-3): ramificar desde este
                     punto, copiar / guardar ESTA respuesta. En cada turno de la
-                    IA, no solo el último. Links sutiles, siempre visibles. */}
-                {!ic.pending && ic.respuesta && !ic.error && (
+                    IA, no solo el último. Links sutiles, siempre visibles.
+                    Con `error` (respuesta cortada) igual dejamos copiar/guardar
+                    lo que llegó. */}
+                {!ic.pending && ic.respuesta && (
                   <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
                     {onSubmit && (
                       <button

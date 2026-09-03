@@ -655,6 +655,15 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
   - **respuesta ya en curso**: `INACTIVIDAD_MS` (45s) entre chunks.
   `resumir()` ahora recibe `signal` (antes no) → STOP y el `TOTAL_MS` la cancelan de verdad.
   Mensajes de error distintos según si llegó algo o no.
+- **Respuesta cortada por el límite de tokens del modelo (03-09, reporte de Alan: "no terminó de
+  escribir y ya se habilitó Rehacer")**: el stream de Gemini terminaba "bien" con
+  `finishReason: "MAX_TOKENS"` y `intentarGemini` devolvía el texto parcial como si estuviera
+  completo (el chequeo de `MAX_TOKENS` solo corría con texto vacío). Ahora los 3 adaptadores
+  devuelven `RespuestaIA.truncada` (Gemini `MAX_TOKENS` / Claude `max_tokens` / OpenAI-compat
+  `length`); `responder` marca el intercambio con un `error` **sin borrar el texto** ("llegó al
+  límite de tokens y quedó incompleta"). El render (`MessageNode` + `PanelConversacion`) muestra
+  ahora la respuesta **y** la nota de error juntas (antes el `error` reemplazaba al texto — también
+  afectaba al watchdog-cut con parcial). Copiar/Guardar quedan disponibles sobre lo que llegó.
 - **`pending` ahora SÍ se persiste** (`pendiente: 1` en el frontmatter). Al recargar o al bajar
   de la nube, `parseMarkdown` convierte un `pendiente` sin terminar en un `error` reintentable
   (sin pisar un error real). Antes: `pending` no se guardaba → una llamada cortada al cerrar la
