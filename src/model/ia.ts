@@ -827,7 +827,8 @@ type OpenAIChunk = {
     delta?: { content?: string; reasoning?: string; reasoning_content?: string };
     finish_reason?: string | null;
   }>;
-  error?: { message?: string };
+  // Los proveedores no coinciden: `{message}`, string suelto, o solo `{code}`.
+  error?: { message?: string; code?: string | number; type?: string } | string;
   // Con `stream_options.include_usage` el chunk final trae esto (y `choices: []`).
   usage?: {
     prompt_tokens?: number;
@@ -1102,8 +1103,15 @@ async function procesarStreamOpenAICompat(
     } catch {
       return; // fragmento parcial
     }
-    if (chunk.error?.message) {
-      errorEnStream = chunk.error.message;
+    if (chunk.error) {
+      const err = chunk.error;
+      errorEnStream =
+        typeof err === "string"
+          ? err
+          : err.message ||
+            (err.code
+              ? `${err.type ?? "error"} ${err.code}`
+              : "el proveedor cortó con un error sin detalle");
       return;
     }
     if (chunk.usage) {
@@ -1140,7 +1148,11 @@ async function procesarStreamOpenAICompat(
   } catch (e) {
     if (esAbort(e)) throw e;
     if (acumulado) return { texto: acumulado, uso }; // stream cortado a mitad
-    throw new ErrorIA(mensajeLegible(e), e);
+    // Si el proveedor mandó un `data: {error}` antes de cortar, ese texto vale
+    // más que "la conexión se cayó".
+    if (errorEnStream) throw new ErrorIA(`${nombre}: ${errorEnStream}`);
+    const nombreErr = e instanceof Error && e.name ? ` [${e.name}]` : "";
+    throw new ErrorIA(mensajeLegible(e) + nombreErr, e);
   }
 
   if (acumulado) return { texto: acumulado, uso, truncada: finish === "length" };
