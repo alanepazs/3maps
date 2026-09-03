@@ -78,6 +78,8 @@ import {
   type Rama,
 } from "@/model/intercambio";
 import { cargarArbol, guardarArbol } from "@/model/persistencia";
+import { descargarBytes } from "@/model/exportar";
+import { exportarMapaZip, importarMapaZip } from "@/model/traspaso";
 import {
   calcularLayout,
   resolverSuperposiciones,
@@ -1512,6 +1514,43 @@ function Flow() {
     [mapaId, usuario],
   );
 
+  // Export / import de un mapa como `.zip` de sus `.md` (spec §7, decisiones B-export).
+  const exportarMapa = useCallback(() => {
+    const titulo = mapas[mapaId]?.titulo ?? "mapa";
+    const { nombre, bytes } = exportarMapaZip(arbolRef.current, titulo);
+    descargarBytes(nombre, bytes);
+  }, [mapas, mapaId]);
+
+  const importarMapa = useCallback(
+    async (archivo: File) => {
+      let datos: { arbol: Arbol; titulo: string };
+      try {
+        const bytes = new Uint8Array(await archivo.arrayBuffer());
+        datos = await importarMapaZip(bytes);
+      } catch (e) {
+        window.alert(
+          `No se pudo importar: ${e instanceof Error ? e.message : String(e)}`,
+        );
+        return;
+      }
+      // Entra como un mapa NUEVO (no pisa el actual). Si el título ya existe,
+      // desambiguar ("… (2)", "… (3)") — dos filas con el mismo nombre confunden.
+      cancelInertia();
+      cancelPanInertia();
+      const usados = new Set(Object.values(leerMapas()).map((x) => x.titulo));
+      let titulo = datos.titulo;
+      for (let n = 2; usados.has(titulo); n++) titulo = `${datos.titulo} (${n})`;
+      const id = crearMapa(titulo);
+      const m = leerMapas();
+      setMapas(m);
+      guardarArbol(datos.arbol, id);
+      cargarEnMapa(id, datos.arbol);
+      if (usuario) void subirIndiceMapasNube(usuario.id, m);
+      window.setTimeout(() => void fitView({ ...fitOpts, duration: 300 }), 60);
+    },
+    [cancelInertia, cancelPanInertia, cargarEnMapa, usuario, fitView, fitOpts],
+  );
+
   const empezarDeCero = useCallback(() => {
     if (
       !window.confirm(
@@ -1789,6 +1828,8 @@ function Flow() {
             onBorrar={borrarMapaActual}
             onRenombrar={renombrarMapaActual}
             onEmpezarDeCero={empezarDeCero}
+            onExportar={exportarMapa}
+            onImportar={importarMapa}
           />
         )}
         {!readOnly && (

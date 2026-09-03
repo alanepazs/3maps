@@ -14,6 +14,8 @@ export default function MapaSwitcher({
   onBorrar,
   onRenombrar,
   onEmpezarDeCero,
+  onExportar,
+  onImportar,
 }: {
   mapas: Mapas;
   activoId: string;
@@ -22,9 +24,12 @@ export default function MapaSwitcher({
   onBorrar: () => void;
   onRenombrar: (titulo: string) => void;
   onEmpezarDeCero: () => void;
+  onExportar: () => void;
+  onImportar: (archivo: File) => void;
 }) {
   const [open, setOpen] = useState(false);
   const contenedorRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -117,6 +122,43 @@ export default function MapaSwitcher({
           >
             ✎ Renombrar “{activo?.titulo ?? ""}”
           </button>
+
+          <hr className="my-2 border-white/10" />
+          <button
+            type="button"
+            onClick={() => {
+              onExportar();
+              setOpen(false);
+            }}
+            className="w-full rounded px-2 py-1.5 text-left text-sm text-white/80 hover:bg-white/10"
+            title="Descarga este mapa como .zip de sus .md (con adjuntos)"
+          >
+            ⬇ Exportar (.zip)
+          </button>
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className="w-full rounded px-2 py-1.5 text-left text-sm text-white/80 hover:bg-white/10"
+            title="Abre un .zip exportado como un mapa nuevo"
+          >
+            ⬆ Importar (.zip)
+          </button>
+          <input
+            ref={inputRef}
+            type="file"
+            accept=".zip,application/zip"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              e.target.value = ""; // permitir re-elegir el mismo archivo
+              if (f) {
+                onImportar(f);
+                setOpen(false);
+              }
+            }}
+          />
+
+          <hr className="my-2 border-white/10" />
           <button
             type="button"
             onClick={() => {

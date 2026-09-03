@@ -182,7 +182,12 @@ Sub-tareas:
 - **Auto-switch de proveedor** ✅ — `proveedorDeLaKey`; botón "Cambiar a X" cuando pegás una key
   de otro proveedor (conserva la key cruzando el cambio). Decisiones §8c.
 
+## Export / import de mapas — ✅ (03-09, spec §7)
+- `src/model/zip.ts` (ZIP a mano, sin dep: STORE al escribir, STORE+DEFLATE al leer con
+  `DecompressionStream` nativo) + `src/model/traspaso.ts` (`exportarMapaZip` / `importarMapaZip`).
+- 2 ítems en el menú de `MapaSwitcher`. Import = mapa nuevo (desambigua el título). 14 asserts +
+  e2e pane. Decisiones "Export / import".
+
 ## Fuera de este plan (más adelante — pre-existentes)
-- Export/import `.zip` de la carpeta de `.md` + File System Access API
 - Embeddings 2.5b (`transformers.js`) si el match por palabras se queda corto
 - Fixes de móvil (3.13) en Chrome real / celu

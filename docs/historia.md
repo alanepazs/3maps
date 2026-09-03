@@ -146,3 +146,11 @@ Tres causas, todas en `decisiones.md` F3-6:
 | **`⌄` de un click** | El swallower global de `click` (`tragarClickSintetico`, F5-0/4b/4c) siempre fue una carrera. Reemplazado por **pointer capture** (`arrastrarConCaptura` en `gestos.ts`): el `click` sintético post-drag va a la manija, no al pane/backdrop. Cero listeners globales. |
 | **Mismatch de hidratación** | Al recargar con `composerOculto` (o grosor ≠ 1.5) guardado, React 19 no reconciliaba el atributo. `sVista = hidratado ? settings : DEFAULT_SETTINGS` — el 1er render del cliente usa los defaults (= server), el 2º aplica lo guardado. |
 | **Auto-switch de proveedor** | `proveedorDeLaKey(key)` (`ia.ts`) detecta el proveedor por prefijo inequívoco (`sk-…` a secas = ambiguo). Al pegar una key de otro proveedor, `SettingsPanel` muestra un botón "Cambiar a X" (antes solo el aviso ámbar); la key pegada se conserva cruzando el cambio (`keyTrasCambio`). Decisiones §8c. |
+
+## Export / import de un mapa `.zip` (03-09-2026, spec §7)
+
+`src/model/zip.ts` (ZIP a mano, sin dep — STORE al escribir, STORE+DEFLATE al leer con
+`DecompressionStream` nativo) + `src/model/traspaso.ts` (`exportarMapaZip` / `importarMapaZip`:
+zippea/parsea los mismos `.md`, con `3maps.json` de metadata). 2 ítems en el menú de
+`MapaSwitcher`. Import = mapa nuevo (desambigua el título si choca). 14 asserts + e2e pane.
+Decisiones "Export / import".

@@ -120,7 +120,8 @@ Arrancar con **un solo proveedor** (a elegir: DeepSeek o Claude Haiku por costo,
 
 - Exportar un árbol = comprimir su carpeta de `.md` en un `.zip`.
 - Importar = descomprimir y reconstruir el árbol leyendo el `padre_id` de cada archivo.
-- Fase 1 (MVP): todo local, el usuario descarga/sube el `.zip` a mano.
+- Fase 1 (MVP): todo local, el usuario descarga/sube el `.zip` a mano. **✅ hecho 03-09**
+  (`model/zip.ts` + `model/traspaso.ts`; menú de `MapaSwitcher`; import = mapa nuevo).
 - Fase 2 (si se suma backend): permitir subir el árbol a un storage (ej. Supabase Storage) para compartir por link, guardando los mismos archivos `.md` tal cual — el servidor solo los aloja, no cambia el formato.
 
 ## 8. Rendimiento visual (UI)

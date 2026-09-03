@@ -1293,6 +1293,30 @@ El `⌄` **volvió a pedir doble click** (reporte de Alan). F5-4c redujo el swal
   futuros assets.
 - **`3.png`** (marca sola) queda en `public/` como fuente para regenerar los íconos.
 
+### Export / import de un mapa como `.zip` (spec §7, 03-09)
+
+- **Exportar** = zippear los mismos strings `.md` que van a `localStorage` (`toMarkdown(ic)` por
+  intercambio) + un `3maps.json` (`{ v, titulo, exportado }`). **Importar** = `parseMarkdown` de
+  vuelta. El `.md` es la fuente de la verdad → cero formato nuevo. Los adjuntos (T16) viajan en el
+  frontmatter → gratis. Todo local, sin backend (spec §7 fase 1).
+- **`src/model/zip.ts` — ZIP a mano, sin dependencia** (3maps se mantiene vanilla; ver
+  `[[feedback-3maps-no-unknown-deps]]`). Escribe **STORE** (sin compresión — los `.md` son texto
+  chico, ~1.3KB un mapa de 3 nodos): local file headers + central directory + EOCD, CRC-32 con
+  tabla. Lee STORE y **DEFLATE** (este último con `DecompressionStream("deflate-raw")` **nativo**
+  del navegador → un `.zip` hecho en cualquier lado también importa). ~180 líneas totales.
+- **`src/model/traspaso.ts`**: `exportarMapaZip(arbol, titulo)` → `{ nombre: "<slug>.zip", bytes }`;
+  `importarMapaZip(bytes)` → `{ arbol, titulo }`. Normaliza: un `padre_id` que no está en el set →
+  raíz (así `arbolAVista` no genera un edge roto). Tira `Error` legible si el `.zip` no tiene
+  ningún `*.md` válido.
+- **UI**: 2 ítems en el menú de `MapaSwitcher` ("⬇ Exportar (.zip)" / "⬆ Importar (.zip)", con un
+  `<input type=file hidden>`). Import entra como un **mapa NUEVO** (no pisa el actual); si el
+  título choca, desambigua ("… (2)"). El zip descarga con `descargarBytes` (`exportar.ts`).
+- Verificado: 14 asserts en `_scratch.mts` (round-trip UTF-8/emoji, mapa con rama + color +
+  proveedor, `padre_id` huérfano → raíz, no-zip → error, zip vacío) + e2e en el pane (exportar
+  intercepta un blob `application/zip` de 1.3KB "PK…"; re-importarlo crea un 2º mapa con los 3
+  intercambios idénticos).
+- **Revertir**: se sacan los 2 ítems del menú; `zip.ts`/`traspaso.ts` quedan sin usar.
+
 ### F5-5. `calcularLayout` ("▤ Ordenar") + `resolverSuperposiciones` tramo-aware
 Las dos funciones de `layout.ts` seguían recorriendo el árbol **intercambio por intercambio**
 (vía `hijos()`), poniendo cada `main` en su propio slot vertical. Con Fase 5 eso desparrama un

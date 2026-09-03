@@ -67,10 +67,18 @@ src/
                          LIMITE_BINARIO 1MB / LIMITE_INTERCAMBIO 2MB. Decisiones F3-22 / F3-22b.
     assets.ts            `rutaAsset(archivo)` = `${basePath}/${archivo}` — para referenciar assets
                          de `public/` a mano (Next NO les pone el basePath solo). B6.
+    zip.ts               ZIP mínimo sin dependencia (spec §7). `crearZip(archivos)` → bytes (método
+                         STORE, sin compresión); `leerZip(bytes)` → `{nombre: contenido}` (STORE +
+                         DEFLATE vía `DecompressionStream` nativo). CRC-32 con tabla.
+    traspaso.ts          Export / import de un mapa como `.zip` de sus `.md` (spec §7).
+                         `exportarMapaZip(arbol, titulo)` → `{nombre, bytes}` (los `.md` +
+                         `3maps.json`). `importarMapaZip(bytes)` → `{arbol, titulo}` (parsea, y un
+                         `padre_id` colgado → raíz). Lo cablea `FlowCanvas` (`exportarMapa` /
+                         `importarMapa` = mapa nuevo) → menú de `MapaSwitcher`.
     exportar.ts          Sacar una respuesta como texto (T15, F3-23). nombreArchivoRespuesta(resp)
                          → {nombre,contenido,mime} (fence único → interior + ext del lang; parece
                          markdown → .md; si no → .txt; nombre del slug del 1er `# Título`).
-                         descargarTexto(nombre,contenido,mime) · copiarTexto(t)→bool.
+                         descargarTexto / descargarBytes (`.zip`) / copiarTexto(t)→bool.
     persistencia.ts      guardarArbol(arbol, mapId) / cargarArbol(mapId) en localStorage
                          ("3maps:arbol:<mapId>"), un string .md por intercambio. Cae a
                          arbolInicial() si no hay nada.
@@ -243,10 +251,11 @@ src/
                         local está limpio (`arbolRef === sincronizado`), pre-chequea `metaNube`.
                         Devuelve EstadoSync. No corre en modo compartido.
     MapaSwitcher.tsx    Selector de mapas (fase 3.5): chip arriba a la izquierda al lado de ⚙️.
-                        Lista + ＋ Nuevo + ✎ Renombrar (prompt) + 🗑 Borrar (se permite el último →
-                        crea uno vacío) + 🧹 Empezar de cero (borra todo local+nube, epoch). Cierra
-                        al clickear afuera. Props: {mapas, activoId, onCambiar, onNuevo, onBorrar,
-                        onRenombrar, onEmpezarDeCero}.
+                        Lista + ＋ Nuevo + ✎ Renombrar (prompt) + ⬇ Exportar / ⬆ Importar (`.zip`,
+                        spec §7) + 🗑 Borrar (se permite el último → crea uno vacío) + 🧹 Empezar de
+                        cero (borra todo local+nube, epoch). Cierra al clickear afuera. Props:
+                        {mapas, activoId, onCambiar, onNuevo, onBorrar, onRenombrar, onEmpezarDeCero,
+                        onExportar, onImportar(File)}.
     Composer.tsx        Barra inferior fija para escribir. Props: {activeNodeLabel, arbolVacio,
                         onSubmit(text, "main"|"branch"), oculto, onToggleOculto}. Enter continúa /
                         Ctrl+Enter ramifica / Shift+Enter salto (F3-10). Botón `⌄` la esconde

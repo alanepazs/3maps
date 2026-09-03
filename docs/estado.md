@@ -146,9 +146,12 @@ respuesta · multi-select con envión parejo (los 4) — todo OK.
   **Después: sacar la instrumentación `[b2]`** (temporal — `console.info` + ese localStorage).
 - Fixes IA 03-09: que ya no se corte con 2 ramas; el aviso de respuesta truncada.
 
+### Export / import de mapas ✅ (03-09, spec §7)
+`src/model/{zip.ts, traspaso.ts}` (ZIP sin dep) + 2 ítems en el menú de `MapaSwitcher`. Exportar =
+`.zip` de los `.md` + `3maps.json`; importar = mapa nuevo. Decisiones "Export / import".
+
 ### Ideas sin empezar
 - **T15 "doc card"** — tarjeta compacta cuando la respuesta ES un documento.
-- **Export/import `.zip`** de la carpeta de `.md` + File System Access API (con adjuntos — spec §7).
 - **Embeddings 2.5b** (`transformers.js`) si `intercambiosRelevantes` (match por palabras) se
   queda corto — misma firma, drop-in.
 - Modelos locales tipo Ollama (spec §10) — **descartado** (mixed-content/CORS + el celu no llega a

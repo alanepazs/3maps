@@ -101,7 +101,18 @@ export function descargarTexto(
   contenido: string,
   mime: string,
 ): void {
-  const blob = new Blob([contenido], { type: mime });
+  descargarBlob(nombre, new Blob([contenido], { type: mime }));
+}
+
+export function descargarBytes(
+  nombre: string,
+  bytes: Uint8Array,
+  mime = "application/zip",
+): void {
+  descargarBlob(nombre, new Blob([bytes as BlobPart], { type: mime }));
+}
+
+function descargarBlob(nombre: string, blob: Blob): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
