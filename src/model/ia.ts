@@ -278,18 +278,19 @@ export async function llamarIA(
 // spec §5). Usa el mismo proveedor/modelo configurado. `usarProxy` hay que
 // pasarlo para los proveedores OpenAI-compatibles (si no, tiran error y el
 // resumen se saltea → contexto completo).
+// Devuelve el `uso` (tokens del proveedor) además del texto — lo usa la
+// instrumentación de B2 para medir cuánto cuesta esta llamada "oculta".
 export async function resumir(
   config: ConfigIA,
   intercambios: { pregunta: string; respuesta: string | null }[],
   opts: { usarProxy?: boolean } = {},
-): Promise<string> {
+): Promise<{ texto: string; uso: UsoTokens | null }> {
   const texto = intercambios
     .map(
       (i) =>
         `Pregunta: ${i.pregunta}\nRespuesta: ${i.respuesta ?? "(sin respuesta)"}`,
     )
     .join("\n\n");
-  // El `usage` del resumen (llamada interna) no se usa hoy — solo el texto.
   const r = await llamarIA(
     config,
     [
@@ -304,7 +305,7 @@ export async function resumir(
     ],
     { maxTokens: 2048, usarProxy: opts.usarProxy },
   );
-  return r.texto;
+  return { texto: r.texto, uso: r.uso };
 }
 
 // ── Adaptador: Claude / Anthropic ──────────────────────────────────────────
