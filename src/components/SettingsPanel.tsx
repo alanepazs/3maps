@@ -19,6 +19,7 @@ import {
   INFO_MODELO_WEBLLM,
   MODELOS_WEBLLM,
   MODELO_POR_DEFECTO,
+  MODELO_WEBLLM_POR_NIVEL,
   NOMBRE_PROVEEDOR,
   OLLAMA_SENTINEL,
   OLLAMA_URL,
@@ -32,7 +33,7 @@ import {
   listarModelos,
   type ConfigIA,
 } from "@/model/ia";
-import { hayWebGPU } from "@/model/webllm";
+import { hayWebGPU, nivelEquipoWebLLM } from "@/model/webllm";
 import type { Proveedor } from "@/model/intercambio";
 import { haySupabase } from "@/model/supabase";
 import { useSesion } from "./useSesion";
@@ -217,6 +218,26 @@ export default function SettingsPanel({
   // (chequea `typeof navigator`); el panel de ⚙️ no está en el paint inicial, así
   // que el initializer lazy corre en cliente sin mismatch de hidratación.
   const [hayGpu] = useState(() => hayWebGPU());
+
+  // Recomendación "mejor esfuerzo" de modelo WebLLM según el equipo detectado.
+  // `null` mientras detecta o si falló → se cae al `recomendado` estático (3B).
+  const [recomEquipo, setRecomEquipo] = useState<
+    { id: string; motivo: string } | null
+  >(null);
+  useEffect(() => {
+    if (!esWebllm || !hayGpu) return;
+    let vivo = true;
+    void nivelEquipoWebLLM()
+      .then((r) => {
+        if (vivo) {
+          setRecomEquipo({ id: MODELO_WEBLLM_POR_NIVEL[r.nivel], motivo: r.motivo });
+        }
+      })
+      .catch(() => {});
+    return () => {
+      vivo = false;
+    };
+  }, [esWebllm, hayGpu]);
 
   // DeepSeek / GPT van por el proxy de 3maps (no habilitan CORS). Necesitan que
   // el usuario acepte el opt-in Y que la instancia tenga el proxy configurado.
@@ -851,9 +872,25 @@ export default function SettingsPanel({
               <p className="text-[11px] text-white/40">
                 Elegí según tu máquina (se baja 1 vez):
               </p>
+              {recomEquipo && INFO_MODELO_WEBLLM[recomEquipo.id] && (
+                <p className="text-[11px] text-emerald-300/90">
+                  Para tu equipo:{" "}
+                  <span className="font-medium">
+                    {INFO_MODELO_WEBLLM[recomEquipo.id].nombre}
+                  </span>{" "}
+                  <span className="text-white/40">— {recomEquipo.motivo}</span>
+                </p>
+              )}
               {modelosKey.map((m) => {
                 const info = INFO_MODELO_WEBLLM[m];
                 const sel = m === modeloDraft.trim();
+                // Badge dinámico si detectamos el equipo; si no, el estático (3B).
+                const paraTuEquipo = recomEquipo?.id === m;
+                const badge = paraTuEquipo
+                  ? "✓ para tu equipo"
+                  : !recomEquipo && info?.recomendado
+                    ? "recomendado"
+                    : null;
                 return (
                   <button
                     key={m}
@@ -872,9 +909,9 @@ export default function SettingsPanel({
                       {info && (
                         <span className="text-white/40">· ~{info.gb} GB</span>
                       )}
-                      {info?.recomendado && (
+                      {badge && (
                         <span className="rounded bg-emerald-500/20 px-1 text-[10px] text-emerald-300">
-                          recomendado
+                          {badge}
                         </span>
                       )}
                     </span>

@@ -232,6 +232,14 @@ WebGPU LLM no se hace en vanilla; se carga con `import()` dinámico → cero pes
   `INFO_MODELO_WEBLLM` = por modelo `{nombre lindo, gb, nota "para quién es", recomendado?}` →
   `SettingsPanel` los muestra como tarjetas (nombre · ~N GB · nota) en vez de chips crudos, para
   que el usuario elija según su máquina sin saber qué es "q4f16_1-MLC".
+- **Recomendación por equipo** (`nivelEquipoWebLLM()` en `webllm.ts`, mejor esfuerzo): el
+  navegador limita el fingerprinting → se combina el string del renderer WebGL
+  (`WEBGL_debug_renderer_info` → nombre de la GPU), `adapter.limits.maxBufferSize` (≥2 GB ≈
+  dedicada) y `navigator.deviceMemory`. Devuelve `bajo|medio|alto` + motivo →
+  `MODELO_WEBLLM_POR_NIVEL` (1B/3B/7B). `SettingsPanel`: badge "✓ para tu equipo" en la tarjeta
+  detectada + línea "Para tu equipo: X — <motivo>" (ej. "GPU dedicada (NVIDIA GeForce RTX 4060
+  Ti)"). Si la detección falla o es ambigua → cae al `recomendado` estático (3B). No auto-cambia
+  el modelo, solo sugiere.
 - **Sin key**: sentinel `WEBLLM_SENTINEL = "browser"` en `configIA` (como Ollama, §7f).
   `proveedorSinKey(p)` unifica el "sin auth" de ollama+webllm en `ia.ts` y `SettingsPanel`
   (`esLocal`). `SettingsPanel` rama `esWebllm`: sin input de key, caja de requisitos, gate

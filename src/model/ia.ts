@@ -1234,6 +1234,14 @@ export const INFO_MODELO_WEBLLM: Record<
   },
 };
 
+// Qué modelo recomendar según el nivel de equipo detectado (`nivelEquipoWebLLM`
+// en webllm.ts). El default estático sigue siendo el `medio` (3B).
+export const MODELO_WEBLLM_POR_NIVEL: Record<"bajo" | "medio" | "alto", string> = {
+  bajo: "Llama-3.2-1B-Instruct-q4f16_1-MLC",
+  medio: "Llama-3.2-3B-Instruct-q4f16_1-MLC",
+  alto: "Qwen2.5-7B-Instruct-q4f16_1-MLC",
+};
+
 export async function listarModelos(config: ConfigIA): Promise<string[]> {
   if (!proveedorSinKey(config.proveedor) && !config.apiKey.trim()) {
     throw new ErrorIA("Falta la API key. Cargala en ⚙️.");
