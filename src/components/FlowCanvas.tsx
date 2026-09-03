@@ -647,15 +647,11 @@ function Flow() {
         // Resumen del tramo viejo (spec §5). Si falla, se manda completo.
         const viejos = tramoAResumir(base, nodeId, { ventana });
         let resumen: string | null = null;
-        let resumenUso: { entrada: number; salida: number } | null = null;
-        let resumenDesdeCache = true;
-        let resumenNuevos = 0; // cuántos intercambios entraron a esta llamada (B2)
         if (viejos.length > 0) {
           const idsViejos = viejos.map((i) => i.id);
           const clave = idsViejos.join("|");
           resumen = resumenCacheRef.current.get(clave) ?? null;
           if (!resumen) {
-            resumenDesdeCache = false;
             // Resumen INCREMENTAL (B2): buscar el prefijo cacheado más largo del
             // tramo viejo (la ventana se corre de a 1, así que el set viejo
             // crece agregando al final). Si hay, resumir solo la cola nueva
@@ -674,14 +670,13 @@ function Flow() {
               }
             }
             const aResumir = viejos.slice(desde);
-            resumenNuevos = aResumir.length;
             // Tope propio para la llamada oculta: si tarda demasiado (proveedor
             // saturado, o modelo local lento), se sigue SIN resumen (el tramo
             // viejo va completo) en vez de hacer esperar al usuario. `ctrl.signal`
             // la cancela igual ante STOP / TOTAL_MS.
             const RESUMEN_MS = local ? 180_000 : 50_000;
             try {
-              const rs = await resumir(configIA, aResumir, {
+              resumen = await resumir(configIA, aResumir, {
                 usarProxy: settings.usarProxyIA,
                 resumenPrevio,
                 signal: AbortSignal.any([
@@ -689,8 +684,6 @@ function Flow() {
                   AbortSignal.timeout(RESUMEN_MS),
                 ]),
               });
-              resumen = rs.texto;
-              resumenUso = rs.uso;
               resumenCacheRef.current.set(clave, resumen);
             } catch {
               resumen = null; // sin resumen: `armarContexto` manda el tramo entero
@@ -758,51 +751,6 @@ function Flow() {
           return next;
         });
 
-        // ── Instrumentación B2 (temporal): cuánto cuesta la llamada OCULTA de
-        // `resumir()` vs la respuesta que el usuario sí ve. Se guarda el últimos
-        // ~60 en `localStorage["3maps:debug:b2"]` + `console.info`. Sacar cuando
-        // haya datos y esté decidida la política de ventana adaptativa.
-        if (!resumenDesdeCache && viejos.length > 0) {
-          // Estimado de la entrada REAL de la llamada oculta: solo la cola nueva
-          // (incremental) + el resumen previo, no el tramo viejo entero.
-          const nuevos = viejos.slice(viejos.length - resumenNuevos);
-          const charsResumen = nuevos.reduce(
-            (s, i) => s + i.pregunta.length + (i.respuesta?.length ?? 0),
-            0,
-          );
-          const rec = {
-            at: new Date().toISOString().slice(0, 19),
-            prov: configIA.proveedor,
-            modelo: configIA.modelo,
-            ventana,
-            nViejos: viejos.length,
-            resumen: {
-              incremental: resumenNuevos < viejos.length,
-              nNuevos: resumenNuevos,
-              estIn: Math.round(charsResumen / 4),
-              tokIn: resumenUso?.entrada ?? null,
-              tokOut: resumenUso?.salida ?? null,
-            },
-            respuesta: {
-              estIn: estimarTokens(mensajes),
-              tokIn: uso?.entrada ?? null,
-              tokOut: uso?.salida ?? null,
-            },
-          };
-          console.info("[b2]", rec);
-          try {
-            const prev = JSON.parse(
-              localStorage.getItem("3maps:debug:b2") ?? "[]",
-            ) as unknown[];
-            prev.push(rec);
-            localStorage.setItem(
-              "3maps:debug:b2",
-              JSON.stringify(prev.slice(-60)),
-            );
-          } catch {
-            /* ignorar */
-          }
-        }
         // La respuesta final puede ser más alta que el estimado → si el globo
         // quedó pisando a otro, empujarlo (solo el solapado, ver layout.ts).
         resolverSolapes();

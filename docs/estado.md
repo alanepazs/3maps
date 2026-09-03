@@ -19,8 +19,8 @@ en cada push a `main`). Repo `github.com/alanepazs/3maps`, local `D:\IA\3maps`.
 **En curso**: v2 = modelo local WebLLM in-browser — spec en `tasks/v2-webllm-spec.md` (fase SPECIFY).
 
 **Lo único que queda son cosas de Alan / diferidas** (ver "Ideas sin empezar" + "Prueba real
-pendiente"): ronda de pruebas en Chrome con keys reales, sacar la instrumentación `[b2]` (tras
-confirmar), embeddings 2.5b (descartado por ahora — vanilla), fixes de móvil 3.13 (a reproducir
+pendiente"): ronda de pruebas en Chrome con keys reales,
+embeddings 2.5b (descartado por ahora — vanilla), fixes de móvil 3.13 (a reproducir
 en el celu). **El próximo paso natural es la prueba de Alan, no más código.**
 - **Fase 4** (panel rediseñado + contadores de tokens + adjuntos + copiar/guardar + doc card):
   shippeada, probada con keys (Gemini imagen+PDF, Groq visión, pegar captura, T15). Claude
@@ -41,8 +41,8 @@ en el celu). **El próximo paso natural es la prueba de Alan, no más código.**
   2 ramas): watchdog **por fases**, respuesta **truncada** que se marcaba como completa,
   `⌄` con **pointer capture**, **mismatch de hidratación** con ajustes guardados, **auto-switch de
   proveedor** al pegar una key de otro. Todo en `decisiones.md` F3-6 (+ B3-b, B5, §8c). Pusheado.
-- **Falta que Alan confirme en Chrome**: que ya no se corta con 2 ramas; el `:hover` visual de B7;
-  la instrumentación `[b2]` con keys reales (después sacarla).
+- **Falta que Alan confirme en Chrome**: que ya no se corta con 2 ramas; el `:hover` visual de B7.
+  (La instrumentación `[b2]` se removió el 03-09 — Alan confirmó el resumen incremental.)
 
 - **Canvas** (React Flow): árbol de globos, tronco vertical + ramas al costado, envión al soltar,
   2 modos (manito / selección con espacio), redimensionar globo y panel, auto-layout ("▤ Ordenar"),
@@ -157,9 +157,11 @@ respuesta · multi-select con envión parejo (los 4) — todo OK.
 
 **Pendiente de prueba de Alan en Chrome** (el pane no cubre render/inercia/streaming/keys):
 - B7: el `:hover` visual del zoom de lupa (scale + z-index).
-- B2: correr una rama larga con key real → `localStorage["3maps:debug:b2"]` con `incremental:true`.
-  **Después: sacar la instrumentación `[b2]`** (temporal — `console.info` + ese localStorage).
 - Fixes IA 03-09: que ya no se corte con 2 ramas; el aviso de respuesta truncada.
+
+**B2** — resumen incremental confirmado por Alan (03-09); la instrumentación `[b2]`
+(`console.info` + `localStorage["3maps:debug:b2"]`) se **removió**. `resumir()` volvió a devolver
+`string` (era `{texto, uso}` para medir la llamada oculta).
 
 ### Export / import de mapas ✅ (03-09, spec §7)
 `src/model/{zip.ts, traspaso.ts}` (ZIP sin dep) + 2 ítems en el menú de `MapaSwitcher`. Exportar =

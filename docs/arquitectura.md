@@ -471,9 +471,10 @@ Props de `<ReactFlow>` que importan:
   `final.usage`, Gemini `usageMetadata`, OpenAI-compat `stream_options:{include_usage:true}` →
   chunk final (T11, decisiones F3-19). Sumar proveedor = un `case` nuevo + entradas en los
   `Record<Proveedor,…>` + (si es OpenAI-compat) redeploy del `ia-proxy`. Cero cambios en el árbol
-  (spec §6). `resumir(config, intercambios, opts)` usa el mismo proveedor; devuelve `{texto, uso}`
-  (B2). `opts.resumenPrevio` → resumen incremental (prompt "actualizá este resumen con lo nuevo").
-  `opts.signal` → cancelable (F3-6).
+  (spec §6). `resumir(config, intercambios, opts)` usa el mismo proveedor; devuelve `string`.
+  `opts.resumenPrevio` → resumen incremental (B2, prompt "actualizá este resumen con lo nuevo").
+  `opts.signal` → cancelable (F3-6). (Devolvía `{texto, uso}` para la instrumentación `[b2]`,
+  removida el 03-09.)
 - **Adjuntos multimedia** (T16b/c, F3-22b/c): `multimediaDe(m)` (imágenes + PDF) / `imagenesDe(m)`.
   Cada adaptador mapea antes del texto — Claude `image` / `document` block, Gemini `inline_data`
   (mime de imagen o `application/pdf`), OpenAI-compat solo `image_url` (el PDF NO se manda por
