@@ -3,12 +3,12 @@
 > Mapa de `src/` para no leer todo. Para una dependencia puntual: `graphify query "..."`
 > (napkin §6b). El árbol de abajo es el índice; las secciones `##` que siguen son deep-dives —
 > leelas solo si tocás ese archivo. Actualizar cuando cambie la estructura.
-> Última actualización: 02-09-2026 (Fase 5).
+> Última actualización: 03-09-2026 (backlog B1-B10 + fixes IA).
 
-**Tamaños** (líneas): `FlowCanvas.tsx` ~1150 · `ia.ts` ~890 · `SettingsPanel.tsx` ~745 ·
-`intercambio.ts` ~350 · `MessageNode.tsx` ~375 · `sync.ts` ~330 · `layout.ts` ~320 ·
-`PanelConversacion.tsx` ~270 · `compartir.ts` 237 · `contexto.ts` 227 · `configIA.ts` 183 · `useSync.ts` 166 ·
-`mapas.ts` ~150 · `Composer.tsx` 138 · el resto < 110.
+**Tamaños** (líneas, 03-09): `FlowCanvas.tsx` ~1835 · `ia.ts` ~1165 · `SettingsPanel.tsx` ~1005 ·
+`PanelConversacion.tsx` ~755 · `intercambio.ts` ~585 · `MessageNode.tsx` ~495 · `sync.ts` ~330 ·
+`layout.ts` ~317 · `contexto.ts` ~283 · `compartir.ts` 237 · `configIA.ts` 183 · `useSync.ts` 166 ·
+`mapas.ts` ~150 · `Composer.tsx` 138 · `ToolbarGrupo.tsx` 54 · `gestos.ts` 46 · el resto < 110.
 
 ## Stack real (lo que está instalado)
 
@@ -95,8 +95,9 @@ src/
                          rescatados textuales JUSTO antes de la pregunta (no parte el prefijo).
                          tramoAResumir = fuera de la ventana. intercambiosRelevantes(viejos,
                          pregunta) = match por raíz de palabra + peso por rareza (fase 2.5 liviana).
-    ia.ts                llamarIA(config, mensajes, opts) → { texto, uso }. `uso` = tokens
-                         {entrada,salida} del proveedor o null (T11, decisiones F3-19). Punto único; switch(proveedor).
+    ia.ts                llamarIA(config, mensajes, opts) → { texto, uso, truncada? }. `uso` = tokens
+                         {entrada,salida} del proveedor o null (T11, F3-19); `truncada` = cortó por
+                         el límite de salida (F3-6). Punto único; switch(proveedor).
                          Adaptadores: Claude (@anthropic-ai/sdk dinámico), Gemini (fetch + SSE), y
                          los OpenAI-compatibles vía llamarOpenAICompat (contra el edge function
                          ia-proxy; SSE estilo OpenAI). Streaming vía opts.onTexto. opts.usarProxy

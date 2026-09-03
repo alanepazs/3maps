@@ -21,8 +21,16 @@ cuadrado. Recién ahí se hace B6 (favicon en `app/layout.tsx` + fondo del canva
 7. `docs/spec-proyecto.md` — diseño de producto (modelo de datos, pseudocódigo). Solo si tocás
    datos / IA / contexto.
 
-**Para navegar el código sin leer archivos enteros**: `graphify query "<pregunta>"` desde
-`D:\IA\3maps` (napkin §6b) — devuelve el subgrafo con `archivo:línea`.
+**Navegar el código — `graphify` SIEMPRE (imperativo, Alan 03-09)**: antes de tocar código o
+abrir archivos de `src/`, correr `graphify query "<pregunta>"` desde `D:\IA\3maps` — devuelve el
+subgrafo con `archivo:línea` de qué llama a qué (napkin §6b). Al terminar cambios de estructura,
+regenerar: `graphify update . --force`.
+
+**Los `.md` de `docs/` son la fuente de la verdad del proyecto — trabajá SIEMPRE entre ellos**:
+antes de un cambio, leé el que corresponde; después del cambio, actualizá `estado.md` +
+`decisiones.md` (el porqué) + `arquitectura.md` (si cambió la estructura) + `historia.md` (qué
+shippeó). No dejar los `.md` desincronizados del código. Vale para todo cambio, no solo "de ahora
+en más".
 
 ## Método de trabajo — IMPERATIVO (agent-skills)
 

@@ -95,7 +95,7 @@ autoritativa del `onNodeDragStop` (F3-18b) · la rama entra al hijo por el costa
 
 ---
 
-## Fase 5 — un globo del canvas = un TRAMO de la conversación (en curso, 02-09-2026)
+## Fase 5 — un globo del canvas = un TRAMO de la conversación (shippeada, 02-09-2026)
 
 Spec `tasks/fase5-spec.md`. **Cambio de arquitectura de la VISTA — el modelo de datos no cambió,
 cero migración**: `Intercambio` / `.md` / persistencia / sync / compartir / `armarContexto` iguales.
@@ -114,5 +114,34 @@ sale solo al **ramificar** (`rama != "main"`).
 | **F5-5** | `calcularLayout` ("▤ Ordenar") y `resolverSuperposiciones` (`layout.ts`) recorren **tramos**: 1 posición por tramo (la de la cabeza), ramas de cualquier intercambio del tramo en columnas al costado alineadas al top. `ubicarNuevoGlobo` ya era tramo-aware. | F5-5 |
 | **F5-6** | `BranchTranscript` → `PanelConversacion` (rename). "⧉ Copiar" / "⬇ Guardar" en **cada** respuesta del panel (no solo la última; `copiada` bool → `copiadaId`). Docs (`historia.md`, `arquitectura.md`, `decisiones.md`, invariante de `CLAUDE.md`). | F5-6, F3-23 |
 
-Backlog abierto en Fase 5: **B8** (arrastrar un globo va a ~5 fps — el `MessageNode` re-parsea
-todo el markdown del tramo por frame; `React.memo` del cuerpo).
+---
+
+## Backlog post-fases (B1-B10) — 02/03-09-2026
+
+Pedidos sueltos de Alan, fuera del plan de fases. Detalle + porqué: `decisiones.md` (B1, B3, B4,
+B5, B7, §10, F5-7).
+
+| B | Qué | Ref |
+|---|---|---|
+| **B1** | Color por globo. Paleta fija de 6 slugs (`ambar`/`verde`/`rojo`/`cian`/`violeta`/`rosa`) + sin color, NO hex. `Intercambio.color` en la cabeza del tramo → `.md` (`color:`) → sync/compartir gratis. `COLOR_GLOBO_HEX` en `components/colores.ts`. Punto en el header + swatches en el `NodeToolbar`. | B1 |
+| **B2** | Contexto adaptativo = **resumen incremental**. `resumir()` acepta `opts.resumenPrevio` → prompt "actualizá este resumen con lo nuevo". `responder` busca en `resumenCacheRef` el prefijo cacheado más largo del set viejo y resume solo la cola nueva sobre él → la entrada de la llamada oculta deja de crecer sin tope en ramas largas. Se descartó la "ventana que se achica". Instrumentación `[b2]` temporal (console + `localStorage["3maps:debug:b2"]`). | §10 |
+| **B3** | Multi-select move: envión **parejo a todo el grupo** (`FlowCanvas` envuelve `onNodeDragStop` y arma el grupo con `getNodes().filter(selected)` — el 3er arg de RF no es confiable); `onSettle` → `asentarVarios` (batch). La selección se MANTIENE tras mover (se limpia al clickear el fondo). **Toolbar compartida** (`ToolbarGrupo`) con >1 seleccionado: "🗑 Eliminar N" (un confirm, dedup de ancestros) + swatches de color; las toolbars por-globo se esconden (`variosSeleccionados` vía `useStore`). | B3 |
+| **B4** | Setting "grosor de líneas". `Settings.grosorLineas` (1-5, def 1.5) → CSS var `--xy-edge-stroke-width` en el contenedor del canvas (lo hereda `.react-flow__edge-path`). Slider en "Lienzo". | B4 |
+| **B5** | Setting "fuente" (sistema/geist/serif Lora/mono) + "tamaño de texto" (0.8-1.3). `FlowCanvas` un `useEffect` escala el `font-size` del `<html>` (todo lo `rem`) + setea `--fuente-3maps` (lo lee `body`). `Lora` a `layout.tsx` (`next/font`). `Markdown.tsx` px sueltos → `em`. | B5 |
+| **B6** | Logo en el mapa. **Bloqueado**: faltan los assets en `public/` (SVG del árbol + globos naranjas + wordmark "3maps"; favicon cuadrado). | — |
+| **B7** | Zoom de lupa en hover. `Settings.hoverZoom` (def off). CSS puro `:root[data-hoverzoom="on"] .react-flow__node:hover .globo-root { scale(1.35); z-index }` (transform → no corre a los vecinos), excluye `.dragging`/`.selected`, `@media (hover: hover)`. `data-hoverzoom` en el `<html>` desde el effect de B5. `onResizeStart` pasó a `offsetWidth` (inmune al transform). | B7 |
+| **B8** | Arrastrar un globo iba a ~5 fps: `MessageNode` re-parseaba toda la transcripción por frame. `Markdown` = `memo` + `useMemo`; la transcripción sale a `CuerpoTramo` (`memo` por `rev`/`readOnly`). | F5-7 |
+| **B9** | El scroll-follow del panel se plantaba a mitad del stream (el `scrollTop = scrollHeight` propio apagaba `pegado`). `useLayoutEffect` + ref `autoScroll` (prende antes del scroll propio, apaga en rAF). Aplicado también al globo. | F5-7 |
+| **B10** | Manija de resize del panel + scrollbar pegados con `side="left"`: la manija sale entera del panel (`left-full ml-1`). `side="right"` sin cambio. | F5-7 |
+
+## Fixes de robustez de la llamada a la IA (03-09-2026)
+
+Reporte de Alan (video): respuestas que se cortan a la mitad, peor con 2 ramificaciones a la vez.
+Tres causas, todas en `decisiones.md` F3-6:
+
+| Fix | Qué |
+|---|---|
+| **Watchdog por fases** | El de inactividad (45s) contaba desde ANTES de `resumir()` → con 2 ramas profundas en paralelo, `resumir()` tarda >45s en un free tier saturado y mataba la respuesta antes de arrancar, con mensaje falso. Ahora: resumir bajo `TOTAL_MS` (240s) + corte propio a 50s (`AbortSignal.any` + `timeout`); 1er token `PRIMER_BYTE_MS` (90s); entre chunks `INACTIVIDAD_MS` (45s). `resumir()` recibe `signal`. |
+| **Respuesta truncada** | Gemini cerraba con `finishReason: MAX_TOKENS` y 3maps la daba por completa (Rehacer habilitado, sin aviso). Los 3 adaptadores → `RespuestaIA.truncada`; `responder` marca `error` sin borrar el texto; el render de `MessageNode`/`PanelConversacion` muestra respuesta + nota juntas (antes el `error` tapaba el texto). |
+| **`⌄` de un click** | El swallower global de `click` (`tragarClickSintetico`, F5-0/4b/4c) siempre fue una carrera. Reemplazado por **pointer capture** (`arrastrarConCaptura` en `gestos.ts`): el `click` sintético post-drag va a la manija, no al pane/backdrop. Cero listeners globales. |
+| **Mismatch de hidratación** | Al recargar con `composerOculto` (o grosor ≠ 1.5) guardado, React 19 no reconciliaba el atributo. `sVista = hidratado ? settings : DEFAULT_SETTINGS` — el 1er render del cliente usa los defaults (= server), el 2º aplica lo guardado. |

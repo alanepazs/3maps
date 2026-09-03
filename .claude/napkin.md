@@ -48,13 +48,14 @@ Runbook corto. Cosas que muerden si no las sabés. Leer antes de tocar.
    están **gitignoreadas** — un clon nuevo NO las trae. Restaurar:
    `git clone --depth 1 https://github.com/addyosmani/agent-skills /tmp/as && cp -r /tmp/as/{skills,references,agents} .claude/`
    (+ convertir `commands/*.toml` a `.md`). Se descubren al reiniciar la sesión de Claude Code.
-6b. **Grafo de conocimiento (`graphify-out/`, gitignoreado, local)**: antes de abrir varios
-   archivos de `src/` para entender una dependencia, probá `graphify query "<pregunta>"` desde
-   `D:\IA\3maps` — devuelve el subgrafo con `archivo:línea` de qué llama a qué. El intérprete está
-   en `graphify-out\.graphify_python`. Regenerar tras cambios de estructura: `graphify --update`.
-   `graph.html` y `obsidian/` son para mirar a ojo. El corpus es chico (~6k líneas de `src/`) →
-   para un dato puntual conviene leer el archivo directo; el grafo gana cuando la pregunta cruza
-   varios módulos.
+6b. **Grafo de conocimiento (`graphify-out/`, gitignoreado, local) — USAR SIEMPRE**: Alan lo pidio
+   explícito (03-09). Antes de tocar código o abrir archivos de `src/` para entender algo, correr
+   `graphify query "<pregunta>"` desde `D:\IA\3maps` — devuelve el subgrafo con `archivo:línea` de
+   qué llama a qué. Al terminar cambios de estructura (funciones nuevas/borradas, archivos
+   nuevos), **regenerar**: `graphify update . --force` (re-extrae, sin LLM; hace backup en
+   `graphify-out/<fecha>/`). `graphify explain "<Nodo>"` / `graphify path "A" "B"` para relaciones
+   puntuales. El intérprete está en `graphify-out\.graphify_python`. `graph.html` para mirar a ojo.
+   544 nodes / 1110 edges (03-09). Las líneas del grafo desactualizado mienten → regenerar primero.
 7. `next.config.ts`: `agentRules: false` (que Next no escriba en CLAUDE.md), `devIndicators`
    abajo-derecha, `output: "export"`, y `basePath: /3maps` **solo si `NEXT_PUBLIC_PAGES=1`**
    (el workflow de Pages lo setea; `next dev` local queda en la raíz). Deploy = push a `main`.

@@ -2,30 +2,31 @@
 
 > Snapshot para retomar. Solo **dónde estamos + qué falta + gotchas**. Historial → git +
 > `docs/historia.md`. "Qué hace cada archivo" → `docs/arquitectura.md`. Por qué el código es así →
-> `docs/decisiones.md`. Última actualización: 02-09-2026.
+> `docs/decisiones.md`. **Navegar el código: `graphify query "…"` SIEMPRE** (napkin §6b; regenerar
+> con `graphify update . --force` tras cambios de estructura). Última actualización: 03-09-2026.
 
 ## Dónde estamos
 
-**Fases 1-5 en producción.** Backlog B1/B3/B4/B8/B9/B10 shippeado y pusheado. Queda B2/B5/B7
-(+ B6 bloqueado por assets). `https://alanepazs.github.io/3maps/` (deploy automático en cada
-push a `main`). Repo `github.com/alanepazs/3maps`, local `D:\IA\3maps`.
+**Fases 1-5 en producción.** **Backlog B1-B10 shippeado y pusheado** salvo **B6** (bloqueado — faltan
+los assets del logo en `public/`). Más fixes de robustez de la llamada a la IA (03-09, ver abajo).
+`https://alanepazs.github.io/3maps/` (deploy automático en cada push a `main`). Repo
+`github.com/alanepazs/3maps`, local `D:\IA\3maps`.
 - **Fase 4** (panel rediseñado + contadores de tokens + adjuntos + copiar/guardar): shippeada,
   probada con keys (Gemini imagen+PDF, Groq visión, pegar captura, T15). Claude bloqueado por saldo.
 - **Fase 5** — **un globo del canvas = un TRAMO** (cadena `main`), no un intercambio suelto. Enter
   agrega a la punta del mismo globo; globo nuevo solo al ramificar; el globo crece con la
-  conversación (slider en "Lienzo"). **Cambio solo de vista, cero migración.** Detalle por
-  sub-tarea: `docs/historia.md` "Fase 5"; el porqué: `decisiones.md` F5-0..F5-6.
-  - F5-0..F5-6 ✅ y **pusheado** (incl. F5-4c/5/6).
-  - **El `⌄` de un click**: la manija de resize salió del `overflow-hidden` (F5-4c). El swallower
-    global de click (`tragarClickSintetico`) se reemplazó por **pointer capture**
-    (`arrastrarConCaptura` en `gestos.ts`) — el `click` sintético post-drag va a la manija, no al
-    pane. Adiós carrera, adiós doble-click (decisiones B3-b, 03-09).
-  - **F5-6**: `BranchTranscript` → `PanelConversacion`; "⧉ Copiar"/"⬇ Guardar" en CADA respuesta
-    del panel. **"globo" → "tramo" NO se hizo** (dos términos útiles: globo = nodo visual,
-    tramo = cadena de datos).
-  - **Falta**: prueba de Alan en Chrome real (Enter 10× → 1 globo, ramificar desde el medio,
-    mapa viejo se agrupa, crecimiento, "▤ Ordenar" con tramos altos). Backlog **B8** (drag lageado
-    a ~5 fps — ver "Qué falta").
+  conversación (slider en "Lienzo"). **Cambio solo de vista, cero migración.** Shippeada.
+  Detalle: `docs/historia.md` "Fase 5"; el porqué: `decisiones.md` F5-0..F5-7.
+  **"globo" → "tramo" NO se renombró** (dos términos útiles: globo = nodo visual, tramo = cadena
+  de datos).
+- **Backlog B1-B10**: detalle en `docs/historia.md` "Backlog post-fases"; el porqué en
+  `decisiones.md` (B1, B3, B4, B5, B7, §10, F5-7).
+- **Fixes de la IA (03-09)** — reporte de Alan (respuestas que se cortan a la mitad, peor con
+  2 ramas): watchdog **por fases**, respuesta **truncada** que se marcaba como completa,
+  `⌄` con **pointer capture**, **mismatch de hidratación** con ajustes guardados. Todo en
+  `decisiones.md` F3-6 (+ B3-b, B5). Pusheado.
+- **Falta que Alan confirme en Chrome**: que ya no se corta con 2 ramas; el `:hover` visual de B7;
+  la instrumentación `[b2]` con keys reales (después sacarla).
 
 - **Canvas** (React Flow): árbol de globos, tronco vertical + ramas al costado, envión al soltar,
   2 modos (manito / selección con espacio), redimensionar globo y panel, auto-layout ("▤ Ordenar"),
@@ -130,67 +131,27 @@ ni llamadas con key):
 - `stream_options.include_usage` (T11) — asumido que anda en Groq/OpenRouter/HuggingFace; si
   alguno tira 400 habría que gatearlo por proveedor en `llamarOpenAICompat`.
 
-### Fase 5 — en producción
+### Fase 5 + Backlog B1-B10 — shippeado
 
-F5-0..F5-6 ✅ y pusheado (detalle: `historia.md` "Fase 5").
+Todo en prod. Qué shippeó cada bloque → `docs/historia.md` ("Fase 5", "Backlog post-fases"). El
+porqué → `decisiones.md` (F5-*, B1, B3, B4, B5, B7, §10). Probado por Alan en Chrome (02-09):
+Enter 10× → 1 globo · ramificar desde el medio · "▤ Ordenar" / solapes · Copiar/Guardar por
+respuesta · multi-select con envión parejo (los 4) — todo OK.
 
-**Probado por Alan en Chrome real (02-09) ✅**: Enter 10-11× → 1 globo · ramificar desde el
-medio → OK · "▤ Ordenar" / solapes → nada se solapó · Copiar/Guardar por respuesta → OK · la
-herramienta en general anda bien. (No probó "mapa viejo se agrupa" — es un caso interno, sin
-UI para gatillarlo.)
+**Pendiente de prueba de Alan en Chrome** (el pane no cubre render/inercia/streaming/keys):
+- B7: el `:hover` visual del zoom de lupa (scale + z-index).
+- B2: correr una rama larga con key real → `localStorage["3maps:debug:b2"]` con `incremental:true`.
+  **Después: sacar la instrumentación `[b2]`** (temporal — `console.info` + ese localStorage).
+- Fixes IA 03-09: que ya no se corte con 2 ramas; el aviso de respuesta truncada.
 
-**Freeze levantado** (Alan 02-09): el "rediseño grande de los globos" que estaba evaluando ERA
-Fase 5 (moverse entre globos + ramificar al costado, no hacia abajo). Ya está hecho. B1-B10 abiertos.
+### B6 — logo (bloqueado)
+Concepto elegido (02-09: árbol verde + copa de globos de diálogo naranjas/verdes + wordmark
+"3maps" naranja, sin "3" como tronco). **Falta que Alan suba los assets** a `public/`
+(`logo.svg` lockup / `logo-mark.svg` árbol solo / `favicon.svg` + `apple-touch-icon.png`). Ahí:
+`<link>` del favicon en `app/layout.tsx` + fondo del canvas con `logo-mark` en opacidad baja.
 
-### Backlog (fuera del plan de fases) → `tasks/todo.md` "Fuera de este plan"
-
-- **B1 ✅** (decisiones B1) — color por globo. Paleta fija de 6 + sin color (no hex). `Intercambio.color`
-  en la cabeza del tramo → `.md` → sync/compartir gratis. Punto en el header + swatches en el toolbar.
-- **B4 ✅** (decisiones B4) — Setting "grosor de líneas". `Settings.grosorLineas` (1-5, def 1.5),
-  slider en "Lienzo", vía CSS var `--xy-edge-stroke-width`. En vivo.
-- **B3 ✅** (decisiones B3) — multi-select move + envión parejo a todo el grupo. **Confirmado por
-  Alan en Chrome (02-09): los 4 vuelan parejo.** `useNodeInertia` sin `onSelectionDrag*`;
-  `FlowCanvas` envuelve `onNodeDragStop` y arma el grupo con `getNodes().filter(selected)` (el 3er
-  arg de RF no es confiable — según agarres globo o recuadro trae uno solo). `glide(grupo)` una
-  velocidad; `onSettle` → `asentarVarios` (batch, persiste x/y + rama de todos en un `setArbol`).
-  Tras un drag de grupo la selección se mantiene (se limpia al clickear el fondo — default RF).
-  Con >1 seleccionado: toolbar compartida `ToolbarGrupo` ("🗑 Eliminar N" + swatches de color a
-  todos), las toolbars por-globo se esconden. 10 asserts + tsc/lint/build verde + pane + Alan en
-  Chrome.
-- **B5 ✅ codeado** (decisiones B5) — fuente + tamaño de texto. `Settings.fuenteTexto`
-  (sistema/geist/serif/mono) + `escalaTexto` (0.8-1.3). `FlowCanvas` escala el `font-size` del
-  `<html>` (todo lo `rem`) + setea `--fuente-3maps` (lo lee `body`). `select` + slider en "Lienzo".
-  `Lora` sumada a `layout.tsx`. `Markdown.tsx` px sueltos → `em`. tsc/lint/build verde + pane.
-  **Falta**: prueba de Alan + push.
-- **B7 ✅ codeado** (decisiones B7) — zoom de lupa en hover. `Settings.hoverZoom` (def off). CSS
-  puro: `:root[data-hoverzoom="on"] .react-flow__node:hover .globo-root { scale(1.35) }` (transform
-  → no corre a los vecinos), excluye `.dragging`/`.selected`, `@media (hover: hover)`.
-  `data-hoverzoom` va en el `<html>` desde el effect de B5 (evita mismatch de hidratación).
-  `onResizeStart` usa `offsetWidth` (inmune al transform). Checkbox en "Lienzo". tsc/lint/build
-  verde + pane (el `:hover` visual lo prueba Alan). **Falta**: prueba de Alan + push.
-- **B2 ✅ codeado** (decisiones §10) — contexto adaptativo = **resumen incremental**. Cuando la
-  ventana se corre, `responder` busca el prefijo cacheado más largo del set viejo y resume solo la
-  cola nueva sobre él (`resumir(..., { resumenPrevio })`). La entrada de la llamada oculta deja de
-  crecer sin tope en ramas largas (pane: 8 viejos → 1600 chars la 1ª, 617 la 2ª). Se descartó la
-  "ventana que se achica". Instrumentación `[b2]` mantiene (registra `incremental`/`nNuevos`).
-  6 asserts + pane e2e con fetch stub + tsc/lint/build verde. **Falta**: prueba de Alan + push +
-  sacar la instrumentación cuando confirme.
-- **B6 logo** — concepto elegido (02-09: árbol verde + copa de globos de diálogo naranjas/verdes +
-  wordmark "3maps" naranja, sin "3" como tronco). **Falta que Alan suba los assets** a `public/`
-  (`logo.svg` lockup / `logo-mark.svg` árbol solo / `favicon.svg` + `apple-touch-icon.png`). Ahí:
-  `<link>` del favicon en `app/layout.tsx` + fondo del canvas con `logo-mark` en opacidad baja.
-- **B8 ✅** (decisiones F5-7) — arrastrar un globo iba a ~5 fps: `MessageNode` re-parseaba toda la
-  transcripción del tramo por frame del drag. `Markdown` = `memo` + `useMemo` del texto; la
-  transcripción sale a `CuerpoTramo` (`memo` por `rev`/`readOnly`). 0 mutaciones de DOM en zoom+drag.
-- **B9 ✅** (decisiones F5-7) — el scroll-follow del panel se plantaba a mitad del stream: el
-  `scrollTop = scrollHeight` propio disparaba `alScrollear` y apagaba `pegado`. `useLayoutEffect` +
-  ref `autoScroll` (prende antes del scroll propio, apaga en rAF). Aplicado también al globo.
-- **B10 ✅** (decisiones F5-7) — manija de resize + scrollbar del panel pegados con `side="left"`:
-  la manija sale entera del panel (`left-full ml-1`), despejada del scrollbar y de la flecha `›`.
-  (1er intento con `mr-4` en `scrollRef` dejaba la `›` flotando en un hueco → descartado.)
-  `side="right"` sin cambio.
-- **T15 "doc card"** — tarjeta compacta cuando la respuesta ES un documento; si el núcleo de T15
-  no alcanza.
+### Ideas sin empezar
+- **T15 "doc card"** — tarjeta compacta cuando la respuesta ES un documento.
 - **Auto-switch de proveedor** al pegar una key de otro (hoy `avisoFormatoKey` solo avisa).
 - **Export/import** `.zip` de la carpeta de `.md` + File System Access API (spec §7). Ahora con
   T16, los adjuntos van en el `.md` → un export tiene que incluirlos.
@@ -203,13 +164,6 @@ Fase 5 (moverse entre globos + ramificar al costado, no hacia abajo). Ya está h
 - **DeepSeek, GPT** con key real (pagos — cuando Alan tenga saldo). Los 4 free
   (Gemini/Groq/OpenRouter/HuggingFace) ya están probados; lista de proveedores cerrada en 7.
 - Panel/globo redimensionable + fixes de móvil (3.11/3.13) en celu.
-- Que el watchdog de 45s no corte un stream lento-pero-vivo. **Mejorado 03-09** (F3-6): watchdog
-  por fases — resumir bajo TOTAL_MS (240s) + su propio corte a 50s; 1er token 90s; entre chunks
-  45s. Falta que Alan confirme en Chrome que ya no se corta con 2 ramas.
-- **Respuesta cortada por límite de tokens del modelo** (03-09, F3-6): antes Gemini terminaba con
-  `MAX_TOKENS` y 3maps la trataba como completa (Rehacer habilitado, sin aviso). Ahora
-  `RespuestaIA.truncada` (los 3 adaptadores) → `error` sobre el intercambio SIN borrar el texto; el
-  render muestra respuesta + nota juntas. Falta prueba de Alan.
 - ⚠️ LWW de títulos usa el reloj del navegador: relojes MUY desfasados podrían elegir mal.
 
 ## Issues conocidos / gotchas
@@ -229,7 +183,9 @@ Fase 5 (moverse entre globos + ramificar al costado, no hacia abajo). Ya está h
   un atajo con el caché normal del navegador. El `?v=` alcanza.)
 - **Darkreader** en `localhost` rompe la hidratación y los colores.
 - **Un dispositivo con bundle viejo rompe el sync** (sube el índice sin `epoch` → lo borra). Ver arriba.
-- **Llamada IA "estática"**: watchdog + `pendiente: 1` persistido + botón "↻ Rehacer" (F3-6).
+- **Llamada IA que se corta**: watchdog **por fases** (F3-6: resumir 240s + corte propio 50s;
+  1er token 90s; entre chunks 45s) + `pendiente: 1` persistido + "↻ Rehacer". Respuesta cortada
+  por `MAX_TOKENS`/`length` → `RespuestaIA.truncada` → nota "incompleta" sin borrar el texto.
 
 ## Cómo correr / verificar / publicar
 
@@ -244,6 +200,10 @@ npm run build                       # out/ estático; con NEXT_PUBLIC_PAGES=1 �
 - **`.env.local`** (gitignoreado): `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
   Sin eso `npm run dev` corre igual, sin la parte de Supabase. En prod van como repo secrets.
 - **Lógica pura sin runner**: `npx --yes tsx _scratch.mts`, y borrar el scratch (napkin §13).
+- **Navegar el código**: `graphify query "<pregunta>"` desde `D:\IA\3maps` (napkin §6b). Tras
+  cambios de estructura: `graphify update . --force`.
 - **Publicar**: `git push` desde `D:\IA\3maps` (credencial en Windows Credential Manager).
   `gh` NO está autenticado. Deploy a Pages = push a `main`.
-- **Al cerrar sesión**: `tsc` + `lint` en verde · `git push` · actualizar este archivo.
+- **Al cerrar sesión**: `tsc` + `lint` + `build` en verde · `git push` · actualizar los `.md`
+  (`estado.md` + `decisiones.md` + `arquitectura.md` si cambió estructura + `historia.md`) ·
+  `graphify update . --force` si cambió la estructura.
