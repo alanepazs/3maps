@@ -11,7 +11,7 @@ Complementa a:
 - Este archivo — decisiones de implementación que no son obvias mirando el código.
 
 Índice: **§1-5** datos/`.md` · **§6-11** IA · **§12-16** canvas · **F2-1..F2-8** fase 2 ·
-**F3-1..F3-11** fase 3 · **§21-23** build · **§24-26** proceso.
+**F3-1..F3-11** fase 3 · **§21-23** build · **§24-27** proceso.
 
 ---
 
