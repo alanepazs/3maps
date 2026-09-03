@@ -229,10 +229,14 @@ WebGPU LLM no se hace en vanilla; se carga con `import()` dinámico → cero pes
   `procesarStreamOpenAICompat`); feature-detect WebGPU + traduce el error crudo de web-llm.
 - **`MODELOS_WEBLLM`** (lista corta, spec V2-3): `Llama-3.2-1B` (~0.9 GB) / `Llama-3.2-3B`
   (~2.3 GB, **default**) / `Qwen2.5-7B` (~5.1 GB). `listarModelos` los devuelve tal cual.
+  `INFO_MODELO_WEBLLM` = por modelo `{nombre lindo, gb, nota "para quién es", recomendado?}` →
+  `SettingsPanel` los muestra como tarjetas (nombre · ~N GB · nota) en vez de chips crudos, para
+  que el usuario elija según su máquina sin saber qué es "q4f16_1-MLC".
 - **Sin key**: sentinel `WEBLLM_SENTINEL = "browser"` en `configIA` (como Ollama, §7f).
   `proveedorSinKey(p)` unifica el "sin auth" de ollama+webllm en `ia.ts` y `SettingsPanel`
   (`esLocal`). `SettingsPanel` rama `esWebllm`: sin input de key, caja de requisitos, gate
-  `hayWebGPU()` (deshabilita "Guardar" si no hay), picker de los 3 modelos.
+  `hayWebGPU()` (deshabilita "Guardar" si no hay), lista de modelos siempre visible (es fija →
+  sin botón "ver modelos").
 - **Descarga de pesos** (`onProgreso` → `LlamadaOpts`): `responder` la muestra como texto en el
   globo (`⬇ Preparando el modelo local… N%`) y **apaga el watchdog** mientras baja
   (`descargando`; puede tardar minutos, el usuario tiene STOP). Post-descarga, los topes van como
