@@ -1721,17 +1721,18 @@ function Flow() {
           zoomOnDoubleClick={false}
         >
           <Background />
-          {/* Marca de agua del logo (B6): la copa de globos, tenue, centrada,
-              fija (no pan/zoom). Hija de `<ReactFlow>` → sobre el fondo pero
-              debajo del `.react-flow__pane` (z-1) y los nodos. */}
+          {/* Marca de agua del logo completo (B6): árbol + globos + wordmark
+              "3maps", tenue, centrado, fijo (no pan/zoom). Hijo de `<ReactFlow>`
+              → sobre el fondo pero debajo del `.react-flow__pane` (z-1) y los
+              nodos. `colorMode="dark"` pinta un fondo opaco en `.react-flow`, por
+              eso va acá y no en el wrapper. */}
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-0 bg-no-repeat opacity-[0.05]"
+            className="pointer-events-none absolute inset-0 bg-center bg-no-repeat opacity-[0.05]"
             style={{
               zIndex: 0,
-              backgroundImage: `url(${rutaAsset("logo-mark.png")})`,
-              backgroundSize: "min(46vh, 360px)",
-              backgroundPosition: "center 42%",
+              backgroundImage: `url(${rutaAsset("logo.png")})`,
+              backgroundSize: "min(72vw, 440px) auto",
             }}
           />
           <Controls>

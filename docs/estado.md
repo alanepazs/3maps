@@ -20,9 +20,9 @@ push a `main`). Repo `github.com/alanepazs/3maps`, local `D:\IA\3maps`.
   de datos).
 - **Backlog B1-B10**: detalle en `docs/historia.md` "Backlog post-fases"; el porqué en
   `decisiones.md` (B1, B3, B4, B5, B7, §10, F5-7).
-- **B6 (logo)** ✅ — `public/{logo.png,3.png}` (Alan). `src/app/{favicon.ico,icon.png,apple-icon.png}`
-  (Next los linkea con basePath) + `public/logo-mark.png` (watermark del canvas, 5%, hijo de
-  `<ReactFlow>`). `src/model/assets.ts` `rutaAsset()`. Decisiones B6.
+- **B6 (logo)** ✅ — `public/{logo.png,3.png}` (Alan). Favicon = `src/app/{icon.png,favicon.ico}`
+  (la marca; sin apple-icon). Watermark del canvas = **`logo.png` completo** al 5%, hijo de
+  `<ReactFlow>`. `src/model/assets.ts` `rutaAsset()`. Decisiones B6.
 - **Fixes de la IA (03-09)** — reporte de Alan (respuestas que se cortan a la mitad, peor con
   2 ramas): watchdog **por fases**, respuesta **truncada** que se marcaba como completa,
   `⌄` con **pointer capture**, **mismatch de hidratación** con ajustes guardados, **auto-switch de

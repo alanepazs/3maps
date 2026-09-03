@@ -1269,24 +1269,29 @@ El `⌄` **volvió a pedir doble click** (reporte de Alan). F5-4c redujo el swal
   `file` dice "no alpha channel" pero `sharp(...).metadata()` reporta `channels: 4` y el fondo es
   `[r,g,b,α=0]`. (Al principio les pasé un "blanco→alfa" y les metí un rectángulo verde
   semiopaco — las zonas transparentes tenían RGB verde. Se sacó: usar los PNG tal cual.)
-- **Favicon**: `src/app/{icon.png,apple-icon.png,favicon.ico}` — la marca (`3.png` recortada)
-  centrada en un cuadrado **con fondo blanco** (el tab del navegador espera un ícono opaco).
-  Convención de archivos de Next → linkea solo los `<link rel="icon">`, **con `basePath`** (`/3maps`
-  en el build de Pages). No `metadata.icons` a mano (los string paths NO se prefijan). El `.ico`
-  se generó con `png-to-ico` (16/32/48).
-- **Watermark del canvas**: `public/logo-mark.png` (la marca transparente, ~38KB) como
-  `background-image` de un `<div aria-hidden absolute inset-0>` **hijo de `<ReactFlow>`** (después
-  de `<Background/>`), `z-index: 0` → sobre el fondo de RF pero debajo del `.react-flow__pane`
-  (z-1) y los nodos. `opacity: 0.05`, `background-position: center 42%`, `size: min(46vh, 360px)`.
-  Fijo (no pan/zoom — no está en `.react-flow__viewport`).
+- **Favicon** — `src/app/{icon.png, favicon.ico}` (SIN `apple-icon.png` — decisión de Alan
+  03-09: nadie va a "agregar a pantalla de inicio" y confunde). Ambos son **la marca (`3.png`),
+  no el lockup** — a 16-32px el wordmark es ilegible; todo producto usa solo la marca en el tab
+  (GitHub = pulpo, no "GitHub"). Centrada en un cuadrado **con fondo blanco** (el tab espera opaco).
+  - `icon.png` (256px): Next lo linkea `<link rel="icon">` **con `basePath`** (`/3maps/icon.png`
+    en Pages) → es el que **realmente funciona** en GitHub Pages (el `favicon.ico` auto-requesteado
+    va a `alanepazs.github.io/favicon.ico`, raíz, que no es la app). No `metadata.icons` a mano —
+    los string paths NO se prefijan.
+  - `favicon.ico` (16/32/48, hecho con `png-to-ico`): reemplaza al del template (triángulo de
+    Vercel). Sirve para dev local (`/favicon.ico` a la raíz sí anda) y para un self-host futuro.
+- **Watermark del canvas**: **`logo.png` — el lockup COMPLETO** (árbol + globos + wordmark; Alan lo
+  quiere así, ayuda a un usuario nuevo a reconocer la app). `background-image` de un `<div
+  aria-hidden absolute inset-0>` **hijo de `<ReactFlow>`** (después de `<Background/>`),
+  `z-index: 0` → sobre el fondo de RF pero debajo del `.react-flow__pane` (z-1) y los nodos.
+  `opacity: 0.05`, centrado, `background-size: min(72vw, 440px) auto`. Fijo (no pan/zoom — no está
+  en `.react-flow__viewport`).
   - **Por qué hijo de RF y no del wrapper**: `<ReactFlow colorMode="dark">` pinta un
     `background-color: #141414` OPACO en `.react-flow` (el `--xy-background-color-default:
     transparent` lo pisa la clase `.dark`) → un watermark en el wrapper quedaba tapado.
 - **`src/model/assets.ts`**: `rutaAsset(archivo)` = `${basePath}/${archivo}` — Next NO prefija
   las URLs de `public/` que referenciás a mano (sí `app/icon.png` y `next/image`). Reusable para
   futuros assets.
-- **`logo.png`** (lockup) queda en `public/` sin usar todavía — para un landing / página de
-  compartir más adelante.
+- **`3.png`** (marca sola) queda en `public/` como fuente para regenerar los íconos.
 
 ### F5-5. `calcularLayout` ("▤ Ordenar") + `resolverSuperposiciones` tramo-aware
 Las dos funciones de `layout.ts` seguían recorriendo el árbol **intercambio por intercambio**

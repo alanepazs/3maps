@@ -143,12 +143,10 @@ Sub-tareas:
 - **B5 ✅** — Settings "fuente" (sistema/geist/serif Lora/mono) + "tamaño de texto" (0.8-1.3).
   `FlowCanvas` escala el `font-size` del `<html>` + `--fuente-3maps`. `Markdown.tsx` px → `em`.
   Decisiones B5.
-- **B6 ✅** — Alan subió `public/{logo.png, 3.png}` (ya transparentes). Generados:
-  `src/app/{favicon.ico,icon.png,apple-icon.png}` (marca sobre blanco; Next los linkea con
-  basePath) + `public/logo-mark.png` (watermark del canvas al 5%, hijo de `<ReactFlow>`).
-  `src/model/assets.ts` `rutaAsset()`. Decisiones B6.
-  <!-- notas viejas del concepto, ya no relevantes: -->
-- ~~logo de 3maps + usarlo en la app. **Bloqueado hasta que Alan suba los assets buenos.**~~
+- **B6 ✅** — Alan subió `public/{logo.png, 3.png}` (ya transparentes). Favicon =
+  `src/app/{icon.png, favicon.ico}` (la marca sobre blanco; `icon.png` lo linkea Next con
+  basePath; sin apple-icon). Watermark del canvas = **`logo.png` completo** al 5% de opacidad,
+  hijo de `<ReactFlow>`. `src/model/assets.ts` `rutaAsset()`. Decisiones B6.
   - **Concepto elegido (Alan, 02-09)**: árbol **verde** de tronco/ramas simples (NO "3" — lo
     descartó), copa de **globos de diálogo** naranjas/ámbar (algunos verdes), + wordmark "3maps"
     naranja lowercase debajo. Plano, 3 colores (`#F5A524` ámbar, `#E8590C` naranja quemado,

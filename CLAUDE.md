@@ -2,12 +2,14 @@
 
 **Nombre**: `3maps` — "3" = three = *tree* (árbol), y suena a "maps". Mapas de árbol.
 
-**Logo** (B6, shippeado 03-09): un **árbol verde** de tronco/ramas simples cuya **copa son globos
-de diálogo** naranjas/ámbar (algunos verdes), + wordmark **"3maps"** naranja lowercase = "la
-conversación es un árbol que ramifica". Assets en `public/`: `logo.png` (lockup completo,
-transparente) y `3.png` (la marca sola). Generados: `src/app/{favicon.ico,icon.png,apple-icon.png}`
-(Next los linkea solo, con basePath), `public/logo-mark.png` (la marca, watermark del canvas al
-5% de opacidad detrás de los nodos). Ver decisiones B6.
+**Logo** (B6, shippeado 03-09): un **árbol verde** cuya **copa son globos de diálogo**
+naranjas/ámbar (algunos verdes) + wordmark **"3maps"** naranja lowercase. Assets en `public/`:
+`logo.png` (lockup completo) y `3.png` (la marca sola), ambos transparentes. **Favicon** =
+`src/app/{icon.png, favicon.ico}` (la marca `3.png` sobre blanco — el lockup con texto es
+ilegible a 16px; sin `apple-icon.png` por decisión de Alan). **Watermark** del canvas =
+`logo.png` completo al 5% de opacidad, hijo de `<ReactFlow>` (el `colorMode="dark"` pinta fondo
+opaco). `src/model/assets.ts` `rutaAsset()` (Next no prefija con basePath las URLs de `public/`
+a mano). Ver decisiones B6.
 
 ## Al arrancar una sesión, leé (en este orden)
 

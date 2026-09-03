@@ -34,9 +34,10 @@ src/
     layout.tsx      Root layout. metadata.title = "3maps". <html> con suppressHydrationWarning
                     (por Darkreader). body: `flex h-full flex-col overflow-hidden`. next/font:
                     Geist + Geist_Mono + Lora (`--font-*`; Lora = serif opcional de B5).
-    favicon.ico / icon.png / apple-icon.png   Ícono de la app (B6): la marca del logo (`3.png`)
-                    sobre blanco, cuadrada. Convención de archivos de Next → linkea solo, con
-                    `basePath` en el build de Pages. `.ico` generado con `png-to-ico` (16/32/48).
+    favicon.ico / icon.png   Ícono de la app (B6): la marca (`3.png`) sobre blanco, cuadrada (no el
+                    lockup — ilegible a 16px). Convención de archivos de Next → `icon.png` se linkea
+                    con `basePath` (`/3maps/icon.png` en Pages, el que anda ahí); `favicon.ico`
+                    (`png-to-ico` 16/32/48) para dev/self-host. Sin `apple-icon.png`.
     page.tsx        Renderiza <FlowCanvas /> dentro de <main class="h-dvh w-full overflow-hidden">.
                     `dvh` (no `vh`) para que en móvil encuadre al área visible real, sin scroll.
     globals.css     Tailwind + tokens de color que siguen prefers-color-scheme (dark por defecto
@@ -427,8 +428,8 @@ Props de `<ReactFlow>` que importan:
 - `colorMode="dark"`, `fitView` (+ un `fitView()` extra tras cargar el árbol guardado).
 - `devIndicators.position = "bottom-right"` (next.config) para no tapar la tuerquita.
 - `agentRules: false` (next.config) para que `next dev` no escriba en CLAUDE.md.
-- Hijos: `<Background>` (puntos), watermark del logo (`<div>` con `logo-mark.png`, `z-index:0`,
-  op. 5% — B6), `<Controls>` (+ botón "▤ Ordenar"), `<MiniMap>`, `<ToolbarGrupo>` (B3).
+- Hijos: `<Background>` (puntos), watermark (`<div>` con `logo.png` completo, `z-index:0`, op. 5%
+  — B6), `<Controls>` (+ botón "▤ Ordenar"), `<MiniMap>`, `<ToolbarGrupo>` (B3).
 
 ## IA (model/ia.ts)
 
