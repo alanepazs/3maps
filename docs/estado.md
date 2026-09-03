@@ -16,9 +16,10 @@ push a `main`). Repo `github.com/alanepazs/3maps`, local `D:\IA\3maps`.
   conversación (slider en "Lienzo"). **Cambio solo de vista, cero migración.** Detalle por
   sub-tarea: `docs/historia.md` "Fase 5"; el porqué: `decisiones.md` F5-0..F5-6.
   - F5-0..F5-6 ✅ y **pusheado** (incl. F5-4c/5/6).
-  - **F5-4c**: el `⌄` de un click y el cursor de resize — F5-0/F5-4b no los cerraron, reproducidos
-    en Chrome real con CDP (el pane no los reproduce). `tragarClickSintetico` traga por target
-    (`.react-flow__pane` / `[data-cierra-al-click]`); la manija de resize salió del `overflow-hidden`.
+  - **El `⌄` de un click**: la manija de resize salió del `overflow-hidden` (F5-4c). El swallower
+    global de click (`tragarClickSintetico`) se reemplazó por **pointer capture**
+    (`arrastrarConCaptura` en `gestos.ts`) — el `click` sintético post-drag va a la manija, no al
+    pane. Adiós carrera, adiós doble-click (decisiones B3-b, 03-09).
   - **F5-6**: `BranchTranscript` → `PanelConversacion`; "⧉ Copiar"/"⬇ Guardar" en CADA respuesta
     del panel. **"globo" → "tramo" NO se hizo** (dos términos útiles: globo = nodo visual,
     tramo = cadena de datos).

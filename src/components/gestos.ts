@@ -1,43 +1,46 @@
 "use client";
 
-// Tras soltar un drag de resize (manija ◢ del globo o borde del panel) el
-// navegador dispara un `click` sintético. Si ese click cae sobre el **fondo del
-// lienzo** (`.react-flow__pane`) o el **backdrop del panel**, deselecciona el
-// globo o cierra el panel sin que el usuario lo haya pedido. Hay que tragarse
-// **ese** click — y solo ese.
+// Arrastre con **pointer capture**. Al capturar el puntero en `handle`, el
+// navegador re-dirige a `handle` todos los eventos siguientes del puntero —
+// incluido el `click` sintético que dispara al soltar un drag. Sin capture ese
+// `click` cae sobre lo que quede debajo del cursor (el fondo del lienzo → el
+// globo se deselecciona; el backdrop del panel → el panel se cierra).
 //
-// F5-4c: antes se distinguía "sintético" de "real" por TIEMPO (ventana de 150ms
-// desde que se armaba). Era frágil: un click real y rápido sobre otro control
-// (el `⌄` del composer, un botón del toolbar) caía dentro de la ventana y se
-// perdía → "el `⌄` pide doble clic" (F5-0 y F5-4b no lo terminaron de resolver).
-// Ahora el discriminante es DÓNDE cae el click: se traga solo si el `target` es
-// exactamente el fondo del lienzo o un backdrop marcado con `data-cierra-al-click`.
-// Un click sobre cualquier botón/textarea/nodo pasa intacto.
-const SELECTOR_DESCARTABLE = ".react-flow__pane, [data-cierra-al-click]";
-
-export function tragarClickSintetico(): void {
-  const desarmar = () => {
-    window.removeEventListener("click", tragar, true);
-    clearTimeout(backstop);
+// Reemplaza al viejo `tragarClickSintetico` (un swallower global de `click` en
+// `window`, armado tras cada resize). Era frágil: distinguir el click sintético
+// "malo" del click real del usuario sobre otro control (el `⌄` del composer, un
+// botón) nunca terminó de funcionar — F5-0, F5-4b, F5-4c y otra vuelta más.
+//
+// `handle` debería además llevar `onClick={(e) => e.stopPropagation()}` por si
+// el `click` reencaminado igual burbujea hasta un handler de arriba.
+export function arrastrarConCaptura(
+  e: { currentTarget: Element; pointerId: number },
+  onMove: (ev: PointerEvent) => void,
+  onEnd: () => void,
+): void {
+  const handle = e.currentTarget;
+  const id = e.pointerId;
+  try {
+    handle.setPointerCapture(id);
+  } catch {
+    // puntero ya inactivo (raro) — el drag sigue por los listeners de window
+  }
+  const move = (ev: PointerEvent) => {
+    if (ev.pointerId === id) onMove(ev);
   };
-  const tragar = (ev: MouseEvent) => {
-    const t = ev.target as Element | null;
-    // `matches`, no `closest`: los nodos viven DENTRO de `.react-flow__pane`, y
-    // un click sobre el contenido de un nodo no debe tragarse. El click que
-    // deselecciona / cierra tiene como target el elemento de fondo en sí.
-    if (t && typeof t.matches === "function" && t.matches(SELECTOR_DESCARTABLE)) {
-      ev.stopPropagation();
-      ev.preventDefault();
-      desarmar();
+  const fin = (ev: PointerEvent) => {
+    if (ev.pointerId !== id) return;
+    window.removeEventListener("pointermove", move);
+    window.removeEventListener("pointerup", fin);
+    window.removeEventListener("pointercancel", fin);
+    try {
+      handle.releasePointerCapture(id);
+    } catch {
+      /* ya liberado */
     }
-    // Un click que NO cae en el fondo (p. ej. el sintético sobre la manija, o un
-    // click real sobre otro control) se deja pasar y NO desarma: el sintético
-    // "malo" sobre el fondo puede llegar justo después. El backstop corta igual.
+    onEnd();
   };
-  // Si el puntero no generó ningún click sintético, desarmar y listo.
-  const backstop = setTimeout(
-    () => window.removeEventListener("click", tragar, true),
-    400,
-  );
-  window.addEventListener("click", tragar, { capture: true });
+  window.addEventListener("pointermove", move);
+  window.addEventListener("pointerup", fin);
+  window.addEventListener("pointercancel", fin);
 }

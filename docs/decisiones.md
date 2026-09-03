@@ -1056,7 +1056,8 @@ Spec completa y decisiones de alcance en `tasks/T16-spec.md`. Lo no obvio de la 
 > no cambió, no hubo migración.**
 
 ### F5-0. El swallower de click post-resize se comía cualquier click
-Ver F3-8 (actualizado) — `components/gestos.ts` `tragarClickSintetico()`.
+Ver F3-8 — `components/gestos.ts`. **Obsoleto**: el swallower global (`tragarClickSintetico`) se
+reemplazó por pointer capture en **B3-b** (03-09). Dejó de ser una carrera.
 
 ### F5-1. Un nodo del canvas = un TRAMO (cadena `main`), no un intercambio
 - **`calcularTramos(arbol)`** (`intercambio.ts`): agrupa cada cadena maximal de `rama: "main"`
@@ -1176,6 +1177,27 @@ anteriores mintieron.
     Las `NodeToolbar` ya se portalean, no las afecta.
   - Verificado (CDP): `cursor: nwse-resize` desde 4px por fuera de la esquina hacia adentro; ya no
     hay banda muerta con `grab`.
+
+### B3-b (03-09). El `⌄` de un click, versión final: pointer capture (adiós `tragarClickSintetico`)
+El `⌄` **volvió a pedir doble click** (reporte de Alan). F5-4c redujo el swallower global de
+`click` a un discriminante por target, pero seguía siendo frágil: un listener de `click` en
+`window`, armado tras cada resize, es una carrera contra el click real del usuario.
+
+- **Fix real**: `gestos.ts` pasa de `tragarClickSintetico()` (swallower) a
+  **`arrastrarConCaptura(e, onMove, onEnd)`** — hace `handle.setPointerCapture(e.pointerId)` al
+  empezar el drag. El pointer capture re-dirige a `handle` **todos** los eventos siguientes del
+  puntero, **incluido el `click` sintético** que el navegador dispara al soltar → ese click ya no
+  cae sobre `.react-flow__pane` (deselección) ni sobre el backdrop del panel (cierre). Cero
+  listeners globales, cero heurística. Es el patrón estándar para "click después de drag".
+- La manija del globo (`MessageNode`) y del panel (`PanelConversacion`) ya llevan
+  `onClick={(e) => e.stopPropagation()}` como segunda barrera (si el click reencaminado igual
+  burbujea).
+- Se borra `[data-cierra-al-click]` del backdrop del panel y todo `tragarClickSintetico`.
+- Verificado en el pane: resize del globo (con `setPointerCapture` que tira en eventos sintéticos
+  → cae a los listeners de `window`, el drag igual redimensiona) + `⌄ ocultar` **togglea en un
+  click**; el globo queda seleccionado. El `click` reencaminado real lo confirma Alan en Chrome
+  (el pane no dispara `setPointerCapture` con eventos no confiables).
+- **Revertir**: volvés al swallower global y a que el `⌄` pida doble click cada dos por tres.
 
 ### F5-5. `calcularLayout` ("▤ Ordenar") + `resolverSuperposiciones` tramo-aware
 Las dos funciones de `layout.ts` seguían recorriendo el árbol **intercambio por intercambio**

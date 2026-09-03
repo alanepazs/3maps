@@ -18,7 +18,7 @@ import {
 } from "@xyflow/react";
 
 import { COLOR_GLOBO_HEX } from "./colores";
-import { tragarClickSintetico } from "./gestos";
+import { arrastrarConCaptura } from "./gestos";
 import LimiteError from "./LimiteError";
 import Markdown from "./Markdown";
 import { NodeActionsContext } from "./nodeActions";
@@ -226,27 +226,25 @@ export default function MessageNode({
       const startW = rect.width / zoom;
       const startH = rect.height / zoom;
       let ultimoT: Tamano | undefined;
-      const onMove = (ev: PointerEvent) => {
-        const w = Math.min(
-          TAMANO_MAX.w,
-          Math.max(TAMANO_MIN.w, startW + (ev.clientX - startX) / zoom),
-        );
-        const h = Math.min(
-          TAMANO_MAX.h,
-          Math.max(TAMANO_MIN.h, startH + (ev.clientY - startY) / zoom),
-        );
-        ultimoT = { w: Math.round(w), h: Math.round(h) };
-        setDrag(ultimoT);
-      };
-      const onUp = () => {
-        window.removeEventListener("pointermove", onMove);
-        window.removeEventListener("pointerup", onUp);
-        if (ultimoT) resizeNode(id, ultimoT.w, ultimoT.h);
-        setDrag(null);
-        tragarClickSintetico();
-      };
-      window.addEventListener("pointermove", onMove);
-      window.addEventListener("pointerup", onUp);
+      arrastrarConCaptura(
+        e,
+        (ev) => {
+          const w = Math.min(
+            TAMANO_MAX.w,
+            Math.max(TAMANO_MIN.w, startW + (ev.clientX - startX) / zoom),
+          );
+          const h = Math.min(
+            TAMANO_MAX.h,
+            Math.max(TAMANO_MIN.h, startH + (ev.clientY - startY) / zoom),
+          );
+          ultimoT = { w: Math.round(w), h: Math.round(h) };
+          setDrag(ultimoT);
+        },
+        () => {
+          if (ultimoT) resizeNode(id, ultimoT.w, ultimoT.h);
+          setDrag(null);
+        },
+      );
     },
     [getZoom, id, resizeNode],
   );
@@ -462,6 +460,7 @@ export default function MessageNode({
         <div
           onPointerDown={onResizeStart}
           onDoubleClick={resetTamano}
+          onClick={(e) => e.stopPropagation()}
           title={
             tamano
               ? "Arrastrá para redimensionar · doble clic para volver al tamaño automático"

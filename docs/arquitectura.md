@@ -147,19 +147,22 @@ src/
                         Rehacer" → PUNTA (`data.intercambios.at(-1).id`); "🗑 Eliminar" → cabeza
                         (= el tramo + sub-ramas). Manija ◢ para redimensionar a mano (F3-8): al
                         soltar → `resizeNode` (NodeActionsContext) → `.md` (`ancho/alto` de la
-                        CABEZA). `tragarClickSintetico()` tras soltar (F5-0). El root del nodo NO
+                        CABEZA); el drag usa `arrastrarConCaptura` (pointer capture) → el `click`
+                        sintético post-drag va a la manija, no al pane (B3-b). El root del nodo NO
                         recorta (`relative text-sm`); la tarjeta visible es un hijo `absolute
                         inset-0` con `overflow-hidden rounded-md border`; la manija ◢ cuelga fuera
                         de ese recorte, `-bottom-1 -right-1` (F5-4c).
                         La transcripción sale a `CuerpoTramo` (`memo` por `rev`/`readOnly`) → mover
                         el globo no re-parsea el markdown (B8, decisiones F5-7). Auto-scroll del
                         stream con `useLayoutEffect` + ref `autoScroll` (B9).
-    gestos.ts           `tragarClickSintetico()` — tras soltar un resize, traga el `click` sintético
-                        SOLO si su `target` es `.react-flow__pane` o `[data-cierra-al-click]` (el
-                        backdrop del panel) — deselección / cierre no deseados. Un click sobre
-                        cualquier otra cosa (botón, nodo, textarea) pasa intacto. Backstop 400ms.
-                        F5-4c (antes: heurística por tiempo, F5-0/F5-4b — leakeaba y el `⌄` pedía
-                        doble click). Lo usan `MessageNode` y `PanelConversacion`.
+    gestos.ts           `arrastrarConCaptura(e, onMove, onEnd)` — arrastre de resize con
+                        `handle.setPointerCapture(e.pointerId)`. El capture re-dirige a `handle`
+                        todos los eventos siguientes del puntero, incluido el `click` sintético
+                        post-drag → no cae sobre `.react-flow__pane` (deselección) ni sobre el
+                        backdrop del panel (cierre). Reemplaza al viejo `tragarClickSintetico`
+                        (swallower global de `click`, frágil — F5-0/F5-4b/F5-4c y otra vuelta;
+                        B3-b). Lo usan `MessageNode` y `PanelConversacion` (sus manijas además
+                        llevan `onClick` con `stopPropagation` de segunda barrera).
     (vista.ts borrado en F5-4 — el "expandir/colapsar" del globo se reemplazó por el alto
      configurable. La clave `localStorage["3maps:vista"]` quedó muerta.)
     Markdown.tsx        <Markdown>{texto}</Markdown> — react-markdown con estilos compactos para el

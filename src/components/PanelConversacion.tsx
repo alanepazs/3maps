@@ -13,7 +13,7 @@ import {
 import type { BranchKind } from "./Composer";
 import Markdown from "./Markdown";
 import { ANCHO_PANEL_MAX_FRAC, ANCHO_PANEL_MIN } from "./settings";
-import { tragarClickSintetico } from "./gestos";
+import { arrastrarConCaptura } from "./gestos";
 import {
   dataUrl,
   descargarAdjunto,
@@ -137,19 +137,15 @@ export default function PanelConversacion({
         side === "right" ? window.innerWidth - ev.clientX : ev.clientX;
       return Math.min(max, Math.max(ANCHO_PANEL_MIN, Math.round(crudo)));
     };
-    let ultimo = width ?? ANCHO_PANEL_MIN;
-    const onMove = (ev: PointerEvent) => {
-      ultimo = calc(ev);
-      if (panelRef.current) panelRef.current.style.width = `${ultimo}px`;
-    };
-    const onUp = () => {
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
-      onResize?.(ultimo);
-      tragarClickSintetico(); // si no, el click post-drag cierra el panel
-    };
-    window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerup", onUp);
+    let ancho = width ?? ANCHO_PANEL_MIN;
+    arrastrarConCaptura(
+      e,
+      (ev) => {
+        ancho = calc(ev);
+        if (panelRef.current) panelRef.current.style.width = `${ancho}px`;
+      },
+      () => onResize?.(ancho),
+    );
   };
 
   useEffect(() => {
@@ -276,10 +272,6 @@ export default function PanelConversacion({
 
   return (
     <div
-      // `data-cierra-al-click`: el swallower de `gestos.ts` se traga el click
-      // sintético post-resize del borde si cae sobre este backdrop (si no,
-      // cerraría el panel recién redimensionado).
-      data-cierra-al-click
       className={`absolute inset-0 z-20 flex bg-black/40 ${
         side === "left" ? "justify-start" : "justify-end"
       }`}
