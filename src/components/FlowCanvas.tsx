@@ -112,6 +112,7 @@ import {
 import { useSesion } from "./useSesion";
 import MapaSwitcher from "./MapaSwitcher";
 import {
+  acotarMensajes,
   armarContexto,
   estimarTokens,
   intercambiosRelevantes,
@@ -717,13 +718,19 @@ function Flow() {
           ? intercambiosRelevantes(viejos, preguntaActual)
           : [];
 
-        const mensajes = armarContexto(
+        let mensajes = armarContexto(
           base,
           nodeId,
           { ventana },
           resumen,
           relevantes,
         );
+        // WebLLM: ventana de 4096 tokens (prompt+respuesta). Recortar duro a
+        // ~9k chars (~2.2k tokens) para que SIEMPRE entre, aunque las respuestas
+        // del hilo sean enormes. El modelo ve historia truncada, no falla.
+        if (configIA.proveedor === "webllm") {
+          mensajes = acotarMensajes(mensajes, 9000);
+        }
 
         let ultimoRender = 0;
         const sistema = settings.systemPrompt.trim() || undefined;

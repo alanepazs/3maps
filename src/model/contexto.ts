@@ -272,6 +272,32 @@ export function armarContexto(
   return normalizar(crudo);
 }
 
+// Recorta una lista de mensajes para que quepa en `maxChars` (~maxChars/4 tokens).
+// El ÚLTIMO mensaje (la pregunta actual) queda intacto; del resto se van cortando
+// los MÁS VIEJOS primero (recorte del cuerpo, no se borran). Para modelos de
+// ventana chica (WebLLM = 4096). Si ni la pregunta actual entra, se recorta ella
+// también (última chance).
+export function acotarMensajes(mensajes: Mensaje[], maxChars: number): Mensaje[] {
+  if (mensajes.length === 0) return mensajes;
+  const total = (ms: Mensaje[]) => ms.reduce((s, m) => s + m.texto.length, 0);
+  const out = mensajes.map((m) => ({ ...m }));
+  const ultimo = out.length - 1;
+  for (let i = 0; i < ultimo && total(out) > maxChars; i++) {
+    const sobra = total(out) - maxChars;
+    const corte = Math.max(0, out[i].texto.length - sobra - 40);
+    if (corte < out[i].texto.length) {
+      out[i].texto = out[i].texto.slice(0, corte) + " […]";
+    }
+  }
+  if (total(out) > maxChars) {
+    const room = Math.max(200, maxChars - total(out.slice(0, ultimo)));
+    if (out[ultimo].texto.length > room) {
+      out[ultimo].texto = out[ultimo].texto.slice(0, room) + " […]";
+    }
+  }
+  return out;
+}
+
 // Estimación local y barata de cuántos tokens ocupa una lista de mensajes:
 // ~4 caracteres por token (regla de dedo de los tokenizers BPE para inglés y
 // español; error típico ±20 %). No baja ningún tokenizer real — sirve para
