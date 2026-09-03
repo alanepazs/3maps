@@ -584,26 +584,39 @@ function Flow() {
         }),
       );
 
-      // Watchdog: si la llamada se queda "estática" (el stream se abre pero no
-      // llega nada, o el server deja la conexión colgada) hay que cortarla — si
-      // no, el globo queda `pending` para siempre sin forma de reintentar.
+      // Watchdog. Corta si la llamada se queda "estática" — si no, el globo queda
+      // `pending` para siempre. Por FASES (antes un solo INACTIVIDAD_MS que se
+      // comía el tiempo de `resumir()` y mataba la respuesta antes de arrancar,
+      // sobre todo con 2 ramificaciones a la vez → el proveedor free se satura):
+      //   - resumir/armado: solo el tope duro TOTAL_MS.
+      //   - respuesta esperando el 1er token: gracia larga PRIMER_BYTE_MS (un
+      //     free tier saturado tarda en empezar).
+      //   - respuesta ya en curso: INACTIVIDAD_MS entre chunks.
       const INACTIVIDAD_MS = 45_000;
-      const TOTAL_MS = 180_000;
-      let ultimaActividad = Date.now();
+      const PRIMER_BYTE_MS = 90_000;
+      const TOTAL_MS = 240_000;
       const inicio = Date.now();
+      let ultimaActividad = Date.now();
+      let esperandoRespuesta = false; // ya se llamó a `llamarIA`
+      let recibioAlgo = false; // llegó ≥1 chunk
       let cortadoPorTimeout = false;
       // Lo último que llegó, sin throttle — para conservarlo si el usuario corta.
       let ultimoAcumulado = "";
       const watchdog = window.setInterval(() => {
         const ahora = Date.now();
-        if (
-          ahora - ultimaActividad > INACTIVIDAD_MS ||
-          ahora - inicio > TOTAL_MS
-        ) {
+        if (ahora - inicio > TOTAL_MS) {
           cortadoPorTimeout = true;
           ctrl.abort();
+          return;
         }
-      }, 5_000);
+        if (esperandoRespuesta) {
+          const limite = recibioAlgo ? INACTIVIDAD_MS : PRIMER_BYTE_MS;
+          if (ahora - ultimaActividad > limite) {
+            cortadoPorTimeout = true;
+            ctrl.abort();
+          }
+        }
+      }, 3_000);
 
       try {
         const ventana = settings.ventanaContexto;
@@ -624,18 +637,27 @@ function Flow() {
           resumen = resumenCacheRef.current.get(clave) ?? null;
           if (!resumen) {
             resumenDesdeCache = false;
+            // Tope propio para la llamada oculta: si tarda demasiado (proveedor
+            // saturado), se sigue SIN resumen (el tramo viejo va completo) en
+            // vez de hacer esperar al usuario. `ctrl.signal` la cancela igual
+            // ante STOP / TOTAL_MS.
+            const RESUMEN_MS = 50_000;
             try {
               const rs = await resumir(configIA, viejos, {
                 usarProxy: settings.usarProxyIA,
+                signal: AbortSignal.any([
+                  ctrl.signal,
+                  AbortSignal.timeout(RESUMEN_MS),
+                ]),
               });
               resumen = rs.texto;
               resumenUso = rs.uso;
               resumenCacheRef.current.set(clave, resumen);
             } catch {
-              resumen = null;
+              resumen = null; // sin resumen: `armarContexto` manda el tramo entero
             }
           }
-          ultimaActividad = Date.now(); // el resumen puede tardar
+          ultimaActividad = Date.now(); // el resumen pudo tardar
         }
 
         // Rescate por palabras clave (fase 2.5 liviana): si el tramo viejo se
@@ -656,12 +678,16 @@ function Flow() {
 
         let ultimoRender = 0;
         const sistema = settings.systemPrompt.trim() || undefined;
+        // Recién ahora arranca el watchdog de inactividad de la respuesta.
+        esperandoRespuesta = true;
+        ultimaActividad = Date.now();
         const { texto, uso } = await llamarIA(configIA, mensajes, {
           signal: ctrl.signal,
           sistema,
           usarProxy: settings.usarProxyIA,
           onTexto: (_delta, acumulado) => {
             const ahora = Date.now();
+            recibioAlgo = true;
             ultimaActividad = ahora;
             ultimoAcumulado = acumulado;
             if (ahora - ultimoRender < 80) return;
@@ -744,13 +770,10 @@ function Flow() {
           // Timeout del watchdog → error reintentable (deja la respuesta parcial
           // a la vista). Abort "normal" (el usuario re-disparó / borró) → nada.
           if (cortadoPorTimeout) {
-            setArbol((a) =>
-              conError(
-                a,
-                nodeId,
-                "La respuesta se cortó (no llegó nada en 45s, seguramente el proveedor está saturado). Reintentá.",
-              ),
-            );
+            const msg = recibioAlgo
+              ? "La respuesta se cortó a la mitad (el proveedor dejó de enviar). Reintentá — se retoma desde cero."
+              : "El proveedor no respondió a tiempo (suele pasar en el tier gratuito cuando está saturado, o con varias ramas a la vez). Reintentá en un momento, o probá otro proveedor en ⚙️.";
+            setArbol((a) => conError(a, nodeId, msg));
           }
           return;
         }

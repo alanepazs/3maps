@@ -198,7 +198,9 @@ Fase 5 (moverse entre globos + ramificar al costado, no hacia abajo). Ya está h
 - **DeepSeek, GPT** con key real (pagos — cuando Alan tenga saldo). Los 4 free
   (Gemini/Groq/OpenRouter/HuggingFace) ya están probados; lista de proveedores cerrada en 7.
 - Panel/globo redimensionable + fixes de móvil (3.11/3.13) en celu.
-- Que el watchdog de 45s no corte un stream lento-pero-vivo.
+- Que el watchdog de 45s no corte un stream lento-pero-vivo. **Mejorado 03-09** (F3-6): watchdog
+  por fases — resumir bajo TOTAL_MS (240s) + su propio corte a 50s; 1er token 90s; entre chunks
+  45s. Falta que Alan confirme en Chrome que ya no se corta con 2 ramas.
 - ⚠️ LWW de títulos usa el reloj del navegador: relojes MUY desfasados podrían elegir mal.
 
 ## Issues conocidos / gotchas

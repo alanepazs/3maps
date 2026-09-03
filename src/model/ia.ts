@@ -283,7 +283,7 @@ export async function llamarIA(
 export async function resumir(
   config: ConfigIA,
   intercambios: { pregunta: string; respuesta: string | null }[],
-  opts: { usarProxy?: boolean } = {},
+  opts: { usarProxy?: boolean; signal?: AbortSignal } = {},
 ): Promise<{ texto: string; uso: UsoTokens | null }> {
   const texto = intercambios
     .map(
@@ -303,7 +303,7 @@ export async function resumir(
           texto,
       },
     ],
-    { maxTokens: 2048, usarProxy: opts.usarProxy },
+    { maxTokens: 2048, usarProxy: opts.usarProxy, signal: opts.signal },
   );
   return { texto: r.texto, uso: r.uso };
 }

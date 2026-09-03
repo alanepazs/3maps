@@ -633,10 +633,20 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
 - **Por qué**: al ramificar varias ramas en paralelo, si el stream de un proveedor se queda
   colgado (conexión abierta sin datos), `reader.read()` no resuelve nunca → el globo queda
   `pending` para siempre y NO hay botón de reintentar (solo los globos en `error` lo tienen).
-- **Watchdog** en `responder` (FlowCanvas): un `setInterval` cada 5s aborta el `AbortController`
-  si no hubo actividad de `onTexto` en 45s, o si el total pasó 180s. Al abortar por timeout →
-  `conError` con un mensaje reintentable (la respuesta parcial queda a la vista, `conError` no la
-  borra). Un abort "normal" (el usuario re-disparó / borró el globo) sigue siendo silencioso.
+- **Watchdog** en `responder` (FlowCanvas): un `setInterval` cada 3s aborta el `AbortController`.
+  **Por FASES (03-09, reporte de Alan: "se cortan a la mitad, más con 2 ramificaciones a la vez")**:
+  el watchdog viejo era un solo `INACTIVIDAD_MS` de 45s que arrancaba a contar antes de `resumir()`
+  — con 2 ramas en paralelo desde un punto profundo, `resumir()` (la llamada OCULTA) tarda >45s en
+  un free tier saturado y el watchdog mataba la respuesta **antes de que arrancara**, con el
+  mensaje falso "no llegó nada en 45s". Ahora:
+  - **resumir / armado del contexto**: solo el tope duro `TOTAL_MS` (240s). Además `resumir()`
+    tiene su propio corte a 50s (`AbortSignal.any([ctrl.signal, AbortSignal.timeout(50s)])`) → si
+    tarda, se sigue **sin resumen** (el tramo viejo va entero) en vez de hacer esperar.
+  - **respuesta esperando el 1er token**: gracia larga `PRIMER_BYTE_MS` (90s) — un free tier
+    saturado tarda en empezar, sobre todo con varias llamadas a la vez.
+  - **respuesta ya en curso**: `INACTIVIDAD_MS` (45s) entre chunks.
+  `resumir()` ahora recibe `signal` (antes no) → STOP y el `TOTAL_MS` la cancelan de verdad.
+  Mensajes de error distintos según si llegó algo o no.
 - **`pending` ahora SÍ se persiste** (`pendiente: 1` en el frontmatter). Al recargar o al bajar
   de la nube, `parseMarkdown` convierte un `pendiente` sin terminar en un `error` reintentable
   (sin pisar un error real). Antes: `pending` no se guardaba → una llamada cortada al cerrar la
