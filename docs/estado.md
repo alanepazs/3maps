@@ -152,12 +152,10 @@ Concepto elegido (02-09: árbol verde + copa de globos de diálogo naranjas/verd
 
 ### Ideas sin empezar
 - **T15 "doc card"** — tarjeta compacta cuando la respuesta ES un documento.
-- **Auto-switch de proveedor** al pegar una key de otro (hoy `avisoFormatoKey` solo avisa).
-- **Export/import** `.zip` de la carpeta de `.md` + File System Access API (spec §7). Ahora con
-  T16, los adjuntos van en el `.md` → un export tiene que incluirlos.
-- **2.5b — embeddings** (`transformers.js`) si `intercambiosRelevantes` (match por palabras) se
-  queda corto. Misma firma → drop-in.
-- Modelos locales tipo Ollama (spec §10) — descartado (mixed-content/CORS + el celu no llega a
+- **Export/import `.zip`** de la carpeta de `.md` + File System Access API (con adjuntos — spec §7).
+- **Embeddings 2.5b** (`transformers.js`) si `intercambiosRelevantes` (match por palabras) se
+  queda corto — misma firma, drop-in.
+- Modelos locales tipo Ollama (spec §10) — **descartado** (mixed-content/CORS + el celu no llega a
   `localhost`); los modelos abiertos ya se sirven online vía Groq/OpenRouter/etc.
 
 ### Prueba real pre-existente pendiente

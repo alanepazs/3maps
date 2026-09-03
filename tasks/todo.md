@@ -131,17 +131,18 @@ Sub-tareas:
   no hex. `Intercambio.color` en la cabeza del tramo → `.md` (`color:`) → sync/compartir gratis.
   Punto en la esquina del header + fila de swatches en el `NodeToolbar`. `conColor` / `colorNode`.
   12 asserts + e2e. Decisiones B1.
-- **B2** — optimizar la ventana de contexto a medida que el mapa crece (resumen más agresivo,
-  ventana adaptativa). ❓ **Pregunta pendiente**: ¿es mucho el gasto de tokens que hace el
-  `resumir()` con keys gratuitas? Medir antes de tocar.
-- **B3** — multi-select move: al mover varios globos seleccionados, uno solo queda con envión.
-  Decidir: quitarle el envión a ese, o dárselo a todos (probablemente ninguno — el envión de
-  grupo no aporta y confunde). Toca `useNodeInertia` / `onSelectionDrag*`.
+- **B2 ✅** — contexto adaptativo = **resumen incremental**: `resumir()` acepta `resumenPrevio`;
+  `responder` busca el prefijo cacheado más largo y resume solo la cola nueva. Se descartó la
+  "ventana que se achica". Instrumentación `[b2]` temporal (sacar tras confirmar). Decisiones §10.
+- **B3 ✅** — multi-select move: envión **parejo a todo el grupo** (`FlowCanvas` arma el grupo con
+  `getNodes().filter(selected)`); selección se mantiene tras mover; **toolbar compartida**
+  `ToolbarGrupo` con >1 seleccionado. Decisiones B3.
 - **B4 ✅** — Setting "grosor de líneas" (edges). `Settings.grosorLineas` (1-5, def 1.5), slider en
   "Lienzo". Se aplica como CSS var `--xy-edge-stroke-width` en el contenedor del canvas (no pasa
   por `arbolAVista`). En vivo, persiste. Decisiones B4.
-- **B5** — Settings "fuente" (un puñado de las conocidas) + "tamaño de texto". Toca `globals.css`
-  / `layout.tsx` (cargar las fuentes) + `Settings`.
+- **B5 ✅** — Settings "fuente" (sistema/geist/serif Lora/mono) + "tamaño de texto" (0.8-1.3).
+  `FlowCanvas` escala el `font-size` del `<html>` + `--fuente-3maps`. `Markdown.tsx` px → `em`.
+  Decisiones B5.
 - **B6** — logo de 3maps + usarlo en la app. **Bloqueado hasta que Alan suba los assets buenos.**
   - **Concepto elegido (Alan, 02-09)**: árbol **verde** de tronco/ramas simples (NO "3" — lo
     descartó), copa de **globos de diálogo** naranjas/ámbar (algunos verdes), + wordmark "3maps"
@@ -154,10 +155,10 @@ Sub-tareas:
     (cuadrado, recortado ajustado, ~512px) · `apple-touch-icon.png` (180×180).
   - **Cuando estén**: `<link rel="icon">` en `app/layout.tsx` (metadata `icons`) + fondo del canvas
     con `logo-mark` en opacidad baja (`<div>` de fondo o `<Background>` custom de React Flow).
-- **B7** — "zoom de lupa": los globos reaccionan al mouse y se agrandan al pasar por encima
-  (hover → `transform: scale()` o lente). Setting en la pestaña "Lienzo": `Settings.hoverZoom`
-  (on/off). Cuidar: no romper el drag/selección, ni el layout de los vecinos (¿scale desde el
-  centro? ¿z-index alto en hover?).
+- **B7 ✅** — "zoom de lupa": `Settings.hoverZoom` (def off). CSS puro
+  `:root[data-hoverzoom="on"] .react-flow__node:hover .globo-root { scale(1.35); z-index }`
+  (transform → no corre a los vecinos), excluye `.dragging`/`.selected`. `data-hoverzoom` en el
+  `<html>` (evita mismatch). `onResizeStart` → `offsetWidth`. Decisiones B7.
 - **B8 ✅** — arrastrar un globo iba a ~5 fps. `Markdown` = `memo` + `useMemo`; la transcripción
   del `MessageNode` sale a `CuerpoTramo` (`memo` por `rev`/`readOnly`). 0 mutaciones DOM en
   zoom+drag. Decisiones F5-7.
@@ -168,9 +169,17 @@ Sub-tareas:
   entera del panel (`left-full ml-1`); el 1er intento con `mr-4` en `scrollRef` dejaba la flecha
   `›` de nav flotando en un hueco (reporte de Alan) → descartado. Decisiones F5-7.
 
+## Fixes de robustez de la llamada a la IA (03-09) — ✅
+- **Watchdog por fases** (F3-6): resumir bajo `TOTAL_MS` (240s) + corte propio a 50s; 1er token
+  `PRIMER_BYTE_MS` (90s); entre chunks `INACTIVIDAD_MS` (45s). `resumir()` recibe `signal`.
+- **Respuesta truncada** por `MAX_TOKENS`/`length` → `RespuestaIA.truncada` → nota "incompleta"
+  sin borrar el texto; el render muestra respuesta + aviso juntas.
+- **`⌄` de un click** → pointer capture (`arrastrarConCaptura`), adiós swallower global.
+- **Mismatch de hidratación** con ajustes guardados → `sVista = hidratado ? settings : DEFAULT`.
+- **Auto-switch de proveedor** ✅ — `proveedorDeLaKey`; botón "Cambiar a X" cuando pegás una key
+  de otro proveedor (conserva la key cruzando el cambio). Decisiones §8c.
+
 ## Fuera de este plan (más adelante — pre-existentes)
-- Auto-switch de proveedor al pegar una key de otro
 - Export/import `.zip` de la carpeta de `.md` + File System Access API
 - Embeddings 2.5b (`transformers.js`) si el match por palabras se queda corto
 - Fixes de móvil (3.13) en Chrome real / celu
-- Watchdog de 45s que no corte un stream lento-pero-vivo

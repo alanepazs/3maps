@@ -241,6 +241,13 @@ distinto a lo que dicen los blogs y hasta `ListModels`. Lo aprendido, ya en el c
      ahora aplica a los dos, y `commit()` lo dispara al guardar cualquier key.
 - **Límite**: `listarModelos` confirma que la key **autentica**, no que tenga **saldo**. El saldo
   de Claude sigue apareciendo recién al mandar la primera pregunta (400 `credit balance too low`).
+- **Auto-switch de proveedor (03-09)**: `proveedorDeLaKey(key)` en `ia.ts` — devuelve el proveedor
+  solo si el prefijo es **inequívoco** (`sk-ant-`→claude, `sk-or-`→openrouter, `AQ.`/`AIza`→gemini,
+  `gsk_`→groq, `hf_`→huggingface; `sk-…` a secas = deepseek|gpt → `null`, ambiguo). Si pegás en el
+  campo una key de OTRO proveedor, `SettingsPanel` muestra un botón **"Cambiar a X"** (en vez del
+  aviso ámbar plano). No cambia solo: un click. La key pegada **se conserva** cruzando el cambio
+  (`keyTrasCambio` state → el re-sync del borrador la usa en vez de la guardada). Antes solo
+  avisaba "no parece una key de X" y había que cambiar el `<select>` a mano y re-pegar.
 - **Revertir** (sacar el chequeo de formato): vuelven los "pegué la key de Gemini en Claude" que
   solo se descubrían tras una llamada fallida.
 

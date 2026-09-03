@@ -180,6 +180,19 @@ export const GUIA_API_KEY: Record<
   },
 };
 
+// A qué proveedor pertenece una key, por su prefijo — solo si es INEQUÍVOCO.
+// `sk-` a secas (DeepSeek / GPT) es ambiguo → null. Lo usa `SettingsPanel` para
+// ofrecer "cambiar de proveedor" cuando pegás una key que claramente es de otro.
+export function proveedorDeLaKey(key: string): Proveedor | null {
+  const k = key.trim();
+  if (/^sk-ant-/.test(k)) return "claude";
+  if (/^sk-or-/.test(k)) return "openrouter";
+  if (/^(AQ\.|AIza)/.test(k)) return "gemini";
+  if (/^gsk_/.test(k)) return "groq";
+  if (/^hf_/.test(k)) return "huggingface";
+  return null; // `sk-…` sin más = deepseek | gpt, no se puede distinguir
+}
+
 // Chequeo de formato local (gratis, sin red). No confirma que la key funcione
 // ni que tenga saldo — solo detecta typos y keys pegadas en el proveedor
 // equivocado (ej: una key de Gemini en el campo de Claude). Devuelve un aviso

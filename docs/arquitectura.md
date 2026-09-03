@@ -251,8 +251,10 @@ src/
                         persisten con el botón "Guardar" (o Enter); el proveedor aplica al toque y
                         TRAE la key guardada de ese proveedor (una por proveedor, ver configIA.ts).
                         "✓ Guardado" / "Cambios sin guardar" /
-                        "✓ Aplicado" (2s tras guardar) / "Borrar key". Aviso ámbar bajo el input
-                        si el formato de la key no pinta del proveedor (avisoFormatoKey, local).
+                        "✓ Aplicado" (2s tras guardar) / "Borrar key". Bajo el input: si la key
+                        pegada es INEQUÍVOCAMENTE de otro proveedor (`proveedorDeLaKey`), botón
+                        "Cambiar a X" (conserva la key cruzando el cambio, `keyTrasCambio`); si no
+                        pinta pero es ambigua, aviso ámbar plano (`avisoFormatoKey`).
                         Botón "verificar key y ver sus modelos" → listarModelos() (gratis, no gasta
                         tokens; 401 si la key es inválida). El modelo se elige por CHIPS clickeables
                         bajo el input = SOLO los que la key puede usar (tras verificar; antes: sin
@@ -473,7 +475,9 @@ Props de `<ReactFlow>` que importan:
   401 keys `AQ.` / 403 / 404 / 429 / 503).
 - `avisoFormatoKey(proveedor, key)` — chequeo de formato local (sin red, sin tokens): regex del
   prefijo (`sk-ant-` / `AQ.`|`AIza` / `sk-`). Devuelve aviso o null. Solo caza typos y provider
-  equivocado. Lo usa `SettingsPanel` para el aviso ámbar. Ver decisiones §8c.
+  equivocado. `proveedorDeLaKey(key)` — el proveedor de una key si el prefijo es inequívoco
+  (`sk-…` a secas = ambiguo → null). Los usa `SettingsPanel`: aviso ámbar / botón "Cambiar a X".
+  Ver decisiones §8c.
 - `listarModelos(config)` → `listarModelosClaude` (`client.models.list()`) / `listarModelosGemini`
   (`GET /v1beta/models`, filtra `GEMINI_MODELOS_MUERTOS` + image/tts/embedding…) /
   `listarModelosOpenAICompat` (`GET /models` vía proxy). **No gasta tokens**; 401 si la key es

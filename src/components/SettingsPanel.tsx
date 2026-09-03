@@ -22,6 +22,7 @@ import {
   PROVEEDORES_DISPONIBLES,
   PROVEEDORES_VIA_PROXY,
   avisoFormatoKey,
+  proveedorDeLaKey,
   listarModelos,
   type ConfigIA,
 } from "@/model/ia";
@@ -228,9 +229,13 @@ export default function SettingsPanel({
     k: keyGuardada,
     m: modeloGuardado,
   });
+  // Key que hay que conservar cruzando un cambio de proveedor (auto-switch: pegaste
+  // una key de otro proveedor y aceptaste cambiar → no perderla en el re-sync).
+  const [keyTrasCambio, setKeyTrasCambio] = useState<string | null>(null);
   if (snap.p !== proveedor || snap.k !== keyGuardada || snap.m !== modeloGuardado) {
     setSnap({ p: proveedor, k: keyGuardada, m: modeloGuardado });
-    setKeyDraft(keyGuardada);
+    setKeyDraft(keyTrasCambio ?? keyGuardada);
+    if (keyTrasCambio !== null) setKeyTrasCambio(null);
     setModeloDraft(modeloGuardado);
     setModelos(null);
     setErrorModelos(null);
@@ -246,6 +251,11 @@ export default function SettingsPanel({
   // Chequeo de formato local (gratis): avisa si la key no pinta del proveedor
   // elegido. No garantiza que funcione — para eso, "ver modelos".
   const avisoFormato = avisoFormatoKey(proveedor, keyDraft);
+
+  // La key pegada es INEQUÍVOCAMENTE de otro proveedor → ofrecer cambiar.
+  const provDeLaKey = proveedorDeLaKey(keyDraft);
+  const sugerirCambio =
+    provDeLaKey !== null && provDeLaKey !== proveedor ? provDeLaKey : null;
 
   const verModelos = async () => {
     if (!keyEfectiva || cargandoModelos) return;
@@ -286,9 +296,11 @@ export default function SettingsPanel({
     if (keyDraft.trim()) void verModelos();
   };
 
-  const cambiarProveedor = (p: Proveedor) => {
+  const cambiarProveedor = (p: Proveedor, conservarKey?: string) => {
     // Aplica al toque. Trae la key guardada de ese proveedor (si probaste otro
     // y volvés, no hay que re-pegarla). Los borradores se re-sincronizan solos.
+    // `conservarKey`: la del auto-switch (pegaste una key de `p` estando en otro).
+    if (conservarKey) setKeyTrasCambio(conservarKey);
     onCambiarProveedorIA(p);
   };
 
@@ -622,11 +634,24 @@ export default function SettingsPanel({
                   : "border-white/15 focus:border-sky-400"
               }`}
             />
-            {avisoFormato && (
+            {sugerirCambio ? (
+              <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-amber-400">
+                Esta key parece de {NOMBRE_PROVEEDOR[sugerirCambio]}.
+                <button
+                  type="button"
+                  onClick={() =>
+                    cambiarProveedor(sugerirCambio, keyDraft.trim())
+                  }
+                  className="rounded border border-amber-400/50 px-1.5 py-0.5 font-medium text-amber-300 hover:bg-amber-400/10"
+                >
+                  Cambiar a {NOMBRE_PROVEEDOR[sugerirCambio]}
+                </button>
+              </span>
+            ) : avisoFormato ? (
               <span className="mt-1 block text-[11px] text-amber-400">
                 {avisoFormato}
               </span>
-            )}
+            ) : null}
           </label>
 
           {/* Mini-guía para gente que nunca sacó una API key. */}
