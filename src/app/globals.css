@@ -83,27 +83,27 @@ body {
 /* Zoom de lupa al pasar el mouse por un globo (B7). Se agranda `.globo-root`
    (transform → NO afecta el layout: los vecinos no se corren) y sube el z-index
    del nodo. Gateado por `data-hoverzoom="on"` en el `<html>` (lo pone FlowCanvas
-   en un effect → sin mismatch de hidratación). Excluye:
-   - `.dragging` — React Flow marca así el nodo que se arrastra (no queremos que
-     salte de tamaño a mitad del drag);
-   - `.selected` — con el globo seleccionado están el anillo azul + la toolbar;
-     agrandarlo encima molesta.
+   en un effect → sin mismatch de hidratación). Excluye solo `.dragging` (React
+   Flow lo marca en el nodo que se arrastra — no queremos que salte de tamaño a
+   mitad del drag). Aplica también a `.selected` (Alan lo pidió): el anillo azul
+   está dentro de `.globo-root` y escala con él; la NodeToolbar de RF queda un
+   toque desalineada mientras dura el hover, se banca.
    Solo en dispositivos con hover real (`@media (hover: hover)`) → en touch no
    aplica (el "hover" queda pegado tras tocar). */
 @media (hover: hover) {
   :root[data-hoverzoom="on"]
-    .react-flow__node:not(.dragging):not(.selected):hover {
+    .react-flow__node:not(.dragging):hover {
     z-index: 50;
   }
   :root[data-hoverzoom="on"]
-    .react-flow__node:not(.dragging):not(.selected):hover
+    .react-flow__node:not(.dragging):hover
     .globo-root {
     transform: scale(1.35);
     transition: transform 0.12s ease;
   }
   @media (prefers-reduced-motion: reduce) {
     :root[data-hoverzoom="on"]
-      .react-flow__node:not(.dragging):not(.selected):hover
+      .react-flow__node:not(.dragging):hover
       .globo-root {
       transition: none;
     }

@@ -34,6 +34,12 @@ import {
   type ConfigIA,
 } from "@/model/ia";
 import { hayWebGPU, nivelEquipoWebLLM } from "@/model/webllm";
+import {
+  PROMPTS_PRESET,
+  leerPromptsMios,
+  guardarPromptMio,
+  borrarPromptMio,
+} from "@/model/prompts";
 import type { Proveedor } from "@/model/intercambio";
 import { haySupabase } from "@/model/supabase";
 import { useSesion } from "./useSesion";
@@ -375,6 +381,206 @@ export default function SettingsPanel({
     : modelosKey;
   const mostrarFiltro = modelosKey.length > 12;
 
+  // ── Prompts de sistema: presets + guardados + cargar archivo ──────────────
+  const [promptsMios, setPromptsMios] = useState(() => leerPromptsMios());
+  // Nombre del prompt guardado que está cargado ahora (para ofrecer borrarlo).
+  const promptMioActual =
+    promptsMios.find((p) => p.texto === settings.systemPrompt)?.nombre ?? null;
+
+  const cargarPromptSel = (v: string) => {
+    if (v.startsWith("P:")) {
+      const p = PROMPTS_PRESET.find((x) => x.nombre === v.slice(2));
+      if (p) onChange({ systemPrompt: p.texto });
+    } else if (v.startsWith("M:")) {
+      const p = promptsMios.find((x) => x.nombre === v.slice(2));
+      if (p) onChange({ systemPrompt: p.texto });
+    }
+  };
+  const guardarPromptActual = () => {
+    const t = settings.systemPrompt.trim();
+    if (!t) return;
+    const nombre = window.prompt("Nombre para este prompt:", promptMioActual ?? "");
+    if (nombre?.trim()) setPromptsMios(guardarPromptMio(nombre, t));
+  };
+  const borrarPromptActual = () => {
+    if (promptMioActual) setPromptsMios(borrarPromptMio(promptMioActual));
+  };
+  const cargarPromptArchivo = (file: File | undefined) => {
+    if (!file) return;
+    const r = new FileReader();
+    r.onload = () =>
+      onChange({ systemPrompt: String(r.result ?? "").slice(0, 8000) });
+    r.readAsText(file);
+  };
+
+  const bloqueSystemPrompt = (
+    <label className="block text-sm">
+      <span className="text-white/70">Instrucción de sistema (opcional)</span>
+      <textarea
+        value={settings.systemPrompt}
+        onChange={(e) => onChange({ systemPrompt: e.target.value })}
+        rows={3}
+        placeholder="Ej: Respondé en español, conciso. Ecuaciones entre $$ … $$."
+        className="mt-1.5 w-full resize-y rounded border border-white/15 bg-white/5 px-2 py-1 text-xs text-white/90 placeholder:text-white/30 focus:border-sky-500 focus:outline-none"
+      />
+      <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px]">
+        <select
+          value=""
+          onChange={(e) => {
+            cargarPromptSel(e.target.value);
+            e.currentTarget.value = "";
+          }}
+          className="rounded border border-white/15 bg-neutral-950 px-1.5 py-1 text-white/70 focus:border-sky-400 focus:outline-none"
+        >
+          <option value="">Cargar un prompt…</option>
+          <optgroup label="De 3maps">
+            {PROMPTS_PRESET.map((p) => (
+              <option key={p.nombre} value={`P:${p.nombre}`}>
+                {p.nombre}
+              </option>
+            ))}
+          </optgroup>
+          {promptsMios.length > 0 && (
+            <optgroup label="Míos">
+              {promptsMios.map((p) => (
+                <option key={p.nombre} value={`M:${p.nombre}`}>
+                  {p.nombre}
+                </option>
+              ))}
+            </optgroup>
+          )}
+        </select>
+        <button
+          type="button"
+          onClick={guardarPromptActual}
+          disabled={!settings.systemPrompt.trim()}
+          className="rounded border border-white/15 px-1.5 py-1 text-white/70 enabled:hover:bg-white/10 disabled:opacity-40"
+        >
+          💾 Guardar
+        </button>
+        <label className="cursor-pointer rounded border border-white/15 px-1.5 py-1 text-white/70 hover:bg-white/10">
+          📁 Archivo
+          <input
+            type="file"
+            accept=".txt,.md,text/plain,text/markdown"
+            className="hidden"
+            onChange={(e) => cargarPromptArchivo(e.target.files?.[0])}
+          />
+        </label>
+        {promptMioActual && (
+          <button
+            type="button"
+            onClick={borrarPromptActual}
+            className="rounded border border-red-400/40 px-1.5 py-1 text-red-300 hover:bg-red-500/20"
+          >
+            🗑 “{promptMioActual}”
+          </button>
+        )}
+      </div>
+      <span className="mt-1 block text-[11px] text-white/40">
+        Se antepone a cada pregunta. No afecta el resumen del contexto viejo. Los
+        prompts guardados quedan en este navegador.
+      </span>
+    </label>
+  );
+
+  const bloqueCompartir = onCompartir ? (
+    <>
+      <hr className="my-3 border-white/10" />
+      <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-white/40">
+        Compartir
+      </p>
+      <label className="block text-sm">
+        <span className="text-white/70">Título (opcional)</span>
+        <input
+          type="text"
+          value={compTitulo}
+          onChange={(e) => setCompTitulo(e.target.value)}
+          placeholder="Se usa la primera pregunta si lo dejás vacío"
+          className="mt-1 w-full rounded border border-white/15 bg-neutral-950 px-2 py-1.5 text-sm placeholder:text-white/30 focus:border-sky-400 focus:outline-none"
+        />
+      </label>
+      <button
+        type="button"
+        onClick={hacerCompartir}
+        disabled={compartiendo}
+        className="mt-2 rounded bg-sky-500 px-3 py-1.5 text-xs font-medium text-white enabled:hover:bg-sky-400 disabled:opacity-40"
+      >
+        {compartiendo ? "subiendo…" : "Compartir este árbol"}
+      </button>
+      {compError && (
+        <p className="mt-1.5 text-[11px] text-red-400">{compError}</p>
+      )}
+      {compLink && (
+        <div className="mt-2">
+          <input
+            type="text"
+            readOnly
+            value={compLink}
+            onFocus={(e) => e.currentTarget.select()}
+            className="w-full rounded border border-white/15 bg-neutral-950 px-2 py-1.5 text-[11px] text-white/80"
+          />
+          <button
+            type="button"
+            onClick={() => {
+              void navigator.clipboard.writeText(compLink);
+              setCopiado(true);
+              window.setTimeout(() => setCopiado(false), 2000);
+            }}
+            className="mt-1 rounded border border-white/15 px-2 py-1 text-[11px] text-white/70 hover:bg-white/10"
+          >
+            {copiado ? "✓ copiado" : "copiar link"}
+          </button>
+          <p className="mt-1 text-[11px] text-white/40">
+            Cualquiera con el link ve una copia de este árbol (solo lectura). El
+            link no caduca.
+            {!usuario &&
+              " Para poder despublicarlo, iniciá sesión antes de compartir."}
+          </p>
+        </div>
+      )}
+      {usuario && mios !== null && (
+        <div className="mt-3">
+          <p className="mb-1 text-[11px] text-white/40">
+            Mis árboles compartidos ({mios.length})
+          </p>
+          {mios.length === 0 ? (
+            <p className="text-[11px] text-white/40">
+              Todavía no compartiste ninguno con esta cuenta.
+            </p>
+          ) : (
+            <ul className="space-y-1">
+              {mios.map((a) => (
+                <li
+                  key={a.slug}
+                  className="flex items-center gap-2 rounded border border-white/10 bg-white/5 px-2 py-1 text-[11px]"
+                >
+                  <a
+                    href={a.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="min-w-0 flex-1 truncate text-white/80 hover:text-white hover:underline"
+                    title={a.titulo}
+                  >
+                    {a.titulo || a.slug}
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => void hacerDespublicar(a.slug)}
+                    disabled={despublicando === a.slug}
+                    className="shrink-0 rounded border border-red-400/40 px-1.5 py-0.5 text-red-300 hover:bg-red-500/20 disabled:opacity-40"
+                  >
+                    {despublicando === a.slug ? "…" : "despublicar"}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </>
+  ) : null;
+
   return (
     <div ref={contenedorRef} className="absolute left-4 top-4 z-10">
       <button
@@ -582,22 +788,7 @@ export default function SettingsPanel({
                 />
               </label>
 
-              <label className="mt-3 block text-sm">
-                <span className="text-white/70">
-                  Instrucción de sistema (opcional)
-                </span>
-                <textarea
-                  value={settings.systemPrompt}
-                  onChange={(e) => onChange({ systemPrompt: e.target.value })}
-                  rows={3}
-                  placeholder="Ej: Respondé en español, conciso. Ecuaciones entre $$ … $$."
-                  className="mt-1.5 w-full resize-y rounded border border-white/15 bg-white/5 px-2 py-1 text-xs text-white/90 placeholder:text-white/30 focus:border-sky-500 focus:outline-none"
-                />
-                <span className="mt-1 block text-[11px] text-white/40">
-                  Se antepone a cada pregunta. No afecta el resumen del contexto
-                  viejo.
-                </span>
-              </label>
+              {bloqueCompartir}
             </>
           )}
 
@@ -1108,105 +1299,8 @@ export default function SettingsPanel({
             </>
           )}
 
-          {onCompartir && (
-            <>
-              <hr className="my-3 border-white/10" />
-              <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-white/40">
-                Compartir
-              </p>
-              <label className="block text-sm">
-                <span className="text-white/70">Título (opcional)</span>
-                <input
-                  type="text"
-                  value={compTitulo}
-                  onChange={(e) => setCompTitulo(e.target.value)}
-                  placeholder="Se usa la primera pregunta si lo dejás vacío"
-                  className="mt-1 w-full rounded border border-white/15 bg-neutral-950 px-2 py-1.5 text-sm placeholder:text-white/30 focus:border-sky-400 focus:outline-none"
-                />
-              </label>
-              <button
-                type="button"
-                onClick={hacerCompartir}
-                disabled={compartiendo}
-                className="mt-2 rounded bg-sky-500 px-3 py-1.5 text-xs font-medium text-white enabled:hover:bg-sky-400 disabled:opacity-40"
-              >
-                {compartiendo ? "subiendo…" : "Compartir este árbol"}
-              </button>
-              {compError && (
-                <p className="mt-1.5 text-[11px] text-red-400">{compError}</p>
-              )}
-              {compLink && (
-                <div className="mt-2">
-                  <input
-                    type="text"
-                    readOnly
-                    value={compLink}
-                    onFocus={(e) => e.currentTarget.select()}
-                    className="w-full rounded border border-white/15 bg-neutral-950 px-2 py-1.5 text-[11px] text-white/80"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void navigator.clipboard.writeText(compLink);
-                      setCopiado(true);
-                      window.setTimeout(() => setCopiado(false), 2000);
-                    }}
-                    className="mt-1 rounded border border-white/15 px-2 py-1 text-[11px] text-white/70 hover:bg-white/10"
-                  >
-                    {copiado ? "✓ copiado" : "copiar link"}
-                  </button>
-                  <p className="mt-1 text-[11px] text-white/40">
-                    Cualquiera con el link ve una copia de este árbol (solo
-                    lectura). El link no caduca.
-                    {!usuario &&
-                      " Para poder despublicarlo, iniciá sesión antes de compartir."}
-                  </p>
-                </div>
-              )}
-
-              {usuario && mios !== null && (
-                <div className="mt-3">
-                  <p className="mb-1 text-[11px] text-white/40">
-                    Mis árboles compartidos ({mios.length})
-                  </p>
-                  {mios.length === 0 ? (
-                    <p className="text-[11px] text-white/40">
-                      Todavía no compartiste ninguno con esta cuenta.
-                    </p>
-                  ) : (
-                    <ul className="space-y-1">
-                      {mios.map((a) => (
-                        <li
-                          key={a.slug}
-                          className="flex items-center gap-2 rounded border border-white/10 bg-white/5 px-2 py-1 text-[11px]"
-                        >
-                          <a
-                            href={a.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="min-w-0 flex-1 truncate text-white/80 hover:text-white hover:underline"
-                            title={a.titulo}
-                          >
-                            {a.titulo || a.slug}
-                          </a>
-                          <button
-                            type="button"
-                            onClick={() => void hacerDespublicar(a.slug)}
-                            disabled={despublicando === a.slug}
-                            className="shrink-0 rounded border border-red-400/40 px-1.5 py-0.5 text-red-300 hover:bg-red-500/20 disabled:opacity-40"
-                          >
-                            {despublicando === a.slug
-                              ? "…"
-                              : "despublicar"}
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              )}
-            </>
-          )}
+          <hr className="my-3 border-white/10" />
+          {bloqueSystemPrompt}
           </>
           )}
         </div>
