@@ -195,9 +195,16 @@ CORS necesita `OLLAMA_ORIGINS`; Chrome PNA puede bloquear public→localhost; el
      contestar `Access-Control-Allow-Private-Network: true` y **Ollama NO manda ese header**.
      Según la versión de Chrome eso es un **prompt de permiso** ("acceder a dispositivos de tu red
      local") que se acepta una vez, o un bloqueo duro. No se pudo verificar en el pane (bloquea
-     todo cross-origin a localhost con `ERR_BLOCKED_BY_CLIENT`); **queda pendiente probarlo en el
-     Chrome real de Alan**. Si Chrome lo bloquea sin prompt, no hay workaround liviano (confirma
-     por qué v2 va con WebLLM). Nada de esto aplica en `npm run dev` (origin ya es localhost).
+     todo cross-origin a localhost con `ERR_BLOCKED_BY_CLIENT`). **Verificado por Alan en su Chrome
+     real (03-09)**: `alanepazs.github.io` → Ollama local **anduvo** — reconoció texto, PDF e
+     imagen. (Con la config de Alan el PNA de Chrome no bloqueó; en otra versión/perfil podría
+     salir el prompt.) Nada de esto aplica en `npm run dev` (origin ya es localhost).
+- **Gotcha — visión local lenta dispara un falso "no hubo respuesta del servidor"**: qwen2.5vl:7b
+  con una imagen (~2800 tokens de prompt visual) en la GPU de Alan puede tardar bastante en el 1er
+  token / entre chunks → cruza el watchdog de `FlowCanvas.responder` (`PRIMER_BYTE_MS` 90s /
+  `INACTIVIDAD_MS` 45s / `TOTAL_MS` 240s, decisiones F3-6) y el globo marca error aunque la
+  respuesta **sí** está llegando, solo lenta. Pendiente: subir esos topes cuando el proveedor
+  activo es `ollama` (local, sin la lógica de "free tier saturado" que motivó los valores).
 - **Revertir**: sacás `"ollama"` de `Proveedor` + los `Record`, el `case`, `llamarOllama` /
   `listarModelosOllama` / `procesarStreamOpenAICompat` (re-inline en `llamarOpenAICompat`), y el
   branch `esOllama` de `SettingsPanel`. Una config vieja con `activo: "ollama"` cae al default.

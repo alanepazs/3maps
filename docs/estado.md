@@ -183,10 +183,12 @@ solo encabezado en el globo. Solo vista. Decisiones "Doc card". Falta prueba de 
 - **DeepSeek, GPT** con key real (pagos — cuando Alan tenga saldo). Los 4 free
   (Gemini/Groq/OpenRouter/HuggingFace) + Ollama local (`npm run dev`) ya están probados; cloud
   cerrada en 7.
-- **Ollama desde el sitio publicado (HTTPS)**: `OLLAMA_ORIGINS` ya está seteado en la máquina de
-  Alan y el CORS verifica por `curl`, PERO falta probar en el **Chrome real** si el Private
-  Network Access de Chrome deja pasar `https://…github.io → http://localhost:11434` (prompt de
-  permiso o bloqueo). Ver decisiones §7f. En dev no aplica.
+- **Ollama desde el sitio publicado (HTTPS)** ✅ — Alan lo probó en su Chrome (03-09):
+  `alanepazs.github.io` → Ollama local reconoció texto, PDF e imagen. `OLLAMA_ORIGINS` seteado +
+  el PNA de Chrome no bloqueó. Ver decisiones §7f.
+  ⚠️ **Pendiente (chico)**: la visión local lenta (imagen, ~2800 tok) cruza el watchdog de
+  `FlowCanvas.responder` → falso "no hubo respuesta del servidor" aunque la respuesta llega.
+  Subir `PRIMER_BYTE_MS`/`INACTIVIDAD_MS`/`TOTAL_MS` cuando el proveedor es `ollama`.
 - Panel/globo redimensionable + fixes de móvil (3.11/3.13) en celu.
 - ⚠️ LWW de títulos usa el reloj del navegador: relojes MUY desfasados podrían elegir mal.
 
@@ -210,6 +212,8 @@ solo encabezado en el globo. Solo vista. Decisiones "Doc card". Falta prueba de 
 - **Llamada IA que se corta**: watchdog **por fases** (F3-6: resumir 240s + corte propio 50s;
   1er token 90s; entre chunks 45s) + `pendiente: 1` persistido + "↻ Rehacer". Respuesta cortada
   por `MAX_TOKENS`/`length` → `RespuestaIA.truncada` → nota "incompleta" sin borrar el texto.
+  ⚠️ **Con `ollama` + imagen** esos topes se quedan cortos (la visión local es lenta) → falso
+  error aunque la respuesta llega. Pendiente subirlos para `ollama`. Ver decisiones §7f.
 
 ## Cómo correr / verificar / publicar
 
