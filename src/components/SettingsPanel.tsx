@@ -581,17 +581,35 @@ export default function SettingsPanel({
     </>
   ) : null;
 
+  // Toggle rápido de tema (botón al lado de la ⚙️). Alterna claro↔oscuro; para
+  // "según el sistema" está el select adentro del panel. Base: cualquier valor
+  // que no sea "claro" (oscuro o sistema) → el botón lleva a "claro".
+  const temaClaro = settings.tema === "claro";
+  const alternarTema = () =>
+    onChange({ tema: temaClaro ? "oscuro" : "claro" });
+
   return (
     <div ref={contenedorRef} className="absolute left-4 top-4 z-10">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-label="Ajustes"
-        aria-expanded={open}
-        className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-surface/95 text-lg shadow-lg backdrop-blur transition-colors hover:bg-surface-2"
-      >
-        ⚙️
-      </button>
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-label="Ajustes"
+          aria-expanded={open}
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-surface/95 text-lg shadow-lg backdrop-blur transition-colors hover:bg-surface-2"
+        >
+          ⚙️
+        </button>
+        <button
+          type="button"
+          onClick={alternarTema}
+          aria-label={temaClaro ? "Cambiar a tema oscuro" : "Cambiar a tema claro"}
+          title={temaClaro ? "Cambiar a tema oscuro" : "Cambiar a tema claro"}
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-surface/95 text-base shadow-lg backdrop-blur transition-colors hover:bg-surface-2"
+        >
+          {temaClaro ? "🌙" : "☀️"}
+        </button>
+      </div>
 
       {open && (
         <div className="mt-2 max-h-[calc(100dvh-18rem)] w-72 overflow-y-auto overscroll-contain rounded-lg border border-line bg-surface/95 p-3 text-text shadow-xl backdrop-blur sm:max-h-[80vh]">

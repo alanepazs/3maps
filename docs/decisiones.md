@@ -1662,7 +1662,10 @@ componente, con checkpoints).
   para el **`colorMode` de `<ReactFlow>`** (`temaResuelto === "claro" ? "light" : "dark"`).
   Imperativo post-montaje, igual patrón que `data-hoverzoom` / `--fuente-3maps`.
 - **`.scroll-fino`** dejó de usar `rgba(255,255,255,.25)` hardcodeado → `var(--line-strong)`.
-- **Toggle**: `select` "Tema" en ⚙️ → pestaña Lienzo (junto a Fuente / Tamaño).
+- **Toggle**: `select` "Tema" (3 opciones incl. "sistema") en ⚙️ → pestaña Lienzo + **botón
+  rápido ☀️/🌙 al lado de la ⚙️** (alterna claro↔oscuro; para "sistema" está el select). El
+  botón vive en `SettingsPanel` (tiene `settings`/`onChange`), en un flex-row con la ⚙️.
+  `MapaSwitcher` se corrió de `left-16` a `left-28` para dejarle lugar.
 - Verificado en el pane: `data-theme` en `<html>`, `.react-flow` alterna `light`/`dark`, `body`
   bg y tokens swapean, persiste, "sistema" sigue `prefers-color-scheme`. tsc + lint verdes.
 - **Revertir**: quitar `Settings.tema` + el effect + el `select`; `colorMode` vuelve a `"dark"`

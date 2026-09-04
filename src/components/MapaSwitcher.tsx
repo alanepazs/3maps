@@ -63,7 +63,7 @@ export default function MapaSwitcher({
   };
 
   return (
-    <div ref={contenedorRef} className="absolute left-16 top-4 z-10">
+    <div ref={contenedorRef} className="absolute left-28 top-4 z-10">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
