@@ -1,27 +1,59 @@
 @import "tailwindcss";
 
+/* ── Tema (B11) ────────────────────────────────────────────────────────────
+   3maps nació dark-only. Tokens semánticos para poder tener también un tema
+   claro. El DEFAULT (bare `:root`) es OSCURO — es la identidad de la app y lo
+   que prerenderiza el server (sin mismatch). El tema claro se activa con
+   `:root[data-theme="claro"]`; `FlowCanvas` pone ese atributo en el `<html>`
+   post-montaje según `settings.tema` (resolviendo "sistema" con `matchMedia`),
+   igual que `data-hoverzoom`.
+   Los tokens de NEUTROS (bg/superficie/borde/texto) swapean; los acentos
+   (sky/amber/emerald/red) por ahora quedan como clases Tailwind directas y se
+   ajustan en la conversión componente-por-componente. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #0a0a0a; /* fondo de página / canvas */
+  --surface: #171717; /* tarjetas, panel, globo */
+  --surface-2: #1f1f1f; /* anidado: inputs, hover */
+  --line: rgba(255, 255, 255, 0.15); /* borde default */
+  --line-strong: rgba(255, 255, 255, 0.3);
+  --text: rgba(255, 255, 255, 0.92); /* texto primario */
+  --text-muted: rgba(255, 255, 255, 0.7); /* secundario */
+  --text-faint: rgba(255, 255, 255, 0.4); /* terciario */
+  /* compat con lo viejo */
+  --background: var(--bg);
+  --foreground: var(--text);
+}
+
+:root[data-theme="claro"] {
+  --bg: #f4f4f3;
+  --surface: #ffffff;
+  --surface-2: #eeeeec;
+  --line: rgba(0, 0, 0, 0.14);
+  --line-strong: rgba(0, 0, 0, 0.28);
+  --text: rgba(0, 0, 0, 0.9);
+  --text-muted: rgba(0, 0, 0, 0.62);
+  --text-faint: rgba(0, 0, 0, 0.42);
+  color-scheme: light;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-text-faint: var(--text-faint);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--bg);
+  color: var(--text);
   /* Familia configurable (B5). `--fuente-3maps` lo setea FlowCanvas sobre
      `<html>` según `settings.fuenteTexto`; sin setear = el stack de siempre.
      El tamaño se controla escalando el `font-size` del `<html>`. */
@@ -32,14 +64,14 @@ body {
    choca visualmente con la manija de resize de la esquina. */
 .scroll-fino {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+  scrollbar-color: var(--line-strong) transparent;
 }
 .scroll-fino::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 .scroll-fino::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.25);
+  background: var(--line-strong);
   border-radius: 4px;
 }
 .scroll-fino::-webkit-scrollbar-track {

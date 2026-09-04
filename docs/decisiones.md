@@ -1641,6 +1641,37 @@ Tres bugs de la prueba de Alan en Chrome (02-09).
 
 ---
 
+### B11. Tema claro — infraestructura (plumbing)
+
+3maps nació dark-only. B11 arma la infra para tener también un tema claro, sin convertir todavía
+los ~470 usos de clases de color hardcodeadas de los componentes (eso va después, componente por
+componente, con checkpoints).
+
+- **`Settings.tema`** (`oscuro` | `claro` | `sistema`, def `oscuro`). Persiste en
+  `3maps:settings` y sincroniza a la nube como el resto.
+- **Tokens semánticos en `globals.css`**: `--bg`, `--surface`, `--surface-2`, `--line`,
+  `--line-strong`, `--text`, `--text-muted`, `--text-faint`. Mapeados en `@theme` →
+  `bg-surface` / `text-text-muted` / `border-line` etc. funcionan como clases Tailwind. El
+  **default (bare `:root`) es OSCURO** — la identidad de la app y lo que prerenderiza el server
+  (sin mismatch de hidratación). El claro se activa con `:root[data-theme="claro"]` (redefine los
+  tokens + `color-scheme: light`). Los **acentos** (sky/amber/emerald/red) NO se tokenizaron —
+  quedan como clases directas y se ajustan en la conversión.
+- **`FlowCanvas` un `useEffect`** (dep `settings.tema`) resuelve `"sistema"` con
+  `matchMedia("(prefers-color-scheme: light)")` (+ listener solo en modo sistema), pone
+  `document.documentElement.dataset.theme = "claro"|"oscuro"` y guarda `temaResuelto` en estado
+  para el **`colorMode` de `<ReactFlow>`** (`temaResuelto === "claro" ? "light" : "dark"`).
+  Imperativo post-montaje, igual patrón que `data-hoverzoom` / `--fuente-3maps`.
+- **`.scroll-fino`** dejó de usar `rgba(255,255,255,.25)` hardcodeado → `var(--line-strong)`.
+- **Toggle**: `select` "Tema" en ⚙️ → pestaña Lienzo (junto a Fuente / Tamaño).
+- Verificado en el pane: `data-theme` en `<html>`, `.react-flow` alterna `light`/`dark`, `body`
+  bg y tokens swapean, persiste, "sistema" sigue `prefers-color-scheme`. tsc + lint verdes.
+- **Estado**: con B11 solo, cambiar a "claro" pinta el canvas (fondo + watermark) pero paneles /
+  globos / composer siguen oscuros hasta la conversión componente-por-componente.
+- **Revertir**: quitar `Settings.tema` + el effect + el `select`; `colorMode` vuelve a `"dark"`
+  fijo. Los tokens de `globals.css` pueden quedar (a escala oscura son los valores de siempre).
+
+---
+
 ## Build / deploy
 
 ### 21. `output: "export"` + `basePath: "/3maps"` **condicional a `NEXT_PUBLIC_PAGES === "1"`**

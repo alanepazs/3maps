@@ -42,6 +42,12 @@ export type Settings = {
   // Zoom de lupa (B7): al pasar el mouse por un globo, se agranda para leerlo.
   // Solo con hover real (no touch). `data-hoverzoom` en el contenedor del canvas.
   hoverZoom: boolean;
+  // Tema visual (B11). "oscuro" = el de siempre (default). "claro" = tema claro.
+  // "sistema" = seguir `prefers-color-scheme`. FlowCanvas resuelve "sistema" con
+  // `matchMedia` y pone `data-theme="claro"|"oscuro"` en el `<html>`; los tokens
+  // semánticos de `globals.css` swapean con ese atributo. También decide el
+  // `colorMode` de <ReactFlow>.
+  tema: "oscuro" | "claro" | "sistema";
 };
 
 export const ANCHO_PANEL_DEFECTO = 460;
@@ -66,6 +72,7 @@ export const DEFAULT_SETTINGS: Settings = {
   fuenteTexto: "sistema",
   escalaTexto: 1,
   hoverZoom: false,
+  tema: "oscuro",
 };
 
 // Familias CSS por opción de `Settings.fuenteTexto` (B5). "sistema" = el stack

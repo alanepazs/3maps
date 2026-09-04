@@ -348,6 +348,11 @@ function Flow() {
   useEffect(() => setHidratado(true), []);
   const sVista = hidratado ? settings : DEFAULT_SETTINGS;
 
+  // B11: tema resuelto ("claro" | "oscuro"). "sistema" se resuelve con
+  // `matchMedia` en el effect de abajo. El default (SSR + 1er render) es
+  // "oscuro" — la identidad de la app y lo que prerenderiza el server.
+  const [temaResuelto, setTemaResuelto] = useState<"claro" | "oscuro">("oscuro");
+
   // Settings que se aplican al `<html>` de forma imperativa post-montaje (sin
   // mismatch de hidratación — el SSR usa los defaults y esto ajusta al valor
   // guardado). No se limpia al desmontar: FlowCanvas vive toda la sesión.
@@ -368,6 +373,26 @@ function Flow() {
     );
     el.dataset.hoverzoom = settings.hoverZoom ? "on" : "off";
   }, [settings.escalaTexto, settings.fuenteTexto, settings.hoverZoom]);
+
+  // B11: tema. Resuelve "sistema" con `matchMedia`, pone `data-theme` en el
+  // `<html>` (los tokens semánticos de globals.css swapean con ese atributo) y
+  // guarda el tema resuelto para el `colorMode` de <ReactFlow>. Se suscribe al
+  // cambio de `prefers-color-scheme` solo en modo "sistema".
+  useEffect(() => {
+    const el = document.documentElement;
+    const mq = window.matchMedia("(prefers-color-scheme: light)");
+    const aplicar = () => {
+      const claro =
+        settings.tema === "claro" ||
+        (settings.tema === "sistema" && mq.matches);
+      el.dataset.theme = claro ? "claro" : "oscuro";
+      setTemaResuelto(claro ? "claro" : "oscuro");
+    };
+    aplicar();
+    if (settings.tema !== "sistema") return;
+    mq.addEventListener("change", aplicar);
+    return () => mq.removeEventListener("change", aplicar);
+  }, [settings.tema]);
 
   // Configuración de la IA (proveedor activo + su API key + modelo). Solo en
   // este navegador. `configIA.ts` guarda una key POR PROVEEDOR, así que cambiar
@@ -1749,7 +1774,9 @@ function Flow() {
           // sin limpiar hijos ni tocar el árbol.
           deleteKeyCode={null}
           nodeDragThreshold={3}
-          colorMode="dark"
+          // B11: sigue al tema (`temaResuelto` lo fija el effect de `data-theme`,
+          // resolviendo "sistema"). En "dark" React Flow pinta fondo opaco.
+          colorMode={temaResuelto === "claro" ? "light" : "dark"}
           minZoom={0.15}
           fitView
           fitViewOptions={fitOpts}

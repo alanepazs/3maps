@@ -16,10 +16,19 @@
 auto-switch de proveedor + export/import `.zip` + doc card + **proveedor Ollama local (§7f)**:
 todo shippeado. `tsc`/`lint`/`build` verde. `https://alanepazs.github.io/3maps/` (deploy automático
 en cada push a `main`). Repo `github.com/alanepazs/3maps`, local `D:\IA\3maps`.
-**En curso**: v2 = modelo local **WebLLM in-browser** (proveedor #9 `webllm`) — rama
-`spike/webllm-build`. Spike de build OK + toda la mecánica armada (UI, adapter, progreso,
-watchdog); **falta la prueba de generación de Alan en Chrome real** (WebGPU + descarga de ~2 GB).
-Spec `tasks/v2-webllm-spec.md`, decisiones §7g.
+**Shippeado desde entonces**: v2 = modelo local **WebLLM in-browser** (proveedor #9 `webllm`,
+mergeado a `main`, probado por Alan: anda lento pero genera). Spec `tasks/v2-webllm-spec.md`,
+decisiones §7g. + detección de equipo para recomendar modelo + topes de contexto para modelos
+chicos (decisiones §10) + carga de prompts (`src/model/prompts.ts`) + limpieza de lint (§27).
+
+**En curso — B11: tema claro.** Fase *plumbing* hecha: `Settings.tema`
+(`oscuro`|`claro`|`sistema`), tokens semánticos en `globals.css` (`--bg`/`--surface`/`--line`/
+`--text`… mapeados a Tailwind), `data-theme` en `<html>` + `colorMode` dinámico de `<ReactFlow>`
+vía effect en `FlowCanvas`, `select` en ⚙️→Lienzo. Verificado en el pane, tsc+lint verdes.
+**Falta**: convertir los ~470 usos de clases de color hardcodeadas, componente por componente
+(SettingsPanel 209, PanelConversacion 104, MessageNode 49, resto ~110), empezando por
+canvas+globos+panel. Con B11 solo, "claro" pinta el canvas pero los paneles siguen oscuros.
+Decisiones B11.
 
 **Lo único que queda son cosas de Alan / diferidas** (ver "Ideas sin empezar" + "Prueba real
 pendiente"): ronda de pruebas en Chrome con keys reales,

@@ -40,8 +40,12 @@ src/
                     (`png-to-ico` 16/32/48) para dev/self-host. Sin `apple-icon.png`.
     page.tsx        Renderiza <FlowCanvas /> dentro de <main class="h-dvh w-full overflow-hidden">.
                     `dvh` (no `vh`) para que en móvil encuadre al área visible real, sin scroll.
-    globals.css     Tailwind + tokens de color que siguen prefers-color-scheme (dark por defecto
-                    en el SO del usuario). `body { font-family: var(--fuente-3maps, Arial…) }` (B5;
+    globals.css     Tailwind + tokens semánticos de tema (B11): `--bg`/`--surface`/`--surface-2`/
+                    `--line`/`--line-strong`/`--text`/`--text-muted`/`--text-faint`, mapeados en
+                    `@theme` (→ `bg-surface`, `text-text-muted`, `border-line`…). Default (bare
+                    `:root`) = OSCURO; `:root[data-theme="claro"]` los redefine. El atributo lo
+                    pone FlowCanvas (effect, dep `settings.tema`, resuelve "sistema" con matchMedia).
+                    `body { font-family: var(--fuente-3maps, Arial…) }` (B5;
                     la var la setea FlowCanvas). Zoom de lupa en hover (B7):
                     `:root[data-hoverzoom="on"] .react-flow__node:hover .globo-root { scale(1.35) }`
                     (excluye solo `.dragging`; sí aplica a `.selected` — Alan lo pidió; `@media (hover:hover)`). `@media
@@ -313,7 +317,8 @@ src/
                         transcriptWidth, usarProxyIA, composerOculto, crecimientoPxPorMensaje (0-24,
                         def 9), crecimientoTope (def 320), grosorLineas (1-5, def 1.5; B4),
                         fuenteTexto ("sistema"|"geist"|"serif"|"mono", def sistema; B5),
-                        escalaTexto (0.8-1.3, def 1; B5), hoverZoom (bool, def false; B7)}.
+                        escalaTexto (0.8-1.3, def 1; B5), hoverZoom (bool, def false; B7),
+                        tema ("oscuro"|"claro"|"sistema", def oscuro; B11)}.
                         `ALTO_BASE_GLOBO` = 108. `FUENTES_TEXTO` (familias CSS), `ESCALA_TEXTO_MIN/MAX`.
                         DEFAULT_SETTINGS, storage key. Los controles (crecimiento, grosor de líneas,
                         fuente, tamaño de texto, zoom de lupa) están en la pestaña "Lienzo".
@@ -467,7 +472,9 @@ Props de `<ReactFlow>` que importan:
 - `selectionKeyCode={null}` y `panActivationKeyCode={null}` — se maneja todo con `spaceHeld`.
 - `deleteKeyCode={null}` — borrar es solo por el botón 🗑 (pasa por `deleteNode`).
 - `nodeDragThreshold={3}` — para que rozar un globo no dispare un arrastre.
-- `colorMode="dark"`, `fitView` (+ un `fitView()` extra tras cargar el árbol guardado).
+- `colorMode={temaResuelto === "claro" ? "light" : "dark"}` (B11; `temaResuelto` lo fija el
+  effect de `data-theme`, resolviendo "sistema" con matchMedia), `fitView` (+ un `fitView()`
+  extra tras cargar el árbol guardado).
 - `devIndicators.position = "bottom-right"` (next.config) para no tapar la tuerquita.
 - `agentRules: false` (next.config) para que `next dev` no escriba en CLAUDE.md.
 - Hijos: `<Background>` (puntos), watermark (`<div>` con `logo.png` completo, `z-index:0`, op. 5%

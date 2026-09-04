@@ -732,6 +732,21 @@ export default function SettingsPanel({
               </label>
 
               <label className="mt-3 block text-sm">
+                <span className="text-white/70">Tema</span>
+                <select
+                  value={settings.tema ?? "oscuro"}
+                  onChange={(e) =>
+                    onChange({ tema: e.target.value as Settings["tema"] })
+                  }
+                  className="mt-1.5 w-full rounded border border-white/15 bg-neutral-950 px-2 py-1 text-sm text-white/80 focus:border-sky-400 focus:outline-none"
+                >
+                  <option value="oscuro">Oscuro</option>
+                  <option value="claro">Claro</option>
+                  <option value="sistema">Según el sistema</option>
+                </select>
+              </label>
+
+              <label className="mt-3 block text-sm">
                 <span className="text-white/70">Fuente</span>
                 <select
                   value={settings.fuenteTexto ?? "sistema"}
