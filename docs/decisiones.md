@@ -1662,11 +1662,11 @@ componente, con checkpoints).
   para el **`colorMode` de `<ReactFlow>`** (`temaResuelto === "claro" ? "light" : "dark"`).
   Imperativo post-montaje, igual patrón que `data-hoverzoom` / `--fuente-3maps`.
 - **`.scroll-fino`** dejó de usar `rgba(255,255,255,.25)` hardcodeado → `var(--line-strong)`.
-- **Control de tema = 2 botones al lado de la ⚙️** (NO hay select en el panel — Alan lo quiso
-  así): `☀️`/`🌙` alterna claro↔oscuro, `🖥️` sigue al sistema. Siempre uno tiene el borde sky
-  (activo): el toggle si el tema es explícito, el `🖥️` si es "sistema". Viven en `SettingsPanel`
-  (tiene `settings`/`onChange`), flex-row con la ⚙️. `MapaSwitcher` se corrió de `left-16` a
-  `left-36` para los 3 botones.
+- **Control de tema = UN botón al lado de la ⚙️** (NO hay select en el panel — Alan lo quiso
+  así): cicla `oscuro → sistema → claro → oscuro`. El ícono muestra el modo ACTUAL
+  (`🌙`/`🖥️`/`☀️`), no la próxima acción; `aria-label`/`title` dicen el modo y a qué cambia.
+  Vive en `SettingsPanel` (tiene `settings`/`onChange`), flex-row con la ⚙️. `MapaSwitcher` se
+  corrió de `left-16` a `left-28`.
 - Verificado en el pane: `data-theme` en `<html>`, `.react-flow` alterna `light`/`dark`, `body`
   bg y tokens swapean, persiste, "sistema" sigue `prefers-color-scheme`. tsc + lint verdes.
 - **Revertir**: quitar `Settings.tema` + el effect + el `select`; `colorMode` vuelve a `"dark"`

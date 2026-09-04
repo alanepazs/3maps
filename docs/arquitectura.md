@@ -271,8 +271,8 @@ src/
                         volver a foco) TRAE cambios del otro dispositivo del mapa abierto — sólo si
                         local está limpio (`arbolRef === sincronizado`), pre-chequea `metaNube`.
                         Devuelve EstadoSync. No corre en modo compartido.
-    MapaSwitcher.tsx    Selector de mapas (fase 3.5): chip arriba a la izquierda (`left-36`, tras
-                        la ⚙️ y los 2 botones de tema).
+    MapaSwitcher.tsx    Selector de mapas (fase 3.5): chip arriba a la izquierda (`left-28`, tras
+                        la ⚙️ y el botón de tema).
                         Lista + ＋ Nuevo + ✎ Renombrar (prompt) + ⬇ Exportar / ⬆ Importar (`.zip`,
                         spec §7) + 🗑 Borrar (se permite el último → crea uno vacío) + 🧹 Empezar de
                         cero (borra todo local+nube, epoch). Cierra al clickear afuera. Props:
@@ -283,10 +283,10 @@ src/
                         Ctrl+Enter ramifica / Shift+Enter salto (F3-10). Botón `⌄` la esconde
                         (`settings.composerOculto`) → queda un botón grande "✎ Escribir" (F3-11).
                         `arbolVacio` → hint + botón "Empezar" (sin "Ramificar").
-    SettingsPanel.tsx   Tuerquita ⚙️ (+ 2 botones al lado — B11: ☀️/🌙 alterna claro↔oscuro,
-                        🖥️ sigue al sistema; borde sky en el activo): ajustes del lienzo
-                        (envión, ventana de contexto) + config de IA. NO hay select de tema
-                        adentro. API key y modelo son BORRADORES (estado local) que se
+    SettingsPanel.tsx   Tuerquita ⚙️ (+ 1 botón al lado — B11: cicla oscuro→sistema→claro; el
+                        ícono 🌙/🖥️/☀️ es el modo actual): ajustes del lienzo (envión, ventana
+                        de contexto) + config de IA. NO hay select de tema adentro. API key y
+                        modelo son BORRADORES (estado local) que se
                         persisten con el botón "Guardar" (o Enter); el proveedor aplica al toque y
                         TRAE la key guardada de ese proveedor (una por proveedor, ver configIA.ts).
                         "✓ Guardado" / "Cambios sin guardar" /

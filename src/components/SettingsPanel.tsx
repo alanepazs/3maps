@@ -581,14 +581,26 @@ export default function SettingsPanel({
     </>
   ) : null;
 
-  // Control de tema, al lado de la ⚙️ (B11): un botón que alterna claro↔oscuro
-  // (☀️/🌙) + un botón "🖥️" para seguir el sistema. Siempre hay exactamente uno
-  // "activo" (borde sky): el toggle si el tema es explícito, el 🖥️ si es
-  // "sistema". No hay select adentro del panel — esto es todo el control.
-  const temaClaro = settings.tema === "claro";
-  const temaSistema = settings.tema === "sistema";
-  const alternarTema = () =>
-    onChange({ tema: temaClaro ? "oscuro" : "claro" });
+  // Control de tema: UN botón al lado de la ⚙️ (B11) que CICLA claro → oscuro →
+  // sistema → claro. El ícono muestra el modo actual (☀️/🌙/🖥️), no la próxima
+  // acción. No hay select adentro del panel — esto es todo el control.
+  const SIGUIENTE_TEMA: Record<Settings["tema"], Settings["tema"]> = {
+    claro: "oscuro",
+    oscuro: "sistema",
+    sistema: "claro",
+  };
+  const ICONO_TEMA: Record<Settings["tema"], string> = {
+    claro: "☀️",
+    oscuro: "🌙",
+    sistema: "🖥️",
+  };
+  const NOMBRE_TEMA: Record<Settings["tema"], string> = {
+    claro: "claro",
+    oscuro: "oscuro",
+    sistema: "según el sistema",
+  };
+  const temaActual = settings.tema ?? "oscuro";
+  const ciclarTema = () => onChange({ tema: SIGUIENTE_TEMA[temaActual] });
 
   const btnBarra =
     "flex h-9 w-9 items-center justify-center rounded-full border bg-surface/95 shadow-lg backdrop-blur transition-colors hover:bg-surface-2";
@@ -607,26 +619,12 @@ export default function SettingsPanel({
         </button>
         <button
           type="button"
-          onClick={alternarTema}
-          aria-label={temaClaro ? "Cambiar a tema oscuro" : "Cambiar a tema claro"}
-          title={temaClaro ? "Cambiar a tema oscuro" : "Cambiar a tema claro"}
-          className={`${btnBarra} text-base ${
-            temaSistema ? "border-line" : "border-sky-400 text-sky-500"
-          }`}
+          onClick={ciclarTema}
+          aria-label={`Tema: ${NOMBRE_TEMA[temaActual]}. Cambiar a ${NOMBRE_TEMA[SIGUIENTE_TEMA[temaActual]]}`}
+          title={`Tema: ${NOMBRE_TEMA[temaActual]} — tocá para cambiar`}
+          className={`${btnBarra} border-line text-base`}
         >
-          {temaClaro ? "🌙" : "☀️"}
-        </button>
-        <button
-          type="button"
-          onClick={() => onChange({ tema: "sistema" })}
-          aria-label="Seguir el tema del sistema"
-          title="Seguir el tema del sistema"
-          aria-pressed={temaSistema}
-          className={`${btnBarra} text-base ${
-            temaSistema ? "border-sky-400 text-sky-500" : "border-line"
-          }`}
-        >
-          🖥️
+          {ICONO_TEMA[temaActual]}
         </button>
       </div>
 
