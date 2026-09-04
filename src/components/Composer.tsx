@@ -57,7 +57,7 @@ export default function Composer({
           onClick={onToggleOculto}
           aria-hidden={!oculto}
           tabIndex={oculto ? 0 : -1}
-          className={`flex items-center gap-2 rounded-full border border-white/15 bg-neutral-900/95 px-6 py-3 text-sm font-medium text-white shadow-xl backdrop-blur transition-colors hover:bg-white/10 ${
+          className={`flex items-center gap-2 rounded-full border border-line bg-surface/95 px-6 py-3 text-sm font-medium text-text shadow-xl backdrop-blur transition-colors hover:bg-surface-2 ${
             oculto ? "pointer-events-auto" : "pointer-events-none"
           }`}
         >
@@ -75,12 +75,12 @@ export default function Composer({
         aria-hidden={oculto}
       >
         <div
-          className={`w-full max-w-2xl rounded-lg border border-white/15 bg-neutral-900/95 p-3 shadow-xl backdrop-blur ${
+          className={`w-full max-w-2xl rounded-lg border border-line bg-surface/95 p-3 shadow-xl backdrop-blur ${
             oculto ? "pointer-events-none" : "pointer-events-auto"
           }`}
         >
           <div className="mb-2 flex items-center justify-between gap-2">
-            <p className="truncate text-xs text-white/50">
+            <p className="truncate text-xs text-text-faint">
               {arbolVacio
                 ? "Escribí tu primera pregunta para empezar el árbol"
                 : activeNodeLabel
@@ -93,7 +93,7 @@ export default function Composer({
               tabIndex={oculto ? -1 : 0}
               title="Esconder el chat"
               aria-label="Esconder el chat"
-              className="-my-1 -mr-1 flex shrink-0 items-center gap-1 rounded px-2.5 py-1.5 text-xs leading-none text-white/45 hover:bg-white/10 hover:text-white/90"
+              className="-my-1 -mr-1 flex shrink-0 items-center gap-1 rounded px-2.5 py-1.5 text-xs leading-none text-text-faint hover:bg-surface-2 hover:text-text"
             >
               <span className="text-sm leading-none">⌄</span> ocultar
             </button>
@@ -104,10 +104,10 @@ export default function Composer({
             onKeyDown={onKeyDown}
             rows={2}
             placeholder="Escribí tu pregunta…"
-            className="w-full resize-none rounded-md border border-white/15 bg-neutral-950 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-sky-400 focus:outline-none"
+            className="w-full resize-none rounded-md border border-line bg-bg px-3 py-2 text-sm text-text placeholder:text-text-faint focus:border-sky-400 focus:outline-none"
           />
           <div className="mt-2 flex items-center justify-between">
-            <span className="text-[11px] text-white/30">
+            <span className="text-[11px] text-text-faint">
               Enter continúa · Ctrl+Enter ramifica · Shift+Enter salto de línea
             </span>
             <div className="flex gap-2">
@@ -116,7 +116,7 @@ export default function Composer({
                   type="button"
                   disabled={!canSend}
                   onClick={() => submit("branch")}
-                  className="rounded-md border border-white/15 px-3 py-1.5 text-sm text-white/90 enabled:hover:bg-white/10 disabled:opacity-40"
+                  className="rounded-md border border-line px-3 py-1.5 text-sm text-text-muted enabled:hover:bg-surface-2 disabled:opacity-40"
                 >
                   ⑂ Ramificar
                 </button>

@@ -285,10 +285,10 @@ export default function PanelConversacion({
       <div
         ref={panelRef}
         style={width ? { width } : undefined}
-        className={`relative flex h-full max-w-full flex-col bg-neutral-950 text-sm shadow-2xl ${
+        className={`relative flex h-full max-w-full flex-col bg-surface text-sm shadow-2xl ${
           width ? "" : "w-full"
         } ${
-          side === "left" ? "border-r border-white/15" : "border-l border-white/15"
+          side === "left" ? "border-r border-line" : "border-l border-line"
         }`}
         onClick={(e) => e.stopPropagation()}
       >
@@ -302,15 +302,15 @@ export default function PanelConversacion({
             // derecho, pero ahí adentro está el scrollbar de la conversación
             // (B10) → se saca 4px afuera del panel (`left-full ml-1`) para que
             // no se pise con el scrollbar ni con la flecha `›` de nav.
-            className={`absolute inset-y-0 z-30 w-3 cursor-ew-resize bg-white/5 hover:bg-sky-400/40 ${
+            className={`absolute inset-y-0 z-30 w-3 cursor-ew-resize bg-line hover:bg-sky-400/40 ${
               side === "right" ? "left-0 -ml-1.5" : "left-full ml-1"
             }`}
           />
         )}
-        <div className="flex items-center justify-between border-b border-white/10 px-4 py-2.5">
-          <span className="font-medium text-white">
+        <div className="flex items-center justify-between border-b border-line px-4 py-2.5">
+          <span className="font-medium text-text">
             Conversación hasta este globo
-            <span className="ml-2 text-xs font-normal text-white/40">
+            <span className="ml-2 text-xs font-normal text-text-faint">
               {intercambios.length} interc.
               {typeof contextoTokens === "number" && (
                 <span
@@ -326,7 +326,7 @@ export default function PanelConversacion({
               <button
                 type="button"
                 onClick={onClose}
-                className="whitespace-nowrap rounded border border-white/15 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
+                className="whitespace-nowrap rounded border border-line px-2 py-1 text-xs text-text-muted hover:bg-surface-2"
               >
                 🗺 Ver mapa
               </button>
@@ -335,7 +335,7 @@ export default function PanelConversacion({
               <button
                 type="button"
                 onClick={onFlipSide}
-                className="rounded px-2 py-1 text-white/60 hover:bg-white/10 hover:text-white"
+                className="rounded px-2 py-1 text-text-faint hover:bg-surface-2 hover:text-text"
                 aria-label={
                   side === "left" ? "Mover a la derecha" : "Mover a la izquierda"
                 }
@@ -349,7 +349,7 @@ export default function PanelConversacion({
             <button
               type="button"
               onClick={onClose}
-              className="rounded px-2 py-1 text-white/60 hover:bg-white/10 hover:text-white"
+              className="rounded px-2 py-1 text-text-faint hover:bg-surface-2 hover:text-text"
               aria-label="Cerrar"
             >
               ✕
@@ -369,10 +369,10 @@ export default function PanelConversacion({
                 type="button"
                 onClick={() => onNavigate(d.id)}
                 aria-label={`Ir a: ${d.label}`}
-                className="group/nav relative flex h-9 w-6 items-center justify-center rounded-md border border-white/15 bg-neutral-900/90 text-lg leading-none text-white/60 shadow-lg hover:bg-white/10 hover:text-white"
+                className="group/nav relative flex h-9 w-6 items-center justify-center rounded-md border border-line bg-surface/90 text-lg leading-none text-text-faint shadow-lg hover:bg-surface-2 hover:text-text"
               >
                 ‹
-                <span className="pointer-events-none absolute left-full ml-1.5 hidden max-w-[14rem] truncate whitespace-nowrap rounded bg-neutral-800 px-2 py-1 text-xs text-white/85 shadow-lg group-hover/nav:block">
+                <span className="pointer-events-none absolute left-full ml-1.5 hidden max-w-[14rem] truncate whitespace-nowrap rounded border border-line bg-surface-2 px-2 py-1 text-xs text-text shadow-lg group-hover/nav:block">
                   {d.label}
                 </span>
               </button>
@@ -387,10 +387,10 @@ export default function PanelConversacion({
                 type="button"
                 onClick={() => onNavigate(d.id)}
                 aria-label={`Ir a: ${d.label}`}
-                className="group/nav relative flex h-9 w-6 items-center justify-center rounded-md border border-white/15 bg-neutral-900/90 text-lg leading-none text-white/60 shadow-lg hover:bg-white/10 hover:text-white"
+                className="group/nav relative flex h-9 w-6 items-center justify-center rounded-md border border-line bg-surface/90 text-lg leading-none text-text-faint shadow-lg hover:bg-surface-2 hover:text-text"
               >
                 ›
-                <span className="pointer-events-none absolute right-full mr-1.5 hidden max-w-[14rem] truncate whitespace-nowrap rounded bg-neutral-800 px-2 py-1 text-xs text-white/85 shadow-lg group-hover/nav:block">
+                <span className="pointer-events-none absolute right-full mr-1.5 hidden max-w-[14rem] truncate whitespace-nowrap rounded border border-line bg-surface-2 px-2 py-1 text-xs text-text shadow-lg group-hover/nav:block">
                   {d.label}
                 </span>
               </button>
@@ -411,10 +411,10 @@ export default function PanelConversacion({
             >
               {ic.pregunta && (
                 <div className="border-l-2 border-sky-400/50 pl-2.5">
-                  <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-sky-300/70">
+                  <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-sky-500">
                     Vos
                   </p>
-                  <div className="whitespace-pre-wrap rounded-md rounded-tl-none bg-sky-500/10 px-3 py-2 text-white">
+                  <div className="whitespace-pre-wrap rounded-md rounded-tl-none bg-sky-500/10 px-3 py-2 text-text">
                     {ic.pregunta}
                   </div>
                   {ic.adjuntos.length > 0 && (
@@ -426,7 +426,7 @@ export default function PanelConversacion({
                             type="button"
                             onClick={() => setVerImagen(a)}
                             title={`${a.nombre} — ver`}
-                            className="overflow-hidden rounded border border-white/15 hover:border-sky-400/60"
+                            className="overflow-hidden rounded border border-line hover:border-sky-400/60"
                           >
                             <img
                               src={dataUrl(a)}
@@ -440,11 +440,11 @@ export default function PanelConversacion({
                             type="button"
                             onClick={() => descargarAdjunto(a)}
                             title={`Descargar ${a.nombre}`}
-                            className="flex items-center gap-1 rounded border border-white/15 bg-white/[0.04] px-2 py-1 text-[11px] text-white/70 hover:bg-white/10"
+                            className="flex items-center gap-1 rounded border border-line bg-bg px-2 py-1 text-[11px] text-text-muted hover:bg-surface-2"
                           >
                             <span aria-hidden>{iconoAdjunto(a.tipo)}</span>
                             <span className="max-w-[12rem] truncate">{a.nombre}</span>
-                            <span className="text-white/40">
+                            <span className="text-text-faint">
                               {fmtBytes(pesoAdjunto(a))}
                             </span>
                           </button>
@@ -454,15 +454,15 @@ export default function PanelConversacion({
                   )}
                 </div>
               )}
-              <div className="border-l-2 border-white/15 pl-2.5">
-                <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-white/40">
+              <div className="border-l-2 border-line pl-2.5">
+                <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-text-faint">
                   {ic.proveedor ? NOMBRE_PROVEEDOR[ic.proveedor] : "IA"}
                   {/* Tokens que reportó el proveedor para ESTE globo (T11 → .md).
                       Nada si no vinieron (nunca un "0" falso). */}
                   {typeof ic.tokensEntrada === "number" &&
                     typeof ic.tokensSalida === "number" && (
                       <span
-                        className="ml-2 font-normal normal-case tracking-normal text-white/30"
+                        className="ml-2 font-normal normal-case tracking-normal text-text-faint"
                         title={`Tokens de esta respuesta: ${ic.tokensEntrada} de entrada (contexto + pregunta) + ${ic.tokensSalida} de salida`}
                       >
                         {fmtTokens(ic.tokensEntrada)} → {fmtTokens(ic.tokensSalida)} tok
@@ -482,20 +482,20 @@ export default function PanelConversacion({
                         textoCrudo={ic.respuesta}
                       />
                     ) : (
-                      <div className="rounded-md rounded-tl-none bg-white/[0.04] px-3 py-2 text-white/90">
+                      <div className="rounded-md rounded-tl-none bg-surface-2 px-3 py-2 text-text">
                         <Markdown conCopiar>{ic.respuesta}</Markdown>
                       </div>
                     );
                   })()
                 ) : null}
                 {ic.error ? (
-                  <p className="mt-1 whitespace-pre-wrap text-xs text-red-300">
+                  <p className="mt-1 whitespace-pre-wrap text-xs text-danger">
                     ⚠ {ic.error}
                   </p>
                 ) : ic.respuesta ? null : ic.pending ? (
-                  <p className="italic text-white/40">escribiendo…</p>
+                  <p className="italic text-text-faint">escribiendo…</p>
                 ) : (
-                  <p className="italic text-white/40">Respuesta pendiente</p>
+                  <p className="italic text-text-faint">Respuesta pendiente</p>
                 )}
                 {/* Acciones por respuesta (T15 + F5-3): ramificar desde este
                     punto, copiar / guardar ESTA respuesta. En cada turno de la
@@ -513,8 +513,8 @@ export default function PanelConversacion({
                         }}
                         className={
                           ramificarDesde === ic.id
-                            ? "font-medium text-sky-300"
-                            : "text-white/25 hover:text-white/60"
+                            ? "font-medium text-sky-400"
+                            : "text-text-faint hover:text-text-muted"
                         }
                         title="Ramificar una pregunta nueva desde este punto (sin tocar el hilo)"
                       >
@@ -533,7 +533,7 @@ export default function PanelConversacion({
                           );
                         }
                       }}
-                      className="text-white/25 hover:text-white/60"
+                      className="text-text-faint hover:text-text-muted"
                       title="Copiar la respuesta como texto"
                     >
                       {copiadaId === ic.id ? "✓ Copiado" : "⧉ Copiar"}
@@ -545,7 +545,7 @@ export default function PanelConversacion({
                           nombreArchivoRespuesta(ic.respuesta ?? "");
                         descargarTexto(nombre, contenido, mime);
                       }}
-                      className="text-white/25 hover:text-white/60"
+                      className="text-text-faint hover:text-text-muted"
                       title="Guardar la respuesta como archivo"
                     >
                       ⬇ Guardar
@@ -562,7 +562,7 @@ export default function PanelConversacion({
                       <button
                         type="button"
                         onClick={onRetry}
-                        className="rounded border border-white/15 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
+                        className="rounded border border-line px-2 py-1 text-xs text-text-muted hover:bg-surface-2"
                         title="Volver a pedir la respuesta"
                       >
                         ↻ {ic.error ? "Reintentar" : "Rehacer"}
@@ -576,8 +576,8 @@ export default function PanelConversacion({
         </div>
 
         {onSubmit && streameando && onStop ? (
-          <div className="flex items-center justify-between gap-2 border-t border-white/10 p-3">
-            <span className="flex items-center gap-1.5 text-[11px] text-white/40">
+          <div className="flex items-center justify-between gap-2 border-t border-line p-3">
+            <span className="flex items-center gap-1.5 text-[11px] text-text-faint">
               <span className="lapiz-escribiendo text-sm leading-none" aria-hidden>
                 ✏️
               </span>
@@ -586,14 +586,14 @@ export default function PanelConversacion({
             <button
               type="button"
               onClick={onStop}
-              className="flex items-center gap-1.5 rounded-md border border-white/20 px-3 py-1.5 text-sm text-white/90 hover:bg-white/10"
+              className="flex items-center gap-1.5 rounded-md border border-line-strong px-3 py-1.5 text-sm text-text-muted hover:bg-surface-2"
             >
               <span className="block h-2.5 w-2.5 bg-current" /> Detener
             </button>
           </div>
         ) : onSubmit ? (
           <div
-            className={`relative border-t border-white/10 p-3 ${
+            className={`relative border-t border-line p-3 ${
               arrastrando ? "outline-dashed outline-2 -outline-offset-4 outline-sky-400/70" : ""
             }`}
             onDragEnter={onDragEnter}
@@ -602,7 +602,7 @@ export default function PanelConversacion({
             onDrop={onDrop}
           >
             {arrastrando && (
-              <div className="pointer-events-none absolute inset-2 z-10 flex items-center justify-center rounded-md bg-neutral-950/80 text-sm text-sky-300">
+              <div className="pointer-events-none absolute inset-2 z-10 flex items-center justify-center rounded-md bg-bg/85 text-sm text-text">
                 Soltá los archivos acá
               </div>
             )}
@@ -629,7 +629,7 @@ export default function PanelConversacion({
                     {adjuntos.map((a, i) => (
                       <span
                         key={i}
-                        className="flex items-center gap-1 rounded border border-white/15 bg-white/[0.04] py-1 pl-1 pr-2 text-[11px] text-white/80"
+                        className="flex items-center gap-1 rounded border border-line bg-bg py-1 pl-1 pr-2 text-[11px] text-text-muted"
                       >
                         {a.tipo === "imagen" ? (
                           <img
@@ -643,12 +643,12 @@ export default function PanelConversacion({
                           </span>
                         )}
                         <span className="max-w-[12rem] truncate">{a.nombre}</span>
-                        <span className="text-white/40">{fmtBytes(pesoAdjunto(a))}</span>
+                        <span className="text-text-faint">{fmtBytes(pesoAdjunto(a))}</span>
                         <button
                           type="button"
                           onClick={() => quitarAdjunto(i)}
                           aria-label={`Quitar ${a.nombre}`}
-                          className="ml-0.5 text-white/40 hover:text-white"
+                          className="ml-0.5 text-text-faint hover:text-text"
                         >
                           ✕
                         </button>
@@ -695,7 +695,7 @@ export default function PanelConversacion({
                     ? "Escribí qué hago con el archivo (ej: “explicá”, “resumí”)…"
                     : "Seguí la conversación desde este globo…"
               }
-              className="w-full resize-none rounded-md border border-white/15 bg-neutral-950 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-sky-400 focus:outline-none"
+              className="w-full resize-none rounded-md border border-line bg-bg px-3 py-2 text-sm text-text placeholder:text-text-faint focus:border-sky-400 focus:outline-none"
             />
             <input
               ref={inputArchRef}
@@ -713,12 +713,12 @@ export default function PanelConversacion({
                 type="button"
                 onClick={() => inputArchRef.current?.click()}
                 title="Adjuntar un archivo (texto, imagen o PDF)"
-                className="rounded border border-white/15 px-2 py-1 text-xs text-white/60 hover:bg-white/10 hover:text-white"
+                className="rounded border border-line px-2 py-1 text-xs text-text-faint hover:bg-surface-2 hover:text-text"
               >
                 📎
               </button>
               <div className="flex items-center gap-2">
-                <span className="hidden text-[11px] text-white/30 sm:inline">
+                <span className="hidden text-[11px] text-text-faint sm:inline">
                   {desdeActivo
                     ? "Enter ramifica desde el punto elegido"
                     : "Enter continúa · Ctrl+Enter ramifica"}
@@ -728,7 +728,7 @@ export default function PanelConversacion({
                     type="button"
                     onClick={() => enviar("branch")}
                     disabled={borrador.trim() === ""}
-                    className="rounded-md border border-white/15 px-3 py-1.5 text-sm text-white/90 enabled:hover:bg-white/10 disabled:opacity-40"
+                    className="rounded-md border border-line px-3 py-1.5 text-sm text-text-muted enabled:hover:bg-surface-2 disabled:opacity-40"
                   >
                     ⑂ Ramificar
                   </button>

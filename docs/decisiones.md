@@ -1678,7 +1678,13 @@ swatches de `COLOR_GLOBO_HEX`) quedan — leen en ambos.
 - **1. `MessageNode` (globo)** ✅ — tarjeta, header, cuerpo, NodeToolbars, paleta de color,
   manija de resize (gradiente pasó a `var(--line-strong)`). El anillo del color activo:
   `ring-white` → `ring-text` (en claro el blanco no se veía). Verificado en el pane los dos temas.
-- 2. Composer + PanelConversacion + Markdown — pendiente.
+- **2. Composer + PanelConversacion + Markdown** ✅ — barra de escribir, panel lateral (header,
+  turnos, burbujas, mini-composer, nav lateral, lightbox) y render de markdown (headings, code
+  inline/bloque, tablas, blockquote). Campos de input → `bg-bg` (oscuro = neutral-950 de antes;
+  claro = off-white recesado). Code inline → `bg-line` (chip sutil en ambos). Code en bloque →
+  `bg-bg` + `border-line` (antes `bg-black/40`, que en claro dejaba texto oscuro sobre fondo
+  oscuro). Labels "Vos" sky-300/70 → `text-sky-500` (el /70 no pasaba contraste en blanco).
+  Scrims de modal / lightbox siguen `bg-black/*` (sirven en ambos temas). Verificado en el pane.
 - 3. SettingsPanel — pendiente. 4. MapaSwitcher / Toolbar / banners / DocCard — pendiente.
 - 5. Pasada de contraste de acentos amber/emerald sobre fondo claro — pendiente.
 

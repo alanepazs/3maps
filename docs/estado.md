@@ -26,9 +26,10 @@ chicos (decisiones §10) + carga de prompts (`src/model/prompts.ts`) + limpieza 
 `--text`… mapeados a Tailwind), `data-theme` en `<html>` + `colorMode` dinámico de `<ReactFlow>`
 vía effect en `FlowCanvas`, `select` en ⚙️→Lienzo. Verificado en el pane, tsc+lint verdes.
 **Conversión** (componente por componente, con checkpoints):
-1. `MessageNode` (globo) ✅ — verificado los 2 temas en el pane.
-2. Composer + PanelConversacion + Markdown · 3. SettingsPanel · 4. MapaSwitcher / Toolbar /
-   banners / DocCard · 5. pasada de contraste de acentos → **pendientes**.
+1. `MessageNode` (globo) ✅ · 2. Composer + PanelConversacion + Markdown ✅ — verificados los
+   2 temas en el pane.
+3. SettingsPanel · 4. MapaSwitcher / Toolbar / banners / DocCard · 5. pasada de contraste de
+   acentos amber/emerald → **pendientes**.
 Decisiones B11.
 
 **Lo único que queda son cosas de Alan / diferidas** (ver "Ideas sin empezar" + "Prueba real

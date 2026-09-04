@@ -11,7 +11,7 @@ import LimiteError from "./LimiteError";
 import { copiarTexto } from "@/model/exportar";
 
 // Render de markdown para las respuestas de la IA. Compacto (los globos son
-// angostos, ~260px) y en tema oscuro.
+// angostos, ~260px). Colores por tokens de tema (B11) → sirve claro y oscuro.
 //
 // Pipeline:
 //   remark-gfm    tablas / listas / tachado
@@ -151,7 +151,7 @@ function BotonCopiarBloque({ texto }: { texto: string }) {
         }
       }}
       title="Copiar este bloque"
-      className="absolute right-1 top-1 rounded border border-white/15 bg-neutral-900/90 px-1.5 py-0.5 text-[0.82em] text-white/60 opacity-0 transition-opacity hover:bg-white/10 hover:text-white group-hover:opacity-100"
+      className="absolute right-1 top-1 rounded border border-line bg-surface/90 px-1.5 py-0.5 text-[0.82em] text-text-faint opacity-0 transition-opacity hover:bg-surface-2 hover:text-text group-hover:opacity-100"
     >
       {ok ? "✓" : "⧉"}
     </button>
@@ -184,21 +184,21 @@ const components: Components = {
     <h2 className="mb-1 mt-2 text-[1.08em] font-semibold">{children}</h2>
   ),
   h3: ({ children }) => (
-    <h3 className="mb-1 mt-2 text-xs font-semibold uppercase tracking-wide text-white/60">
+    <h3 className="mb-1 mt-2 text-xs font-semibold uppercase tracking-wide text-text-muted">
       {children}
     </h3>
   ),
   h4: ({ children }) => (
-    <h4 className="mb-1 mt-2 text-xs font-semibold text-white/60">{children}</h4>
+    <h4 className="mb-1 mt-2 text-xs font-semibold text-text-muted">{children}</h4>
   ),
   h5: ({ children }) => (
-    <h5 className="mb-1 mt-2 text-xs font-semibold text-white/60">{children}</h5>
+    <h5 className="mb-1 mt-2 text-xs font-semibold text-text-muted">{children}</h5>
   ),
   h6: ({ children }) => (
-    <h6 className="mb-1 mt-2 text-xs font-semibold text-white/60">{children}</h6>
+    <h6 className="mb-1 mt-2 text-xs font-semibold text-text-muted">{children}</h6>
   ),
   strong: ({ children }) => (
-    <strong className="font-semibold text-white">{children}</strong>
+    <strong className="font-semibold text-text">{children}</strong>
   ),
   em: ({ children }) => <em className="italic">{children}</em>,
   code: ({ children, className }) => {
@@ -206,32 +206,34 @@ const components: Components = {
     return enBloque ? (
       <code className="block font-mono text-[0.92em] leading-relaxed">{children}</code>
     ) : (
-      <code className="rounded bg-white/10 px-1 py-0.5 font-mono text-[0.92em]">
+      <code className="rounded bg-line px-1 py-0.5 font-mono text-[0.92em]">
         {children}
       </code>
     );
   },
   pre: ({ children }) => (
-    <pre className="my-1.5 overflow-x-auto rounded bg-black/40 p-2">{children}</pre>
+    <pre className="my-1.5 overflow-x-auto rounded border border-line bg-bg p-2">
+      {children}
+    </pre>
   ),
   blockquote: ({ children }) => (
-    <blockquote className="my-1.5 border-l-2 border-white/20 pl-2 text-white/70">
+    <blockquote className="my-1.5 border-l-2 border-line-strong pl-2 text-text-muted">
       {children}
     </blockquote>
   ),
-  hr: () => <hr className="my-2 border-white/10" />,
+  hr: () => <hr className="my-2 border-line" />,
   table: ({ children }) => (
     <div className="my-1.5 overflow-x-auto">
       <table className="w-full border-collapse text-[0.92em]">{children}</table>
     </div>
   ),
   th: ({ children }) => (
-    <th className="border border-white/15 px-1.5 py-0.5 text-left font-semibold">
+    <th className="border border-line px-1.5 py-0.5 text-left font-semibold">
       {children}
     </th>
   ),
   td: ({ children }) => (
-    <td className="border border-white/15 px-1.5 py-0.5 align-top">{children}</td>
+    <td className="border border-line px-1.5 py-0.5 align-top">{children}</td>
   ),
 };
 
@@ -239,7 +241,7 @@ const components: Components = {
 const preConCopiar: Components["pre"] = ({ children, node }) => {
   const codigo = extraerTextoCodigo(node);
   return (
-    <pre className="group relative my-1.5 overflow-x-auto rounded bg-black/40 p-2">
+    <pre className="group relative my-1.5 overflow-x-auto rounded border border-line bg-bg p-2">
       {codigo && <BotonCopiarBloque texto={codigo} />}
       {children}
     </pre>
@@ -272,7 +274,7 @@ function Markdown({
       <LimiteError
         resetKey={texto}
         fallback={
-          <pre className="whitespace-pre-wrap break-words font-mono text-[0.92em] text-white/70">
+          <pre className="whitespace-pre-wrap break-words font-mono text-[0.92em] text-text-muted">
             {texto}
           </pre>
         }
