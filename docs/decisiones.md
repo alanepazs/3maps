@@ -1665,10 +1665,22 @@ componente, con checkpoints).
 - **Toggle**: `select` "Tema" en ⚙️ → pestaña Lienzo (junto a Fuente / Tamaño).
 - Verificado en el pane: `data-theme` en `<html>`, `.react-flow` alterna `light`/`dark`, `body`
   bg y tokens swapean, persiste, "sistema" sigue `prefers-color-scheme`. tsc + lint verdes.
-- **Estado**: con B11 solo, cambiar a "claro" pinta el canvas (fondo + watermark) pero paneles /
-  globos / composer siguen oscuros hasta la conversión componente-por-componente.
 - **Revertir**: quitar `Settings.tema` + el effect + el `select`; `colorMode` vuelve a `"dark"`
   fijo. Los tokens de `globals.css` pueden quedar (a escala oscura son los valores de siempre).
+
+**Conversión componente-por-componente** (los ~470 usos de clases de color hardcodeadas). Mapeo:
+`bg-neutral-900` → `bg-surface`, `bg-white/10` (hover / chips) → `bg-surface-2`,
+`border-white/10..15` → `border-line`, `border-white/20..25` → `border-line-strong`,
+`text-white/90` → `text-text`, `text-white/70..80` → `text-text-muted`,
+`text-white/40..55` → `text-text-faint`, `text-red-300` → `text-danger` (+ `--danger` token,
+oscuro `#fca5a5` / claro `#b91c1c`). Acentos saturados (`bg-sky-*`, `hover:bg-red-500/20`,
+swatches de `COLOR_GLOBO_HEX`) quedan — leen en ambos.
+- **1. `MessageNode` (globo)** ✅ — tarjeta, header, cuerpo, NodeToolbars, paleta de color,
+  manija de resize (gradiente pasó a `var(--line-strong)`). El anillo del color activo:
+  `ring-white` → `ring-text` (en claro el blanco no se veía). Verificado en el pane los dos temas.
+- 2. Composer + PanelConversacion + Markdown — pendiente.
+- 3. SettingsPanel — pendiente. 4. MapaSwitcher / Toolbar / banners / DocCard — pendiente.
+- 5. Pasada de contraste de acentos amber/emerald sobre fondo claro — pendiente.
 
 ---
 

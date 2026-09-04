@@ -25,9 +25,10 @@ chicos (decisiones §10) + carga de prompts (`src/model/prompts.ts`) + limpieza 
 (`oscuro`|`claro`|`sistema`), tokens semánticos en `globals.css` (`--bg`/`--surface`/`--line`/
 `--text`… mapeados a Tailwind), `data-theme` en `<html>` + `colorMode` dinámico de `<ReactFlow>`
 vía effect en `FlowCanvas`, `select` en ⚙️→Lienzo. Verificado en el pane, tsc+lint verdes.
-**Falta**: convertir los ~470 usos de clases de color hardcodeadas, componente por componente
-(SettingsPanel 209, PanelConversacion 104, MessageNode 49, resto ~110), empezando por
-canvas+globos+panel. Con B11 solo, "claro" pinta el canvas pero los paneles siguen oscuros.
+**Conversión** (componente por componente, con checkpoints):
+1. `MessageNode` (globo) ✅ — verificado los 2 temas en el pane.
+2. Composer + PanelConversacion + Markdown · 3. SettingsPanel · 4. MapaSwitcher / Toolbar /
+   banners / DocCard · 5. pasada de contraste de acentos → **pendientes**.
 Decisiones B11.
 
 **Lo único que queda son cosas de Alan / diferidas** (ver "Ideas sin empezar" + "Prueba real

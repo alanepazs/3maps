@@ -62,14 +62,14 @@ const CuerpoTramo = memo(
         resetKey={rev}
         fallback={
           <div className="px-3 py-2 text-left">
-            <p className="text-xs text-red-300">
+            <p className="text-xs text-danger">
               ⚠ No se pudo mostrar esta conversación.
             </p>
             {!readOnly && (
               <button
                 type="button"
                 onClick={onRehacer}
-                className="mt-2 rounded border border-white/20 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
+                className="mt-2 rounded border border-line-strong px-2 py-1 text-xs text-text-muted hover:bg-surface-2"
               >
                 ↻ Rehacer
               </button>
@@ -80,14 +80,14 @@ const CuerpoTramo = memo(
         {intercambios.map((ic) => (
           <div
             key={ic.id}
-            className="border-b border-white/5 px-3 py-1.5 text-left last:border-0"
+            className="border-b border-line px-3 py-1.5 text-left last:border-0"
           >
             {ic.pregunta && (
-              <p className="whitespace-pre-wrap text-xs font-semibold text-white/90">
+              <p className="whitespace-pre-wrap text-xs font-semibold text-text">
                 {ic.pregunta}
               </p>
             )}
-            <div className="mt-0.5 text-white/70">
+            <div className="mt-0.5 text-text-muted">
               {/* La respuesta (aunque haya `error`: una respuesta parcial que se
                   cortó por límite de tokens / watchdog sigue siendo útil). */}
               {ic.respuesta != null &&
@@ -107,19 +107,19 @@ const CuerpoTramo = memo(
                         <Markdown>{ic.respuesta}</Markdown>
                       )}
                       {ic.pending && (
-                        <span className="italic text-white/40"> ▍</span>
+                        <span className="italic text-text-faint"> ▍</span>
                       )}
                     </>
                   );
                 })()}
               {ic.error ? (
-                <p className="mt-1 whitespace-pre-wrap text-xs text-red-300">
+                <p className="mt-1 whitespace-pre-wrap text-xs text-danger">
                   ⚠ {ic.error}
                 </p>
               ) : ic.respuesta == null && ic.pending ? (
-                <span className="text-xs italic text-white/40">escribiendo…</span>
+                <span className="text-xs italic text-text-faint">escribiendo…</span>
               ) : ic.respuesta == null ? (
-                <span className="text-xs italic text-white/40">
+                <span className="text-xs italic text-text-faint">
                   respuesta pendiente
                 </span>
               ) : null}
@@ -299,7 +299,7 @@ export default function MessageNode({
       {/* Mientras la punta streamea: badge de lápiz + STOP, flotando a la
           izquierda (la tarjeta tiene overflow-hidden → NodeToolbar se renderiza afuera). */}
       <NodeToolbar isVisible={pending && !readOnly} position={Position.Left}>
-        <div className="flex items-center gap-1 rounded-md border border-white/15 bg-neutral-900 px-1.5 py-1 shadow-lg">
+        <div className="flex items-center gap-1 rounded-md border border-line bg-surface px-1.5 py-1 shadow-lg">
           <span className="lapiz-escribiendo text-sm leading-none" aria-hidden>
             ✏️
           </span>
@@ -308,7 +308,7 @@ export default function MessageNode({
             onClick={() => stopNode(puntaId)}
             title="Detener la respuesta"
             aria-label="Detener la respuesta"
-            className="flex h-5 w-5 items-center justify-center rounded border border-white/20 text-[10px] text-white/80 hover:bg-white/10"
+            className="flex h-5 w-5 items-center justify-center rounded border border-line-strong text-[10px] text-text-muted hover:bg-surface-2"
           >
             <span className="block h-2 w-2 bg-current" />
           </button>
@@ -325,7 +325,7 @@ export default function MessageNode({
             <button
               type="button"
               onClick={() => openNode(id)}
-              className="rounded border border-white/20 bg-neutral-900 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
+              className="rounded border border-line-strong bg-surface px-2 py-1 text-xs text-text-muted hover:bg-surface-2"
             >
               ⤢ Abrir
             </button>
@@ -333,7 +333,7 @@ export default function MessageNode({
               <button
                 type="button"
                 onClick={() => retryNode(puntaId)}
-                className="rounded border border-white/20 bg-neutral-900 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
+                className="rounded border border-line-strong bg-surface px-2 py-1 text-xs text-text-muted hover:bg-surface-2"
                 title="Volver a pedir la última respuesta"
               >
                 ↻ Rehacer
@@ -343,7 +343,7 @@ export default function MessageNode({
               <button
                 type="button"
                 onClick={resetTamano}
-                className="rounded border border-white/20 bg-neutral-900 px-2 py-1 text-xs text-white/80 hover:bg-white/10"
+                className="rounded border border-line-strong bg-surface px-2 py-1 text-xs text-text-muted hover:bg-surface-2"
                 title="Volver al tamaño automático"
               >
                 ↔ Auto
@@ -353,7 +353,7 @@ export default function MessageNode({
               <button
                 type="button"
                 onClick={() => deleteNode(id)}
-                className="rounded border border-red-400/40 bg-neutral-900 px-2 py-1 text-xs text-red-300 hover:bg-red-500/20"
+                className="rounded border border-danger/40 bg-surface px-2 py-1 text-xs text-danger hover:bg-red-500/20"
               >
                 🗑 Eliminar
               </button>
@@ -361,7 +361,7 @@ export default function MessageNode({
           </div>
           {/* Paleta de color del globo (B1). Click en el color actual lo saca. */}
           {!readOnly && (
-            <div className="flex items-center gap-1 rounded border border-white/20 bg-neutral-900 px-1.5 py-1">
+            <div className="flex items-center gap-1 rounded border border-line-strong bg-surface px-1.5 py-1">
               {COLORES_GLOBO.map((c) => (
                 <button
                   key={c}
@@ -372,7 +372,7 @@ export default function MessageNode({
                   aria-pressed={color === c}
                   className={`h-3.5 w-3.5 rounded-full transition-transform ${
                     color === c
-                      ? "ring-2 ring-white ring-offset-1 ring-offset-neutral-900"
+                      ? "ring-2 ring-text ring-offset-1 ring-offset-surface"
                       : "hover:scale-110"
                   }`}
                   style={{ backgroundColor: COLOR_GLOBO_HEX[c] }}
@@ -383,7 +383,7 @@ export default function MessageNode({
                 onClick={() => colorNode(id, null)}
                 title="Sin color"
                 aria-label="Sin color"
-                className="ml-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border border-white/25 text-[9px] leading-none text-white/45 hover:text-white/90"
+                className="ml-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border border-line-strong text-[9px] leading-none text-text-faint hover:text-text"
               >
                 ✕
               </button>
@@ -395,8 +395,8 @@ export default function MessageNode({
       {/* La tarjeta visible: se clippea a sí misma (rounded + overflow). La
           manija de resize y las NodeToolbar viven FUERA de este clip. */}
       <div
-        className={`absolute inset-0 flex flex-col overflow-hidden rounded-md border bg-neutral-900 ${
-          selected ? "border-sky-400 ring-2 ring-sky-400/40" : "border-white/20"
+        className={`absolute inset-0 flex flex-col overflow-hidden rounded-md border bg-surface ${
+          selected ? "border-sky-400 ring-2 ring-sky-400/40" : "border-line-strong"
         }`}
       >
         {!isRoot && (
@@ -422,10 +422,10 @@ export default function MessageNode({
           </>
         )}
 
-        <div className="relative z-10 flex shrink-0 items-center gap-1.5 border-b border-white/10 bg-neutral-900 px-3 py-1 text-left text-[11px] font-medium text-white/55">
+        <div className="relative z-10 flex shrink-0 items-center gap-1.5 border-b border-line bg-surface px-3 py-1 text-left text-[11px] font-medium text-text-faint">
           {adjuntosN > 0 && (
             <span
-              className="rounded bg-white/10 px-1 font-normal text-white/50"
+              className="rounded bg-surface-2 px-1 font-normal text-text-faint"
               title={`${adjuntosN} archivo${adjuntosN > 1 ? "s" : ""} adjunto${adjuntosN > 1 ? "s" : ""}`}
             >
               📎 {adjuntosN}
@@ -498,10 +498,10 @@ export default function MessageNode({
           style={{ transform: `scale(${escalaManija})`, transformOrigin: "bottom right" }}
         >
           <span
-            className="h-4 w-4 rounded-tl bg-neutral-900"
+            className="h-4 w-4 rounded-tl bg-surface-2"
             style={{
               backgroundImage:
-                "linear-gradient(135deg, transparent 0 45%, rgba(255,255,255,0.65) 45% 55%, transparent 55% 68%, rgba(255,255,255,0.65) 68% 78%, transparent 78%)",
+                "linear-gradient(135deg, transparent 0 45%, var(--line-strong) 45% 55%, transparent 55% 68%, var(--line-strong) 68% 78%, transparent 78%)",
             }}
           />
         </div>

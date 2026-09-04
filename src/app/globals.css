@@ -19,6 +19,7 @@
   --text: rgba(255, 255, 255, 0.92); /* texto primario */
   --text-muted: rgba(255, 255, 255, 0.7); /* secundario */
   --text-faint: rgba(255, 255, 255, 0.4); /* terciario */
+  --danger: #fca5a5; /* texto de error / peligro (era text-red-300) */
   /* compat con lo viejo */
   --background: var(--bg);
   --foreground: var(--text);
@@ -33,6 +34,7 @@
   --text: rgba(0, 0, 0, 0.9);
   --text-muted: rgba(0, 0, 0, 0.62);
   --text-faint: rgba(0, 0, 0, 0.42);
+  --danger: #b91c1c;
   color-scheme: light;
 }
 
@@ -47,6 +49,7 @@
   --color-text: var(--text);
   --color-text-muted: var(--text-muted);
   --color-text-faint: var(--text-faint);
+  --color-danger: var(--danger);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
