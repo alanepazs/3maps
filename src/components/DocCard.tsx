@@ -28,13 +28,13 @@ export default function DocCard({
   const encabezado = (
     <div className="flex items-center gap-2 px-3 py-2 text-left">
       <span aria-hidden>📄</span>
-      <span className="truncate font-mono text-xs text-white/90">{nombre}</span>
-      <span className="shrink-0 text-[11px] text-white/40">
+      <span className="truncate font-mono text-xs text-text">{nombre}</span>
+      <span className="shrink-0 text-[11px] text-text-faint">
         {lineas} línea{lineas === 1 ? "" : "s"}
         {lang ? ` · ${lang}` : ""}
       </span>
       {!compacto && (
-        <span className="ml-auto shrink-0 text-[11px] text-white/40">
+        <span className="ml-auto shrink-0 text-[11px] text-text-faint">
           {abierto ? "▾ ocultar" : "▸ ver"}
         </span>
       )}
@@ -42,20 +42,20 @@ export default function DocCard({
   );
 
   return (
-    <div className="rounded-md border border-white/15 bg-white/[0.03]">
+    <div className="rounded-md border border-line bg-surface-2">
       {compacto ? (
         encabezado
       ) : (
         <button
           type="button"
           onClick={() => setAbierto((a) => !a)}
-          className="block w-full hover:bg-white/[0.03]"
+          className="block w-full hover:bg-surface"
         >
           {encabezado}
         </button>
       )}
       {abierto && !compacto && (
-        <div className="border-t border-white/10 px-3 py-2">
+        <div className="border-t border-line px-3 py-2">
           <Markdown conCopiar>{textoCrudo}</Markdown>
         </div>
       )}

@@ -1821,7 +1821,7 @@ function Flow() {
         </ReactFlow>
         {listo && arbol.intercambios.length === 0 && !readOnly && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <p className="max-w-xs text-center text-sm text-white/40">
+            <p className="max-w-xs text-center text-sm text-text-faint">
               El árbol está vacío. Escribí tu primera pregunta abajo para empezar.
             </p>
           </div>

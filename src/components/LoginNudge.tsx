@@ -40,7 +40,7 @@ export default function LoginNudge({ readOnly }: { readOnly: boolean }) {
 
   return (
     <div className="pointer-events-none absolute inset-x-0 top-16 z-10 flex justify-center px-4">
-      <div className="pointer-events-auto flex max-w-md items-center gap-3 rounded-full border border-white/15 bg-neutral-900/95 py-1.5 pl-4 pr-1.5 text-xs text-white/80 shadow-lg backdrop-blur">
+      <div className="pointer-events-auto flex max-w-md items-center gap-3 rounded-full border border-line bg-surface/95 py-1.5 pl-4 pr-1.5 text-xs text-text-muted shadow-lg backdrop-blur">
         <span className="min-w-0">
           Sin cuenta la app anda igual. Con cuenta, tus mapas se guardan en la nube
           y los tenés en todos tus dispositivos.
@@ -57,7 +57,7 @@ export default function LoginNudge({ readOnly }: { readOnly: boolean }) {
             }
           }}
           disabled={yendo}
-          className="shrink-0 whitespace-nowrap rounded-full bg-white px-3 py-1.5 font-medium text-neutral-900 hover:bg-white/90 disabled:opacity-50"
+          className="shrink-0 whitespace-nowrap rounded-full bg-sky-500 px-3 py-1.5 font-medium text-white hover:bg-sky-400 disabled:opacity-50"
         >
           {yendo ? "…" : "Iniciar sesión"}
         </button>
@@ -65,7 +65,7 @@ export default function LoginNudge({ readOnly }: { readOnly: boolean }) {
           type="button"
           onClick={descartar}
           aria-label="Descartar"
-          className="shrink-0 rounded-full px-2 py-1 text-white/40 hover:bg-white/10 hover:text-white"
+          className="shrink-0 rounded-full px-2 py-1 text-text-faint hover:bg-surface-2 hover:text-text"
         >
           ✕
         </button>

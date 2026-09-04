@@ -1695,8 +1695,14 @@ quedan — leen en ambos.
   `PanelConversacion` y los links sky de `Markdown` se pasaron también. El botón "Continuar con
   Google" queda blanco a propósito (branding). Verificado los 2 temas (Lienzo + IA + caja de
   proxy) en el pane.
-- 4. MapaSwitcher / ToolbarGrupo / SharedBanner / LoginNudge / DocCard — pendiente.
-- 5. Auditoría final de acentos sueltos (sky hover states, etc.) — pendiente, menor.
+- **4. MapaSwitcher / ToolbarGrupo / SharedBanner / LoginNudge / DocCard** ✅ + el empty-state
+  de `FlowCanvas`. Dos ajustes de fondo: (a) `SharedBanner` pasó de barra `bg-sky-950/90` (casi
+  negra, chocaba con el UI claro) a `bg-sky-500/15` + `text-text` (tinte sky que adapta); (b) el
+  botón "Iniciar sesión" de `LoginNudge` pasó de píldora `bg-white` a `bg-sky-500` (el CTA
+  blanco desaparecía sobre superficie blanca — ahora usa el acento como el resto). El botón
+  "Continuar con Google" del panel SÍ queda blanco (branding). Verificado los 2 temas.
+- **Terminado.** Los `bg-black/*` que quedan son scrims de modal / lightbox y `text-white` sobre
+  `bg-sky-500` sólido — correctos en ambos temas a propósito. No hace falta paso 5.
 
 ---
 

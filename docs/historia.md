@@ -217,3 +217,22 @@ Pedidos de Alan mientras probaba WebLLM:
 - **Fixes de contexto** (rama profunda + modelo de poca ventana): `armarContexto` acota los
   viejos sin resumen, `resumir()` acota su input, `acotarMensajes` recorta duro para webllm,
   y los errores de contexto ahora dan un mensaje útil. Ver decisiones §10 / §7g.
+
+## B11 — tema claro (04-09-2026)
+
+3maps nació dark-only. B11 suma un tema claro además del oscuro.
+- **Infra**: tokens semánticos en `globals.css` (`--bg`, `--surface`, `--surface-2`, `--line`,
+  `--line-strong`, `--text`, `--text-muted`, `--text-faint` + acentos `--danger`, `--warn`,
+  `--ok`), mapeados en `@theme` → clases Tailwind (`bg-surface`, `text-text-muted`,
+  `border-line`, `text-warn`…). Default (bare `:root`) = **oscuro** (identidad + lo que
+  prerenderiza el server). `:root[data-theme="claro"]` redefine todo con override claro.
+- **`Settings.tema`** (`oscuro` | `claro` | `sistema`, def `oscuro`). Persiste y sincroniza.
+- **`FlowCanvas`** un `useEffect` (dep `settings.tema`) resuelve `"sistema"` con
+  `matchMedia` (+ listener), pone `data-theme` en el `<html>` y da `colorMode` dinámico a
+  `<ReactFlow>`. Mismo patrón que `data-hoverzoom`. `select` "Tema" en ⚙️→Lienzo.
+- **Conversión**: los ~10 componentes con color hardcodeado (MessageNode, Composer,
+  PanelConversacion, Markdown, SettingsPanel, MapaSwitcher, ToolbarGrupo, SharedBanner,
+  LoginNudge, DocCard) + el empty-state de FlowCanvas. `SharedBanner` dejó de ser una barra
+  casi negra (tinte sky adaptable); el CTA "Iniciar sesión" del nudge usa el acento en vez de
+  blanco. Scrims de modal y botones sobre `bg-sky-500` sólido quedan con `bg-black/*` /
+  `text-white` a propósito. Ver decisiones B11.

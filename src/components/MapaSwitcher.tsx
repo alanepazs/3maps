@@ -68,16 +68,16 @@ export default function MapaSwitcher({
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="flex h-9 max-w-[220px] items-center gap-1.5 rounded-full border border-white/15 bg-neutral-900/95 px-3 text-sm text-white/90 shadow-lg backdrop-blur transition-colors hover:bg-white/10"
+        className="flex h-9 max-w-[220px] items-center gap-1.5 rounded-full border border-line bg-surface/95 px-3 text-sm text-text shadow-lg backdrop-blur transition-colors hover:bg-surface-2"
         title="Cambiar de mapa"
       >
         <span className="truncate">{activo?.titulo ?? "Mapa"}</span>
-        <span className="text-white/40">▾</span>
+        <span className="text-text-faint">▾</span>
       </button>
 
       {open && (
-        <div className="mt-2 w-64 rounded-lg border border-white/15 bg-neutral-900/95 p-2 text-white shadow-xl backdrop-blur">
-          <p className="mb-1 px-1 text-[11px] font-medium uppercase tracking-wide text-white/40">
+        <div className="mt-2 w-64 rounded-lg border border-line bg-surface/95 p-2 text-text shadow-xl backdrop-blur">
+          <p className="mb-1 px-1 text-[11px] font-medium uppercase tracking-wide text-text-faint">
             Mapas
           </p>
           <ul className="max-h-64 space-y-0.5 overflow-y-auto">
@@ -91,8 +91,8 @@ export default function MapaSwitcher({
                   }}
                   className={`flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm ${
                     id === activoId
-                      ? "bg-sky-500/20 text-white"
-                      : "text-white/80 hover:bg-white/10"
+                      ? "bg-sky-500/20 text-text"
+                      : "text-text-muted hover:bg-surface-2"
                   }`}
                 >
                   <span className="w-3 shrink-0 text-sky-400">
@@ -104,33 +104,33 @@ export default function MapaSwitcher({
             ))}
           </ul>
 
-          <hr className="my-2 border-white/10" />
+          <hr className="my-2 border-line" />
           <button
             type="button"
             onClick={() => {
               onNuevo();
               setOpen(false);
             }}
-            className="w-full rounded px-2 py-1.5 text-left text-sm text-white/80 hover:bg-white/10"
+            className="w-full rounded px-2 py-1.5 text-left text-sm text-text-muted hover:bg-surface-2"
           >
             ＋ Nuevo mapa
           </button>
           <button
             type="button"
             onClick={renombrar}
-            className="w-full rounded px-2 py-1.5 text-left text-sm text-white/80 hover:bg-white/10"
+            className="w-full rounded px-2 py-1.5 text-left text-sm text-text-muted hover:bg-surface-2"
           >
             ✎ Renombrar “{activo?.titulo ?? ""}”
           </button>
 
-          <hr className="my-2 border-white/10" />
+          <hr className="my-2 border-line" />
           <button
             type="button"
             onClick={() => {
               onExportar();
               setOpen(false);
             }}
-            className="w-full rounded px-2 py-1.5 text-left text-sm text-white/80 hover:bg-white/10"
+            className="w-full rounded px-2 py-1.5 text-left text-sm text-text-muted hover:bg-surface-2"
             title="Descarga este mapa como .zip de sus .md (con adjuntos)"
           >
             ⬇ Exportar (.zip)
@@ -138,7 +138,7 @@ export default function MapaSwitcher({
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
-            className="w-full rounded px-2 py-1.5 text-left text-sm text-white/80 hover:bg-white/10"
+            className="w-full rounded px-2 py-1.5 text-left text-sm text-text-muted hover:bg-surface-2"
             title="Abre un .zip exportado como un mapa nuevo"
           >
             ⬆ Importar (.zip)
@@ -158,14 +158,14 @@ export default function MapaSwitcher({
             }}
           />
 
-          <hr className="my-2 border-white/10" />
+          <hr className="my-2 border-line" />
           <button
             type="button"
             onClick={() => {
               onBorrar();
               setOpen(false);
             }}
-            className="w-full rounded px-2 py-1.5 text-left text-sm text-red-300 hover:bg-red-500/15"
+            className="w-full rounded px-2 py-1.5 text-left text-sm text-danger hover:bg-red-500/15"
           >
             🗑 Borrar este mapa
           </button>
@@ -175,7 +175,7 @@ export default function MapaSwitcher({
               onEmpezarDeCero();
               setOpen(false);
             }}
-            className="w-full rounded px-2 py-1.5 text-left text-sm text-red-300 hover:bg-red-500/15"
+            className="w-full rounded px-2 py-1.5 text-left text-sm text-danger hover:bg-red-500/15"
             title="Borra todos los mapas (acá y en la nube) y arranca con uno vacío"
           >
             🧹 Empezar de cero

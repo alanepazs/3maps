@@ -21,16 +21,15 @@ mergeado a `main`, probado por Alan: anda lento pero genera). Spec `tasks/v2-web
 decisiones §7g. + detección de equipo para recomendar modelo + topes de contexto para modelos
 chicos (decisiones §10) + carga de prompts (`src/model/prompts.ts`) + limpieza de lint (§27).
 
-**En curso — B11: tema claro.** Fase *plumbing* hecha: `Settings.tema`
-(`oscuro`|`claro`|`sistema`), tokens semánticos en `globals.css` (`--bg`/`--surface`/`--line`/
-`--text`… mapeados a Tailwind), `data-theme` en `<html>` + `colorMode` dinámico de `<ReactFlow>`
-vía effect en `FlowCanvas`, `select` en ⚙️→Lienzo. Verificado en el pane, tsc+lint verdes.
-**Conversión** (componente por componente, con checkpoints):
-1. `MessageNode` ✅ · 2. Composer + PanelConversacion + Markdown ✅ · 3. SettingsPanel ✅
-   (con tokens de acento `--warn`/`--ok`) — verificados los 2 temas en el pane.
-4. MapaSwitcher / ToolbarGrupo / SharedBanner / LoginNudge / DocCard · 5. auditoría final de
-   acentos sueltos → **pendientes** (menores).
-Decisiones B11.
+**B11: tema claro — COMPLETO.** `Settings.tema` (`oscuro`|`claro`|`sistema`), tokens semánticos
+en `globals.css` (`--bg`/`--surface`/`--surface-2`/`--line`/`--line-strong`/`--text`/
+`--text-muted`/`--text-faint` + acentos `--danger`/`--warn`/`--ok`, todos con override claro),
+mapeados a Tailwind. `data-theme` en `<html>` + `colorMode` dinámico de `<ReactFlow>` vía effect
+en `FlowCanvas` (resuelve "sistema" con `matchMedia`). `select` en ⚙️→Lienzo. Los ~10
+componentes con color hardcodeado, convertidos (MessageNode, Composer, PanelConversacion,
+Markdown, SettingsPanel, MapaSwitcher, ToolbarGrupo, SharedBanner, LoginNudge, DocCard) +
+empty-state de FlowCanvas. Verificado los 2 temas en el pane, tsc+lint verdes. **Falta la
+prueba de Alan en Chrome** (transiciones, el tema "sistema" siguiendo el SO). Decisiones B11.
 
 **Lo único que queda son cosas de Alan / diferidas** (ver "Ideas sin empezar" + "Prueba real
 pendiente"): ronda de pruebas en Chrome con keys reales,
