@@ -1672,9 +1672,11 @@ componente, con checkpoints).
 `bg-neutral-900` → `bg-surface`, `bg-white/10` (hover / chips) → `bg-surface-2`,
 `border-white/10..15` → `border-line`, `border-white/20..25` → `border-line-strong`,
 `text-white/90` → `text-text`, `text-white/70..80` → `text-text-muted`,
-`text-white/40..55` → `text-text-faint`, `text-red-300` → `text-danger` (+ `--danger` token,
-oscuro `#fca5a5` / claro `#b91c1c`). Acentos saturados (`bg-sky-*`, `hover:bg-red-500/20`,
-swatches de `COLOR_GLOBO_HEX`) quedan — leen en ambos.
+`text-white/40..55` → `text-text-faint`, `text-red-300/400` → `text-danger`,
+`text-amber-300/400` → `text-warn`, `text-emerald-300/400` → `text-ok`. Tokens de acento con
+override claro (`--danger` `#fca5a5`/`#b91c1c`, `--warn` `#fbbf24`/`#b45309`, `--ok`
+`#34d399`/`#047857`). `bg-sky-*` sólido, `hover:bg-red-500/20` y swatches de `COLOR_GLOBO_HEX`
+quedan — leen en ambos.
 - **1. `MessageNode` (globo)** ✅ — tarjeta, header, cuerpo, NodeToolbars, paleta de color,
   manija de resize (gradiente pasó a `var(--line-strong)`). El anillo del color activo:
   `ring-white` → `ring-text` (en claro el blanco no se veía). Verificado en el pane los dos temas.
@@ -1685,8 +1687,16 @@ swatches de `COLOR_GLOBO_HEX`) quedan — leen en ambos.
   `bg-bg` + `border-line` (antes `bg-black/40`, que en claro dejaba texto oscuro sobre fondo
   oscuro). Labels "Vos" sky-300/70 → `text-sky-500` (el /70 no pasaba contraste en blanco).
   Scrims de modal / lightbox siguen `bg-black/*` (sirven en ambos temas). Verificado en el pane.
-- 3. SettingsPanel — pendiente. 4. MapaSwitcher / Toolbar / banners / DocCard — pendiente.
-- 5. Pasada de contraste de acentos amber/emerald sobre fondo claro — pendiente.
+- **3. SettingsPanel** ✅ — el archivo con más color hardcodeado (~200 usos): tabs, sliders,
+  selects (Tema/Fuente/Proveedor/Modelo), inputs de key, chips de modelo, guía de API key,
+  bloque Cuenta, Compartir, prompts. Acá se sumaron **tokens de acento**: `--warn` (oscuro
+  `#fbbf24` / claro `#b45309`, era amber-300/400) y `--ok` (oscuro `#34d399` / claro `#047857`,
+  era emerald-300/400) → clases `text-warn` / `bg-warn/10` / `text-ok`. Los avisos amber de
+  `PanelConversacion` y los links sky de `Markdown` se pasaron también. El botón "Continuar con
+  Google" queda blanco a propósito (branding). Verificado los 2 temas (Lienzo + IA + caja de
+  proxy) en el pane.
+- 4. MapaSwitcher / ToolbarGrupo / SharedBanner / LoginNudge / DocCard — pendiente.
+- 5. Auditoría final de acentos sueltos (sky hover states, etc.) — pendiente, menor.
 
 ---
 

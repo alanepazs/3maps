@@ -41,8 +41,10 @@ src/
     page.tsx        Renderiza <FlowCanvas /> dentro de <main class="h-dvh w-full overflow-hidden">.
                     `dvh` (no `vh`) para que en móvil encuadre al área visible real, sin scroll.
     globals.css     Tailwind + tokens semánticos de tema (B11): `--bg`/`--surface`/`--surface-2`/
-                    `--line`/`--line-strong`/`--text`/`--text-muted`/`--text-faint`, mapeados en
-                    `@theme` (→ `bg-surface`, `text-text-muted`, `border-line`…). Default (bare
+                    `--line`/`--line-strong`/`--text`/`--text-muted`/`--text-faint` + acentos
+                    `--danger`/`--warn`/`--ok`, mapeados en
+                    `@theme` (→ `bg-surface`, `text-text-muted`, `border-line`, `text-warn`…).
+                    Default (bare
                     `:root`) = OSCURO; `:root[data-theme="claro"]` los redefine. El atributo lo
                     pone FlowCanvas (effect, dep `settings.tema`, resuelve "sistema" con matchMedia).
                     `body { font-family: var(--fuente-3maps, Arial…) }` (B5;

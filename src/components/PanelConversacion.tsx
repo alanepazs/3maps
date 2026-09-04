@@ -607,7 +607,7 @@ export default function PanelConversacion({
               </div>
             )}
             {desdeActivo && (
-              <div className="mb-2 flex items-center gap-1.5 rounded border border-sky-400/40 bg-sky-500/10 px-2 py-1 text-[11px] text-sky-200">
+              <div className="mb-2 flex items-center gap-1.5 rounded border border-sky-400/40 bg-sky-500/10 px-2 py-1 text-[11px] text-text-muted">
                 <span aria-hidden>⑂</span>
                 <span className="min-w-0 flex-1 truncate">
                   Ramificando desde: «{preguntaDesde}»
@@ -616,7 +616,7 @@ export default function PanelConversacion({
                   type="button"
                   onClick={() => setRamificarDesde(null)}
                   aria-label="Ramificar desde la punta"
-                  className="text-sky-200/70 hover:text-white"
+                  className="text-sky-500/80 hover:text-sky-500"
                 >
                   ✕
                 </button>
@@ -657,18 +657,18 @@ export default function PanelConversacion({
                   </div>
                 )}
                 {avisoAdj && (
-                  <p className="text-[11px] text-amber-300/90">⚠ {avisoAdj}</p>
+                  <p className="text-[11px] text-warn">⚠ {avisoAdj}</p>
                 )}
                 {!proveedorLeePdf &&
                   adjuntos.some((a) => a.tipo === "pdf") && (
-                    <p className="text-[11px] text-amber-300/90">
+                    <p className="text-[11px] text-warn">
                       ⚠ El PDF solo lo leen Gemini (gratis) o Claude
                       {proveedorNombre ? ` — con ${proveedorNombre} se va a ignorar` : ""}.
                     </p>
                   )}
                 {!proveedorLeeImagen &&
                   adjuntos.some((a) => a.tipo === "imagen") && (
-                    <p className="text-[11px] text-amber-300/90">
+                    <p className="text-[11px] text-warn">
                       ⚠ Este modelo no lee imágenes
                       {proveedorNombre ? ` — con ${proveedorNombre} se van a ignorar` : ""}.
                     </p>

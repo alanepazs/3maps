@@ -164,7 +164,7 @@ const components: Components = {
       href={href}
       target="_blank"
       rel="noopener noreferrer nofollow ugc"
-      className="text-sky-400 underline underline-offset-2 hover:text-sky-300"
+      className="text-sky-500 underline underline-offset-2 hover:text-sky-400"
     >
       {children}
     </a>

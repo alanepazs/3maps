@@ -20,6 +20,8 @@
   --text-muted: rgba(255, 255, 255, 0.7); /* secundario */
   --text-faint: rgba(255, 255, 255, 0.4); /* terciario */
   --danger: #fca5a5; /* texto de error / peligro (era text-red-300) */
+  --warn: #fbbf24; /* aviso (era text-amber-300/400) */
+  --ok: #34d399; /* ok / gratis (era text-emerald-300/400) */
   /* compat con lo viejo */
   --background: var(--bg);
   --foreground: var(--text);
@@ -35,6 +37,8 @@
   --text-muted: rgba(0, 0, 0, 0.62);
   --text-faint: rgba(0, 0, 0, 0.42);
   --danger: #b91c1c;
+  --warn: #b45309;
+  --ok: #047857;
   color-scheme: light;
 }
 
@@ -50,6 +54,8 @@
   --color-text-muted: var(--text-muted);
   --color-text-faint: var(--text-faint);
   --color-danger: var(--danger);
+  --color-warn: var(--warn);
+  --color-ok: var(--ok);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

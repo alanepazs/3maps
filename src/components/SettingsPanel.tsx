@@ -415,13 +415,13 @@ export default function SettingsPanel({
 
   const bloqueSystemPrompt = (
     <label className="block text-sm">
-      <span className="text-white/70">Instrucción de sistema (opcional)</span>
+      <span className="text-text-muted">Instrucción de sistema (opcional)</span>
       <textarea
         value={settings.systemPrompt}
         onChange={(e) => onChange({ systemPrompt: e.target.value })}
         rows={3}
         placeholder="Ej: Respondé en español, conciso. Ecuaciones entre $$ … $$."
-        className="mt-1.5 w-full resize-y rounded border border-white/15 bg-white/5 px-2 py-1 text-xs text-white/90 placeholder:text-white/30 focus:border-sky-500 focus:outline-none"
+        className="mt-1.5 w-full resize-y rounded border border-line bg-surface-2 px-2 py-1 text-xs text-text placeholder:text-text-faint focus:border-sky-500 focus:outline-none"
       />
       <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px]">
         <select
@@ -430,7 +430,7 @@ export default function SettingsPanel({
             cargarPromptSel(e.target.value);
             e.currentTarget.value = "";
           }}
-          className="rounded border border-white/15 bg-neutral-950 px-1.5 py-1 text-white/70 focus:border-sky-400 focus:outline-none"
+          className="rounded border border-line bg-bg px-1.5 py-1 text-text-muted focus:border-sky-400 focus:outline-none"
         >
           <option value="">Cargar un prompt…</option>
           <optgroup label="De 3maps">
@@ -454,11 +454,11 @@ export default function SettingsPanel({
           type="button"
           onClick={guardarPromptActual}
           disabled={!settings.systemPrompt.trim()}
-          className="rounded border border-white/15 px-1.5 py-1 text-white/70 enabled:hover:bg-white/10 disabled:opacity-40"
+          className="rounded border border-line px-1.5 py-1 text-text-muted enabled:hover:bg-surface-2 disabled:opacity-40"
         >
           💾 Guardar
         </button>
-        <label className="cursor-pointer rounded border border-white/15 px-1.5 py-1 text-white/70 hover:bg-white/10">
+        <label className="cursor-pointer rounded border border-line px-1.5 py-1 text-text-muted hover:bg-surface-2">
           📁 Archivo
           <input
             type="file"
@@ -471,13 +471,13 @@ export default function SettingsPanel({
           <button
             type="button"
             onClick={borrarPromptActual}
-            className="rounded border border-red-400/40 px-1.5 py-1 text-red-300 hover:bg-red-500/20"
+            className="rounded border border-danger/40 px-1.5 py-1 text-danger hover:bg-red-500/20"
           >
             🗑 “{promptMioActual}”
           </button>
         )}
       </div>
-      <span className="mt-1 block text-[11px] text-white/40">
+      <span className="mt-1 block text-[11px] text-text-faint">
         Se antepone a cada pregunta. No afecta el resumen del contexto viejo. Los
         prompts guardados quedan en este navegador.
       </span>
@@ -486,18 +486,18 @@ export default function SettingsPanel({
 
   const bloqueCompartir = onCompartir ? (
     <>
-      <hr className="my-3 border-white/10" />
-      <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-white/40">
+      <hr className="my-3 border-line" />
+      <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-text-faint">
         Compartir
       </p>
       <label className="block text-sm">
-        <span className="text-white/70">Título (opcional)</span>
+        <span className="text-text-muted">Título (opcional)</span>
         <input
           type="text"
           value={compTitulo}
           onChange={(e) => setCompTitulo(e.target.value)}
           placeholder="Se usa la primera pregunta si lo dejás vacío"
-          className="mt-1 w-full rounded border border-white/15 bg-neutral-950 px-2 py-1.5 text-sm placeholder:text-white/30 focus:border-sky-400 focus:outline-none"
+          className="mt-1 w-full rounded border border-line bg-bg px-2 py-1.5 text-sm placeholder:text-text-faint focus:border-sky-400 focus:outline-none"
         />
       </label>
       <button
@@ -509,7 +509,7 @@ export default function SettingsPanel({
         {compartiendo ? "subiendo…" : "Compartir este árbol"}
       </button>
       {compError && (
-        <p className="mt-1.5 text-[11px] text-red-400">{compError}</p>
+        <p className="mt-1.5 text-[11px] text-danger">{compError}</p>
       )}
       {compLink && (
         <div className="mt-2">
@@ -518,7 +518,7 @@ export default function SettingsPanel({
             readOnly
             value={compLink}
             onFocus={(e) => e.currentTarget.select()}
-            className="w-full rounded border border-white/15 bg-neutral-950 px-2 py-1.5 text-[11px] text-white/80"
+            className="w-full rounded border border-line bg-bg px-2 py-1.5 text-[11px] text-text-muted"
           />
           <button
             type="button"
@@ -527,11 +527,11 @@ export default function SettingsPanel({
               setCopiado(true);
               window.setTimeout(() => setCopiado(false), 2000);
             }}
-            className="mt-1 rounded border border-white/15 px-2 py-1 text-[11px] text-white/70 hover:bg-white/10"
+            className="mt-1 rounded border border-line px-2 py-1 text-[11px] text-text-muted hover:bg-surface-2"
           >
             {copiado ? "✓ copiado" : "copiar link"}
           </button>
-          <p className="mt-1 text-[11px] text-white/40">
+          <p className="mt-1 text-[11px] text-text-faint">
             Cualquiera con el link ve una copia de este árbol (solo lectura). El
             link no caduca.
             {!usuario &&
@@ -541,11 +541,11 @@ export default function SettingsPanel({
       )}
       {usuario && mios !== null && (
         <div className="mt-3">
-          <p className="mb-1 text-[11px] text-white/40">
+          <p className="mb-1 text-[11px] text-text-faint">
             Mis árboles compartidos ({mios.length})
           </p>
           {mios.length === 0 ? (
-            <p className="text-[11px] text-white/40">
+            <p className="text-[11px] text-text-faint">
               Todavía no compartiste ninguno con esta cuenta.
             </p>
           ) : (
@@ -553,13 +553,13 @@ export default function SettingsPanel({
               {mios.map((a) => (
                 <li
                   key={a.slug}
-                  className="flex items-center gap-2 rounded border border-white/10 bg-white/5 px-2 py-1 text-[11px]"
+                  className="flex items-center gap-2 rounded border border-line bg-surface-2 px-2 py-1 text-[11px]"
                 >
                   <a
                     href={a.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="min-w-0 flex-1 truncate text-white/80 hover:text-white hover:underline"
+                    className="min-w-0 flex-1 truncate text-text-muted hover:text-text hover:underline"
                     title={a.titulo}
                   >
                     {a.titulo || a.slug}
@@ -568,7 +568,7 @@ export default function SettingsPanel({
                     type="button"
                     onClick={() => void hacerDespublicar(a.slug)}
                     disabled={despublicando === a.slug}
-                    className="shrink-0 rounded border border-red-400/40 px-1.5 py-0.5 text-red-300 hover:bg-red-500/20 disabled:opacity-40"
+                    className="shrink-0 rounded border border-danger/40 px-1.5 py-0.5 text-danger hover:bg-red-500/20 disabled:opacity-40"
                   >
                     {despublicando === a.slug ? "…" : "despublicar"}
                   </button>
@@ -588,15 +588,15 @@ export default function SettingsPanel({
         onClick={() => setOpen((o) => !o)}
         aria-label="Ajustes"
         aria-expanded={open}
-        className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-neutral-900/95 text-lg shadow-lg backdrop-blur transition-colors hover:bg-white/10"
+        className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-surface/95 text-lg shadow-lg backdrop-blur transition-colors hover:bg-surface-2"
       >
         ⚙️
       </button>
 
       {open && (
-        <div className="mt-2 max-h-[calc(100dvh-18rem)] w-72 overflow-y-auto overscroll-contain rounded-lg border border-white/15 bg-neutral-900/95 p-3 text-white shadow-xl backdrop-blur sm:max-h-[80vh]">
+        <div className="mt-2 max-h-[calc(100dvh-18rem)] w-72 overflow-y-auto overscroll-contain rounded-lg border border-line bg-surface/95 p-3 text-text shadow-xl backdrop-blur sm:max-h-[80vh]">
           {/* Pestañas: "Lienzo" (comportamiento del mapa) / "IA" (conectividad). */}
-          <div className="mb-3 flex gap-1 rounded bg-white/5 p-0.5 text-xs">
+          <div className="mb-3 flex gap-1 rounded bg-surface-2 p-0.5 text-xs">
             {(["lienzo", "ia"] as const).map((t) => (
               <button
                 key={t}
@@ -604,8 +604,8 @@ export default function SettingsPanel({
                 onClick={() => setTab(t)}
                 className={`flex-1 rounded px-2 py-1 font-medium ${
                   tab === t
-                    ? "bg-neutral-900 text-white"
-                    : "text-white/50 hover:text-white/80"
+                    ? "bg-surface text-text"
+                    : "text-text-faint hover:text-text-muted"
                 }`}
               >
                 {t === "ia" ? "IA" : "Lienzo"}
@@ -618,7 +618,7 @@ export default function SettingsPanel({
               <label className="block text-sm">
                 <span className="flex items-center justify-between">
                   <span>Envión al soltar</span>
-                  <span className="text-white/50">
+                  <span className="text-text-faint">
                     {settings.inertia <= 0
                       ? "off"
                       : `${settings.inertia.toFixed(2)}×`}
@@ -637,8 +637,8 @@ export default function SettingsPanel({
 
               <label className="mt-3 block text-sm">
                 <span className="flex items-center justify-between">
-                  <span className="text-white/70">Ventana de contexto</span>
-                  <span className="text-white/50">
+                  <span className="text-text-muted">Ventana de contexto</span>
+                  <span className="text-text-faint">
                     {settings.ventanaContexto} interc.
                   </span>
                 </span>
@@ -653,15 +653,15 @@ export default function SettingsPanel({
                   }
                   className="mt-2 w-full accent-sky-500"
                 />
-                <span className="mt-1 block text-[11px] text-white/40">
+                <span className="mt-1 block text-[11px] text-text-faint">
                   Los más recientes van completos; los anteriores se resumen.
                 </span>
               </label>
 
               <label className="mt-3 block text-sm">
                 <span className="flex items-center justify-between">
-                  <span className="text-white/70">Crecimiento del globo</span>
-                  <span className="text-white/50">
+                  <span className="text-text-muted">Crecimiento del globo</span>
+                  <span className="text-text-faint">
                     {settings.crecimientoPxPorMensaje <= 0
                       ? "no crece"
                       : `+${settings.crecimientoPxPorMensaje}px / mensaje`}
@@ -680,7 +680,7 @@ export default function SettingsPanel({
                   }
                   className="mt-2 w-full accent-sky-500"
                 />
-                <span className="mt-1 block text-[11px] text-white/40">
+                <span className="mt-1 block text-[11px] text-text-faint">
                   El globo se hace más alto según cuántos mensajes tenga la
                   conversación — para verlo de lejos. Máx +{settings.crecimientoTope}px.
                 </span>
@@ -689,8 +689,8 @@ export default function SettingsPanel({
               {settings.crecimientoPxPorMensaje > 0 && (
                 <label className="mt-3 block text-sm">
                   <span className="flex items-center justify-between">
-                    <span className="text-white/70">Tope de crecimiento</span>
-                    <span className="text-white/50">
+                    <span className="text-text-muted">Tope de crecimiento</span>
+                    <span className="text-text-faint">
                       +{settings.crecimientoTope}px
                     </span>
                   </span>
@@ -710,8 +710,8 @@ export default function SettingsPanel({
 
               <label className="mt-3 block text-sm">
                 <span className="flex items-center justify-between">
-                  <span className="text-white/70">Grosor de las líneas</span>
-                  <span className="text-white/50">
+                  <span className="text-text-muted">Grosor de las líneas</span>
+                  <span className="text-text-faint">
                     {(settings.grosorLineas ?? 1.5).toFixed(1)} px
                   </span>
                 </span>
@@ -726,19 +726,19 @@ export default function SettingsPanel({
                   }
                   className="mt-2 w-full accent-sky-500"
                 />
-                <span className="mt-1 block text-[11px] text-white/40">
+                <span className="mt-1 block text-[11px] text-text-faint">
                   Las flechas que conectan los globos.
                 </span>
               </label>
 
               <label className="mt-3 block text-sm">
-                <span className="text-white/70">Tema</span>
+                <span className="text-text-muted">Tema</span>
                 <select
                   value={settings.tema ?? "oscuro"}
                   onChange={(e) =>
                     onChange({ tema: e.target.value as Settings["tema"] })
                   }
-                  className="mt-1.5 w-full rounded border border-white/15 bg-neutral-950 px-2 py-1 text-sm text-white/80 focus:border-sky-400 focus:outline-none"
+                  className="mt-1.5 w-full rounded border border-line bg-bg px-2 py-1 text-sm text-text-muted focus:border-sky-400 focus:outline-none"
                 >
                   <option value="oscuro">Oscuro</option>
                   <option value="claro">Claro</option>
@@ -747,7 +747,7 @@ export default function SettingsPanel({
               </label>
 
               <label className="mt-3 block text-sm">
-                <span className="text-white/70">Fuente</span>
+                <span className="text-text-muted">Fuente</span>
                 <select
                   value={settings.fuenteTexto ?? "sistema"}
                   onChange={(e) =>
@@ -756,7 +756,7 @@ export default function SettingsPanel({
                         .value as Settings["fuenteTexto"],
                     })
                   }
-                  className="mt-1.5 w-full rounded border border-white/15 bg-neutral-950 px-2 py-1 text-sm text-white/80 focus:border-sky-400 focus:outline-none"
+                  className="mt-1.5 w-full rounded border border-line bg-bg px-2 py-1 text-sm text-text-muted focus:border-sky-400 focus:outline-none"
                 >
                   <option value="sistema">Sistema (Arial)</option>
                   <option value="geist">Geist (sans)</option>
@@ -767,8 +767,8 @@ export default function SettingsPanel({
 
               <label className="mt-3 block text-sm">
                 <span className="flex items-center justify-between">
-                  <span className="text-white/70">Tamaño del texto</span>
-                  <span className="text-white/50">
+                  <span className="text-text-muted">Tamaño del texto</span>
+                  <span className="text-text-faint">
                     {Math.round((settings.escalaTexto ?? 1) * 100)}%
                   </span>
                 </span>
@@ -783,15 +783,15 @@ export default function SettingsPanel({
                   }
                   className="mt-2 w-full accent-sky-500"
                 />
-                <span className="mt-1 block text-[11px] text-white/40">
+                <span className="mt-1 block text-[11px] text-text-faint">
                   Afecta a toda la app.
                 </span>
               </label>
 
               <label className="mt-3 flex items-center justify-between gap-2 text-sm">
                 <span>
-                  <span className="text-white/70">Zoom de lupa al pasar el mouse</span>
-                  <span className="mt-0.5 block text-[11px] text-white/40">
+                  <span className="text-text-muted">Zoom de lupa al pasar el mouse</span>
+                  <span className="mt-0.5 block text-[11px] text-text-faint">
                     El globo se agranda mientras lo apuntás, para leerlo.
                   </span>
                 </span>
@@ -810,11 +810,11 @@ export default function SettingsPanel({
           {tab === "ia" && (
            <>
           <label className="block text-sm">
-            <span className="text-white/70">Proveedor</span>
+            <span className="text-text-muted">Proveedor</span>
             <select
               value={proveedor}
               onChange={(e) => cambiarProveedor(e.target.value as Proveedor)}
-              className="mt-1 w-full rounded border border-white/15 bg-neutral-950 px-2 py-1.5 text-sm"
+              className="mt-1 w-full rounded border border-line bg-bg px-2 py-1.5 text-sm"
             >
               {PROVEEDORES_DISPONIBLES.map((p) => (
                 <option key={p} value={p}>
@@ -826,9 +826,9 @@ export default function SettingsPanel({
           </label>
 
           {proveedorViaProxy && (
-            <div className="mt-2 rounded border border-amber-400/30 bg-amber-400/5 p-2 text-[11px] text-white/80">
+            <div className="mt-2 rounded border border-warn/30 bg-warn/10 p-2 text-[11px] text-text-muted">
               {!proxyDisponible ? (
-                <p className="text-amber-300">
+                <p className="text-warn">
                   {NOMBRE_PROVEEDOR[proveedor]} necesita el proxy de 3maps y esta
                   instancia no lo tiene configurado. Usá Gemini o Claude.
                 </p>
@@ -849,16 +849,16 @@ export default function SettingsPanel({
                 </label>
               )}
               <details className="group mt-1">
-                <summary className="cursor-pointer list-none text-white/50 marker:content-none hover:text-white/80">
+                <summary className="cursor-pointer list-none text-text-faint marker:content-none hover:text-text-muted">
                   <span className="mr-1 inline-block transition-transform group-open:rotate-90">
                     ▸
                   </span>
                   ¿por qué pasa por un proxy?
                 </summary>
-                <p className="mt-1 text-white/60">
+                <p className="mt-1 text-text-muted">
                   {NOMBRE_PROVEEDOR[proveedor]} no habilita CORS, así que el
                   navegador no puede llamarlo directo. El edge function{" "}
-                  <span className="text-white/80">ia-proxy</span> solo reenvía la
+                  <span className="text-text-muted">ia-proxy</span> solo reenvía la
                   request con tu key — no la guarda ni la registra (stateless).
                 </p>
               </details>
@@ -867,30 +867,30 @@ export default function SettingsPanel({
 
           {esWebllm ? (
             !hayGpu ? (
-              <p className="mt-2 rounded border border-amber-400/30 bg-amber-400/5 p-2 text-[11px] text-amber-300">
+              <p className="mt-2 rounded border border-warn/30 bg-warn/10 p-2 text-[11px] text-warn">
                 Tu navegador no expone WebGPU: necesitás Chrome/Edge de escritorio
                 con una GPU. No anda en móvil.
               </p>
             ) : (
-              <p className="mt-2 text-[11px] text-white/40">
+              <p className="mt-2 text-[11px] text-text-faint">
                 Corre en tu navegador (WebGPU) — sin key, sin costo. Detalle abajo.
               </p>
             )
           ) : esOllama ? (
-            <div className="mt-2 rounded border border-white/10 bg-white/5 p-2 text-[11px] text-white/70">
-              El modelo corre en <span className="text-white/90">tu máquina</span>,
+            <div className="mt-2 rounded border border-line bg-surface-2 p-2 text-[11px] text-text-muted">
+              El modelo corre en <span className="text-text">tu máquina</span>,
               no gasta tokens. Requiere el server de Ollama escuchando en{" "}
-              <span className="text-white/90">{OLLAMA_URL}</span> y un modelo bajado
-              (<span className="text-white/90">ollama pull qwen2.5vl:7b</span>).
+              <span className="text-text">{OLLAMA_URL}</span> y un modelo bajado
+              (<span className="text-text">ollama pull qwen2.5vl:7b</span>).
               No hay API key. Anda en Chrome/Edge de escritorio;{" "}
-              <span className="text-amber-400/90">
+              <span className="text-warn">
                 Safari y el celular no llegan a tu localhost
               </span>
               .
             </div>
           ) : (
             <label className="mt-2 block text-sm">
-              <span className="text-white/70">API key</span>
+              <span className="text-text-muted">API key</span>
               <input
                 type="password"
                 value={keyDraft}
@@ -904,27 +904,27 @@ export default function SettingsPanel({
                 placeholder={PISTA_API_KEY[proveedor]}
                 autoComplete="off"
                 spellCheck={false}
-                className={`mt-1 w-full rounded border bg-neutral-950 px-2 py-1.5 text-sm placeholder:text-white/30 focus:outline-none ${
+                className={`mt-1 w-full rounded border bg-bg px-2 py-1.5 text-sm placeholder:text-text-faint focus:outline-none ${
                   avisoFormato
-                    ? "border-amber-400/60 focus:border-amber-400"
-                    : "border-white/15 focus:border-sky-400"
+                    ? "border-warn/60 focus:border-warn"
+                    : "border-line focus:border-sky-400"
                 }`}
               />
               {sugerirCambio ? (
-                <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-amber-400">
+                <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-warn">
                   Esta key parece de {NOMBRE_PROVEEDOR[sugerirCambio]}.
                   <button
                     type="button"
                     onClick={() =>
                       cambiarProveedor(sugerirCambio, keyDraft.trim())
                     }
-                    className="rounded border border-amber-400/50 px-1.5 py-0.5 font-medium text-amber-300 hover:bg-amber-400/10"
+                    className="rounded border border-warn/50 px-1.5 py-0.5 font-medium text-warn hover:bg-warn/10"
                   >
                     Cambiar a {NOMBRE_PROVEEDOR[sugerirCambio]}
                   </button>
                 </span>
               ) : avisoFormato ? (
-                <span className="mt-1 block text-[11px] text-amber-400">
+                <span className="mt-1 block text-[11px] text-warn">
                   {avisoFormato}
                 </span>
               ) : null}
@@ -932,8 +932,8 @@ export default function SettingsPanel({
           )}
 
           {/* Mini-guía para gente que nunca sacó una API key. */}
-          <details className="group mt-1.5 rounded border border-white/10 bg-white/5 text-xs">
-            <summary className="cursor-pointer list-none px-2 py-1.5 text-white/70 marker:content-none hover:text-white">
+          <details className="group mt-1.5 rounded border border-line bg-surface-2 text-xs">
+            <summary className="cursor-pointer list-none px-2 py-1.5 text-text-muted marker:content-none hover:text-text">
               <span className="mr-1 inline-block transition-transform group-open:rotate-90">
                 ▸
               </span>
@@ -943,7 +943,7 @@ export default function SettingsPanel({
                   ? "¿Cómo pongo a andar Ollama?"
                   : "¿No sabés cómo conseguir tu API key?"}
             </summary>
-            <div className="space-y-1.5 px-2 pb-2 pt-0.5 text-white/70">
+            <div className="space-y-1.5 px-2 pb-2 pt-0.5 text-text-muted">
               <p>
                 {esWebllm ? (
                   <span>
@@ -963,18 +963,18 @@ export default function SettingsPanel({
                   </>
                 )}
                 {GUIA_API_KEY[proveedor].gratis ? (
-                  <span className="text-emerald-400">Este proveedor es gratis.</span>
+                  <span className="text-ok">Este proveedor es gratis.</span>
                 ) : (
-                  <span className="text-amber-400">
+                  <span className="text-warn">
                     Este proveedor cobra (necesita saldo). Si querés uno 100%
-                    gratis, elegí <span className="text-white/90">Google Gemini</span>{" "}
+                    gratis, elegí <span className="text-text">Google Gemini</span>{" "}
                     arriba.
                   </span>
                 )}
                 {GUIA_API_KEY[proveedor].abierto && (
                   <>
                     {" "}
-                    <span className="text-white/60">
+                    <span className="text-text-muted">
                       Acá usás modelos open-source (Llama, Qwen, DeepSeek, GLM…),
                       no un modelo propio cerrado.
                     </span>
@@ -999,7 +999,7 @@ export default function SettingsPanel({
                     : `Abrir la web de ${NOMBRE_PROVEEDOR[proveedor]} ↗`}
               </a>
               {!esLocal && (
-                <p className="text-[11px] text-white/40">
+                <p className="text-[11px] text-text-faint">
                   La clave se guarda solo en este navegador (y, si iniciás sesión,
                   en tu cuenta para tenerla en todos tus dispositivos). Nunca la
                   compartimos.
@@ -1009,7 +1009,7 @@ export default function SettingsPanel({
           </details>
 
           <label className="mt-2 block text-sm">
-            <span className="text-white/70">Modelo</span>
+            <span className="text-text-muted">Modelo</span>
             <input
               type="text"
               value={modeloDraft}
@@ -1020,7 +1020,7 @@ export default function SettingsPanel({
                   commit();
                 }
               }}
-              className="mt-1 w-full rounded border border-white/15 bg-neutral-950 px-2 py-1.5 text-sm focus:border-sky-400 focus:outline-none"
+              className="mt-1 w-full rounded border border-line bg-bg px-2 py-1.5 text-sm focus:border-sky-400 focus:outline-none"
             />
           </label>
 
@@ -1030,7 +1030,7 @@ export default function SettingsPanel({
                 type="button"
                 onClick={verModelos}
                 disabled={!keyEfectiva || cargandoModelos || !proveedorHabilitado}
-                className="mt-1.5 rounded border border-white/15 px-2 py-1 text-[11px] text-white/70 enabled:hover:bg-white/10 disabled:opacity-40"
+                className="mt-1.5 rounded border border-line px-2 py-1 text-[11px] text-text-muted enabled:hover:bg-surface-2 disabled:opacity-40"
               >
                 {cargandoModelos
                   ? esOllama
@@ -1040,7 +1040,7 @@ export default function SettingsPanel({
                     ? "↻ ver modelos que bajaste"
                     : "↻ verificar key y ver sus modelos"}
               </button>
-              <span className="mt-1 block text-[11px] text-white/40">
+              <span className="mt-1 block text-[11px] text-text-faint">
                 {esOllama
                   ? "Lista lo que devuelve `ollama list` en tu máquina."
                   : "Consulta gratis (no gasta tokens): si la key es inválida, avisa acá."}
@@ -1049,17 +1049,17 @@ export default function SettingsPanel({
           )}
 
           {errorModelos && (
-            <p className="mt-1.5 text-[11px] text-red-400">{errorModelos}</p>
+            <p className="mt-1.5 text-[11px] text-danger">{errorModelos}</p>
           )}
 
           {modeloMuerto ? (
-            <p className="mt-1.5 text-[11px] text-amber-400">
+            <p className="mt-1.5 text-[11px] text-warn">
               “{modeloDraft.trim()}” no anda en el free tier de Gemini; se va a
               usar {MODELO_POR_DEFECTO.gemini}.
             </p>
           ) : (
             modeloFueraDeLista && (
-              <p className="mt-1.5 text-[11px] text-amber-400">
+              <p className="mt-1.5 text-[11px] text-warn">
                 Tu key no incluye “{modeloDraft.trim()}”. Elegí uno de abajo.
               </p>
             )
@@ -1067,16 +1067,16 @@ export default function SettingsPanel({
 
           {esWebllm && modelosKey.length > 0 && (
             <div className="mt-1.5 space-y-1">
-              <p className="text-[11px] text-white/40">
+              <p className="text-[11px] text-text-faint">
                 Elegí según tu máquina (se baja 1 vez):
               </p>
               {recomEquipo && INFO_MODELO_WEBLLM[recomEquipo.id] && (
-                <p className="text-[11px] text-emerald-300/90">
+                <p className="text-[11px] text-ok">
                   Para tu equipo:{" "}
                   <span className="font-medium">
                     {INFO_MODELO_WEBLLM[recomEquipo.id].nombre}
                   </span>{" "}
-                  <span className="text-white/40">— {recomEquipo.motivo}</span>
+                  <span className="text-text-faint">— {recomEquipo.motivo}</span>
                 </p>
               )}
               {modelosKey.map((m) => {
@@ -1096,30 +1096,30 @@ export default function SettingsPanel({
                     onClick={() => setModeloDraft(m)}
                     className={`block w-full rounded border px-2 py-1.5 text-left text-[11px] ${
                       sel
-                        ? "border-sky-500 bg-sky-500/15 text-white"
-                        : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10"
+                        ? "border-sky-500 bg-sky-500/15 text-text"
+                        : "border-line bg-surface-2 text-text-muted hover:bg-line"
                     }`}
                   >
                     <span className="flex items-center gap-1.5">
-                      <span className="font-medium text-white/90">
+                      <span className="font-medium text-text">
                         {info?.nombre ?? m}
                       </span>
                       {info && (
-                        <span className="text-white/40">· ~{info.gb} GB</span>
+                        <span className="text-text-faint">· ~{info.gb} GB</span>
                       )}
                       {badge && (
-                        <span className="rounded bg-emerald-500/20 px-1 text-[10px] text-emerald-300">
+                        <span className="rounded bg-ok/15 px-1 text-[10px] text-ok">
                           {badge}
                         </span>
                       )}
                     </span>
                     {info && (
-                      <span className="mt-0.5 block text-white/50">{info.nota}</span>
+                      <span className="mt-0.5 block text-text-faint">{info.nota}</span>
                     )}
                   </button>
                 );
               })}
-              <p className="text-[10px] text-white/30">
+              <p className="text-[10px] text-text-faint">
                 En gráfica integrada andan lentos; el 7B pide una GPU con VRAM
                 libre. Sin internet no puede &ldquo;buscar&rdquo; datos.
               </p>
@@ -1140,7 +1140,7 @@ export default function SettingsPanel({
                         className={`rounded px-1.5 py-0.5 text-[11px] ${
                           m === modeloDraft.trim()
                             ? "bg-sky-500 text-white"
-                            : "bg-white/10 text-white/70 hover:bg-white/20"
+                            : "bg-surface-2 text-text-muted hover:bg-line"
                         }`}
                       >
                         {m}
@@ -1148,7 +1148,7 @@ export default function SettingsPanel({
                     ))}
                   </div>
                   {chipsModelo.length === 0 && (
-                    <p className="text-[11px] text-white/40">
+                    <p className="text-[11px] text-text-faint">
                       Ningún modelo coincide con “{filtroModelo.trim()}”.
                     </p>
                   )}
@@ -1157,8 +1157,8 @@ export default function SettingsPanel({
               // Lista corta → chips inline. Lista larga (OpenRouter, HF) →
               // <details> plegado + filtro adentro, para no tapar el panel.
               return mostrarFiltro ? (
-                <details className="group mt-1.5 rounded border border-white/10 bg-white/5 text-xs">
-                  <summary className="cursor-pointer list-none px-2 py-1.5 text-white/70 marker:content-none hover:text-white">
+                <details className="group mt-1.5 rounded border border-line bg-surface-2 text-xs">
+                  <summary className="cursor-pointer list-none px-2 py-1.5 text-text-muted marker:content-none hover:text-text">
                     <span className="mr-1 inline-block transition-transform group-open:rotate-90">
                       ▸
                     </span>
@@ -1170,14 +1170,14 @@ export default function SettingsPanel({
                       value={filtroModelo}
                       onChange={(e) => setFiltroModelo(e.target.value)}
                       placeholder="filtrar…"
-                      className="w-full rounded border border-white/15 bg-neutral-950 px-2 py-1 text-[11px] placeholder:text-white/30 focus:border-sky-400 focus:outline-none"
+                      className="w-full rounded border border-line bg-bg px-2 py-1 text-[11px] placeholder:text-text-faint focus:border-sky-400 focus:outline-none"
                     />
                     {chips}
                   </div>
                 </details>
               ) : (
                 <div className="mt-1.5">
-                  <p className="mb-1 text-[11px] text-white/40">
+                  <p className="mb-1 text-[11px] text-text-faint">
                     Modelos de tu key (click para elegir):
                   </p>
                   {chips}
@@ -1204,13 +1204,13 @@ export default function SettingsPanel({
               <button
                 type="button"
                 onClick={onBorrarKeyIA}
-                className="text-xs text-white/50 hover:text-white/80"
+                className="text-xs text-text-faint hover:text-text-muted"
               >
                 Borrar key
               </button>
             )}
           </div>
-          <span className="mt-1.5 block text-[11px] text-white/40">
+          <span className="mt-1.5 block text-[11px] text-text-faint">
             {dirty
               ? "Cambios sin guardar."
               : aplicado
@@ -1226,19 +1226,19 @@ export default function SettingsPanel({
 
           {haySupabase() && (
             <>
-              <hr className="my-3 border-white/10" />
-              <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-white/40">
+              <hr className="my-3 border-line" />
+              <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-text-faint">
                 Cuenta
               </p>
               {cargandoSesion ? (
-                <p className="text-[11px] text-white/40">…</p>
+                <p className="text-[11px] text-text-faint">…</p>
               ) : usuario ? (
                 <div className="text-sm">
-                  <p className="text-white/70">
+                  <p className="text-text-muted">
                     Sesión iniciada como{" "}
-                    <span className="text-white/90">{usuario.email}</span>
+                    <span className="text-text">{usuario.email}</span>
                   </p>
-                  <p className="mt-0.5 text-[11px] text-white/40">
+                  <p className="mt-0.5 text-[11px] text-text-faint">
                     {estadoSync === "sincronizando"
                       ? "☁ sincronizando…"
                       : estadoSync === "error"
@@ -1248,19 +1248,19 @@ export default function SettingsPanel({
                   <button
                     type="button"
                     onClick={() => void cerrarSesion()}
-                    className="mt-1.5 rounded border border-white/15 px-2 py-1 text-[11px] text-white/70 hover:bg-white/10"
+                    className="mt-1.5 rounded border border-line px-2 py-1 text-[11px] text-text-muted hover:bg-surface-2"
                   >
                     Cerrar sesión
                   </button>
                 </div>
               ) : linkEnviado ? (
-                <p className="text-[11px] text-white/70">
-                  Te mandamos un link a <span className="text-white/90">{email}</span>.
+                <p className="text-[11px] text-text-muted">
+                  Te mandamos un link a <span className="text-text">{email}</span>.
                   Abrilo desde este dispositivo para entrar. (Revisá spam.)
                 </p>
               ) : (
                 <div className="text-sm">
-                  <p className="mb-1.5 text-[11px] text-white/40">
+                  <p className="mb-1.5 text-[11px] text-text-faint">
                     Opcional. Con cuenta, tu árbol se sincroniza entre dispositivos
                     y podés ver / despublicar tus árboles compartidos. Sin cuenta,
                     la app funciona igual (todo local).
@@ -1273,7 +1273,7 @@ export default function SettingsPanel({
                   >
                     {yendoAGoogle ? "redirigiendo…" : "Continuar con Google"}
                   </button>
-                  <p className="my-1.5 text-center text-[11px] text-white/30">
+                  <p className="my-1.5 text-center text-[11px] text-text-faint">
                     o con un link por mail
                   </p>
                   <input
@@ -1288,7 +1288,7 @@ export default function SettingsPanel({
                     }}
                     placeholder="tu@email.com"
                     autoComplete="email"
-                    className="w-full rounded border border-white/15 bg-neutral-950 px-2 py-1.5 text-sm placeholder:text-white/30 focus:border-sky-400 focus:outline-none"
+                    className="w-full rounded border border-line bg-bg px-2 py-1.5 text-sm placeholder:text-text-faint focus:border-sky-400 focus:outline-none"
                   />
                   <button
                     type="button"
@@ -1299,14 +1299,14 @@ export default function SettingsPanel({
                     {enviandoLink ? "enviando…" : "Enviarme un link para entrar"}
                   </button>
                   {authError && (
-                    <p className="mt-1.5 text-[11px] text-red-400">{authError}</p>
+                    <p className="mt-1.5 text-[11px] text-danger">{authError}</p>
                   )}
                 </div>
               )}
             </>
           )}
 
-          <hr className="my-3 border-white/10" />
+          <hr className="my-3 border-line" />
           {bloqueSystemPrompt}
           </>
           )}
