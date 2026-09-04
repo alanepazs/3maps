@@ -581,12 +581,17 @@ export default function SettingsPanel({
     </>
   ) : null;
 
-  // Toggle rápido de tema (botón al lado de la ⚙️). Alterna claro↔oscuro; para
-  // "según el sistema" está el select adentro del panel. Base: cualquier valor
-  // que no sea "claro" (oscuro o sistema) → el botón lleva a "claro".
+  // Control de tema, al lado de la ⚙️ (B11): un botón que alterna claro↔oscuro
+  // (☀️/🌙) + un botón "🖥️" para seguir el sistema. Siempre hay exactamente uno
+  // "activo" (borde sky): el toggle si el tema es explícito, el 🖥️ si es
+  // "sistema". No hay select adentro del panel — esto es todo el control.
   const temaClaro = settings.tema === "claro";
+  const temaSistema = settings.tema === "sistema";
   const alternarTema = () =>
     onChange({ tema: temaClaro ? "oscuro" : "claro" });
+
+  const btnBarra =
+    "flex h-9 w-9 items-center justify-center rounded-full border bg-surface/95 shadow-lg backdrop-blur transition-colors hover:bg-surface-2";
 
   return (
     <div ref={contenedorRef} className="absolute left-4 top-4 z-10">
@@ -596,7 +601,7 @@ export default function SettingsPanel({
           onClick={() => setOpen((o) => !o)}
           aria-label="Ajustes"
           aria-expanded={open}
-          className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-surface/95 text-lg shadow-lg backdrop-blur transition-colors hover:bg-surface-2"
+          className={`${btnBarra} border-line text-lg`}
         >
           ⚙️
         </button>
@@ -605,9 +610,23 @@ export default function SettingsPanel({
           onClick={alternarTema}
           aria-label={temaClaro ? "Cambiar a tema oscuro" : "Cambiar a tema claro"}
           title={temaClaro ? "Cambiar a tema oscuro" : "Cambiar a tema claro"}
-          className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-surface/95 text-base shadow-lg backdrop-blur transition-colors hover:bg-surface-2"
+          className={`${btnBarra} text-base ${
+            temaSistema ? "border-line" : "border-sky-400 text-sky-500"
+          }`}
         >
           {temaClaro ? "🌙" : "☀️"}
+        </button>
+        <button
+          type="button"
+          onClick={() => onChange({ tema: "sistema" })}
+          aria-label="Seguir el tema del sistema"
+          title="Seguir el tema del sistema"
+          aria-pressed={temaSistema}
+          className={`${btnBarra} text-base ${
+            temaSistema ? "border-sky-400 text-sky-500" : "border-line"
+          }`}
+        >
+          🖥️
         </button>
       </div>
 
@@ -747,21 +766,6 @@ export default function SettingsPanel({
                 <span className="mt-1 block text-[11px] text-text-faint">
                   Las flechas que conectan los globos.
                 </span>
-              </label>
-
-              <label className="mt-3 block text-sm">
-                <span className="text-text-muted">Tema</span>
-                <select
-                  value={settings.tema ?? "oscuro"}
-                  onChange={(e) =>
-                    onChange({ tema: e.target.value as Settings["tema"] })
-                  }
-                  className="mt-1.5 w-full rounded border border-line bg-bg px-2 py-1 text-sm text-text-muted focus:border-sky-400 focus:outline-none"
-                >
-                  <option value="oscuro">Oscuro</option>
-                  <option value="claro">Claro</option>
-                  <option value="sistema">Según el sistema</option>
-                </select>
               </label>
 
               <label className="mt-3 block text-sm">

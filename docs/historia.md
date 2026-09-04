@@ -229,7 +229,9 @@ Pedidos de Alan mientras probaba WebLLM:
 - **`Settings.tema`** (`oscuro` | `claro` | `sistema`, def `oscuro`). Persiste y sincroniza.
 - **`FlowCanvas`** un `useEffect` (dep `settings.tema`) resuelve `"sistema"` con
   `matchMedia` (+ listener), pone `data-theme` en el `<html>` y da `colorMode` dinámico a
-  `<ReactFlow>`. Mismo patrón que `data-hoverzoom`. `select` "Tema" en ⚙️→Lienzo.
+  `<ReactFlow>`. Mismo patrón que `data-hoverzoom`.
+- **Control**: 2 botones al lado de la ⚙️ (☀️/🌙 alterna claro↔oscuro, 🖥️ sigue al sistema;
+  borde sky en el activo). Sin select adentro del panel. `MapaSwitcher` corrido a `left-36`.
 - **Conversión**: los ~10 componentes con color hardcodeado (MessageNode, Composer,
   PanelConversacion, Markdown, SettingsPanel, MapaSwitcher, ToolbarGrupo, SharedBanner,
   LoginNudge, DocCard) + el empty-state de FlowCanvas. `SharedBanner` dejó de ser una barra
