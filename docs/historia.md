@@ -218,7 +218,7 @@ Pedidos de Alan mientras probaba WebLLM:
   viejos sin resumen, `resumir()` acota su input, `acotarMensajes` recorta duro para webllm,
   y los errores de contexto ahora dan un mensaje útil. Ver decisiones §10 / §7g.
 
-## B11 — tema claro (04-09-2026)
+## B11 — tema claro (04-09-2026, en prod)
 
 3maps nació dark-only. B11 suma un tema claro además del oscuro.
 - **Infra**: tokens semánticos en `globals.css` (`--bg`, `--surface`, `--surface-2`, `--line`,

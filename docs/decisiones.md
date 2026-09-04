@@ -1701,8 +1701,14 @@ quedan — leen en ambos.
   botón "Iniciar sesión" de `LoginNudge` pasó de píldora `bg-white` a `bg-sky-500` (el CTA
   blanco desaparecía sobre superficie blanca — ahora usa el acento como el resto). El botón
   "Continuar con Google" del panel SÍ queda blanco (branding). Verificado los 2 temas.
-- **Terminado.** Los `bg-black/*` que quedan son scrims de modal / lightbox y `text-white` sobre
-  `bg-sky-500` sólido — correctos en ambos temas a propósito. No hace falta paso 5.
+- **Terminado.** Verificado en el pane y en el sitio publicado (fresh load + toggle en vivo con
+  ⚙️ y "Mi mapa" abiertos). Los `bg-black/*` que quedan son scrims de modal / lightbox y
+  `text-white` sobre `bg-sky-500` sólido — correctos en ambos temas a propósito. No hace falta
+  paso 5.
+- **Gotcha de deploy**: cada commit del refactor cambió el hash de un chunk. El HTML de GitHub
+  Pages se sirve con `Cache-Control: max-age=600` → si abrís el sitio justo cuando un commit
+  está deployando, el HTML cacheado apunta a chunks viejos y un componente puede quedar sin
+  convertir 10 min. Hard-refresh lo arregla. (3maps no es PWA, no hay service worker.)
 
 ---
 

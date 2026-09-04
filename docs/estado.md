@@ -28,8 +28,10 @@ mapeados a Tailwind. `data-theme` en `<html>` + `colorMode` dinámico de `<React
 en `FlowCanvas` (resuelve "sistema" con `matchMedia`). `select` en ⚙️→Lienzo. Los ~10
 componentes con color hardcodeado, convertidos (MessageNode, Composer, PanelConversacion,
 Markdown, SettingsPanel, MapaSwitcher, ToolbarGrupo, SharedBanner, LoginNudge, DocCard) +
-empty-state de FlowCanvas. Verificado los 2 temas en el pane, tsc+lint verdes. **Falta la
-prueba de Alan en Chrome** (transiciones, el tema "sistema" siguiendo el SO). Decisiones B11.
+empty-state de FlowCanvas. Verificado los 2 temas en el pane + en el sitio publicado (fresh load y toggle en vivo, incluido
+`data-theme` sobre los popovers de ⚙️ y "Mi mapa"), tsc+lint verdes. Alan lo probó en Chrome
+(04-09): el canvas/globos/composer OK; los popovers de config los vio sin cambiar por **caché
+del bundle viejo** (HTML de Pages con `max-age=600`) — hard-refresh lo arregla. Decisiones B11.
 
 **Lo único que queda son cosas de Alan / diferidas** (ver "Ideas sin empezar" + "Prueba real
 pendiente"): ronda de pruebas en Chrome con keys reales,
