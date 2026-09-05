@@ -406,7 +406,7 @@ function Flow() {
   const subirConfigIA = useCallback(() => {
     const uid = usuario?.id;
     if (uid) void subirConfigNube(uid, exportarConfigNube());
-  }, [usuario]);
+  }, [usuario?.id]);
   // Guarda la key/modelo del proveedor activo.
   const guardarKeyIA = useCallback(
     (c: ConfigIA) => {
@@ -452,7 +452,7 @@ function Flow() {
     return () => {
       vivo = false;
     };
-  }, [usuario]);
+  }, [usuario?.id]);
 
   // Llamadas a la IA en curso, por id de nodo (para poder cancelarlas).
   const enVueloRef = useRef<Map<string, AbortController>>(new Map());
@@ -1615,8 +1615,8 @@ function Flow() {
   // fusiona los que falten, y re-sube si local tiene algo que el índice no.
   // Corre al loguear y al volver a foco la pestaña.
   const sincronizarListaMapas = useCallback(async () => {
-    if (!usuario || readOnly) return;
-    const uid = usuario.id;
+    const uid = usuario?.id ?? null;
+    if (!uid || readOnly) return;
     const indice = await bajarIndiceMapasNube(uid);
     if (!indice) {
       // Todavía no hay índice en la nube → subir lo local como estado inicial.
@@ -1684,7 +1684,7 @@ function Flow() {
     if (Object.keys(m).some((id) => !enIndice.has(id) && !borrados.has(id))) {
       void subirIndiceMapasNube(uid, m);
     }
-  }, [usuario, readOnly, cargarEnMapa]);
+  }, [usuario?.id, readOnly, cargarEnMapa]);
 
   useEffect(() => {
     void sincronizarListaMapas();
