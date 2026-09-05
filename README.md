@@ -7,24 +7,17 @@ chats con IA: son lineales. Si en medio de una respuesta querés repreguntar
 sobre un punto puntual, no hay otra que seguir abajo — y el hilo original
 queda enterrado.
 
-![3maps: ramificar una conversación con IA](assets/demo.gif)
-
 3maps te deja repreguntar hacia el costado: cada repregunta abre una rama
 nueva sin tocar la conversación principal, y esas ramas van formando un mapa
 de nodos navegable.
 
 **Probala:** https://alanepazs.github.io/3maps/ — sin instalar nada, sin cuenta.
 
- 
-
+## Demo
 
 ![Demo de 3maps: árbol de conversación, ramificar, tema claro/oscuro, panel de conversación y modelo local](.github/assets/demo.gif)
 
 ---
-
-## Cómo funciona
-
-Todo corre en tu navegador: sin cuenta, sin servidor propio, sin nada que instalar.
 
 ## Cómo funciona
 
@@ -57,11 +50,12 @@ que configurar.
 | Sincronizar entre dispositivos | — | ✅ |
 | Keys en todos tus dispositivos | — | ✅ |
 
- ## Proveedores de IA
+## Proveedores de IA
 
 - **Gratis, sin tarjeta:** Google Gemini, Groq, OpenRouter, Hugging Face.
 - **Pagos (con tu propia cuenta):** Claude (Anthropic), OpenAI, DeepSeek.
 - **Local:** Ollama (instalado en tu compu) o WebLLM (en el navegador, sin instalar nada).
+
 Adjuntás texto, imágenes y PDF (según lo que soporte el modelo elegido).
 
 ## Stack
@@ -73,7 +67,7 @@ Adjuntás texto, imágenes y PDF (según lo que soporte el modelo elegido).
 
 ## Correr en local
 
-Requiere Node v24.19.0 o superior.
+Requiere Node 20.9 o superior (lo que pide Next.js 16).
 
 ```bash
 git clone https://github.com/alanepazs/3maps.git
