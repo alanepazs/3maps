@@ -11,9 +11,7 @@ El nombre: **3** = *three* = *tree* (árbol), y suena a "maps". Mapas de árbol.
 
 ## Demo
 
-<video src=".github/assets/demo.mp4" controls width="100%">
-  Tu navegador no puede reproducir el video — mirá <code>.github/assets/demo.mp4</code> directo.
-</video>
+![Demo de 3maps: árbol de conversación, ramificar, tema claro/oscuro, panel de conversación y modelo local](.github/assets/demo.gif)
 
 ---
 
