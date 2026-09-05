@@ -9,6 +9,10 @@ principal — cada rama es su propia conversación.
 
 El nombre: **3** = *three* = *tree* (árbol), y suena a "maps". Mapas de árbol.
 
+## Demo
+
+![Demo de 3maps: árbol de conversación, ramificar, tema claro/oscuro, panel de conversación y modelo local](.github/assets/demo.gif)
+
 ---
 
 ## Cómo funciona (para dummies)
