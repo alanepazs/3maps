@@ -1,13 +1,21 @@
 # 3maps
 
-Conversá con una IA viendo el chat como un **árbol de globos en un lienzo** (tipo
-n8n / Obsidian Canvas) en vez de una lista con scroll. Desde **cualquier respuesta
-vieja** podés abrir una pregunta nueva "para el costado" sin ensuciar el hilo
-principal — cada rama es su propia conversación.
+## ¿Qué es 3maps?
 
-**En vivo:** https://alanepazs.github.io/3maps/
+3maps es una aplicación web pensada para resolver un problema común en los
+chats con IA: son lineales. Si en medio de una respuesta querés repreguntar
+sobre un punto puntual, no hay otra que seguir abajo — y el hilo original
+queda enterrado.
 
-El nombre: **3** = *three* = *tree* (árbol), y suena a "maps". Mapas de árbol.
+![3maps: ramificar una conversación con IA](assets/demo.gif)
+
+3maps te deja repreguntar hacia el costado: cada repregunta abre una rama
+nueva sin tocar la conversación principal, y esas ramas van formando un mapa
+de nodos navegable.
+
+**Probala:** https://alanepazs.github.io/3maps/ — sin instalar nada, sin cuenta.
+
+ 
 
 ## Demo
 
