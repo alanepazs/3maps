@@ -17,7 +17,6 @@ de nodos navegable.
 
  
 
-## Demo
 
 ![Demo de 3maps: árbol de conversación, ramificar, tema claro/oscuro, panel de conversación y modelo local](.github/assets/demo.gif)
 
